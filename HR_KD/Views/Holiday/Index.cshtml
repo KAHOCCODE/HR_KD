@@ -221,8 +221,8 @@ function saveFixedHolidaysForYear(year) {
         const currentDate = new Date(fullDate);
         const formattedDate = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
 
-        if (currentDate.getDay() !== 0 && !existingHolidays.includes(formattedDate)) {
-            // Ngày lễ không rơi vào Chủ Nhật và chưa tồn tại
+        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6 && !existingHolidays.includes(formattedDate)) {
+            // Ngày lễ không rơi vào cuối tuần và chưa tồn tại
             requests.push(
                 fetch('/api/Holidays/Add', {
                     method: 'POST',
@@ -236,23 +236,23 @@ function saveFixedHolidaysForYear(year) {
                 }).then(response => response.json())
             );
             console.log(`Đã lên lịch ${holiday.ten} vào ${formattedDate}.`);
-        } else if (currentDate.getDay() === 0) {
-            // Ngày lễ rơi vào Chủ Nhật, cần lên lịch lại
-            holidaysToReschedule.push({ holiday, originalDate: formattedDate });
-            console.log(`Ngày ${holiday.ten} (${formattedDate}) rơi vào Chủ Nhật, sẽ lên lịch lại.`);
+        } else if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+            // Ngày lễ rơi vào cuối tuần, cần lên lịch lại
+            holidaysToReschedule.push({ holiday, originalDate: formattedDate, isWeekend: true });
+            console.log(`Ngày ${holiday.ten} (${formattedDate}) rơi vào cuối tuần, sẽ lên lịch lại.`);
         } else {
             console.log(`Ngày ${holiday.ten} (${formattedDate}) đã tồn tại.`);
         }
     });
 
-    // Chạy các request cho ngày lễ không rơi vào Chủ Nhật trước
+    // Chạy các request cho ngày lễ không rơi vào cuối tuần trước
     Promise.all(requests).then(results => {
         const successfulAdds = results.filter(res => res.success !== false).length;
         if (successfulAdds > 0) {
-            console.log(`Đã thêm ${successfulAdds} ngày lễ không trùng Chủ Nhật.`);
+            console.log(`Đã thêm ${successfulAdds} ngày lễ không trùng cuối tuần.`);
         }
 
-        // Xử lý các ngày lễ rơi vào Chủ Nhật để lên lịch lại
+        // Xử lý các ngày lễ rơi vào cuối tuần để lên lịch lại
         holidaysToReschedule.forEach(({ holiday, originalDate }) => {
             let rescheduleDate = new Date(originalDate);
             let daysToAdd = 1;
@@ -264,14 +264,19 @@ function saveFixedHolidaysForYear(year) {
                 }
             }
 
+            // Nếu ngày lễ rơi vào thứ 7, nghỉ bù vào thứ 2
+            if (new Date(originalDate).getDay() === 6) {
+                daysToAdd = 2;
+            }
+
             rescheduleDate.setDate(rescheduleDate.getDate() + daysToAdd);
             let rescheduledFormattedDate = `${rescheduleDate.getFullYear()}-${(rescheduleDate.getMonth() + 1).toString().padStart(2, '0')}-${rescheduleDate.getDate().toString().padStart(2, '0')}`;
             let rescheduleName = holiday.ten;
-            let rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào Chủ Nhật`;
+            let rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào cuối tuần`;
 
             if (holiday.ten === "Ngày Giải Phóng miền Nam" && daysToAdd === 2) {
                 rescheduleName = "Ngày Giải Phóng miền Nam (Nghỉ bù)";
-                rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào Chủ Nhật và đi liền với Ngày Quốc Tế Lao Động`;
+                rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào cuối tuần và đi liền với Ngày Quốc Tế Lao Động`;
             } else if (holiday.ten !== "Ngày Giải Phóng miền Nam") {
                 rescheduleName = `Nghỉ bù ${holiday.ten}`;
             }
@@ -306,6 +311,7 @@ function saveFixedHolidaysForYear(year) {
                     initializeDatePicker();
                     fetchHolidays(document.getElementById('yearFilter').value);
                     updateFixedHolidayYearOptions();
+                    window.location.reload();
                 });
             } else {
                 alert("Có lỗi xảy ra khi thêm một số ngày lễ.");

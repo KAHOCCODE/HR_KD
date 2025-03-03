@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - HR_KD</title>
+
+    <!-- Bootstrap & Custom CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/HR_KD.styles.css" asp-append-version="true" />
+
+    <!-- Template CSS -->
+    <link rel="stylesheet" type="text/css" href="~/css/bootstrap.min.css" asp-append-version="true">
+    <link rel="stylesheet" type="text/css" href="~/css/font-awesome.min.css" asp-append-version="true">
+    <link rel="stylesheet" type="text/css" href="~/css/style.css" asp-append-version="true">
+</head>
+
+<body>
+    @* <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        @await Html.PartialAsync("_Sidebar")
+    </div>
+
+    <!-- Navbar -->
+    <div class="header">
+        @await Html.PartialAsync("_Navbar")
+    </div> *@
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - HR_KD - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <!-- Thư viện JS -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Template JS -->
+    <script src="~/js/jquery-3.2.1.min.js"></script>
+    <script src="~/js/popper.min.js"></script>
+    <script src="~/js/bootstrap.min.js"></script>
+    <script src="~/js/jquery.slimscroll.js"></script>
+    <script src="~/js/chart.bundle.js"></script>
+    <script src="~/js/chart.js"></script>
+    <script src="~/js/app.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

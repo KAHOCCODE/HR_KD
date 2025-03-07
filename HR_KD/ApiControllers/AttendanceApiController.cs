@@ -6,8 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace HR_KD.ApiControllers
-{ 
-    [Route("api/[controller]")]
+{
+    [Route("api/Attendance")]
     [ApiController]
     public class AttendanceController : ControllerBase
     {
@@ -17,19 +17,11 @@ namespace HR_KD.ApiControllers
         {
             _context = context;
         }
-        [HttpPost]
-        public IActionResult PostAttendance([FromBody] List<ChamCong> attendanceData)
-        {
-            if (attendanceData == null || attendanceData.Count == 0)
-                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
 
-            // Xử lý logic lưu dữ liệu vào database
-
-            return Ok(new { success = true, message = "Chấm công thành công!" });
-        }
+        // API Chấm công
         [HttpPost]
         [Route("SubmitAttendance")]
-        public async Task<IActionResult> SubmitAttendance([FromBody] List<ChamCong> attendanceData)
+        public async Task<IActionResult> SubmitAttendance([FromBody] List<ChamCongDto> attendanceData)
         {
             if (attendanceData == null || !attendanceData.Any())
             {
@@ -40,16 +32,37 @@ namespace HR_KD.ApiControllers
             {
                 foreach (var entry in attendanceData)
                 {
+                    // Kiểm tra ngày làm việc
+                    if (!DateOnly.TryParse(entry.NgayLamViec, out DateOnly ngayLamViec))
+                    {
+                        return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
+                    }
+
+                    //  Kiểm tra giờ vào
+                    TimeOnly? gioVao = null, gioRa = null;
+                    if (!string.IsNullOrEmpty(entry.GioVao) && TimeOnly.TryParse(entry.GioVao, out var parsedGioVao))
+                        gioVao = parsedGioVao;
+
+                    //  Kiểm tra giờ ra
+                    if (!string.IsNullOrEmpty(entry.GioRa) && TimeOnly.TryParse(entry.GioRa, out var parsedGioRa))
+                        gioRa = parsedGioRa;
+
+                    //  Kiểm tra tổng giờ
+                    decimal tongGio = entry.TongGio.HasValue ? entry.TongGio.Value : 0;
+
                     var chamCong = new ChamCong
                     {
-                        MaNv = entry.MaNv, // Lấy mã nhân viên từ request thay vì cố định
-                        NgayLamViec = entry.NgayLamViec,
-                        GioVao = entry.GioVao, // Có thể là null
-                        GioRa = entry.GioRa,   // Có thể là null
-                        TongGio = entry.TongGio ?? 0, // Nếu null thì gán 0
-                        TrangThai = "0", // Mặc định trạng thái = 0
+                        MaNv = entry.MaNv,
+                        NgayLamViec = ngayLamViec,
+                        GioVao = gioVao,
+                        GioRa = gioRa,
+                        TongGio = tongGio,
+                        TrangThai = entry.TrangThai,
                         GhiChu = entry.GhiChu
                     };
+
+                    Console.WriteLine($"📝 Đang lưu chấm công: NV={chamCong.MaNv}, Ngày={chamCong.NgayLamViec}, Giờ vào={chamCong.GioVao}, Giờ ra={chamCong.GioRa}, Tổng giờ={chamCong.TongGio}");
+
                     _context.ChamCongs.Add(chamCong);
                 }
 
@@ -58,8 +71,21 @@ namespace HR_KD.ApiControllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Lỗi Server: {ex}");
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
+        }
+
+        // DTO dùng để nhận dữ liệu từ frontend
+        public class ChamCongDto
+        {
+            public int MaNv { get; set; }
+            public string NgayLamViec { get; set; }
+            public string? GioVao { get; set; }
+            public string? GioRa { get; set; }
+            public decimal? TongGio { get; set; }
+            public string? TrangThai { get; set; }
+            public string? GhiChu { get; set; }
         }
     }
 }

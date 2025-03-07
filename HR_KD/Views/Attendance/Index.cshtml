@@ -69,23 +69,29 @@ document.getElementById("submitAttendance").addEventListener("click", function()
         return;
     }
 
-    let attendanceData = [...selectedWorkDays].map(day => ({
-        MaNV: 1,  
-        NgayLamViec: day, 
-        GioVao: checkIn ? checkIn + ":00" : null,
-        GioRa: checkOut ? checkOut + ":00" : null,
-        TongGio: calculateDailyHours(checkIn, checkOut),
-        TrangThai: "0",
-        GhiChu: note || null
-    }));
+let attendanceData = [...selectedWorkDays].map(day => ({
+    MaNV: 1,
+    NgayLamViec: new Date(day).toISOString().split("T")[0], // yyyy-MM-dd 
+    GioVao: checkIn ? checkIn : null, // Không thêm ":00" 
+    GioRa: checkOut ? checkOut : null, // Không thêm ":00" 
+    TongGio: isNaN(parseFloat(calculateDailyHours(checkIn, checkOut))) ? 0 : parseFloat(calculateDailyHours(checkIn, checkOut)), // Đảm bảo không gửi NaN ✅
+    TrangThai: "0",
+    GhiChu: note || null
+}));
+
+
+
 
     // Ghi log dữ liệu trước khi gửi
     console.log("Dữ liệu gửi đi:", JSON.stringify(attendanceData, null, 2));
 
-    fetch("/api/AttendanceApi", { 
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+    fetch('/api/Attendance/SubmitAttendance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(attendanceData)
+
     })
     .then(response => response.json())
     .then(result => {
@@ -109,11 +115,12 @@ function calculateDailyHours(checkIn, checkOut) {
         const checkOutTime = new Date(`2000-01-01T${checkOut}:00`);
 
         if (checkOutTime > checkInTime) {
-            return ((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2);
+            return parseFloat(((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2));
         }
     }
-    return null;
+    return 0.00; // Đảm bảo không trả về null
 }
+
 
 
 </script>

@@ -17,28 +17,11 @@
 </head>
 
 <body>
-    @* <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        @await Html.PartialAsync("_Sidebar")
-    </div>
-
-    <!-- Navbar -->
-    <div class="header">
-        @await Html.PartialAsync("_Navbar")
-    </div> *@
-
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - HR_KD - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-
     <!-- Thư viện JS -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

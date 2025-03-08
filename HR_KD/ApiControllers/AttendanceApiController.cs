@@ -1,9 +1,12 @@
 ﻿using HR_KD.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+// còn lỗi reload ô thời gian
+// điều kiện không chọn lại tg đã chấm công
 
 namespace HR_KD.ApiControllers
 {
@@ -74,6 +77,25 @@ namespace HR_KD.ApiControllers
                 Console.WriteLine($"❌ Lỗi Server: {ex}");
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
+        }
+        [HttpGet]
+        [Route("GetAttendanceRecords")]
+        public async Task<IActionResult> GetAttendanceRecords(int maNv)
+        {
+            var records = await _context.ChamCongs
+                .Where(c => c.MaNv == maNv)
+                .Select(c => new
+                {
+                    c.NgayLamViec,
+                    GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
+                    GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
+                    c.TongGio,
+                    c.TrangThai,
+                    c.GhiChu
+                })
+                .ToListAsync();
+
+            return Ok(new { success = true, records });
         }
 
         // DTO dùng để nhận dữ liệu từ frontend

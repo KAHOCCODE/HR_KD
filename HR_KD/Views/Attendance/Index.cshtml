@@ -27,11 +27,13 @@
             <input type="time" class="form-control" id="checkOutTime">
         </div>
     </div>
-    <!-- Hiển thị số giờ làm -->
+
+    <!-- Hiển thị tổng số giờ làm -->
     <div class="mt-3">
         <label class="form-label">Tổng số giờ làm trong tuần:</label>
         <input type="text" class="form-control w-50" id="weeklyHours" readonly>
     </div>
+
     <!-- Ghi chú -->
     <div class="mt-3">
         <label class="form-label">Ghi chú</label>
@@ -40,6 +42,20 @@
 
     <!-- Nút gửi dữ liệu -->
     <button class="btn btn-primary mt-3" id="submitAttendance">Chấm công</button>
+    <table class="table mt-3">
+    <thead>
+        <tr>
+            <th>Ngày làm việc</th>
+            <th>Giờ vào</th>
+            <th>Giờ ra</th>
+            <th>Tổng giờ</th>
+            <th>Trạng thái</th>
+            <th>Ghi chú</th>
+        </tr>
+    </thead>
+    <tbody id="attendanceTableBody"></tbody>
+</table>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -53,8 +69,13 @@ flatpickr("#attendanceDateRange", {
     mode: "multiple",
     dateFormat: "Y-m-d",
     onClose: function(selectedDates) {
-        selectedWorkDays = new Set(selectedDates.map(date => date.toISOString().split('T')[0]));
+        selectedWorkDays = new Set(selectedDates.map(date => {
+    let localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().split('T')[0];
+}));
+
         document.getElementById("selectedDates").innerHTML = [...selectedWorkDays].join("<br>");
+        updateTotalHours(); // Cập nhật tổng giờ làm
     }
 });
 
@@ -69,18 +90,15 @@ document.getElementById("submitAttendance").addEventListener("click", function()
         return;
     }
 
-let attendanceData = [...selectedWorkDays].map(day => ({
-    MaNV: 1,
-    NgayLamViec: new Date(day).toISOString().split("T")[0], // yyyy-MM-dd 
-    GioVao: checkIn ? checkIn : null, // Không thêm ":00" 
-    GioRa: checkOut ? checkOut : null, // Không thêm ":00" 
-    TongGio: isNaN(parseFloat(calculateDailyHours(checkIn, checkOut))) ? 0 : parseFloat(calculateDailyHours(checkIn, checkOut)), // Đảm bảo không gửi NaN ✅
-    TrangThai: "0",
-    GhiChu: note || null
-}));
-
-
-
+    let attendanceData = [...selectedWorkDays].map(day => ({
+        MaNV: 1,
+        NgayLamViec: day,
+        GioVao: checkIn || null,
+        GioRa: checkOut || null,
+        TongGio: calculateDailyHours(checkIn, checkOut),
+        TrangThai: "0",
+        GhiChu: note || null
+    }));
 
     // Ghi log dữ liệu trước khi gửi
     console.log("Dữ liệu gửi đi:", JSON.stringify(attendanceData, null, 2));
@@ -91,12 +109,13 @@ let attendanceData = [...selectedWorkDays].map(day => ({
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(attendanceData)
-
     })
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            Swal.fire("Thành công!", "Chấm công đã được ghi nhận.", "success");
+            Swal.fire("Thành công!", "Chấm công đã được ghi nhận.", "success").then(() => {
+                resetForm(); // Reset form sau khi gửi thành công
+            });
         } else {
             Swal.fire("Lỗi!", "Có lỗi xảy ra khi chấm công.", "error");
         }
@@ -106,9 +125,7 @@ let attendanceData = [...selectedWorkDays].map(day => ({
     });
 });
 
-
-
-// Tính số giờ làm
+// Hàm tính số giờ làm
 function calculateDailyHours(checkIn, checkOut) {
     if (checkIn && checkOut) {
         const checkInTime = new Date(`2000-01-01T${checkIn}:00`);
@@ -118,10 +135,71 @@ function calculateDailyHours(checkIn, checkOut) {
             return parseFloat(((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2));
         }
     }
-    return 0.00; // Đảm bảo không trả về null
+    return 0.00;
 }
 
+// Hàm cập nhật tổng số giờ làm
+function updateTotalHours() {
+    let checkIn = document.getElementById("checkInTime").value;
+    let checkOut = document.getElementById("checkOutTime").value;
 
+    let totalHours = [...selectedWorkDays].reduce((sum, day) => {
+        return sum + calculateDailyHours(checkIn, checkOut);
+    }, 0);
+
+    document.getElementById("weeklyHours").value = totalHours.toFixed(2);
+}
+
+// Hàm reset form sau khi gửi thành công
+function resetForm() {
+    document.getElementById("attendanceDateRange").value = "";
+    document.getElementById("selectedDates").innerHTML = "";
+    document.getElementById("checkInTime").value = "";
+    document.getElementById("checkOutTime").value = "";
+    document.getElementById("attendanceNote").value = "";
+    selectedWorkDays.clear();
+    updateTotalHours(); // Cập nhật lại tổng số giờ làm về 0
+    fetchAttendanceRecords(); // Reload lại bảng chấm công
+}
+
+// Lắng nghe thay đổi giờ check-in/check-out để cập nhật tổng giờ làm
+document.getElementById("checkInTime").addEventListener("change", updateTotalHours);
+document.getElementById("checkOutTime").addEventListener("change", updateTotalHours);
+
+// Gọi API để lấy danh sách chấm công
+function fetchAttendanceRecords() {
+    fetch('/api/Attendance/GetAttendanceRecords?maNv=1')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderAttendanceTable(data.records);
+            } else {
+                console.error("Lỗi lấy dữ liệu chấm công.");
+            }
+        })
+        .catch(error => console.error("Lỗi kết nối API:", error));
+}
+
+// Hiển thị bảng chấm công
+function renderAttendanceTable(records) {
+    let tableBody = document.getElementById("attendanceTableBody");
+    tableBody.innerHTML = "";
+
+    records.forEach(record => {
+        let row = `<tr>
+            <td>${record.ngayLamViec}</td>
+            <td>${record.gioVao || "-"}</td>
+            <td>${record.gioRa || "-"}</td>
+            <td>${record.tongGio}</td>
+            <td>${record.trangThai || "-"}</td>
+            <td>${record.ghiChu || "-"}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+    });
+}
+
+// Gọi API khi trang tải xong
+document.addEventListener("DOMContentLoaded", fetchAttendanceRecords);
 
 </script>
 

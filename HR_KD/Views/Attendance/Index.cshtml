@@ -68,16 +68,26 @@ let selectedWorkDays = new Set();
 flatpickr("#attendanceDateRange", {
     mode: "multiple",
     dateFormat: "Y-m-d",
+    disable: [
+        function(date) {
+            return date.getDay() === 0; // Vô hiệu hóa Chủ Nhật
+        }
+    ],
+    locale: {
+        firstDayOfWeek: 1 // Đặt Thứ Hai là ngày đầu tuần
+    },
     onClose: function(selectedDates) {
         selectedWorkDays = new Set(selectedDates.map(date => {
-    let localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().split('T')[0];
-}));
+            let localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return localDate.toISOString().split('T')[0];
+        }));
 
         document.getElementById("selectedDates").innerHTML = [...selectedWorkDays].join("<br>");
         updateTotalHours(); // Cập nhật tổng giờ làm
     }
 });
+
+
 
 // Xử lý gửi dữ liệu chấm công
 document.getElementById("submitAttendance").addEventListener("click", function() {

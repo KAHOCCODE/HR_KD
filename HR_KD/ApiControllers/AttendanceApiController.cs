@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-// còn lỗi reload ô thời gian
-// điều kiện không chọn lại tg đã chấm công
 
 namespace HR_KD.ApiControllers
 {
@@ -35,10 +33,19 @@ namespace HR_KD.ApiControllers
             {
                 foreach (var entry in attendanceData)
                 {
-                    // Kiểm tra ngày làm việc
+                    // Kiểm tra ngày làm việc hợp lệ
                     if (!DateOnly.TryParse(entry.NgayLamViec, out DateOnly ngayLamViec))
                     {
                         return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
+                    }
+
+                    // Kiểm tra nhân viên đã chấm công ngày này chưa
+                    bool daChamCong = await _context.ChamCongs
+                        .AnyAsync(c => c.MaNv == entry.MaNv && c.NgayLamViec == ngayLamViec);
+
+                    if (daChamCong)
+                    {
+                        return BadRequest(new { success = false, message = $"Nhân viên {entry.MaNv} đã chấm công ngày {entry.NgayLamViec}." });
                     }
 
                     //  Kiểm tra giờ vào
@@ -51,7 +58,7 @@ namespace HR_KD.ApiControllers
                         gioRa = parsedGioRa;
 
                     //  Kiểm tra tổng giờ
-                    decimal tongGio = entry.TongGio.HasValue ? entry.TongGio.Value : 0;
+                    decimal tongGio = entry.TongGio ?? 0;
 
                     var chamCong = new ChamCong
                     {
@@ -78,12 +85,21 @@ namespace HR_KD.ApiControllers
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
         }
+
+        // API Lấy dữ liệu chấm công
         [HttpGet]
         [Route("GetAttendanceRecords")]
-        public async Task<IActionResult> GetAttendanceRecords(int maNv)
+        public async Task<IActionResult> GetAttendanceRecords(int maNv, string? ngayLamViec = null)
         {
-            var records = await _context.ChamCongs
-                .Where(c => c.MaNv == maNv)
+            var query = _context.ChamCongs.Where(c => c.MaNv == maNv);
+
+            // Nếu có ngày làm việc, lọc theo ngày
+            if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
+            {
+                query = query.Where(c => c.NgayLamViec == ngay);
+            }
+
+            var records = await query
                 .Select(c => new
                 {
                     c.NgayLamViec,

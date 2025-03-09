@@ -1,0 +1,311 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .dashboard-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .leave-history {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 12px;
+    }
+
+        .leave-history h6 {
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .leave-history table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+            .leave-history table th,
+            .leave-history table td {
+                padding: 12px;
+                background-color: #fff;
+            }
+
+            .leave-history table th {
+                background-color: #e9ecef;
+                font-weight: 600;
+            }
+
+            .leave-history table tr {
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+    .btn-success {
+        background-color: #28a745;
+        border: none;
+        padding: 10px 20px;
+        margin-top: 20px;
+        font-size: 16px;
+        border-radius: 8px;
+    }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+    .form-control,
+    .form-select {
+        border-radius: 8px;
+        padding: 10px;
+        border: 1px solid #ced4da;
+    }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+    .leave-info-card {
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .leave-info-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .leave-info-card h6 {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .leave-info-card p {
+            font-size: 1.25rem;
+            color: #28a745;
+            font-weight: 600;
+            margin-bottom: 0;
+        }
+
+    #selectedDates {
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 14px;
+        color: #495057;
+    }
+
+
+
+</style>
+
+<div id="leaveSection" class="dashboard-card bg-white p-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i>Đăng ký nghỉ phép</h5>
+    <form id="leaveForm">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Loại nghỉ phép</label>
+                <select id="leaveTypeSelect" class="form-select" name="leaveType" required>
+                    <option value="">Chọn loại nghỉ</option>
+                </select>
+                <div id="leaveTypeError" class="text-danger mt-2"></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Chọn Ngày</label>
+                <input type="text" id="datePicker" class="form-control" placeholder="Chọn ngày..." required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày đã chọn</label>
+                <div id="selectedDates" class="form-control" style="height: auto; min-height: 38px;"></div>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Lý do</label>
+                <textarea class="form-control" name="leaveReason" rows="3" placeholder="Nhập lý do..." required></textarea>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-paper-plane me-2"></i>Gửi yêu cầu
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="dashboard-card bg-white p-4 mt-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-info-circle me-2"></i>Thông tin nghỉ phép khả dụng</h5>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="leave-info-card">
+                <h6>Nghỉ phép năm</h6>
+                <p>Số ngày còn lại: <strong>12 ngày</strong></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="leave-history bg-white p-4 mt-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-history me-2"></i>Lịch sử đăng ký nghỉ phép</h5>
+    <table>
+        <thead>
+            <tr>
+                <th>Loại nghỉ</th>
+                <th>Ngày Nghỉ</th>
+                <th>Lý do</th>
+                <th>Trạng thái</th>
+            </tr>
+        </thead> 
+    </table>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const datePicker = flatpickr("#datePicker", {
+            mode: "multiple",
+            dateFormat: "Y-m-d",
+            onClose: function (selectedDates, dateStr, instance) {
+                const selectedDatesDiv = document.getElementById("selectedDates");
+                selectedDatesDiv.innerHTML = selectedDates.map(date => date.toLocaleDateString()).join(", ");
+            }
+        });
+
+        const leaveForm = document.getElementById("leaveForm");
+        leaveForm.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(leaveForm);
+            const leaveType = formData.get("leaveType");
+            const leaveReason = formData.get("leaveReason");
+            const selectedDates = datePicker.selectedDates.map(date => date.toISOString().split('T')[0]);
+
+            if (selectedDates.length === 0) {
+                alert("Vui lòng chọn ít nhất một ngày nghỉ.");
+                return;
+            }
+            if (!leaveType) {
+                alert("Vui lòng chọn loại nghỉ phép.");
+                return;
+            }
+
+            const leaveRequests = selectedDates.map(date => ({
+                MaNv: 1,
+                NgayNghi: date,
+                LyDo: leaveReason,
+                MaLoaiNgayNghi: parseInt(leaveType)
+            }));
+
+            console.log("Dữ liệu gửi lên API:", leaveRequests);
+
+            try {
+                const response = await fetch("/api/Leave/SubmitLeave", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(leaveRequests)
+                });
+
+                const result = await response.json();
+                console.log("Phản hồi từ API:", result);
+
+                if (result.success) {
+                    alert("Đăng ký nghỉ phép thành công!");
+                    leaveForm.reset();
+                    document.getElementById("selectedDates").innerHTML = "";
+                    datePicker.clear();
+                } else {
+                    alert(`Lỗi: ${result.message}`);
+                }
+            } catch (error) {
+                alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+                console.error("Lỗi:", error);
+            }
+        });
+    });
+
+
+    </script>
+<script>
+    document.addEventListener("DOMContentLoaded", async function () {
+        try {
+            // Gọi API để lấy lịch sử nghỉ phép
+            const response = await fetch("/api/Leave/GetLeaveHistory?maNv=1"); // Thay "1" bằng ID nhân viên thực tế của bạn
+            const result = await response.json();
+
+            if (result.success) {
+                const table = document.querySelector(".leave-history table");
+                const tbody = document.createElement("tbody");
+
+                // Duyệt qua từng bản ghi và thêm vào bảng
+                result.leaveHistory.forEach(leave => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                            <td>${leave.MaLoaiNgayNghi === 1 ? "Nghỉ phép năm" : leave.MaLoaiNgayNghi === 2 ? "Nghỉ ốm" : "Nghỉ việc riêng"}</td>
+                            <td>${leave.NgayNghi}</td>
+                            <td>${leave.LyDo || "Không có lý do"}</td>
+                            <td>${leave.TrangThai}</td>
+                        `;
+                    tbody.appendChild(row);
+                });
+
+                // Thêm tbody vào bảng
+                table.appendChild(tbody);
+            } else {
+                alert(`Lỗi: ${result.message}`);
+            }
+        } catch (error) {
+            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+            console.error("Lỗi:", error);
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", async function () {
+        try {
+            const response = await fetch("/api/Leave/GetLeaveTypes");
+            const result = await response.json();
+
+            console.log("Dữ liệu trả về từ API:", result); // Kiểm tra dữ liệu
+
+            if (result && result.success && Array.isArray(result.leaveTypes)) {
+                const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+
+                // Xóa tất cả các option hiện có (trừ option mặc định)
+                leaveTypeSelect.innerHTML = '<option value="">Chọn loại nghỉ</option>';
+
+                // Thêm từng loại nghỉ phép vào select
+                result.leaveTypes.forEach(leaveType => {
+                    const option = document.createElement("option");
+                    option.value = leaveType.maLoaiNgayNghi; // Đảm bảo đúng tên thuộc tính
+                    option.textContent = leaveType.tenLoai;
+                    leaveTypeSelect.appendChild(option);
+                });
+
+                console.log("Số lượng option sau khi thêm:", leaveTypeSelect.options.length); // Kiểm tra số lượng option
+            } else {
+                console.error("Lỗi dữ liệu:", result);
+                alert("Dữ liệu không hợp lệ.");
+            }
+        } catch (error) {
+            console.error("Lỗi hệ thống:", error);
+            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+        }
+    });
+
+</script>
+

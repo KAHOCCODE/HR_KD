@@ -1,14 +1,15 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
+
 <div class="container">
-    <h2 class="mt-4 mb-3">Danh Sách Nhân Viên</h2>
+    <h2 class="mt-4 mb-3 text-center">Quản Lý Nhân Viên</h2>
 
     <!-- Form Thêm Nhân Viên -->
-    <div class="card mb-4">
-        <div class="card-header">Thêm Nhân Viên</div>
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white">Thêm Nhân Viên</div>
         <div class="card-body">
-            <form id="addEmployeeForm">
+            <form id="addEmployeeForm" enctype="multipart/form-data">
                 <div class="row">
                     <div class="col-md-4">
                         <label class="form-label">Họ Tên</label>
@@ -20,7 +21,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Giới Tính</label>
-                        <select class="form-control" id="gioiTinh">
+                        <select class="form-select" id="gioiTinh">
                             <option value="true">Nam</option>
                             <option value="false">Nữ</option>
                         </select>
@@ -44,12 +45,19 @@
 
                 <div class="row mt-3">
                     <div class="col-md-6">
-                        <label class="form-label">Mã Phòng Ban</label>
-                        <input type="number" class="form-control" id="maPhongBan" required>
+                        <label class="form-label">Phòng Ban</label>
+                        <select class="form-select" id="maPhongBan"></select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Mã Chức Vụ</label>
-                        <input type="number" class="form-control" id="maChucVu" required>
+                        <label class="form-label">Chức Vụ</label>
+                        <select class="form-select" id="maChucVu"></select>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Ảnh Đại Diện</label>
+                        <input type="file" class="form-control" id="avatar">
                     </div>
                 </div>
 
@@ -59,35 +67,61 @@
     </div>
 
     <!-- Danh Sách Nhân Viên -->
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Họ Tên</th>
-                <th>Ngày Sinh</th>
-                <th>Giới Tính</th>
-                <th>SĐT</th>
-                <th>Email</th>
-                <th>Hành Động</th>
-            </tr>
-        </thead>
-        <tbody id="employeeTable">
-            <!-- Dữ liệu sẽ được tải từ API -->
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Ảnh</th>
+                    <th>ID</th>
+                    <th>Họ Tên</th>
+                    <th>Ngày Sinh</th>
+                    <th>Giới Tính</th>
+                    <th>SĐT</th>
+                    <th>Email</th>
+                    <th>Phòng Ban</th>
+                    <th>Chức Vụ</th>
+                    <th>Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="employeeTable">
+                <!-- Dữ liệu sẽ được tải từ API -->
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         loadEmployees();
+        loadDropdowns();
 
-        // Xử lý sự kiện submit form thêm nhân viên
         document.getElementById("addEmployeeForm").addEventListener("submit", function (event) {
             event.preventDefault();
             addEmployee();
         });
     });
+
+    function loadDropdowns() {
+        fetch("/api/PhongBan")
+            .then(response => response.json())
+            .then(data => {
+                let options = "";
+                data.forEach(pb => {
+                    options += `<option value="${pb.id}">${pb.tenPhongBan}</option>`;
+                });
+                document.getElementById("maPhongBan").innerHTML = options;
+            });
+
+        fetch("/api/ChucVu")
+            .then(response => response.json())
+            .then(data => {
+                let options = "";
+                data.forEach(cv => {
+                    options += `<option value="${cv.id}">${cv.tenChucVu}</option>`;
+                });
+                document.getElementById("maChucVu").innerHTML = options;
+            });
+    }
 
     function loadEmployees() {
         fetch('/api/EmployeesApi')
@@ -97,12 +131,15 @@
                 data.forEach(employee => {
                     tableContent += `
                             <tr>
+                                <td><img src="${employee.avatarUrl}" class="rounded-circle" width="50"></td>
                                 <td>${employee.maNv}</td>
                                 <td>${employee.hoTen}</td>
                                 <td>${employee.ngaySinh}</td>
                                 <td>${employee.gioiTinh}</td>
                                 <td>${employee.sdt}</td>
                                 <td>${employee.email}</td>
+                                <td>${employee.tenPhongBan}</td>
+                                <td>${employee.tenChucVu}</td>
                                 <td>
                                     <button class="btn btn-danger btn-sm" onclick="deleteEmployee(${employee.maNv})">
                                         <i class="fa fa-trash"></i> Xóa
@@ -116,59 +153,29 @@
     }
 
     function addEmployee() {
-        let employeeData = {
-            hoTen: document.getElementById("hoTen").value,
-            ngaySinh: document.getElementById("ngaySinh").value,
-            gioiTinh: document.getElementById("gioiTinh").value === "true",
-            sdt: document.getElementById("sdt").value,
-            email: document.getElementById("email").value,
-            trinhDoHocVan: document.getElementById("trinhDoHocVan").value,
-            maPhongBan: parseInt(document.getElementById("maPhongBan").value),
-            maChucVu: parseInt(document.getElementById("maChucVu").value)
-        };
+        let formData = new FormData();
+        formData.append("hoTen", document.getElementById("hoTen").value);
+        formData.append("ngaySinh", document.getElementById("ngaySinh").value);
+        formData.append("gioiTinh", document.getElementById("gioiTinh").value === "true");
+        formData.append("sdt", document.getElementById("sdt").value);
+        formData.append("email", document.getElementById("email").value);
+        formData.append("trinhDoHocVan", document.getElementById("trinhDoHocVan").value);
+        formData.append("maPhongBan", document.getElementById("maPhongBan").value);
+        formData.append("maChucVu", document.getElementById("maChucVu").value);
+        formData.append("avatar", document.getElementById("avatar").files[0]);
 
         fetch("/api/EmployeesApi", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(employeeData)
+            body: formData
         })
-            .then(response => {
-                if (response.ok) {
-                    Swal.fire("Thành công!", "Nhân viên đã được thêm.", "success");
-                    loadEmployees();  // Cập nhật danh sách
-                    document.getElementById("addEmployeeForm").reset();
-                } else {
-                    Swal.fire("Lỗi!", "Không thể thêm nhân viên.", "error");
-                }
+            .then(response => response.json())
+            .then(data => {
+                Swal.fire("Thành công!", "Nhân viên đã được thêm.", "success");
+                loadEmployees();
+                document.getElementById("addEmployeeForm").reset();
             })
             .catch(error => {
-                Swal.fire("Lỗi!", "Hệ thống gặp vấn đề.", "error");
-                console.error("Lỗi khi thêm nhân viên:", error);
+                Swal.fire("Lỗi!", "Không thể thêm nhân viên.", "error");
             });
-    }
-
-    function deleteEmployee(id) {
-        Swal.fire({
-            title: "Bạn có chắc muốn xóa?",
-            text: "Dữ liệu sẽ không thể khôi phục!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Xóa",
-            cancelButtonText: "Hủy"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`/api/EmployeesApi/${id}`, { method: "DELETE" })
-                    .then(response => {
-                        if (response.ok) {
-                            Swal.fire("Xóa thành công!", "", "success");
-                            loadEmployees();
-                        } else {
-                            Swal.fire("Lỗi khi xóa!", "", "error");
-                        }
-                    });
-            }
-        });
     }
 </script>

@@ -35,7 +35,25 @@
     <script src="~/js/chart.bundle.js"></script>
     <script src="~/js/chart.js"></script>
     <script src="~/js/app.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('.submenu > a').click(function (e) {
+                e.preventDefault();
+                var $parent = $(this).parent();
+                var $submenu = $parent.find('ul');
 
+                if ($submenu.is(':visible')) {
+                    $submenu.slideUp();
+                    $parent.removeClass('active');
+                } else {
+                    $('.submenu ul').slideUp();
+                    $('.submenu').removeClass('active');
+                    $submenu.slideDown();
+                    $parent.addClass('active');
+                }
+            });
+        });
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

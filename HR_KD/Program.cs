@@ -2,6 +2,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<EmailService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

@@ -25,6 +25,8 @@ public partial class NhanVien
 
     public int MaChucVu { get; set; }
 
+    public string? AvatarUrl { get; set; }
+
     public virtual ICollection<BangLuong> BangLuongs { get; set; } = new List<BangLuong>();
 
     public virtual ICollection<ChamCong> ChamCongs { get; set; } = new List<ChamCong>();

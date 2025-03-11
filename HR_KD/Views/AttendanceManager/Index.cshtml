@@ -1,0 +1,133 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+<div id="attendanceSection" class="dashboard-card bg-white p-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-fingerprint me-2"></i> Chấm công</h5>
+
+    <!-- Bộ lọc -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Chọn phòng ban</label>
+            <select class="form-control" id="departmentFilter">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Chọn chức vụ</label>
+            <select class="form-control" id="positionFilter">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Chọn nhân viên</label>
+            <select class="form-control" id="employeeFilter">
+                <option value="">Chọn nhân viên</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Bảng chấm công -->
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Ngày làm việc</th>
+                <th>Giờ vào</th>
+                <th>Giờ ra</th>
+                <th>Tổng giờ</th>
+                <th>Trạng thái</th>
+                <th>Ghi chú</th>
+                <th>Duyệt</th>
+            </tr>
+        </thead>
+        <tbody id="attendanceTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    loadDepartments();
+    loadPositions();
+
+    document.getElementById("departmentFilter").addEventListener("change", loadEmployees);
+    document.getElementById("positionFilter").addEventListener("change", loadEmployees);
+    document.getElementById("employeeFilter").addEventListener("change", function () {
+        if (this.value) fetchAttendanceRecords(this.value);
+    });
+});
+
+function loadDepartments() {
+    fetch("/api/AttendanceManager/GetDepartmentsManager")
+        .then(response => response.json())
+        .then(data => {
+            let select = document.getElementById("departmentFilter");
+            select.innerHTML = '<option value="">Tất cả</option>';
+            data.forEach(pb => select.innerHTML += `<option value="${pb.maPhongBan}">${pb.tenPhongBan}</option>`);
+        });
+}
+
+function loadPositions() {
+    fetch("/api/AttendanceManager/GetPositionsManager")
+        .then(response => response.json())
+        .then(data => {
+            let select = document.getElementById("positionFilter");
+            select.innerHTML = '<option value="">Tất cả</option>';
+            data.forEach(cv => select.innerHTML += `<option value="${cv.maChucVu}">${cv.tenChucVu}</option>`);
+        });
+}
+
+function loadEmployees() {
+    let maPhongBan = document.getElementById("departmentFilter").value;
+    let maChucVu = document.getElementById("positionFilter").value;
+
+    fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${maPhongBan}&maChucVu=${maChucVu}`)
+        .then(response => response.json())
+        .then(data => {
+            let select = document.getElementById("employeeFilter");
+            select.innerHTML = '<option value="">Chọn nhân viên</option>';
+            data.forEach(nv => select.innerHTML += `<option value="${nv.maNv}">${nv.hoTen}</option>`);
+        });
+}
+
+function fetchAttendanceRecords(maNv) {
+    fetch(`/api/AttendanceManager/GetAttendanceManagerRecords?maNv=${maNv}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) renderAttendanceTable(data.records);
+        });
+}
+
+function renderAttendanceTable(records) {
+    let tableBody = document.getElementById("attendanceTableBody");
+    tableBody.innerHTML = records.map(record => `
+        <tr>
+            <td>${record.ngayLamViec}</td>
+            <td>${record.gioVao || "-"}</td>
+            <td>${record.gioRa || "-"}</td>
+            <td>${record.tongGio}</td>
+            <td class="${getStatusClass(record.trangThai)}">${record.trangThai || "Chờ duyệt"}</td>
+            <td>${record.ghiChu || "-"}</td>
+            <td>
+                <button class="btn btn-success btn-sm" onclick="approveAttendance(${record.maChamCong}, 'Duyệt')">✔</button>
+                <button class="btn btn-danger btn-sm" onclick="approveAttendance(${record.maChamCong}, 'Từ chối')">✖</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+function getStatusClass(status) {
+    return status === "Duyệt" ? "text-success" : status === "Từ chối" ? "text-danger" : "text-warning";
+}
+
+function approveAttendance(maChamCong, trangThai) {
+    fetch("/api/AttendanceManager/ApproveAttendanceManager", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maChamCong, trangThai })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        fetchAttendanceRecords(document.getElementById("employeeFilter").value);
+    });
+}
+</script>

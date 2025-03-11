@@ -1,0 +1,169 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<div class="container">
+    <h2 class="mt-4 mb-3 text-center">Thêm Nhân Viên</h2>
+    <form id="createEmployeeForm">
+        <div class="mb-3">
+            <label class="form-label">Họ và Tên</label>
+            <input type="text" class="form-control" id="HoTen" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Ngày Sinh</label>
+            <input type="date" class="form-control" id="NgaySinh" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Giới Tính</label>
+            <select class="form-control" id="GioiTinh" required>
+                <option value="">-- Chọn giới tính --</option>
+                <option value="true">Nam</option>
+                <option value="false">Nữ</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Địa Chỉ</label>
+            <input type="text" class="form-control" id="DiaChi" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Số Điện Thoại</label>
+            <input type="text" class="form-control" id="Sdt" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="Email" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Trình Độ Học Vấn</label>
+            <input type="text" class="form-control" id="TrinhDoHocVan" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Chức Vụ</label>
+            <select id="MaChucVu" class="form-control" required></select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Phòng Ban</label>
+            <select id="MaPhongBan" class="form-control" required></select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Ảnh Đại Diện</label>
+            <input type="file" class="form-control" id="Avatar" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Thêm Nhân Viên</button>
+    </form>
+</div>
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            // Load danh sách chức vụ
+            $.get("/api/ChucVuApi", function (data) {
+                let dropdown = $("#MaChucVu");
+                dropdown.append('<option value="">-- Chọn chức vụ --</option>');
+                data.forEach(item => {
+                    dropdown.append(`<option value="${item.maChucVu}">${item.tenChucVu}</option>`);
+                });
+            });
+
+            // Load danh sách phòng ban
+            $.get("/api/PhongBanApi", function (data) {
+                let dropdown = $("#MaPhongBan");
+                dropdown.append('<option value="">-- Chọn phòng ban --</option>');
+                data.forEach(item => {
+                    dropdown.append(`<option value="${item.maPhongBan}">${item.tenPhongBan}</option>`);
+                });
+            });
+
+            // Gửi dữ liệu lên API khi submit form
+            $("#createEmployeeForm").submit(function (e) {
+                e.preventDefault();
+
+                let formData = new FormData();
+                formData.append("HoTen", $("#HoTen").val());
+                formData.append("NgaySinh", $("#NgaySinh").val());
+                formData.append("GioiTinh", $("#GioiTinh").val());
+                formData.append("DiaChi", $("#DiaChi").val());
+                formData.append("Sdt", $("#Sdt").val());
+                formData.append("Email", $("#Email").val());
+                formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
+                formData.append("MaChucVu", $("#MaChucVu").val());
+                formData.append("MaPhongBan", $("#MaPhongBan").val());
+                let avatar = $("#Avatar")[0].files[0];
+                if (avatar) {
+                    formData.append("Avatar", avatar);
+                }
+
+                // Kiểm tra dữ liệu trước khi gửi
+                let requiredFields = [
+                    { id: "HoTen", name: "Họ và Tên" },
+                    { id: "NgaySinh", name: "Ngày Sinh" },
+                    { id: "GioiTinh", name: "Giới Tính" },
+                    { id: "DiaChi", name: "Địa Chỉ" },
+                    { id: "Sdt", name: "Số Điện Thoại" },
+                    { id: "Email", name: "Email" },
+                    { id: "TrinhDoHocVan", name: "Trình Độ Học Vấn" },
+                    { id: "MaChucVu", name: "Chức Vụ" },
+                    { id: "MaPhongBan", name: "Phòng Ban" }
+                ];
+
+                for (let field of requiredFields) {
+                    if (!$("#" + field.id).val()) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Thiếu thông tin",
+                            text: `Vui lòng nhập ${field.name}!`
+                        });
+                        return;
+                    }
+                }
+
+                $.ajax({
+                    url: "/api/EmployeesApi/CreateEmployee",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (response) {
+                        Swal.fire({
+                            icon: "success",
+                            title: "Thành công!",
+                            text: "Nhân viên đã được thêm thành công!",
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr) {
+                        console.log(xhr);
+
+                        let errorMessage = "Lỗi không xác định!";
+                        if (xhr.responseJSON) {
+                            console.log(xhr.responseJSON); 
+                        }
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi!",
+                            text: errorMessage
+                        });
+                    }
+
+                });
+            });
+        });
+    </script>
+}

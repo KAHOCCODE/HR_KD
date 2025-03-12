@@ -18,6 +18,8 @@ namespace HR_KD.ApiControllers
         {
             _context = context;
         }
+
+        // đăng ký nghỉ phép
         [HttpPost]
         [Route("SubmitLeave")]
         public async Task<IActionResult> SubmitLeave([FromBody] List<LeaveRequestDto> leaveRequests)
@@ -65,26 +67,30 @@ namespace HR_KD.ApiControllers
             }
         }
 
-        // API Lấy lịch sử đăng ký nghỉ phép
         [HttpGet]
         [Route("GetLeaveHistory")]
         public async Task<IActionResult> GetLeaveHistory(int maNv)
         {
             var leaveHistory = await _context.NgayNghis
-                .Where(n => n.MaNv == maNv) // Sửa từ MaNV thành MaNv
-                .Select(n => new
-                {
-                    NgayNghi = n.NgayNghi1, // Sửa từ NgayNghi thành NgayNghi1
-                    n.LyDo,
-                    n.TrangThai,
-                    n.MaLoaiNgayNghi
-                })
+                .Where(n => n.MaNv == maNv)
+                .Join(_context.LoaiNgayNghis,
+                      n => n.MaLoaiNgayNghi,
+                      l => l.MaLoaiNgayNghi,
+                      (n, l) => new
+                      {
+                          n.MaLoaiNgayNghi,
+                          TenLoai = l.TenLoai,
+                          NgayNghi = n.NgayNghi1.ToString("yyyy-MM-dd"), // ✅ Chuyển về YYYY-MM-DD
+                          n.LyDo,
+                          n.TrangThai
+                      })
                 .ToListAsync();
 
             return Ok(new { success = true, leaveHistory });
         }
 
 
+        // APi loại nghỉ phép
         [HttpGet]
         [Route("GetLeaveTypes")]
         public async Task<IActionResult> GetLeaveTypes()

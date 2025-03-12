@@ -2,6 +2,11 @@
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css">
+
 <style>
     .dashboard-card {
         border-radius: 12px;
@@ -108,6 +113,98 @@
         color: #495057;
     }
 
+    .status {
+
+        font-weight: bold;
+        display: inline-block;
+        width: 100%; /* Chiếm toàn bộ chiều rộng của ô */
+        height: 100%; /* Chiếm toàn bộ chiều cao của ô */
+        text-align: center; /* Căn giữa nội dung */
+    }
+
+    .bg-warning-subtle {
+        background-color: rgba(255, 193, 7, 0.2);
+    }
+
+    .bg-success-subtle {
+        background-color: rgba(40, 167, 69, 0.2);
+    }
+
+    .bg-danger-subtle {
+        background-color: rgba(220, 53, 69, 0.2);
+    }
+    /* Điều chỉnh chiều rộng và style cho dropdown */
+    #sortDropdown {
+        width: 250px; /* Điều chỉnh chiều rộng */
+        padding: 8px 12px; /* Thêm padding */
+        border: 1px solid #ccc; /* Thêm border */
+        border-radius: 4px; /* Bo góc */
+        font-size: 14px; /* Điều chỉnh kích thước font */
+        background-color: #f9f9f9; /* Màu nền */
+        transition: border-color 0.3s ease; /* Hiệu ứng hover */
+    }
+
+        #sortDropdown:hover {
+            border-color: #888; /* Đổi màu border khi hover */
+        }
+
+        #sortDropdown:focus {
+            outline: none; /* Loại bỏ outline khi focus */
+            border-color: #007bff; /* Đổi màu border khi focus */
+        }
+    /* Điều chỉnh vị trí của pagination */
+    .pagination {
+        display: flex;
+        justify-content: center; /* Căn giữa theo chiều ngang */
+        align-items: center; /* Căn giữa theo chiều dọc */
+        margin-top: 20px; /* Thêm khoảng cách phía trên */
+    }
+
+        /* Điều chỉnh khoảng cách giữa các button */
+        .pagination button {
+            margin: 0 5px; /* Thêm khoảng cách giữa các button */
+        }
+    /* Điều chỉnh vị trí của pagination */
+    .pagination {
+        display: flex;
+        justify-content: center; /* Căn giữa theo chiều ngang */
+        align-items: center; /* Căn giữa theo chiều dọc */
+        margin-top: 20px; /* Thêm khoảng cách phía trên */
+    }
+
+        /* Điều chỉnh khoảng cách giữa các button */
+        .pagination button {
+            margin: 0 5px; /* Thêm khoảng cách giữa các button */
+        }
+    /* Căn giữa nội dung trong các thẻ <th> và <td> */
+    .table th,
+    .table td {
+        text-align: center; /* Căn giữa theo chiều ngang */
+        vertical-align: middle; /* Căn giữa theo chiều dọc */
+    }
+
+    /* Tùy chỉnh style cho bảng */
+    .table {
+        width: 100%; /* Chiều rộng bảng */
+        border-collapse: collapse; /* Gộp border */
+        margin-top: 20px; /* Thêm khoảng cách phía trên */
+    }
+
+        .table th {
+            background-color: #f2f2f2; /* Màu nền header */
+            font-weight: bold; /* Đậm chữ */
+        }
+
+        .table td {
+            border: 1px solid #ddd; /* Thêm border cho các ô */
+            padding: 10px; /* Thêm padding */
+        }
+
+        /* Hiệu ứng hover cho các hàng */
+        .table tbody tr:hover {
+            background-color: #f5f5f5; /* Đổi màu nền khi hover */
+        }
+
 
 
 </style>
@@ -159,19 +256,36 @@
 
 <div class="leave-history bg-white p-4 mt-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-history me-2"></i>Lịch sử đăng ký nghỉ phép</h5>
-    <table>
+    <div class="mb-3">
+        <label for="sortDropdown">Sắp xếp theo:</label>
+        <select id="sortDropdown" class="form-select">
+            <option value="dateDesc">Sắp xếp theo ngày gần nhất</option>
+            <option value="pending">Chờ duyệt</option>
+            <option value="approved">Đã duyệt</option>
+            <option value="rejected">Từ chối</option>
+        </select>
+    </div>
+        <table class="table table-bordered">
         <thead>
             <tr>
                 <th>Loại nghỉ</th>
-                <th>Ngày Nghỉ</th>
+                <th>Ngày nghỉ</th>
                 <th>Lý do</th>
                 <th>Trạng thái</th>
             </tr>
-        </thead> 
+        </thead>
+        <tbody id="leaveHistoryBody"></tbody>
     </table>
+    <div class="pagination">
+        <button id="prevPage" class="btn btn-secondary">Previous</button>
+        <span id="pageInfo" class="mx-2"></span>
+        <button id="nextPage" class="btn btn-secondary">Next</button>
+    </div>
+
 </div>
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
     <script>
     document.addEventListener("DOMContentLoaded", function () {
         const datePicker = flatpickr("#datePicker", {
@@ -239,42 +353,151 @@
 
 
     </script>
-<script>
+
+
+<script> //Hiển thị lịch sử đăng ký nghỉ phép
     document.addEventListener("DOMContentLoaded", async function () {
-        try {
-            // Gọi API để lấy lịch sử nghỉ phép
-            const response = await fetch("/api/Leave/GetLeaveHistory?maNv=1"); // Thay "1" bằng ID nhân viên thực tế của bạn
-            const result = await response.json();
+        const maNv = 1; // Thay bằng mã nhân viên thực tế
+        let leaveHistory = [];
+        let currentPage = 1;
+        const itemsPerPage = 5;
 
-            if (result.success) {
-                const table = document.querySelector(".leave-history table");
-                const tbody = document.createElement("tbody");
-
-                // Duyệt qua từng bản ghi và thêm vào bảng
-                result.leaveHistory.forEach(leave => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                            <td>${leave.MaLoaiNgayNghi === 1 ? "Nghỉ phép năm" : leave.MaLoaiNgayNghi === 2 ? "Nghỉ ốm" : "Nghỉ việc riêng"}</td>
-                            <td>${leave.NgayNghi}</td>
-                            <td>${leave.LyDo || "Không có lý do"}</td>
-                            <td>${leave.TrangThai}</td>
-                        `;
-                    tbody.appendChild(row);
-                });
-
-                // Thêm tbody vào bảng
-                table.appendChild(tbody);
-            } else {
-                alert(`Lỗi: ${result.message}`);
+        // Hàm để lấy dữ liệu từ API
+        async function fetchLeaveHistory() {
+            try {
+                const response = await fetch(`/api/Leave/GetLeaveHistory?maNv=${maNv}`);
+                if (!response.ok) {
+                    throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
+                }
+                const result = await response.json();
+                if (result && result.success && Array.isArray(result.leaveHistory)) {
+                    leaveHistory = result.leaveHistory;
+                    renderTable();
+                } else {
+                    console.error("Lỗi dữ liệu:", result);
+                    displayError("Không có dữ liệu");
+                }
+            } catch (error) {
+                console.error("Lỗi hệ thống:", error);
+                displayError("Lỗi hệ thống. Vui lòng thử lại.");
             }
-        } catch (error) {
-            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
-            console.error("Lỗi:", error);
         }
+
+        // Hàm để hiển thị bảng
+        function renderTable() {
+            const leaveHistoryBody = document.getElementById("leaveHistoryBody");
+            if (!leaveHistoryBody) {
+                throw new Error("Không tìm thấy phần tử leaveHistoryBody trong DOM.");
+            }
+            leaveHistoryBody.innerHTML = "";
+
+            const sortedData = sortData(leaveHistory);
+            const paginatedData = paginateData(sortedData, currentPage, itemsPerPage);
+
+            paginatedData.forEach(item => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.tenLoai || "Không xác định"}</td>
+                    <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                    <td>${item.lyDo || "Không có lý do"}</td>
+                    <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                `;
+                leaveHistoryBody.appendChild(row);
+            });
+
+            updatePageInfo();
+        }
+
+        // Hàm để sắp xếp dữ liệu
+        function sortData(data) {
+            const sortBy = document.getElementById("sortDropdown").value;
+            switch (sortBy) {
+                case "dateDesc":
+                    return data.sort((a, b) => new Date(b.ngayNghi) - new Date(a.ngayNghi));
+                case "pending":
+                    return data.sort((a, b) => a.trangThai === "Chờ duyệt" ? -1 : 1);
+                case "approved":
+                    return data.sort((a, b) => a.trangThai === "Đã duyệt" ? -1 : 1);
+                case "rejected":
+                    return data.sort((a, b) => a.trangThai === "Từ chối" ? -1 : 1);
+                default:
+                    return data;
+            }
+        }
+
+        // Hàm để phân trang dữ liệu
+        function paginateData(data, page, itemsPerPage) {
+            const startIndex = (page - 1) * itemsPerPage;
+            return data.slice(startIndex, startIndex + itemsPerPage);
+        }
+
+        // Hàm để cập nhật thông tin trang
+        function updatePageInfo() {
+            const totalPages = Math.ceil(leaveHistory.length / itemsPerPage);
+            document.getElementById("pageInfo").textContent = `Trang ${currentPage} / ${totalPages}`;
+        }
+
+        // Hàm để hiển thị lỗi
+        function displayError(message) {
+            const leaveHistoryBody = document.getElementById("leaveHistoryBody");
+            if (leaveHistoryBody) {
+                leaveHistoryBody.innerHTML = `<tr><td colspan='4' class='text-danger'>${message}</td></tr>`;
+            }
+        }
+
+        // Event listener cho dropdown sắp xếp
+        document.getElementById("sortDropdown").addEventListener("change", () => {
+            currentPage = 1;
+            renderTable();
+        });
+
+        // Event listener cho nút Previous
+        document.getElementById("prevPage").addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+
+        // Event listener cho nút Next
+        document.getElementById("nextPage").addEventListener("click", () => {
+            const totalPages = Math.ceil(leaveHistory.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+
+        // Hàm để xác định lớp CSS dựa trên trạng thái
+        function getStatusClass(status) {
+            if (!status) return "";
+            const normalizedStatus = status.trim().toLowerCase();
+            switch (normalizedStatus) {
+                case "chờ duyệt": return "text-warning bg-warning-subtle";
+                case "đã duyệt": return "text-success bg-success-subtle";
+                case "từ chối": return "text-danger bg-danger-subtle";
+                default: return "";
+            }
+        }
+
+        // Hàm để định dạng ngày
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return "Không xác định";
+            return date.toISOString().split("T")[0]; // Format thành YYYY-MM-DD
+        }
+
+        // Khởi tạo
+        fetchLeaveHistory();
     });
+
+
 </script>
 
-<script>
+
+
+<script>// lấy loại ngày nghỉ
     document.addEventListener("DOMContentLoaded", async function () {
         try {
             const response = await fetch("/api/Leave/GetLeaveTypes");

@@ -1,0 +1,92 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="text-primary">Quản lý Ngày Lễ</h2>
+
+    <form id="holidayForm">
+        <div class="mb-3">
+            <label class="form-label">Tên Ngày Lễ</label>
+            <input type="text" class="form-control" id="tenNgayLe" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ngày Lễ</label>
+            <input type="date" class="form-control" id="ngayLe" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Số Ngày Nghỉ</label>
+            <input type="number" class="form-control" id="soNgayNghi" min="0">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mô Tả</label>
+            <textarea class="form-control" id="moTa"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary" id="saveHoliday">Lưu Ngày Lễ</button>
+    </form>
+
+    <h3 class="mt-4">Danh Sách Ngày Lễ</h3>
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên Ngày Lễ</th>
+                <th>Ngày</th>
+                <th>Số Ngày Nghỉ</th>
+                <th>Mô Tả</th>
+            </tr>
+        </thead>
+        <tbody id="holidayTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+document.getElementById("saveHoliday").addEventListener("click", function() {
+    const tenNgayLe = document.getElementById("tenNgayLe").value.trim();
+    const ngayLe = document.getElementById("ngayLe").value;
+    const soNgayNghi = document.getElementById("soNgayNghi").value || null;
+    const moTa = document.getElementById("moTa").value.trim();
+
+    if (!tenNgayLe || !ngayLe) {
+        alert("Vui lòng nhập đầy đủ thông tin.");
+        return;
+    }
+
+    const data = { TenNgayLe: tenNgayLe, NgayLe1: ngayLe, SoNgayNghi: soNgayNghi, MoTa: moTa };
+
+    fetch('/api/Holidays/Add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(response => response.json())
+      .then(result => {
+          if (result.success) {
+              alert("Thêm ngày lễ thành công!");
+              fetchHolidays();
+          } else {
+              alert("Lỗi khi thêm ngày lễ.");
+          }
+      });
+});
+
+function fetchHolidays() {
+    fetch('/api/Holidays/GetAll')
+        .then(response => response.json())
+        .then(data => {
+            let tableBody = document.getElementById("holidayTableBody");
+            tableBody.innerHTML = "";
+            data.forEach(h => {
+                let row = `<tr>
+                    <td>${h.maNgayLe}</td>
+                    <td>${h.tenNgayLe}</td>
+                    <td>${h.ngayLe1}</td>
+                    <td>${h.soNgayNghi || '-'}</td>
+                    <td>${h.moTa || '-'}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        });
+}
+
+document.addEventListener("DOMContentLoaded", fetchHolidays);
+</script>

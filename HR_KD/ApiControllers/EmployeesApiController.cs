@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.CodeAnalysis.Scripting;
 using HR_KD.DTOs;
+using System.IO;
 
 namespace HR_KD.ApiControllers
 {
@@ -21,7 +21,6 @@ namespace HR_KD.ApiControllers
             _emailService = emailService;
         }
 
-        #region Lấy danh sách nhân viên
         [HttpGet]
         public IActionResult GetEmployees()
         {
@@ -44,15 +43,16 @@ namespace HR_KD.ApiControllers
                 .ToList();
             return Ok(employees);
         }
-        #endregion
 
-        #region Thêm nhân viên
         [HttpPost("CreateEmployee")]
         public IActionResult CreateEmployee([FromForm] CreateEmployeeDTO employeeDto)
         {
-            if (employeeDto == null)
+            if (!ModelState.IsValid)
             {
-                return BadRequest("Dữ liệu không hợp lệ.");
+                var errors = ModelState.Values.SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(new { message = string.Join(" | ", errors) });
             }
 
             using (var transaction = _context.Database.BeginTransaction())
@@ -63,7 +63,17 @@ namespace HR_KD.ApiControllers
                     var existingAccount = _context.TaiKhoans.FirstOrDefault(t => t.Username == employeeDto.Sdt);
                     if (existingAccount != null)
                     {
-                        return Conflict("Số điện thoại đã được sử dụng.");
+                        return Conflict(new { message = "Số điện thoại đã được sử dụng." });
+                    }
+
+                    // Kiểm tra MaPhongBan và MaChucVu
+                    if (!_context.PhongBans.Any(p => p.MaPhongBan == employeeDto.MaPhongBan))
+                    {
+                        return BadRequest(new { message = "Phòng ban không tồn tại." });
+                    }
+                    if (!_context.ChucVus.Any(c => c.MaChucVu == employeeDto.MaChucVu))
+                    {
+                        return BadRequest(new { message = "Chức vụ không tồn tại." });
                     }
 
                     // Tạo nhân viên mới
@@ -80,14 +90,18 @@ namespace HR_KD.ApiControllers
                         MaChucVu = employeeDto.MaChucVu
                     };
 
-                    // Lưu nhân viên vào database trước
                     _context.NhanViens.Add(employee);
                     _context.SaveChanges();
 
-                    // Lấy ID nhân viên vừa tạo
                     int maNvMoi = employee.MaNv;
 
-                    // Tạo tài khoản cho nhân viên mới
+                    // Kiểm tra MaQuyenHan
+                    string maQuyenHan = "STAFF"; // Thay bằng giá trị thực tế từ QuyenHan
+                    if (!_context.QuyenHans.Any(q => q.MaQuyenHan == maQuyenHan))
+                    {
+                        return BadRequest(new { message = $"Mã quyền hạn '{maQuyenHan}' không tồn tại trong bảng QuyenHan." });
+                    }
+
                     string defaultPassword = "123456";
                     string hashedPassword = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
 
@@ -95,42 +109,71 @@ namespace HR_KD.ApiControllers
                     {
                         Username = employeeDto.Sdt,
                         PasswordHash = hashedPassword,
-                        MaQuyenHan = "EMPLOYEE",
-                        MaNv = maNvMoi // Gán ID nhân viên vào tài khoản
+                        MaQuyenHan = maQuyenHan,
+                        MaNv = maNvMoi
                     };
 
                     _context.TaiKhoans.Add(taiKhoan);
                     _context.SaveChanges();
 
-                    // Gửi email thông tin tài khoản
+                    // Xử lý ảnh đại diện (nếu có)
+                    if (employeeDto.AvatarUrl != null)
+                    {
+                        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars");
+                        if (!Directory.Exists(basePath))
+                        {
+                            Directory.CreateDirectory(basePath); // Tạo thư mục nếu chưa tồn tại
+                        }
+                        var fileName = $"{maNvMoi}_{Path.GetFileName(employeeDto.AvatarUrl.FileName)}";
+                        var filePath = Path.Combine(basePath, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            employeeDto.AvatarUrl.CopyTo(stream);
+                        }
+                        // Lưu đường dẫn vào database nếu cần (cần thêm trường AvatarUrl trong NhanVien)
+                    }
+
                     string subject = "Thông tin tài khoản nhân viên";
                     string body = $@"
-                <h3>Chào {employeeDto.HoTen},</h3>
-                <p>Bạn đã được tạo tài khoản nhân viên.</p>
-                <p><strong>Tài khoản:</strong> {taiKhoan.Username}</p>
-                <p><strong>Mật khẩu:</strong> {defaultPassword}</p>
-                <p>Vui lòng đăng nhập và đổi mật khẩu ngay.</p>";
+                        <h3>Chào {employeeDto.HoTen},</h3>
+                        <p>Bạn đã được tạo tài khoản nhân viên.</p>
+                        <p><strong>Tài khoản:</strong> {taiKhoan.Username}</p>
+                        <p><strong>Mật khẩu:</strong> {defaultPassword}</p>
+                        <p>Vui lòng đăng nhập và đổi mật khẩu ngay.</p>";
 
-                    try
-                    {
-                        _emailService.SendEmail(employeeDto.Email, subject, body);
-                    }
-                    catch (Exception emailEx)
-                    {
-                        transaction.Rollback();
-                        return StatusCode(500, "Lỗi khi gửi email: " + emailEx.Message);
-                    }
+                    _emailService.SendEmail(employeeDto.Email, subject, body);
 
                     transaction.Commit();
-                    return CreatedAtAction(nameof(GetEmployees), new { id = maNvMoi }, employee);
+
+                    // Trả về đối tượng đơn giản để tránh vòng lặp
+                    var result = new
+                    {
+                        id = maNvMoi,
+                        HoTen = employee.HoTen,
+                        NgaySinh = employee.NgaySinh,
+                        GioiTinh = employeeDto.GioiTinh,
+                        DiaChi = employee.DiaChi,
+                        Sdt = employee.Sdt,
+                        Email = employee.Email,
+                        TrinhDoHocVan = employee.TrinhDoHocVan,
+                        MaPhongBan = employee.MaPhongBan,
+                        MaChucVu = employee.MaChucVu
+                    };
+
+                    return CreatedAtAction(nameof(GetEmployees), new { id = maNvMoi }, result);
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    transaction.Rollback();
+                    return StatusCode(500, new { message = dbEx.InnerException?.Message ?? dbEx.Message });
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return StatusCode(500, "Lỗi hệ thống: " + ex.Message);
+                    return StatusCode(500, new { message = ex.Message });
                 }
             }
         }
-        #endregion
     }
 }

@@ -26,7 +26,7 @@
 
         <div class="mb-3">
             <label class="form-label">Địa Chỉ</label>
-            <input type="text" class="form-control" id="DiaChi" required />
+            <input type="text" class="form-control" id="DiaChi" />
         </div>
 
         <div class="mb-3">
@@ -41,7 +41,7 @@
 
         <div class="mb-3">
             <label class="form-label">Trình Độ Học Vấn</label>
-            <input type="text" class="form-control" id="TrinhDoHocVan" required />
+            <input type="text" class="form-control" id="TrinhDoHocVan" />
         </div>
 
         <div class="mb-3">
@@ -56,12 +56,13 @@
 
         <div class="mb-3">
             <label class="form-label">Ảnh Đại Diện</label>
-            <input type="file" class="form-control" id="Avatar" />
+            <input type="file" class="form-control" id="AvatarUrl" accept=".jpg,.png,.jpeg" />
         </div>
 
         <button type="submit" class="btn btn-primary">Thêm Nhân Viên</button>
     </form>
 </div>
+
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -85,85 +86,79 @@
                 });
             });
 
-            // Gửi dữ liệu lên API khi submit form
-            $("#createEmployeeForm").submit(function (e) {
-                e.preventDefault();
+                   $("#createEmployeeForm").submit(function (e) {
+            e.preventDefault();
 
-                let formData = new FormData();
-                formData.append("HoTen", $("#HoTen").val());
-                formData.append("NgaySinh", $("#NgaySinh").val());
-                formData.append("GioiTinh", $("#GioiTinh").val());
-                formData.append("DiaChi", $("#DiaChi").val());
-                formData.append("Sdt", $("#Sdt").val());
-                formData.append("Email", $("#Email").val());
-                formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
-                formData.append("MaChucVu", $("#MaChucVu").val());
-                formData.append("MaPhongBan", $("#MaPhongBan").val());
-                let avatar = $("#Avatar")[0].files[0];
-                if (avatar) {
-                    formData.append("Avatar", avatar);
+            let formData = new FormData();
+            formData.append("HoTen", $("#HoTen").val());
+            formData.append("NgaySinh", $("#NgaySinh").val());
+            formData.append("GioiTinh", $("#GioiTinh").val());
+            formData.append("DiaChi", $("#DiaChi").val());
+            formData.append("Sdt", $("#Sdt").val());
+            formData.append("Email", $("#Email").val());
+            formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
+            formData.append("MaChucVu", $("#MaChucVu").val());
+            formData.append("MaPhongBan", $("#MaPhongBan").val());
+            let avatar = $("#AvatarUrl")[0].files[0];
+            if (avatar) {
+                formData.append("AvatarUrl", avatar);
+            }
+
+            // Chỉ kiểm tra các trường bắt buộc theo DTO
+            let requiredFields = [
+                { id: "HoTen", name: "Họ và Tên" },
+                { id: "NgaySinh", name: "Ngày Sinh" },
+                { id: "GioiTinh", name: "Giới Tính" },
+                { id: "Sdt", name: "Số Điện Thoại" },
+                { id: "Email", name: "Email" },
+                { id: "MaChucVu", name: "Chức Vụ" },
+                { id: "MaPhongBan", name: "Phòng Ban" }
+            ];
+
+            for (let field of requiredFields) {
+                if (!$("#" + field.id).val()) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Thiếu thông tin",
+                        text: `Vui lòng nhập ${field.name}!`
+                    });
+                    return;
                 }
+            }
 
-                // Kiểm tra dữ liệu trước khi gửi
-                let requiredFields = [
-                    { id: "HoTen", name: "Họ và Tên" },
-                    { id: "NgaySinh", name: "Ngày Sinh" },
-                    { id: "GioiTinh", name: "Giới Tính" },
-                    { id: "DiaChi", name: "Địa Chỉ" },
-                    { id: "Sdt", name: "Số Điện Thoại" },
-                    { id: "Email", name: "Email" },
-                    { id: "TrinhDoHocVan", name: "Trình Độ Học Vấn" },
-                    { id: "MaChucVu", name: "Chức Vụ" },
-                    { id: "MaPhongBan", name: "Phòng Ban" }
-                ];
-
-                for (let field of requiredFields) {
-                    if (!$("#" + field.id).val()) {
-                        Swal.fire({
-                            icon: "warning",
-                            title: "Thiếu thông tin",
-                            text: `Vui lòng nhập ${field.name}!`
-                        });
-                        return;
+            $.ajax({
+                url: "/api/EmployeesApi/CreateEmployee",
+                type: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Thành công!",
+                        text: "Nhân viên đã được thêm thành công!",
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                },
+                error: function (xhr) {
+                    console.log("Error Response:", xhr); // Debug chi tiết
+                    let errorMessage = "Lỗi không xác định!";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        errorMessage = xhr.responseText; // Hiển thị toàn bộ phản hồi nếu có
                     }
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi!",
+                        text: errorMessage
+                    });
                 }
-
-                $.ajax({
-                    url: "/api/EmployeesApi/CreateEmployee",
-                    type: "POST",
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function (response) {
-                        Swal.fire({
-                            icon: "success",
-                            title: "Thành công!",
-                            text: "Nhân viên đã được thêm thành công!",
-                            showConfirmButton: false,
-                            timer: 2000
-                        }).then(() => {
-                            location.reload();
-                        });
-                    },
-                    error: function (xhr) {
-                        console.log(xhr);
-
-                        let errorMessage = "Lỗi không xác định!";
-                        if (xhr.responseJSON) {
-                            console.log(xhr.responseJSON); 
-                        }
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire({
-                            icon: "error",
-                            title: "Lỗi!",
-                            text: errorMessage
-                        });
-                    }
-
-                });
             });
+        });
         });
     </script>
 }

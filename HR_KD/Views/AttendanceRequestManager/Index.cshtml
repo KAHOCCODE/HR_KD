@@ -1,4 +1,4 @@
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
@@ -7,8 +7,28 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <div id="attendanceSection" class="dashboard-card bg-white p-4">
-    <h5 class="mb-4 text-primary"><i class="fas fa-fingerprint me-2"></i> Chấm công</h5>
-
+    <h5 class="mb-4 text-primary"><i class="fas fa-fingerprint me-2"></i> Yêu cầu chấm công</h5>
+     <!-- Bộ lọc -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Chọn phòng ban</label>
+            <select class="form-control" id="departmentFilter">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Chọn chức vụ</label>
+            <select class="form-control" id="positionFilter">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Chọn nhân viên</label>
+            <select class="form-control" id="employeeFilter">
+                <option value="">Chọn nhân viên</option>
+            </select>
+        </div>
+    </div>
     <!-- Chọn ngày làm việc -->
     <div class="row mb-3">
       <div class="col-md-6">
@@ -49,7 +69,7 @@
         <label class="form-label">Ghi chú</label>
         <textarea class="form-control" id="attendanceNote" placeholder="Nhập ghi chú (nếu có)"></textarea>
     </div>
-     
+
     <!-- Nút gửi dữ liệu -->
     <button class="btn btn-primary mt-3" id="submitAttendance">Chấm công</button>
     <table class="table mt-3">
@@ -72,6 +92,58 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+    loadDepartments();
+    loadPositions();
+
+    document.getElementById("departmentFilter").addEventListener("change", loadEmployees);
+    document.getElementById("positionFilter").addEventListener("change", loadEmployees);
+    document.getElementById("employeeFilter").addEventListener("change", function () {
+        if (this.value) fetchAttendanceRecords(this.value);
+    });
+});
+
+function loadDepartments() {
+    fetch("/api/AttendanceManager/GetDepartmentsManager")
+        .then(response => response.json())
+        .then(data => {
+            let select = document.getElementById("departmentFilter");
+            select.innerHTML = '<option value="">Tất cả</option>';
+            data.forEach(pb => select.innerHTML += `<option value="${pb.maPhongBan}">${pb.tenPhongBan}</option>`);
+        });
+}
+
+function loadPositions() {
+    fetch("/api/AttendanceManager/GetPositionsManager")
+        .then(response => response.json())
+        .then(data => {
+            let select = document.getElementById("positionFilter");
+            select.innerHTML = '<option value="">Tất cả</option>';
+            data.forEach(cv => select.innerHTML += `<option value="${cv.maChucVu}">${cv.tenChucVu}</option>`);
+        });
+}
+
+function loadEmployees() {
+    let maPhongBan = document.getElementById("departmentFilter").value;
+    let maChucVu = document.getElementById("positionFilter").value;
+
+    fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${maPhongBan}&maChucVu=${maChucVu}`)
+        .then(response => response.json())
+        .then(data => {
+            let select = document.getElementById("employeeFilter");
+            select.innerHTML = '<option value="">Chọn nhân viên</option>';
+            data.forEach(nv => select.innerHTML += `<option value="${nv.maNv}">${nv.hoTen}</option>`);
+        });
+}
+
+function fetchAttendanceRecords(maNv) {
+    fetch(`/api/AttendanceManager/GetAttendanceManagerRecords?maNv=${maNv}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) renderAttendanceTable(data.records);
+        });
+}
+
 let selectedWorkDays = new Set();
 
 // Cấu hình Flatpickr
@@ -104,6 +176,7 @@ document.getElementById("submitAttendance").addEventListener("click", function()
     const checkIn = document.getElementById("checkInTime").value;
     const checkOut = document.getElementById("checkOutTime").value;
     const note = document.getElementById("attendanceNote").value.trim();
+    const maNV = document.getElementById("employeeFilter").value;
 
     if (selectedWorkDays.size === 0) {
         Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
@@ -111,12 +184,12 @@ document.getElementById("submitAttendance").addEventListener("click", function()
     }
 
     let attendanceData = [...selectedWorkDays].map(day => ({
-        MaNV: 1,
+        MaNV: maNV,
         NgayLamViec: day,
         GioVao: checkIn || null,
         GioRa: checkOut || null,
         TongGio: calculateDailyHours(checkIn, checkOut),
-        TrangThai: "Chờ duyệt",
+        TrangThai: "Yêu cầu chấm công",
         GhiChu: note || null
     }));
 
@@ -187,8 +260,15 @@ document.getElementById("checkInTime").addEventListener("change", updateTotalHou
 document.getElementById("checkOutTime").addEventListener("change", updateTotalHours);
 
 // Gọi API để lấy danh sách chấm công
-function fetchAttendanceRecords() {
-    fetch('/api/Attendance/GetAttendanceRecords?maNv=1')
+function fetchAttendanceRecords() { 
+    const maNV = document.getElementById("employeeFilter").value; // Lấy MaNV từ dropdown
+
+    if (!maNV) {
+        console.error("Vui lòng chọn nhân viên để lấy dữ liệu chấm công.");
+        return;
+    }
+
+    fetch(`/api/Attendance/GetAttendanceRecords?maNv=${maNV}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -199,6 +279,7 @@ function fetchAttendanceRecords() {
         })
         .catch(error => console.error("Lỗi kết nối API:", error));
 }
+
 
 // Hiển thị bảng chấm công
 function renderAttendanceTable(records) {
@@ -230,7 +311,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
     const maNV = document.getElementById("employeeFilter").value;
-    fetch(`/api/Attendance/GetAttendanceRecords?maNv=1`)
+    fetch(`/api/Attendance/GetAttendanceRecords?maNv=${maNV}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -249,6 +330,11 @@ function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
         .catch(error => failureCallback());
 }
 
+
+document.getElementById("employeeFilter").addEventListener("change", function () {
+    // Gọi lại hàm refetchEvents() của FullCalendar
+    calendar.refetchEvents();
+});
 // Gọi API khi trang tải xong
 document.addEventListener("DOMContentLoaded", fetchAttendanceRecords);
 

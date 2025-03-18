@@ -107,7 +107,7 @@ function renderAttendanceTable(records) {
             <td class="${getStatusClass(record.trangThai)}">${record.trangThai || "Chờ duyệt"}</td>
             <td>${record.ghiChu || "-"}</td>
             <td>
-                <button class="btn btn-success btn-sm" onclick="approveAttendance(${record.maChamCong}, 'Duyệt')">✔</button>
+                <button class="btn btn-success btn-sm" onclick="approveAttendance(${record.maChamCong}, 'Đã duyệt')">✔</button>
                 <button class="btn btn-danger btn-sm" onclick="approveAttendance(${record.maChamCong}, 'Từ chối')">✖</button>
             </td>
         </tr>

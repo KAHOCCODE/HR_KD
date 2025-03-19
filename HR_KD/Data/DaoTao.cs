@@ -17,5 +17,9 @@ public partial class DaoTao
 
     public DateOnly? NgayKetThuc { get; set; }
 
+    public int MaPhongBan { get; set; }
+
+    public virtual PhongBan MaPhongBanNavigation { get; set; } = null!;
+
     public virtual ICollection<LichSuDaoTao> LichSuDaoTaos { get; set; } = new List<LichSuDaoTao>();
 }

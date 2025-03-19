@@ -12,4 +12,6 @@ public partial class PhongBan
     public string? MoTa { get; set; }
 
     public virtual ICollection<NhanVien> NhanViens { get; set; } = new List<NhanVien>();
+
+    public virtual ICollection<DaoTao> DaoTaos { get; set; } = new List<DaoTao>();
 }

@@ -2,14 +2,28 @@
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-<div class="container">
-    <h2 class="mt-4 mb-3 text-center">Quản Lý Nhân Viên</h2>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Quản Lý Nhân Viên</h2>
+
+    <!-- Bộ lọc -->
+    <div class="d-flex justify-content-between mb-3">
+        <div>
+            <select id="filterPhongBan" class="form-select me-2">
+                <option value="">Tất cả Phòng Ban</option>
+            </select>
+            <select id="filterChucVu" class="form-select">
+                <option value="">Tất cả Chức Vụ</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" id="toggleAvatar">Ẩn/Hiện Ảnh</button>
+    </div>
+
     <!-- Danh Sách Nhân Viên -->
     <div class="table-responsive">
-        <table class="table table-bordered table-striped">
+        <table id="employeeTable" class="table table-striped table-hover">
             <thead class="table-dark">
                 <tr>
-                    <th>Ảnh</th>
+                    <th class="avatar-col">Ảnh</th>
                     <th>ID</th>
                     <th>Họ Tên</th>
                     <th>Ngày Sinh</th>
@@ -18,102 +32,123 @@
                     <th>Email</th>
                     <th>Phòng Ban</th>
                     <th>Chức Vụ</th>
-                    <th>Hành Động</th>
                 </tr>
             </thead>
-            <tbody id="employeeTable">
+            <tbody>
                 <!-- Dữ liệu sẽ được tải từ API -->
             </tbody>
         </table>
     </div>
 </div>
 
+<!-- Modal Chi Tiết Nhân Viên -->
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employeeModalLabel">Thông Tin Nhân Viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <img id="modalAvatar" src="" class="rounded-circle" width="120">
+                    </div>
+                    <div class="col-md-8">
+                        <p><strong>ID:</strong> <span id="modalMaNv"></span></p>
+                        <p><strong>Họ Tên:</strong> <span id="modalHoTen"></span></p>
+                        <p><strong>Ngày Sinh:</strong> <span id="modalNgaySinh"></span></p>
+                        <p><strong>Giới Tính:</strong> <span id="modalGioiTinh"></span></p>
+                        <p><strong>Số Điện Thoại:</strong> <span id="modalSdt"></span></p>
+                        <p><strong>Email:</strong> <span id="modalEmail"></span></p>
+                        <p><strong>Phòng Ban:</strong> <span id="modalPhongBan"></span></p>
+                        <p><strong>Chức Vụ:</strong> <span id="modalChucVu"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         loadEmployees();
-        loadDropdowns();
+        loadFilters();
+        let showAvatar = true;
 
-        document.getElementById("addEmployeeForm").addEventListener("submit", function (event) {
-            event.preventDefault();
-            addEmployee();
+        document.getElementById("toggleAvatar").addEventListener("click", function () {
+            showAvatar = !showAvatar;
+            document.querySelectorAll(".avatar-col").forEach(col => {
+                col.style.display = showAvatar ? "table-cell" : "none";
+            });
         });
     });
-
-    function loadDropdowns() {
-        fetch("/api/PhongBan")
-            .then(response => response.json())
-            .then(data => {
-                let options = "";
-                data.forEach(pb => {
-                    options += `<option value="${pb.id}">${pb.tenPhongBan}</option>`;
-                });
-                document.getElementById("maPhongBan").innerHTML = options;
-            });
-
-        fetch("/api/ChucVu")
-            .then(response => response.json())
-            .then(data => {
-                let options = "";
-                data.forEach(cv => {
-                    options += `<option value="${cv.id}">${cv.tenChucVu}</option>`;
-                });
-                document.getElementById("maChucVu").innerHTML = options;
-            });
-    }
 
     function loadEmployees() {
         fetch('/api/EmployeesApi')
             .then(response => response.json())
             .then(data => {
-                let tableContent = "";
-                data.forEach(employee => {
-                    tableContent += `
-                            <tr>
-                                <td><img src="${employee.avatarUrl}" class="rounded-circle" width="50"></td>
-                                <td>${employee.maNv}</td>
-                                <td>${employee.hoTen}</td>
-                                <td>${employee.ngaySinh}</td>
-                                <td>${employee.gioiTinh}</td>
-                                <td>${employee.sdt}</td>
-                                <td>${employee.email}</td>
-                                <td>${employee.tenPhongBan}</td>
-                                <td>${employee.tenChucVu}</td>
-                                <td>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteEmployee(${employee.maNv})">
-                                        <i class="fa fa-trash"></i> Xóa
-                                    </button>
-                                </td>
-                            </tr>`;
-                });
-                document.getElementById("employeeTable").innerHTML = tableContent;
+                populateFilters(data);
+                renderTable(data);
             })
             .catch(error => console.error('Lỗi:', error));
     }
 
-    function addEmployee() {
-        let formData = new FormData();
-        formData.append("hoTen", document.getElementById("hoTen").value);
-        formData.append("ngaySinh", document.getElementById("ngaySinh").value);
-        formData.append("gioiTinh", document.getElementById("gioiTinh").value === "true");
-        formData.append("sdt", document.getElementById("sdt").value);
-        formData.append("email", document.getElementById("email").value);
-        formData.append("trinhDoHocVan", document.getElementById("trinhDoHocVan").value);
-        formData.append("maPhongBan", document.getElementById("maPhongBan").value);
-        formData.append("maChucVu", document.getElementById("maChucVu").value);
-        formData.append("avatar", document.getElementById("avatar").files[0]);
+    function populateFilters(data) {
+        let phongBanSet = new Set();
+        let chucVuSet = new Set();
 
-        fetch("/api/EmployeesApi", {
-            method: "POST",
-            body: formData
-        })
+        data.forEach(employee => {
+            if (employee.phongBan) phongBanSet.add(employee.phongBan);
+            if (employee.chucVu) chucVuSet.add(employee.chucVu);
+        });
+
+        let phongBanSelect = document.getElementById("filterPhongBan");
+        let chucVuSelect = document.getElementById("filterChucVu");
+
+        phongBanSet.forEach(pb => phongBanSelect.innerHTML += `<option value="${pb}">${pb}</option>`);
+        chucVuSet.forEach(cv => chucVuSelect.innerHTML += `<option value="${cv}">${cv}</option>`);
+
+        phongBanSelect.addEventListener("change", filterTable);
+        chucVuSelect.addEventListener("change", filterTable);
+    }
+
+    function filterTable() {
+        let selectedPhongBan = document.getElementById("filterPhongBan").value;
+        let selectedChucVu = document.getElementById("filterChucVu").value;
+
+        fetch('/api/EmployeesApi')
             .then(response => response.json())
             .then(data => {
-                Swal.fire("Thành công!", "Nhân viên đã được thêm.", "success");
-                loadEmployees();
-                document.getElementById("addEmployeeForm").reset();
-            })
-            .catch(error => {
-                Swal.fire("Lỗi!", "Không thể thêm nhân viên.", "error");
+                let filteredData = data.filter(emp =>
+                    (selectedPhongBan === "" || emp.phongBan === selectedPhongBan) &&
+                    (selectedChucVu === "" || emp.chucVu === selectedChucVu)
+                );
+                renderTable(filteredData);
             });
     }
+
+    function renderTable(data) {
+        let tableContent = "";
+        data.forEach(employee => {
+            tableContent += `
+                    <tr onclick="showEmployeeDetails(${JSON.stringify(employee).replace(/"/g, '&quot;')})">
+                        <td class="avatar-col"><img src="${employee.avatarUrl || '/default-avatar.png'}" class="rounded-circle" width="50"></td>
+                        <td>${employee.maNv}</td>
+                        <td>${employee.hoTen}</td>
+                        <td>${employee.ngaySinh}</td>
+                        <td>${employee.gioiTinh}</td>
+                        <td>${employee.sdt}</td>
+                        <td>${employee.email}</td>
+                        <td>${employee.phongBan || "Chưa cập nhật"}</td>
+                        <td>${employee.chucVu || "Chưa cập nhật"}</td>
+                    </tr>`;
+        });
+        document.querySelector("#employeeTable tbody").innerHTML = tableContent;
+        new DataTable("#employeeTable");
+    }
 </script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>

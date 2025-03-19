@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using HR_KD.DTOs;
 using System.IO;
+using Microsoft.AspNetCore.Http.Connections;
 
 namespace HR_KD.ApiControllers
 {
@@ -21,6 +22,7 @@ namespace HR_KD.ApiControllers
             _emailService = emailService;
         }
 
+        #region Lấy danh sách nhân viên
         [HttpGet]
         public IActionResult GetEmployees()
         {
@@ -37,13 +39,17 @@ namespace HR_KD.ApiControllers
                     e.Sdt,
                     e.Email,
                     e.TrinhDoHocVan,
+                    e.NgayVaoLam,
                     ChucVu = e.MaChucVuNavigation.TenChucVu,
-                    PhongBan = e.MaPhongBanNavigation.TenPhongBan
+                    PhongBan = e.MaPhongBanNavigation.TenPhongBan,
+                    AvatarUrl = e.AvatarUrl
                 })
                 .ToList();
             return Ok(employees);
         }
+        #endregion
 
+        #region Thêm nhân viên 
         [HttpPost("CreateEmployee")]
         public IActionResult CreateEmployee([FromForm] CreateEmployeeDTO employeeDto)
         {
@@ -87,7 +93,9 @@ namespace HR_KD.ApiControllers
                         Email = employeeDto.Email,
                         TrinhDoHocVan = employeeDto.TrinhDoHocVan,
                         MaPhongBan = employeeDto.MaPhongBan,
-                        MaChucVu = employeeDto.MaChucVu
+                        MaChucVu = employeeDto.MaChucVu,
+                        NgayVaoLam = DateOnly.FromDateTime(employeeDto.NgayVaoLam),
+                        AvatarUrl = null 
                     };
 
                     _context.NhanViens.Add(employee);
@@ -96,7 +104,7 @@ namespace HR_KD.ApiControllers
                     int maNvMoi = employee.MaNv;
 
                     // Kiểm tra MaQuyenHan
-                    string maQuyenHan = "STAFF"; // Thay bằng giá trị thực tế từ QuyenHan
+                    string maQuyenHan = "EMPLOYEE"; // Thay bằng giá trị thực tế từ QuyenHan
                     if (!_context.QuyenHans.Any(q => q.MaQuyenHan == maQuyenHan))
                     {
                         return BadRequest(new { message = $"Mã quyền hạn '{maQuyenHan}' không tồn tại trong bảng QuyenHan." });
@@ -122,7 +130,7 @@ namespace HR_KD.ApiControllers
                         var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars");
                         if (!Directory.Exists(basePath))
                         {
-                            Directory.CreateDirectory(basePath); // Tạo thư mục nếu chưa tồn tại
+                            Directory.CreateDirectory(basePath);
                         }
                         var fileName = $"{maNvMoi}_{Path.GetFileName(employeeDto.AvatarUrl.FileName)}";
                         var filePath = Path.Combine(basePath, fileName);
@@ -131,8 +139,13 @@ namespace HR_KD.ApiControllers
                         {
                             employeeDto.AvatarUrl.CopyTo(stream);
                         }
-                        // Lưu đường dẫn vào database nếu cần (cần thêm trường AvatarUrl trong NhanVien)
+
+                        // ✅ Cập nhật AvatarUrl vào database
+                        employee.AvatarUrl = $"/avatars/{fileName}";
+                        _context.NhanViens.Update(employee);
+                        _context.SaveChanges();
                     }
+
 
                     string subject = "Thông tin tài khoản nhân viên";
                     string body = $@"
@@ -175,5 +188,6 @@ namespace HR_KD.ApiControllers
                 }
             }
         }
+        #endregion
     }
 }

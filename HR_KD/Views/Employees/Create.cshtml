@@ -45,9 +45,14 @@
         </div>
 
         <div class="mb-3">
+            <label class="form-label">Ngày Vào Làm</label>
+            <input type="date" class="form-control" id="NgayVaoLam" required />
+        </div>
+
+        <div class="mb-3">
             <label class="form-label">Chức Vụ</label>
             <select id="MaChucVu" class="form-control" required></select>
-        </div>
+        </div
 
         <div class="mb-3">
             <label class="form-label">Phòng Ban</label>
@@ -56,7 +61,7 @@
 
         <div class="mb-3">
             <label class="form-label">Ảnh Đại Diện</label>
-            <input type="file" class="form-control" id="AvatarUrl" accept=".jpg,.png,.jpeg" />
+            <input type="file" class="form-control" id="AvatarUrl" name="AvatarUrl" accept=".jpg,.png,.jpeg" />
         </div>
 
         <button type="submit" class="btn btn-primary">Thêm Nhân Viên</button>
@@ -99,6 +104,7 @@
             formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
             formData.append("MaChucVu", $("#MaChucVu").val());
             formData.append("MaPhongBan", $("#MaPhongBan").val());
+            formData.append("NgayVaoLam", $("#NgayVaoLam").val());
             let avatar = $("#AvatarUrl")[0].files[0];
             if (avatar) {
                 formData.append("AvatarUrl", avatar);
@@ -112,7 +118,8 @@
                 { id: "Sdt", name: "Số Điện Thoại" },
                 { id: "Email", name: "Email" },
                 { id: "MaChucVu", name: "Chức Vụ" },
-                { id: "MaPhongBan", name: "Phòng Ban" }
+                { id: "MaPhongBan", name: "Phòng Ban" },
+                { id: "NgayVaoLam", name: "Ngày vào làm" }
             ];
 
             for (let field of requiredFields) {

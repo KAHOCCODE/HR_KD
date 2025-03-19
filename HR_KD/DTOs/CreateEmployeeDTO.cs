@@ -34,6 +34,10 @@ namespace HR_KD.DTOs
         [Required(ErrorMessage = "Chức vụ không được để trống")]
         public int MaChucVu { get; set; }
 
+        [Required(ErrorMessage = "Ngày vào làm không được để trống")]
+        [DataType(DataType.Date)]
+        public DateTime NgayVaoLam { get; set; }
+
         [AllowedExtensions(new string[] { ".jpg", ".png", ".jpeg" })]
         [MaxFileSize(5 * 1024 * 1024)] // Giới hạn 5MB
         public IFormFile? AvatarUrl { get; set; } // Ảnh đại diện, không bắt buộc

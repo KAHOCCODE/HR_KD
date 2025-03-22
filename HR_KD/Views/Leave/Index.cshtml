@@ -241,7 +241,7 @@
     </form>
 </div>
 
-<div class="dashboard-card bg-white p-4 mt-4">
+<div class="dashboard-card bg-white p-4 mt-4"> 
     <h5 class="mb-4 text-primary"><i class="fas fa-info-circle me-2"></i>Thông tin nghỉ phép khả dụng</h5>
     <div class="row">
         <div class="col-md-12">
@@ -286,73 +286,85 @@
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const datePicker = flatpickr("#datePicker", {
-            mode: "multiple",
-            dateFormat: "Y-m-d",
-            onClose: function (selectedDates, dateStr, instance) {
-                const selectedDatesDiv = document.getElementById("selectedDates");
-                selectedDatesDiv.innerHTML = selectedDates.map(date => date.toLocaleDateString()).join(", ");
+ <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Đặt thời gian về 00:00:00 để so sánh chính xác
+
+    const datePicker = flatpickr("#datePicker", {
+        mode: "multiple",
+        dateFormat: "Y-m-d",
+        minDate: "today", // Ngăn chọn ngày trong quá khứ
+        onClose: function (selectedDates, dateStr, instance) {
+            const selectedDatesDiv = document.getElementById("selectedDates");
+
+            // Kiểm tra xem có ngày nào trước hôm nay không
+            const validDates = selectedDates.filter(date => date >= today);
+            if (validDates.length < selectedDates.length) {
+                alert("Lỗi, vui lòng chọn lại ngày nghỉ. Không thể chọn ngày trong quá khứ.");
+                instance.clear(); // Xóa toàn bộ lựa chọn nếu có ngày sai
+                selectedDatesDiv.innerHTML = ""; // Xóa hiển thị ngày đã chọn
+            } else {
+                selectedDatesDiv.innerHTML = validDates.map(date => date.toLocaleDateString()).join(", ");
             }
-        });
-
-        const leaveForm = document.getElementById("leaveForm");
-        leaveForm.addEventListener("submit", async function (e) {
-            e.preventDefault();
-
-            const formData = new FormData(leaveForm);
-            const leaveType = formData.get("leaveType");
-            const leaveReason = formData.get("leaveReason");
-            const selectedDates = datePicker.selectedDates.map(date => date.toISOString().split('T')[0]);
-
-            if (selectedDates.length === 0) {
-                alert("Vui lòng chọn ít nhất một ngày nghỉ.");
-                return;
-            }
-            if (!leaveType) {
-                alert("Vui lòng chọn loại nghỉ phép.");
-                return;
-            }
-
-            const leaveRequests = selectedDates.map(date => ({
-                MaNv: 1,
-                NgayNghi: date,
-                LyDo: leaveReason,
-                MaLoaiNgayNghi: parseInt(leaveType)
-            }));
-
-            console.log("Dữ liệu gửi lên API:", leaveRequests);
-
-            try {
-                const response = await fetch("/api/Leave/SubmitLeave", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(leaveRequests)
-                });
-
-                const result = await response.json();
-                console.log("Phản hồi từ API:", result);
-
-                if (result.success) {
-                    alert("Đăng ký nghỉ phép thành công!");
-                    leaveForm.reset();
-                    document.getElementById("selectedDates").innerHTML = "";
-                    datePicker.clear();
-                } else {
-                    alert(`Lỗi: ${result.message}`);
-                }
-            } catch (error) {
-                alert("Lỗi hệ thống. Vui lòng thử lại sau.");
-                console.error("Lỗi:", error);
-            }
-        });
+        }
     });
 
+    const leaveForm = document.getElementById("leaveForm");
+    leaveForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
 
-    </script>
+        const formData = new FormData(leaveForm);
+        const leaveType = formData.get("leaveType");
+     //   const leaveReason = formData.get("leaveReason");
+        const selectedDates = datePicker.selectedDates.map(date => date.toISOString().split('T')[0]);
+
+        if (selectedDates.length === 0) {
+            alert("Vui lòng chọn ít nhất một ngày nghỉ.");
+            return;
+        }
+        if (!leaveType) {
+            alert("Vui lòng chọn loại nghỉ phép.");
+            return;
+        }
+
+        const leaveRequests = selectedDates.map(date => ({
+            MaNv: 1,
+            NgayNghi: date,
+            LyDo: leaveReason,
+            MaLoaiNgayNghi: parseInt(leaveType)
+        }));
+
+        console.log("Dữ liệu gửi lên API:", leaveRequests);
+
+        try {
+            const response = await fetch("/api/Leave/SubmitLeave", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(leaveRequests)
+            });
+
+            const result = await response.json();
+            console.log("Phản hồi từ API:", result);
+
+            if (result.success) {
+                alert("Đăng ký nghỉ phép thành công!");
+                leaveForm.reset();
+                document.getElementById("selectedDates").innerHTML = "";
+                datePicker.clear();
+            } else {
+                alert(`Lỗi: ${result.message}`);
+            }
+        } catch (error) {
+            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+            console.error("Lỗi:", error);
+        }
+    });
+});
+</script>
+
 
 
 <script> //Hiển thị lịch sử đăng ký nghỉ phép

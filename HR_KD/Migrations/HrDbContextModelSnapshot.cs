@@ -246,9 +246,6 @@ namespace HR_KD.Migrations
                     b.Property<int>("MaPhongBan")
                         .HasColumnType("int");
 
-                    b.Property<int>("MaPhongBanNavigationMaPhongBan")
-                        .HasColumnType("int");
-
                     b.Property<string>("MoTa")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -271,7 +268,7 @@ namespace HR_KD.Migrations
                     b.HasKey("MaDaoTao")
                         .HasName("PK__DaoTao__81987A7CE02F6E17");
 
-                    b.HasIndex("MaPhongBanNavigationMaPhongBan");
+                    b.HasIndex("MaPhongBan");
 
                     b.ToTable("DaoTao", (string)null);
                 });
@@ -901,13 +898,13 @@ namespace HR_KD.Migrations
 
             modelBuilder.Entity("HR_KD.Data.DaoTao", b =>
                 {
-                    b.HasOne("HR_KD.Data.PhongBan", "MaPhongBanNavigation")
+                    b.HasOne("HR_KD.Data.PhongBan", "PhongBan")
                         .WithMany("DaoTaos")
-                        .HasForeignKey("MaPhongBanNavigationMaPhongBan")
+                        .HasForeignKey("MaPhongBan")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("MaPhongBanNavigation");
+                    b.Navigation("PhongBan");
                 });
 
             modelBuilder.Entity("HR_KD.Data.LichSuChamCong", b =>

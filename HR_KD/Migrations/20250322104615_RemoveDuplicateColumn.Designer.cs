@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    [Migration("20250319123628_AddNgayVaoLamToNhanVien")]
-    partial class AddNgayVaoLamToNhanVien
+    [Migration("20250322104615_RemoveDuplicateColumn")]
+    partial class RemoveDuplicateColumn
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -246,6 +246,9 @@ namespace HR_KD.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDaoTao"));
 
+                    b.Property<int>("MaPhongBan")
+                        .HasColumnType("int");
+
                     b.Property<string>("MoTa")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -267,6 +270,8 @@ namespace HR_KD.Migrations
 
                     b.HasKey("MaDaoTao")
                         .HasName("PK__DaoTao__81987A7CE02F6E17");
+
+                    b.HasIndex("MaPhongBan");
 
                     b.ToTable("DaoTao", (string)null);
                 });
@@ -894,6 +899,17 @@ namespace HR_KD.Migrations
                     b.Navigation("MaNguoiDanhGiaNavigation");
                 });
 
+            modelBuilder.Entity("HR_KD.Data.DaoTao", b =>
+                {
+                    b.HasOne("HR_KD.Data.PhongBan", "PhongBan")
+                        .WithMany("DaoTaos")
+                        .HasForeignKey("MaPhongBan")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PhongBan");
+                });
+
             modelBuilder.Entity("HR_KD.Data.LichSuChamCong", b =>
                 {
                     b.HasOne("HR_KD.Data.NhanVien", "MaNvNavigation")
@@ -1106,6 +1122,8 @@ namespace HR_KD.Migrations
 
             modelBuilder.Entity("HR_KD.Data.PhongBan", b =>
                 {
+                    b.Navigation("DaoTaos");
+
                     b.Navigation("NhanViens");
                 });
 

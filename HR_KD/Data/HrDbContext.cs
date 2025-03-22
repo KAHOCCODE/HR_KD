@@ -183,6 +183,11 @@ public partial class HrDbContext : DbContext
             entity.Property(e => e.MoTa).HasMaxLength(255);
             entity.Property(e => e.NoiDung).HasMaxLength(225);
             entity.Property(e => e.TenDaoTao).HasMaxLength(100);
+            entity.HasOne(d => d.PhongBan)
+                  .WithMany(p => p.DaoTaos)
+                  .HasForeignKey(d => d.MaPhongBan)
+                  .OnDelete(DeleteBehavior.Cascade);
+
         });
 
         modelBuilder.Entity<LichSuChamCong>(entity =>

@@ -42,14 +42,24 @@ namespace HR_KD.Controllers
                 return View(model);
             }
 
+            // 🔹 Lấy thông tin nhân viên từ bảng NhanVien
+            var nhanVien = _context.NhanViens.FirstOrDefault(nv => nv.MaNv == user.MaNv);
+
+            if (nhanVien == null)
+            {
+                TempData["Error"] = "Không tìm thấy thông tin nhân viên";
+                return View(model);
+            }
+
             // Tạo danh sách quyền hợp lệ
             var validRoles = new List<string> { "EMPLOYEE", "EMPLOYEE_MANAGER", "LINE_MANAGER" };
 
             var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, validRoles.Contains(user.MaQuyenHan) ? user.MaQuyenHan : "EMPLOYEE")
-            };
+    {
+        new Claim(ClaimTypes.Name, nhanVien.HoTen),
+        new Claim(ClaimTypes.Role, validRoles.Contains(user.MaQuyenHan) ? user.MaQuyenHan : "EMPLOYEE"),
+        new Claim("MaNV", user.MaNv.ToString())
+    };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties
@@ -59,8 +69,8 @@ namespace HR_KD.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
-            // 🔹 Lưu Username vào Session
-            _httpContextAccessor.HttpContext.Session.SetString("Username", user.Username);
+            // 🔹 Lưu HoTen vào Session thay vì Username
+            _httpContextAccessor.HttpContext.Session.SetString("HoTen", nhanVien.HoTen);
 
             return RedirectToAction("Index", "Home");
         }

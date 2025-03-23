@@ -5,15 +5,16 @@
 <div class="container mt-4">
     <h2 class="text-center mb-4">Quản Lý Nhân Viên</h2>
 
-    <!-- Bộ lọc -->
+    <!-- Bộ lọc & Tìm kiếm -->
     <div class="d-flex justify-content-between mb-3">
-        <div>
+        <div class="d-flex">
             <select id="filterPhongBan" class="form-select me-2">
                 <option value="">Tất cả Phòng Ban</option>
             </select>
-            <select id="filterChucVu" class="form-select">
+            <select id="filterChucVu" class="form-select me-2">
                 <option value="">Tất cả Chức Vụ</option>
             </select>
+            <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm...">
         </div>
         <button class="btn btn-primary" id="toggleAvatar">Ẩn/Hiện Ảnh</button>
     </div>
@@ -70,6 +71,7 @@
     </div>
 </div>
 
+<!-- Scripts -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         loadEmployees();
@@ -78,61 +80,71 @@
 
         document.getElementById("toggleAvatar").addEventListener("click", function () {
             showAvatar = !showAvatar;
-            document.querySelectorAll(".avatar-col").forEach(col => {
-                col.style.display = showAvatar ? "table-cell" : "none";
+            document.querySelectorAll(".avatar-col, .avatar-col img").forEach(el => {
+                el.style.display = showAvatar ? "table-cell" : "none";
             });
         });
+
+        document.getElementById("filterPhongBan").addEventListener("change", applyFilters);
+        document.getElementById("filterChucVu").addEventListener("change", applyFilters);
+        document.getElementById("searchInput").addEventListener("input", applyFilters);
     });
+
+    function loadFilters() {
+        fetch('/api/PhongBanApi')
+            .then(response => response.json())
+            .then(data => {
+                let filterPhongBan = document.getElementById("filterPhongBan");
+                data.forEach(pb => {
+                    let option = new Option(pb.tenPhongBan, pb.id);
+                    filterPhongBan.appendChild(option);
+                });
+            });
+
+        fetch('/api/ChucVuApi')
+            .then(response => response.json())
+            .then(data => {
+                let filterChucVu = document.getElementById("filterChucVu");
+                data.forEach(cv => {
+                    let option = new Option(cv.tenChucVu, cv.id);
+                    filterChucVu.appendChild(option);
+                });
+            });
+    }
 
     function loadEmployees() {
         fetch('/api/EmployeesApi')
             .then(response => response.json())
             .then(data => {
-                populateFilters(data);
+                window.allEmployees = data;
                 renderTable(data);
             })
             .catch(error => console.error('Lỗi:', error));
     }
 
-    function populateFilters(data) {
-        let phongBanSet = new Set();
-        let chucVuSet = new Set();
+    function applyFilters() {
+        let phongBanFilter = document.getElementById("filterPhongBan").value;
+        let chucVuFilter = document.getElementById("filterChucVu").value;
+        let searchKeyword = document.getElementById("searchInput").value.toLowerCase();
 
-        data.forEach(employee => {
-            if (employee.phongBan) phongBanSet.add(employee.phongBan);
-            if (employee.chucVu) chucVuSet.add(employee.chucVu);
+        let filteredData = window.allEmployees.filter(emp => {
+            let matchesPhongBan = phongBanFilter ? emp.phongBanId == phongBanFilter : true;
+            let matchesChucVu = chucVuFilter ? emp.chucVuId == chucVuFilter : true;
+            let matchesSearch = emp.hoTen.toLowerCase().includes(searchKeyword) ||
+                emp.email.toLowerCase().includes(searchKeyword) ||
+                emp.sdt.includes(searchKeyword);
+
+            return matchesPhongBan && matchesChucVu && matchesSearch;
         });
 
-        let phongBanSelect = document.getElementById("filterPhongBan");
-        let chucVuSelect = document.getElementById("filterChucVu");
-
-        phongBanSet.forEach(pb => phongBanSelect.innerHTML += `<option value="${pb}">${pb}</option>`);
-        chucVuSet.forEach(cv => chucVuSelect.innerHTML += `<option value="${cv}">${cv}</option>`);
-
-        phongBanSelect.addEventListener("change", filterTable);
-        chucVuSelect.addEventListener("change", filterTable);
-    }
-
-    function filterTable() {
-        let selectedPhongBan = document.getElementById("filterPhongBan").value;
-        let selectedChucVu = document.getElementById("filterChucVu").value;
-
-        fetch('/api/EmployeesApi')
-            .then(response => response.json())
-            .then(data => {
-                let filteredData = data.filter(emp =>
-                    (selectedPhongBan === "" || emp.phongBan === selectedPhongBan) &&
-                    (selectedChucVu === "" || emp.chucVu === selectedChucVu)
-                );
-                renderTable(filteredData);
-            });
+        renderTable(filteredData);
     }
 
     function renderTable(data) {
         let tableContent = "";
         data.forEach(employee => {
             tableContent += `
-                    <tr onclick="showEmployeeDetails(${JSON.stringify(employee).replace(/"/g, '&quot;')})">
+                    <tr onclick="showEmployeeDetails(this)">
                         <td class="avatar-col"><img src="${employee.avatarUrl || '/default-avatar.png'}" class="rounded-circle" width="50"></td>
                         <td>${employee.maNv}</td>
                         <td>${employee.hoTen}</td>
@@ -145,10 +157,21 @@
                     </tr>`;
         });
         document.querySelector("#employeeTable tbody").innerHTML = tableContent;
-        new DataTable("#employeeTable");
+    }
+
+    function showEmployeeDetails(row) {
+        let cells = row.getElementsByTagName("td");
+
+        document.getElementById("modalAvatar").src = cells[0].querySelector("img").src;
+        document.getElementById("modalMaNv").textContent = cells[1].textContent;
+        document.getElementById("modalHoTen").textContent = cells[2].textContent;
+        document.getElementById("modalNgaySinh").textContent = cells[3].textContent;
+        document.getElementById("modalGioiTinh").textContent = cells[4].textContent;
+        document.getElementById("modalSdt").textContent = cells[5].textContent;
+        document.getElementById("modalEmail").textContent = cells[6].textContent;
+        document.getElementById("modalPhongBan").textContent = cells[7].textContent;
+        document.getElementById("modalChucVu").textContent = cells[8].textContent;
+
+        new bootstrap.Modal(document.getElementById("employeeModal")).show();
     }
 </script>
-
-<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>

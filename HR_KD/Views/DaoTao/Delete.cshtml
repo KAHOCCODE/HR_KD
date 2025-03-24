@@ -1,0 +1,49 @@
+﻿@model HR_KD.DTOs.DaoTaoDTO
+
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+@{
+    ViewData["Title"] = "Xóa khóa đào tạo";
+}
+
+<h1>Xóa khóa đào tạo</h1>
+
+<div class="alert alert-danger">
+    <h4>Bạn có chắc chắn muốn xóa khóa đào tạo này?</h4>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">@Model.TenDaoTao</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Tên khóa đào tạo:</dt>
+            <dd class="col-sm-9">@Model.TenDaoTao</dd>
+
+            <dt class="col-sm-3">Mô tả:</dt>
+            <dd class="col-sm-9">@(Model.MoTa ?? "Không có mô tả")</dd>
+
+            <dt class="col-sm-3">Nội dung:</dt>
+            <dd class="col-sm-9">@(Model.NoiDung ?? "Không có nội dung chi tiết")</dd>
+
+            <dt class="col-sm-3">Ngày bắt đầu:</dt>
+            <dd class="col-sm-9">@(Model.NgayBatDau?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</dd>
+
+            <dt class="col-sm-3">Ngày kết thúc:</dt>
+            <dd class="col-sm-9">@(Model.NgayKetThuc?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</dd>
+
+            <dt class="col-sm-3">Phòng ban:</dt>
+            <dd class="col-sm-9">@Model.TenPhongBan</dd> <!-- Sử dụng TenPhongBan thay vì PhongBan.TenPhongBan -->
+        </dl>
+    </div>
+    <div class="card-footer">
+        <form asp-action="Delete">
+            <input type="hidden" asp-for="MaDaoTao" />
+            <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+            <a asp-action="Index" class="btn btn-secondary">Hủy và quay lại</a>
+        </form>
+    </div>
+</div>

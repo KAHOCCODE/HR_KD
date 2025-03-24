@@ -1,0 +1,95 @@
+﻿@model IEnumerable<dynamic>
+
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Khóa đào tạo của bạn";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">@ViewData["Title"]</h2>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Danh sách khóa đào tạo</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Tên khóa đào tạo</th>
+                                <th>Mô tả</th>
+                                <th>Phòng ban</th>
+                                <th>Ngày bắt đầu</th>
+                                <th>Ngày kết thúc</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.DaoTao.TenDaoTao</td>
+                                    <td>@(string.IsNullOrEmpty(item.DaoTao.MoTa) ? "Không có mô tả" : item.DaoTao.MoTa)</td>
+                                    <td>@item.DaoTao.TenPhongBan</td>
+                                    <td>@(item.DaoTao.NgayBatDau?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</td>
+                                    <td>@(item.DaoTao.NgayKetThuc?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</td>
+                                    <td>
+                                        <span class="badge @(item.LichSu.KetQua == "Hoàn Thành" ? "badge-success" : "badge-warning")">
+                                            @item.LichSu.KetQua
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (item.LichSu.KetQua == "Chưa Hoàn Thành")
+                                        {
+                                            <form asp-action="CompleteTraining" method="post" style="display:inline;">
+                                                <input type="hidden" name="maLichSu" value="@item.LichSu.MaLichSu" />
+                                                <button type="submit" class="btn btn-sm btn-success">Tham gia</button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Đã hoàn thành</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info" role="alert">
+                    Bạn chưa được gán vào khóa đào tạo nào.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-header {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .table th, .table td {
+        vertical-align: middle;
+    }
+
+    .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+    }
+
+    .badge-warning {
+        background-color: #ffc107;
+    }
+</style>

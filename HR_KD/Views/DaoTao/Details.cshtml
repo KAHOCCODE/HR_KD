@@ -1,0 +1,103 @@
+﻿@model HR_KD.DTOs.DaoTaoDTO
+
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Chi tiết khóa đào tạo";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">@ViewData["Title"]</h2>
+
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">@Model.TenDaoTao</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Phòng ban</dt>
+                <dd class="col-sm-9">@Model.TenPhongBan</dd>
+
+                <dt class="col-sm-3">Mô tả</dt>
+                <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.MoTa) ? "Không có mô tả" : Model.MoTa)</dd>
+
+                <dt class="col-sm-3">Nội dung</dt>
+                <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.NoiDung) ? "Không có nội dung" : Model.NoiDung)</dd>
+
+                <dt class="col-sm-3">Ngày bắt đầu</dt>
+                <dd class="col-sm-9">@(Model.NgayBatDau?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</dd>
+
+                <dt class="col-sm-3">Ngày kết thúc</dt>
+                <dd class="col-sm-9">@(Model.NgayKetThuc?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</dd>
+            </dl>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="btn-group">
+                <a asp-action="Edit" asp-route-id="@Model.MaDaoTao" class="btn btn-warning">Sửa</a>
+                <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Lịch sử đào tạo</h5>
+        </div>
+        <div class="card-body">
+            @if (ViewBag.LichSuDaoTaos != null && (ViewBag.LichSuDaoTaos as List<HR_KD.DTOs.LichSuDaoTaoDTO>).Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Tên nhân viên</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ls in ViewBag.LichSuDaoTaos as List<HR_KD.DTOs.LichSuDaoTaoDTO>)
+                            {
+                                <tr>
+                                    <td>@ls.HoTen</td>
+                                    <td>
+                                        <span class="badge @(ls.KetQua == "Hoàn Thành" ? "badge-success" : "badge-warning")">
+                                            @ls.KetQua
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info" role="alert">
+                    Chưa có nhân viên nào tham gia khóa đào tạo này.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-header {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .table th, .table td {
+        vertical-align: middle;
+    }
+
+    .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+    }
+
+    .badge-warning {
+        background-color: #ffc107;
+    }
+</style>

@@ -228,26 +228,40 @@ document.addEventListener("DOMContentLoaded", function() {
     calendar.render();
 });
 
+// Lấy dữ liệu lịch từ API
 function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
-    const maNV = document.getElementById("employeeFilter").value;
-    fetch(`/api/Attendance/GetAttendanceRecords?maNv=1`)
+    fetch(`/api/Attendance/GetAttendanceRecords`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                let events = data.records.map(record => ({
-                    title: record.trangThai === "Yêu cầu chấm công" ? "Yêu cầu chấm công" : 
-                           record.trangThai === "Chờ duyệt" ? "Chưa duyệt" : "Đã duyệt",
-                    start: record.ngayLamViec,
-                    color: record.trangThai === "Yêu cầu chấm công" ? "yellow" : 
-                           record.trangThai === "Chờ duyệt" ? "blue" : "green"
-                }));
+                let events = data.records.map(record => {
+                    let status = record.trangThai ? record.trangThai.trim().toLowerCase() : "";
+                    let eventTitle = "Đã duyệt";
+                    let eventColor = "green";
+
+                    if (status === "yêu cầu chấm công") {
+                        eventTitle = "Yêu cầu chấm công";
+                        eventColor = "yellow";
+                    } else if (status === "chờ duyệt") { // ✅ Sửa lỗi tại đây
+                        eventTitle = "Chưa duyệt";
+                        eventColor = "blue";
+                    }
+
+                    return {
+                        title: eventTitle,
+                        start: record.ngayLamViec,
+                        color: eventColor
+                    };
+                });
+
                 successCallback(events);
             } else {
-                failureCallback();
+                failureCallback(new Error(data.message || "Không thể lấy dữ liệu"));
             }
         })
-        .catch(error => failureCallback());
+        .catch(error => failureCallback(error));
 }
+
 
 // Gọi API khi trang tải xong
 document.addEventListener("DOMContentLoaded", fetchAttendanceRecords);

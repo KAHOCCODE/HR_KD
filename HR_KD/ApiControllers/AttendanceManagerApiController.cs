@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using HR_KD.Data;
 using System.Linq;
+using HR_KD.DTOs;
 
 [Route("api/AttendanceManager")]
 [ApiController]
@@ -81,7 +82,7 @@ public class AttendanceManagerController : ControllerBase
 
     // 🔹 Duyệt hoặc từ chối chấm công
     [HttpPost("ApproveAttendanceManager")]
-    public IActionResult ApproveAttendance([FromBody] ApproveAttendanceRequest request)
+    public IActionResult ApproveAttendance( ApproveAttendanceRequestDTO request)
     {
         var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == request.MaChamCong);
         if (chamCong == null)
@@ -96,9 +97,3 @@ public class AttendanceManagerController : ControllerBase
     }
 }
 
-// DTO cho yêu cầu cập nhật trạng thái chấm công
-public class ApproveAttendanceRequest
-{
-    public int MaChamCong { get; set; }
-    public string TrangThai { get; set; } = "Chờ duyệt";
-}

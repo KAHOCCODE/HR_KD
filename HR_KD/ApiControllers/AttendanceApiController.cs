@@ -1,4 +1,5 @@
 ﻿using HR_KD.Data;
+using HR_KD.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,13 +20,19 @@ namespace HR_KD.ApiControllers
             _context = context;
         }
 
+        private int? GetMaNvFromClaims()
+        {
+            var maNvClaim = User.FindFirst("MaNV")?.Value;
+            return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
+        }
+
         // API Chấm công
         [HttpPost]
         [Route("SubmitAttendance")]
-        public async Task<IActionResult> SubmitAttendance([FromBody] List<ChamCongDto> attendanceData)
+        public async Task<IActionResult> SubmitAttendance(List<ChamCongDTO> attendanceData)
         {
-            var maNvClaim = User.FindFirst("MaNV")?.Value;
-            if (string.IsNullOrEmpty(maNvClaim) || !int.TryParse(maNvClaim, out int maNv))
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
             {
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
@@ -39,13 +46,12 @@ namespace HR_KD.ApiControllers
             {
                 foreach (var entry in attendanceData)
                 {
-                    DateOnly ngayLamViec;
-                    if (!DateOnly.TryParse(entry.NgayLamViec, out ngayLamViec))
+                    if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
                     {
                         return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
                     }
 
-                    bool daChamCong = await _context.ChamCongs.AnyAsync(c => c.MaNv == maNv && c.NgayLamViec == ngayLamViec);
+                    bool daChamCong = await _context.ChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.NgayLamViec == ngayLamViec);
                     if (daChamCong)
                     {
                         return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
@@ -53,7 +59,7 @@ namespace HR_KD.ApiControllers
 
                     var chamCong = new ChamCong
                     {
-                        MaNv = maNv, // 🚀 Lấy từ Claim, không nhận từ frontend
+                        MaNv = maNv.Value,
                         NgayLamViec = ngayLamViec,
                         GioVao = TimeOnly.TryParse(entry.GioVao, out var parsedGioVao) ? parsedGioVao : null,
                         GioRa = TimeOnly.TryParse(entry.GioRa, out var parsedGioRa) ? parsedGioRa : null,
@@ -77,11 +83,16 @@ namespace HR_KD.ApiControllers
         // API Lấy dữ liệu chấm công
         [HttpGet]
         [Route("GetAttendanceRecords")]
-        public async Task<IActionResult> GetAttendanceRecords(int maNv, string? ngayLamViec = null)
+        public async Task<IActionResult> GetAttendanceRecords(string? ngayLamViec = null)
         {
-            var query = _context.ChamCongs.Where(c => c.MaNv == maNv);
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
+            }
 
-            // Nếu có ngày làm việc, lọc theo ngày
+            var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value);
+
             if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
             {
                 query = query.Where(c => c.NgayLamViec == ngay);
@@ -100,17 +111,6 @@ namespace HR_KD.ApiControllers
                 .ToListAsync();
 
             return Ok(new { success = true, records });
-        }
-
-        // DTO dùng để nhận dữ liệu từ frontend
-        public class ChamCongDto
-        {
-            public string NgayLamViec { get; set; }
-            public string? GioVao { get; set; }
-            public string? GioRa { get; set; }
-            public decimal? TongGio { get; set; }
-            public string? TrangThai { get; set; }
-            public string? GhiChu { get; set; }
         }
     }
 }

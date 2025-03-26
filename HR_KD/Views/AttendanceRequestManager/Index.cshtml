@@ -104,7 +104,7 @@
 });
 
 function loadDepartments() {
-    fetch("/api/AttendanceManager/GetDepartmentsManager")
+    fetch("/api/AttendanceRequestManager/GetDepartmentsManager")
         .then(response => response.json())
         .then(data => {
             let select = document.getElementById("departmentFilter");
@@ -114,7 +114,7 @@ function loadDepartments() {
 }
 
 function loadPositions() {
-    fetch("/api/AttendanceManager/GetPositionsManager")
+    fetch("/api/AttendanceRequestManager/GetPositionsManager")
         .then(response => response.json())
         .then(data => {
             let select = document.getElementById("positionFilter");
@@ -127,7 +127,7 @@ function loadEmployees() {
     let maPhongBan = document.getElementById("departmentFilter").value;
     let maChucVu = document.getElementById("positionFilter").value;
 
-    fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${maPhongBan}&maChucVu=${maChucVu}`)
+    fetch(`/api/AttendanceRequestManager/GetEmployeesManager?maPhongBan=${maPhongBan}&maChucVu=${maChucVu}`)
         .then(response => response.json())
         .then(data => {
             let select = document.getElementById("employeeFilter");
@@ -137,7 +137,7 @@ function loadEmployees() {
 }
 
 function fetchAttendanceRecords(maNv) {
-    fetch(`/api/AttendanceManager/GetAttendanceManagerRecords?maNv=${maNv}`)
+    fetch(`/api/AttendanceRequestManager/GetAttendanceManagerRecords?maNv=${maNv}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) renderAttendanceTable(data.records);
@@ -268,7 +268,7 @@ function fetchAttendanceRecords() {
         return;
     }
 
-    fetch(`/api/Attendance/GetAttendanceRecords?maNv=${maNV}`)
+    fetch(`/api/AttendanceRequestManager/GetAttendanceManagerRecords?maNv=${maNV}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -311,7 +311,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
     const maNV = document.getElementById("employeeFilter").value;
-    fetch(`/api/Attendance/GetAttendanceRecords?maNv=${maNV}`)
+    fetch(`/api/AttendanceRequestManager/GetAttendanceManagerRecords?maNv=${maNV}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {

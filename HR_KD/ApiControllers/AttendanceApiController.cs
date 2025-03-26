@@ -112,5 +112,6 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, records });
         }
+        
     }
 }

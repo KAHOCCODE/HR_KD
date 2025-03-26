@@ -1,4 +1,5 @@
 using HR_KD.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -12,7 +13,6 @@ namespace HR_KD.Controllers
         {
             _logger = logger;
         }
-
         public IActionResult Index()
         {
             return View();

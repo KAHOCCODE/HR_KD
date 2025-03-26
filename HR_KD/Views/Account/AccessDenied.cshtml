@@ -2,7 +2,34 @@
     ViewData["Title"] = "Truy cập bị từ chối";
 }
 
-<div class="container text-center mt-5">
-    <h2 class="text-danger">cút!</h2>
-    <a href="/" class="btn btn-primary mt-3">Về trang chủ</a>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+
+    <link rel="stylesheet" type="text/css" href="~/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="~/assets/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="~/assets/css/style.css">
+    <!--[if lt IE 9]>
+        <script src="~/assets/js/html5shiv.min.js"></script>
+        <script src="~/assets/js/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+    <div class="main-wrapper error-wrapper">
+        <div class="error-box">
+            <h1>403</h1>
+            <h3><i class="fa fa-warning"></i> Oops! This Page Forbidden to Access!</h3>
+            <p>The page you requested has forbidden you to access.</p>
+            <a href="~/Home/Index" class="btn btn-primary go-home">Go to Home</a>
+        </div>
+    </div>
+    <script src="~/assets/js/jquery-3.2.1.min.js"></script>
+    <script src="~/assets/js/popper.min.js"></script>
+    <script src="~/assets/js/bootstrap.min.js"></script>
+</body>
+
+</html>

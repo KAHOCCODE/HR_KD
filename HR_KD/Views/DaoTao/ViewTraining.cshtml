@@ -5,11 +5,11 @@
     ViewData["Title"] = "Khóa đào tạo của bạn";
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4">@ViewData["Title"]</h2>
+<div class="container mt-5">
+    <h2 class="mb-4 text-center">@ViewData["Title"]</h2>
 
-    <div class="card">
-        <div class="card-header bg-primary text-white">
+    <div class="card shadow-lg">
+        <div class="card-header bg-gradient-primary text-white">
             <h5 class="mb-0">Danh sách khóa đào tạo</h5>
         </div>
         <div class="card-body">
@@ -63,7 +63,7 @@
             }
             else
             {
-                <div class="alert alert-info" role="alert">
+                <div class="alert alert-info shadow-sm" role="alert">
                     Bạn chưa được gán vào khóa đào tạo nào.
                 </div>
             }
@@ -72,8 +72,23 @@
 </div>
 
 <style>
+    .card {
+        border-radius: 15px;
+        border: none;
+    }
+
     .card-header {
-        padding: 0.75rem 1.25rem;
+        padding: 1rem 1.5rem;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(90deg, #007bff 0%, #00c4ff 100%);
+    }
+
+    .card-body {
+        padding: 1.5rem;
     }
 
     .table th, .table td {
@@ -85,11 +100,35 @@
         overflow-y: auto;
     }
 
+    .thead-dark th {
+        background-color: #343a40;
+        color: white;
+    }
+
     .badge-success {
         background-color: #28a745;
+        padding: 0.5em 1em;
+        font-size: 0.9em;
     }
 
     .badge-warning {
         background-color: #ffc107;
+        padding: 0.5em 1em;
+        font-size: 0.9em;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        border: none;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+    .alert-info {
+        border-radius: 10px;
     }
 </style>

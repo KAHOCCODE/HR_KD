@@ -2,71 +2,157 @@
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-<div class="container">
-    <h2 class="mt-4 mb-3 text-center">Thêm Nhân Viên</h2>
-    <form id="createEmployeeForm">
-        <div class="mb-3">
-            <label class="form-label">Họ và Tên</label>
-            <input type="text" class="form-control" id="HoTen" required />
+<div class="container mt-5">
+    <h2 class="mb-4 text-center text-primary">Thêm Nhân Viên</h2>
+    <form id="createEmployeeForm" class="card shadow-lg p-4">
+        <div class="row">
+            <!-- Họ và Tên -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Họ và Tên <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="HoTen" required />
+            </div>
+
+            <!-- Ngày Sinh -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Ngày Sinh <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="NgaySinh" required />
+            </div>
+
+            <!-- Giới Tính -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Giới Tính <span class="text-danger">*</span></label>
+                <select class="form-control" id="GioiTinh" required>
+                    <option value="">-- Chọn giới tính --</option>
+                    <option value="true">Nam</option>
+                    <option value="false">Nữ</option>
+                </select>
+            </div>
+
+            <!-- Số Điện Thoại -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Số Điện Thoại <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="Sdt" required />
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" id="Email" required />
+            </div>
+
+            <!-- Trình Độ Học Vấn -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Trình Độ Học Vấn</label>
+                <input type="text" class="form-control" id="TrinhDoHocVan" />
+            </div>
+
+            <!-- Ngày Vào Làm -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Ngày Vào Làm <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" id="NgayVaoLam" required />
+            </div>
+
+            <!-- Chức Vụ -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Chức Vụ <span class="text-danger">*</span></label>
+                <select id="MaChucVu" class="form-control" required></select>
+            </div>
+
+            <!-- Phòng Ban -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Phòng Ban <span class="text-danger">*</span></label>
+                <select id="MaPhongBan" class="form-control" required></select>
+            </div>
+
+            <!-- Ảnh Đại Diện -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Ảnh Đại Diện</label>
+                <input type="file" class="form-control" id="AvatarUrl" name="AvatarUrl" accept=".jpg,.png,.jpeg" />
+            </div>
         </div>
 
+        <!-- Phần Địa Chỉ -->
         <div class="mb-3">
-            <label class="form-label">Ngày Sinh</label>
-            <input type="date" class="form-control" id="NgaySinh" required />
+            <label class="form-label fw-bold">Địa Chỉ</label>
+            <div class="row">
+                <!-- Số nhà, đường -->
+                <div class="col-md-3 mb-3">
+                    <input type="text" class="form-control" id="SoNhaDuong" placeholder="Số nhà, đường" />
+                </div>
+
+                <!-- Phường/Xã -->
+                <div class="col-md-3 mb-3">
+                    <select class="form-control" id="PhuongXa">
+                        <option value="">-- Chọn Phường/Xã --</option>
+                    </select>
+                </div>
+
+                <!-- Quận/Huyện -->
+                <div class="col-md-3 mb-3">
+                    <select class="form-control" id="QuanHuyen">
+                        <option value="">-- Chọn Quận/Huyện --</option>
+                    </select>
+                </div>
+
+                <!-- Tỉnh/Thành phố -->
+                <div class="col-md-3 mb-3">
+                    <select class="form-control" id="TinhThanh">
+                        <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Địa chỉ đầy đủ (readonly) -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Địa Chỉ Đầy Đủ</label>
+                <input type="text" class="form-control" id="DiaChiDayDu" readonly />
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Giới Tính</label>
-            <select class="form-control" id="GioiTinh" required>
-                <option value="">-- Chọn giới tính --</option>
-                <option value="true">Nam</option>
-                <option value="false">Nữ</option>
-            </select>
+        <!-- Nút Submit -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary btn-lg">Thêm Nhân Viên</button>
         </div>
-
-        <div class="mb-3">
-            <label class="form-label">Địa Chỉ</label>
-            <input type="text" class="form-control" id="DiaChi" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Số Điện Thoại</label>
-            <input type="text" class="form-control" id="Sdt" required />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" id="Email" required />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Trình Độ Học Vấn</label>
-            <input type="text" class="form-control" id="TrinhDoHocVan" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Ngày Vào Làm</label>
-            <input type="date" class="form-control" id="NgayVaoLam" required />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Chức Vụ</label>
-            <select id="MaChucVu" class="form-control" required></select>
-        </div
-
-        <div class="mb-3">
-            <label class="form-label">Phòng Ban</label>
-            <select id="MaPhongBan" class="form-control" required></select>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Ảnh Đại Diện</label>
-            <input type="file" class="form-control" id="AvatarUrl" name="AvatarUrl" accept=".jpg,.png,.jpeg" />
-        </div>
-
-        <button type="submit" class="btn btn-primary">Thêm Nhân Viên</button>
     </form>
 </div>
+
+<style>
+    .card {
+        border-radius: 15px;
+        border: none;
+    }
+
+    .form-label {
+        color: #333;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.3s ease;
+    }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #007bff 0%, #00c4ff 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 30px;
+        transition: background 0.3s ease;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #0056b3 0%, #0096cc 100%);
+        }
+
+    .text-primary {
+        color: #007bff !important;
+    }
+</style>
 
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -91,81 +177,148 @@
                 });
             });
 
-                   $("#createEmployeeForm").submit(function (e) {
-            e.preventDefault();
-
-            let formData = new FormData();
-            formData.append("HoTen", $("#HoTen").val());
-            formData.append("NgaySinh", $("#NgaySinh").val());
-            formData.append("GioiTinh", $("#GioiTinh").val());
-            formData.append("DiaChi", $("#DiaChi").val());
-            formData.append("Sdt", $("#Sdt").val());
-            formData.append("Email", $("#Email").val());
-            formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
-            formData.append("MaChucVu", $("#MaChucVu").val());
-            formData.append("MaPhongBan", $("#MaPhongBan").val());
-            formData.append("NgayVaoLam", $("#NgayVaoLam").val());
-            let avatar = $("#AvatarUrl")[0].files[0];
-            if (avatar) {
-                formData.append("AvatarUrl", avatar);
-            }
-
-            // Chỉ kiểm tra các trường bắt buộc theo DTO
-            let requiredFields = [
-                { id: "HoTen", name: "Họ và Tên" },
-                { id: "NgaySinh", name: "Ngày Sinh" },
-                { id: "GioiTinh", name: "Giới Tính" },
-                { id: "Sdt", name: "Số Điện Thoại" },
-                { id: "Email", name: "Email" },
-                { id: "MaChucVu", name: "Chức Vụ" },
-                { id: "MaPhongBan", name: "Phòng Ban" },
-                { id: "NgayVaoLam", name: "Ngày vào làm" }
-            ];
-
-            for (let field of requiredFields) {
-                if (!$("#" + field.id).val()) {
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Thiếu thông tin",
-                        text: `Vui lòng nhập ${field.name}!`
-                    });
-                    return;
-                }
-            }
-
-            $.ajax({
-                url: "/api/EmployeesApi/CreateEmployee",
-                type: "POST",
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function (response) {
-                    Swal.fire({
-                        icon: "success",
-                        title: "Thành công!",
-                        text: "Nhân viên đã được thêm thành công!",
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                },
-                error: function (xhr) {
-                    console.log("Error Response:", xhr); // Debug chi tiết
-                    let errorMessage = "Lỗi không xác định!";
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    } else if (xhr.responseText) {
-                        errorMessage = xhr.responseText; // Hiển thị toàn bộ phản hồi nếu có
-                    }
-                    Swal.fire({
-                        icon: "error",
-                        title: "Lỗi!",
-                        text: errorMessage
-                    });
-                }
+            // Load danh sách Tỉnh/Thành phố từ API
+            $.get("https://provinces.open-api.vn/api/p/", function (data) {
+                let tinhThanhDropdown = $("#TinhThanh");
+                tinhThanhDropdown.append('<option value="">-- Chọn Tỉnh/Thành phố --</option>');
+                data.forEach(item => {
+                    tinhThanhDropdown.append(`<option value="${item.code}" data-name="${item.name}">${item.name}</option>`);
+                });
             });
-        });
+
+            // Khi chọn Tỉnh/Thành phố, load Quận/Huyện
+            $("#TinhThanh").change(function () {
+                let tinhThanhCode = $(this).val();
+                let quanHuyenDropdown = $("#QuanHuyen");
+                let phuongXaDropdown = $("#PhuongXa");
+
+                // Reset Quận/Huyện và Phường/Xã
+                quanHuyenDropdown.html('<option value="">-- Chọn Quận/Huyện --</option>');
+                phuongXaDropdown.html('<option value="">-- Chọn Phường/Xã --</option>');
+
+                if (tinhThanhCode) {
+                    $.get(`https://provinces.open-api.vn/api/p/${tinhThanhCode}?depth=2`, function (data) {
+                        data.districts.forEach(item => {
+                            quanHuyenDropdown.append(`<option value="${item.code}" data-name="${item.name}">${item.name}</option>`);
+                        });
+                    });
+                }
+                updateDiaChiDayDu();
+            });
+
+            // Khi chọn Quận/Huyện, load Phường/Xã
+            $("#QuanHuyen").change(function () {
+                let quanHuyenCode = $(this).val();
+                let phuongXaDropdown = $("#PhuongXa");
+
+                // Reset Phường/Xã
+                phuongXaDropdown.html('<option value="">-- Chọn Phường/Xã --</option>');
+
+                if (quanHuyenCode) {
+                    $.get(`https://provinces.open-api.vn/api/d/${quanHuyenCode}?depth=2`, function (data) {
+                        data.wards.forEach(item => {
+                            phuongXaDropdown.append(`<option value="${item.code}" data-name="${item.name}">${item.name}</option>`);
+                        });
+                    });
+                }
+                updateDiaChiDayDu();
+            });
+
+            // Khi chọn Phường/Xã hoặc nhập Số nhà, đường, cập nhật địa chỉ đầy đủ
+            $("#PhuongXa, #SoNhaDuong").on("change input", function () {
+                updateDiaChiDayDu();
+            });
+
+            // Hàm cập nhật địa chỉ đầy đủ
+            function updateDiaChiDayDu() {
+                let soNhaDuong = $("#SoNhaDuong").val();
+                let phuongXa = $("#PhuongXa option:selected").data("name") || "";
+                let quanHuyen = $("#QuanHuyen option:selected").data("name") || "";
+                let tinhThanh = $("#TinhThanh option:selected").data("name") || "";
+
+                let diaChiDayDu = [soNhaDuong, phuongXa, quanHuyen, tinhThanh]
+                    .filter(part => part) // Loại bỏ phần rỗng
+                    .join(", ");
+
+                $("#DiaChiDayDu").val(diaChiDayDu);
+            }
+
+            // Xử lý submit form
+            $("#createEmployeeForm").submit(function (e) {
+                e.preventDefault();
+
+                let formData = new FormData();
+                formData.append("HoTen", $("#HoTen").val());
+                formData.append("NgaySinh", $("#NgaySinh").val());
+                formData.append("GioiTinh", $("#GioiTinh").val());
+                formData.append("DiaChi", $("#DiaChiDayDu").val()); // Lấy địa chỉ đầy đủ
+                formData.append("Sdt", $("#Sdt").val());
+                formData.append("Email", $("#Email").val());
+                formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
+                formData.append("MaChucVu", $("#MaChucVu").val());
+                formData.append("MaPhongBan", $("#MaPhongBan").val());
+                formData.append("NgayVaoLam", $("#NgayVaoLam").val());
+                let avatar = $("#AvatarUrl")[0].files[0];
+                if (avatar) {
+                    formData.append("AvatarUrl", avatar);
+                }
+
+                // Kiểm tra các trường bắt buộc
+                let requiredFields = [
+                    { id: "HoTen", name: "Họ và Tên" },
+                    { id: "NgaySinh", name: "Ngày Sinh" },
+                    { id: "GioiTinh", name: "Giới Tính" },
+                    { id: "Sdt", name: "Số Điện Thoại" },
+                    { id: "Email", name: "Email" },
+                    { id: "MaChucVu", name: "Chức Vụ" },
+                    { id: "MaPhongBan", name: "Phòng Ban" },
+                    { id: "NgayVaoLam", name: "Ngày vào làm" }
+                ];
+
+                for (let field of requiredFields) {
+                    if (!$("#" + field.id).val()) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Thiếu thông tin",
+                            text: `Vui lòng nhập ${field.name}!`
+                        });
+                        return;
+                    }
+                }
+
+                $.ajax({
+                    url: "/api/EmployeesApi/CreateEmployee",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (response) {
+                        Swal.fire({
+                            icon: "success",
+                            title: "Thành công!",
+                            text: "Nhân viên đã được thêm thành công!",
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function (xhr) {
+                        console.log("Error Response:", xhr);
+                        let errorMessage = "Lỗi không xác định!";
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.responseText) {
+                            errorMessage = xhr.responseText;
+                        }
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi!",
+                            text: errorMessage
+                        });
+                    }
+                });
+            });
         });
     </script>
 }

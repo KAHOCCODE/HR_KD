@@ -18,7 +18,7 @@ namespace HR_KD.Controllers
         }
 
         // GET: DaoTao/Index (Dành cho quản lý)
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")] // Giả định có phân quyền
+        [Authorize(Roles = "EMPLOYEE_MANAGER")] // Giả định có phân quyền
         public async Task<IActionResult> Index()
         {
             var daoTaos = await _context.DaoTaos
@@ -39,7 +39,7 @@ namespace HR_KD.Controllers
         }
 
         // GET: DaoTao/Details/5 (Dành cho quản lý)
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Details(int id)
         {
             var daoTao = await _context.DaoTaos
@@ -77,7 +77,7 @@ namespace HR_KD.Controllers
         }
 
         // GET: DaoTao/Create (Dành cho quản lý)
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public IActionResult Create()
         {
             ViewBag.PhongBans = new SelectList(_context.PhongBans, "MaPhongBan", "TenPhongBan");
@@ -87,7 +87,7 @@ namespace HR_KD.Controllers
         // POST: DaoTao/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Create(DaoTaoDTO dto)
         {
             if (ModelState.IsValid)
@@ -111,7 +111,7 @@ namespace HR_KD.Controllers
             return View(dto);
         }
 
-        //[Authorize(Roles = "Manager")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Edit(int id)
         {
             var daoTao = await _context.DaoTaos
@@ -146,7 +146,7 @@ namespace HR_KD.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[Authorize(Roles = "Manager")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Edit(int id, DaoTaoDTO dto)
         {
             if (id != dto.MaDaoTao) return BadRequest();
@@ -183,7 +183,7 @@ namespace HR_KD.Controllers
         }
 
         // GET: DaoTao/Delete/5 (Dành cho quản lý)
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Delete(int id)
         {
             var daoTao = await _context.DaoTaos
@@ -207,7 +207,7 @@ namespace HR_KD.Controllers
         // POST: DaoTao/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var daoTao = await _context.DaoTaos.FindAsync(id);
@@ -220,7 +220,7 @@ namespace HR_KD.Controllers
         }
 
         // GET: DaoTao/Assign/5 (Dành cho quản lý)
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Assign(int id)
         {
             var daoTao = await _context.DaoTaos.FindAsync(id);
@@ -242,7 +242,7 @@ namespace HR_KD.Controllers
         // POST: DaoTao/Assign
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Assign(int maDaoTao, List<int> maNvs)
         {
             if (maNvs == null || maNvs.Count == 0)
@@ -277,7 +277,7 @@ namespace HR_KD.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-       // [Authorize(Roles = "Manager")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> UnassignEmployee(int maLichSu, int maDaoTao)
         {
             var lichSu = await _context.LichSuDaoTaos.FindAsync(maLichSu);
@@ -291,7 +291,7 @@ namespace HR_KD.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[Authorize(Roles = "Manager")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> UnassignAllEmployees(int maDaoTao)
         {
             var daoTao = await _context.DaoTaos
@@ -307,10 +307,27 @@ namespace HR_KD.Controllers
         }
 
         // GET: DaoTao/ViewTraining (Dành cho nhân viên)
-        [Authorize] // Giả định nhân viên đã đăng nhập
+        [Authorize(Roles = "EMPLOYEE")] // Giả định nhân viên đã đăng nhập
         public async Task<IActionResult> ViewTraining()
         {
-            int maNv = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)); // Lấy MaNv từ Claims
+            // Lấy tên đầy đủ của người dùng đã đăng nhập
+            var userName = User.Identity.Name; // "Nguyễn Hòa Khang"
+
+            if (string.IsNullOrEmpty(userName))
+            {
+                return Forbid(); // Nếu không tìm thấy thông tin người dùng, trả về lỗi
+            }
+
+            // Tìm MaNv từ bảng NhanVien dựa trên HoTen
+            var nhanVien = await _context.NhanViens
+                .FirstOrDefaultAsync(nv => nv.HoTen == userName); // So sánh với cột HoTen
+
+            if (nhanVien == null)
+            {
+                return NotFound("Không tìm thấy nhân viên tương ứng với tài khoản này.");
+            }
+
+            int maNv = nhanVien.MaNv; // Lấy MaNv từ NhanVien
 
             var lichSuDaoTaos = await _context.LichSuDaoTaos
                 .Include(ls => ls.MaDaoTaoNavigation)
@@ -345,15 +362,38 @@ namespace HR_KD.Controllers
         // POST: DaoTao/CompleteTraining (Dành cho nhân viên)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
+        [Authorize(Roles = "EMPLOYEE")]
         public async Task<IActionResult> CompleteTraining(int maLichSu)
         {
             var lichSu = await _context.LichSuDaoTaos.FindAsync(maLichSu);
             if (lichSu == null) return NotFound();
 
-            int maNv = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            if (lichSu.MaNv != maNv) return Forbid();
+            // Lấy tên đầy đủ của người dùng đã đăng nhập
+            var userName = User.Identity.Name; // "Nguyễn Hòa Khang"
 
+            if (string.IsNullOrEmpty(userName))
+            {
+                return Forbid(); // Nếu không tìm thấy thông tin người dùng, trả về lỗi
+            }
+
+            // Tìm MaNv từ bảng NhanVien dựa trên HoTen
+            var nhanVien = await _context.NhanViens
+                .FirstOrDefaultAsync(nv => nv.HoTen == userName); // So sánh với cột HoTen
+
+            if (nhanVien == null)
+            {
+                return NotFound("Không tìm thấy nhân viên tương ứng với tài khoản này.");
+            }
+
+            int maNv = nhanVien.MaNv; // Lấy MaNv từ NhanVien
+
+            // Kiểm tra xem nhân viên có quyền hoàn thành khóa đào tạo này không
+            if (lichSu.MaNv != maNv)
+            {
+                return Forbid(); // Nếu MaNv không khớp, trả về lỗi
+            }
+
+            // Cập nhật trạng thái thành "Hoàn Thành"
             lichSu.KetQua = "Hoàn Thành";
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(ViewTraining));

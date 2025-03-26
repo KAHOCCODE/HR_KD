@@ -16,7 +16,7 @@
         <!-- Header-->
         <div class="header">
             <div class="header-left">
-                <a href="Index.html" class="logo">
+                <a href="~/Home/Index" class="logo">
                     <img src="~/assets/img/logo.png" width="35" height="35" alt=""> <span>Preclinic</span>
                 </a>
             </div>
@@ -102,7 +102,7 @@
                 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
 
                 @{
-                    var hoTen = HttpContextAccessor.HttpContext?.Session.GetString("HoTen"); // 🔹 Lấy HoTen từ Session
+                    var hoTen = HttpContextAccessor.HttpContext?.Session.GetString("HoTen"); // Lấy HoTen từ Session
                     var isLoggedIn = !string.IsNullOrEmpty(hoTen);
                 }
 
@@ -116,7 +116,6 @@
                                 <span class="status online"></span>
                             </span>
                             <span>@hoTen</span>
-                            
                         </a>
                         <div class="dropdown-menu">
                             <a class="dropdown-item" href="profile.html">My Profile</a>
@@ -143,61 +142,70 @@
             </div>
         </div>
 
-                                                            <!--sidebar-->
+        <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-inner slimscroll">
                 <div id="sidebar-menu" class="sidebar-menu">
                     <ul>
                         <li class="menu-title">Quản lý nhân sự</li>
                         <li>
-                            <a href="~/Dashboard"><i class="fa fa-dashboard"></i> <span>Dashboard</span></a>
+                            <a href="~/Home/Index"><i class="fa fa-dashboard"></i> <span>Dashboard</span></a>
                         </li>
 
-                        <li class="submenu">
-                            <a href="#"><i class="fa fa-users"></i> <span>Nhân viên</span> <span class="menu-arrow"></span></a>
-                            <ul style="display: none;">
-                                <li><a href="~/Employees"><i class="fa fa-list"></i> Danh sách nhân viên</a></li>
-                                <li><a href="~/Employees/Create"><i class="fa fa-user-plus"></i> Thêm nhân viên</a></li>
-                                <li><a href="~/Employees/Roles"><i class="fa fa-key"></i> Cấp quyền nhân viên</a></li>
-                                <li><a href="~/Employees/Profiles"><i class="fa fa-id-card"></i> Quản lý hồ sơ</a></li>
-                                <li><a href="~/Employees/Contracts"><i class="fa fa-file-text"></i> Quản lý hợp đồng</a></li>
-                                <li><a href="~/Employees/Rewards"><i class="fa fa-trophy"></i> Khen thưởng & Kỷ luật</a></li>
-                                <li><a href="~/Employees/Transfers"><i class="fa fa-exchange"></i> Thuyên chuyển công tác</a></li>
-                                <li><a href="~/Employees/Resignations"><i class="fa fa-sign-out"></i> Nghỉ việc</a></li>
-                            </ul>
+                        <!-- Chỉ hiển thị dropdown "Nhân viên" nếu người dùng có vai trò EMPLOYEE_MANAGER -->
+                        @if (User.IsInRole("EMPLOYEE_MANAGER"))
+                        {
+                            <li class="submenu">
+                                <a href="#"><i class="fa fa-users"></i> <span>Nhân viên</span> <span class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    <li><a href="~/Employees/Index"><i class="fa fa-list"></i> Danh sách nhân viên</a></li>
+                                    <li><a href="~/Employees/Create"><i class="fa fa-user-plus"></i> Thêm nhân viên</a></li>
+                                    <li><a href="~/Employees/Roles"><i class="fa fa-key"></i> Cấp quyền nhân viên</a></li>
+                                    <li><a href="~/Employees/Profiles"><i class="fa fa-id-card"></i> Quản lý hồ sơ</a></li>
+                                    <li><a href="~/Employees/Contracts"><i class="fa fa-file-text"></i> Quản lý hợp đồng</a></li>
+                                    <li><a href="~/Employees/Rewards"><i class="fa fa-trophy"></i> Khen thưởng & Kỷ luật</a></li>
+                                    <li><a href="~/Employees/Transfers"><i class="fa fa-exchange"></i> Thuyên chuyển công tác</a></li>
+                                    <li><a href="~/Employees/Resignations"><i class="fa fa-sign-out"></i> Nghỉ việc</a></li>
+                                </ul>
+                            </li>
+                        }
+
+                        <li>
+                            <a href="~/Attendance/Index"><i class="fa fa-clock-o"></i> <span>Chấm công</span></a>
                         </li>
 
                         <li>
-                            <a href="~/Attendance"><i class="fa fa-clock-o"></i> <span>Chấm công</span></a>
-                        </li>
-
-                        <li>
-                            <a href="~/Leave">
+                            <a href="~/Leave/Index">
                                 <i class="fa fa-bed"></i> <!-- Icon giường (nghỉ ngơi) -->
                                 <span>Nghỉ Phép</span>
                             </a>
                         </li>
 
-
                         <li class="submenu">
                             <a href="#"><i class="fa fa-money"></i> <span>Quản lý lương</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
-                                <li><a href="~/Payroll"><i class="fa fa-calculator"></i> Bảng lương</a></li>
-                                <li><a href="~/SalaryStatistics"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
-                                <li><a href="~/LeaveRecords"><i class="fa fa-calendar-times"></i> Quản lý ngày phép</a></li>
+                                <li><a href="~/Payroll/Index"><i class="fa fa-calculator"></i> Bảng lương</a></li>
+                                <li><a href="~/SalaryStatistics/Index"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
+                                <li><a href="~/LeaveRecords/Index"><i class="fa fa-calendar-times"></i> Quản lý ngày phép</a></li>
                             </ul>
                         </li>
 
                         <li class="submenu">
                             <a href="#"><i class="fa fa-briefcase"></i> <span>Tuyển dụng</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
-                                <li><a href="~/Recruitment"><i class="fa fa-bullhorn"></i> Danh sách tuyển dụng</a></li>
-                                <li><a href="~/Candidates"><i class="fa fa-user-check"></i> Ứng viên</a></li>
+                                <li><a href="~/Recruitment/Index"><i class="fa fa-bullhorn"></i> Danh sách tuyển dụng</a></li>
+                                <li><a href="~/Candidates/Index"><i class="fa fa-user-check"></i> Ứng viên</a></li>
                             </ul>
                         </li>
 
                         <li>
-                            <a href="~/DaoTao"><i class="fa fa-graduation-cap"></i> <span>Đào tạo</span></a>
+                            @{
+                                // Kiểm tra vai trò của người dùng
+                                string daoTaoUrl = User.IsInRole("EMPLOYEE") ? Url.Action("ViewTraining", "DaoTao") :
+                                                  User.IsInRole("EMPLOYEE_MANAGER") ? Url.Action("Index", "DaoTao") :
+                                                  "/Account/Login"; // Nếu không có vai trò, chuyển đến trang đăng nhập
+                            }
+                            <a href="@daoTaoUrl"><i class="fa fa-graduation-cap"></i> <span>Đào tạo</span></a>
                         </li>
 
                         <li class="submenu">
@@ -221,7 +229,7 @@
             </div>
         </div>
 
-                                                            <!--content-->
+        <!-- Content -->
         <div class="page-wrapper">
             <div class="content">
                 <div class="row">
@@ -260,8 +268,8 @@
                 </div>
             </div>
         </div>
-
     </div>
+
     <div class="sidebar-overlay" data-reff=""></div>
     <script src="~/assets/js/jquery-3.2.1.min.js"></script>
     <script src="~/assets/js/popper.min.js"></script>

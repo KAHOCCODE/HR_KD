@@ -73,14 +73,16 @@
 
 <script>
 let selectedWorkDays = new Set();
-
+let attendanceRecords = new Set(); // Chứa danh sách ngày đã chấm công
 // Cấu hình Flatpickr
 flatpickr("#attendanceDateRange", {
     mode: "multiple",
     dateFormat: "Y-m-d",
     disable: [
         function(date) {
-            return date.getDay() === 0; // Vô hiệu hóa Chủ Nhật
+             let today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return date < today || date.getDay() === 0; // Chặn ngày trong quá khứ và Chủ Nhật
         }
     ],
     locale: {
@@ -109,9 +111,12 @@ document.getElementById("submitAttendance").addEventListener("click", function()
         Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
         return;
     }
-
+     if (!checkIn || !checkOut) {
+        Swal.fire("Lỗi!", "Vui lòng nhập cả giờ check-in và check-out.", "error");
+        return;
+    }
     let attendanceData = [...selectedWorkDays].map(day => ({
-        MaNV: 1,
+        
         NgayLamViec: day,
         GioVao: checkIn || null,
         GioRa: checkOut || null,

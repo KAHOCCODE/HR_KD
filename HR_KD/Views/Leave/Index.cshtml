@@ -114,7 +114,6 @@
     }
 
     .status {
-
         font-weight: bold;
         display: inline-block;
         width: 100%; /* Chiếm toàn bộ chiều rộng của ô */
@@ -205,8 +204,6 @@
             background-color: #f5f5f5; /* Đổi màu nền khi hover */
         }
 
-
-
 </style>
 
 <div id="leaveSection" class="dashboard-card bg-white p-4">
@@ -230,18 +227,19 @@
             </div>
             <div class="col-12">
                 <label class="form-label">Lý do</label>
-                <textarea class="form-control" name="leaveReason" rows="3" placeholder="Nhập lý do..." required></textarea>
+                <textarea class="form-control" name="leaveReason" rows="3" placeholder="Nhập lý do..."></textarea>
             </div>
             <div class="col-12">
-                <button type="submit" class="btn btn-success">
+                <button type="submit" id="submitButton" class="btn btn-success">
                     <i class="fas fa-paper-plane me-2"></i>Gửi yêu cầu
                 </button>
+
             </div>
         </div>
     </form>
 </div>
 
-<div class="dashboard-card bg-white p-4 mt-4"> 
+<div class="dashboard-card bg-white p-4 mt-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-info-circle me-2"></i>Thông tin nghỉ phép khả dụng</h5>
     <div class="row">
         <div class="col-md-12">
@@ -265,7 +263,7 @@
             <option value="rejected">Từ chối</option>
         </select>
     </div>
-        <table class="table table-bordered">
+    <table class="table table-bordered">
         <thead>
             <tr>
                 <th>Loại nghỉ</th>
@@ -284,118 +282,132 @@
 
 </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
- <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Đặt thời gian về 00:00:00 để so sánh chính xác
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Lấy token từ localStorage
+        const getAuthToken = () => localStorage.getItem('jwtToken');
 
-    const datePicker = flatpickr("#datePicker", {
-        mode: "multiple",
-        dateFormat: "Y-m-d",
-        minDate: "today", // Ngăn chọn ngày trong quá khứ
-        onClose: function (selectedDates, dateStr, instance) {
-            const selectedDatesDiv = document.getElementById("selectedDates");
-
-            // Kiểm tra xem có ngày nào trước hôm nay không
-            const validDates = selectedDates.filter(date => date >= today);
-            if (validDates.length < selectedDates.length) {
-                alert("Lỗi, vui lòng chọn lại ngày nghỉ. Không thể chọn ngày trong quá khứ.");
-                instance.clear(); // Xóa toàn bộ lựa chọn nếu có ngày sai
-                selectedDatesDiv.innerHTML = ""; // Xóa hiển thị ngày đã chọn
-            } else {
-                selectedDatesDiv.innerHTML = validDates.map(date => date.toLocaleDateString()).join(", ");
+        // Config Flatpickr
+        const today = new Date().setHours(0, 0, 0, 0);
+        const datePicker = flatpickr("#datePicker", {
+            mode: "multiple",
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            locale: "vn",
+            onClose: function (selectedDates) {
+                const validDates = selectedDates.filter(date => date >= today);
+                if (validDates.length !== selectedDates.length) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi chọn ngày',
+                        text: 'Không thể chọn ngày trong quá khứ!'
+                    });
+                    this.clear();
+                }
+                document.getElementById("selectedDates").textContent =
+                    validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
             }
-        }
-    });
+        });
 
-    const leaveForm = document.getElementById("leaveForm");
-    leaveForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
+        // Xử lý submit form
+        document.getElementById("leaveForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-        const formData = new FormData(leaveForm);
-        const leaveType = formData.get("leaveType");
-     //   const leaveReason = formData.get("leaveReason");
-        const selectedDates = datePicker.selectedDates.map(date => date.toISOString().split('T')[0]);
+            const formData = {
+                leaveType: document.querySelector("[name='leaveType']").value,
+                leaveReason: document.querySelector("[name='leaveReason']").value,
+                selectedDates: datePicker.selectedDates.map(d => d.toLocaleDateString('sv-SE')) // Sửa lỗi múi giờ
+            };
 
-        if (selectedDates.length === 0) {
-            alert("Vui lòng chọn ít nhất một ngày nghỉ.");
-            return;
-        }
-        if (!leaveType) {
-            alert("Vui lòng chọn loại nghỉ phép.");
-            return;
-        }
+            // Validate dữ liệu
+            if (!formData.selectedDates.length) {
+                Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 ngày nghỉ!', 'error');
+                return;
+            }
 
-        const leaveRequests = selectedDates.map(date => ({
-            MaNv: 1,
-            NgayNghi: date,
-            LyDo: leaveReason,
-            MaLoaiNgayNghi: parseInt(leaveType)
-        }));
+            try {
+                const response = await fetch("/api/Leave/SubmitLeave", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify(formData.selectedDates.map(date => ({
+                        NgayNghi: date,
+                        LyDo: formData.leaveReason,
+                        MaLoaiNgayNghi: parseInt(formData.leaveType)
+                    })))
+                });
 
-        console.log("Dữ liệu gửi lên API:", leaveRequests);
+                const result = await response.json();
 
-        try {
-            const response = await fetch("/api/Leave/SubmitLeave", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(leaveRequests)
-            });
+                if (!response.ok) throw new Error(result.message || 'Lỗi API');
 
-            const result = await response.json();
-            console.log("Phản hồi từ API:", result);
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: 'Đăng ký nghỉ phép thành công!'
+                });
 
-            if (result.success) {
-                alert("Đăng ký nghỉ phép thành công!");
-                leaveForm.reset();
-                document.getElementById("selectedDates").innerHTML = "";
+                // Reset form
                 datePicker.clear();
-            } else {
-                alert(`Lỗi: ${result.message}`);
+                document.getElementById("leaveForm").reset();
+                document.getElementById("selectedDates").textContent = '';
+
+            } catch (error) {
+                console.error('Submit error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi hệ thống',
+                    text: error.message || 'Vui lòng thử lại sau!'
+                });
             }
-        } catch (error) {
-            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
-            console.error("Lỗi:", error);
-        }
+        });
     });
-});
+
 </script>
 
 
-
-<script> //Hiển thị lịch sử đăng ký nghỉ phép
+<script>
+    //Hiển thị lịch sử đăng ký nghỉ phép
     document.addEventListener("DOMContentLoaded", async function () {
-        const maNv = 1; // Thay bằng mã nhân viên thực tế
         let leaveHistory = [];
         let currentPage = 1;
         const itemsPerPage = 5;
 
-        // Hàm để lấy dữ liệu từ API
+        // Hàm lấy dữ liệu từ API (không cần truyền maNv)
         async function fetchLeaveHistory() {
             try {
-                const response = await fetch(`/api/Leave/GetLeaveHistory?maNv=${maNv}`);
+                const response = await fetch('/api/Leave/GetLeaveHistory');
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        window.location.href = '/login'; // Redirect nếu chưa login
+                        return;
+                    }
                     throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
                 }
+
                 const result = await response.json();
-                if (result && result.success && Array.isArray(result.leaveHistory)) {
+                if (result?.success && Array.isArray(result.leaveHistory)) {
                     leaveHistory = result.leaveHistory;
                     renderTable();
                 } else {
-                    console.error("Lỗi dữ liệu:", result);
-                    displayError("Không có dữ liệu");
+                    displayError("Không có dữ liệu nghỉ phép");
                 }
             } catch (error) {
                 console.error("Lỗi hệ thống:", error);
-                displayError("Lỗi hệ thống. Vui lòng thử lại.");
+                displayError("Lỗi kết nối server");
             }
         }
 
-        // Hàm để hiển thị bảng
+        // Giữ nguyên hàm renderTable và các hàm hỗ trợ
         function renderTable() {
             const leaveHistoryBody = document.getElementById("leaveHistoryBody");
             if (!leaveHistoryBody) {
@@ -409,11 +421,11 @@ document.addEventListener("DOMContentLoaded", function () {
             paginatedData.forEach(item => {
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${item.tenLoai || "Không xác định"}</td>
-                    <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                    <td>${item.lyDo || "Không có lý do"}</td>
-                    <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                `;
+                        <td>${item.tenLoai || "Không xác định"}</td>
+                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                        <td>${item.lyDo || "Không có lý do"}</td>
+                        <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                    `;
                 leaveHistoryBody.appendChild(row);
             });
 
@@ -509,7 +521,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-<script>// lấy loại ngày nghỉ
+<script>
+    // lấy loại ngày nghỉ
     document.addEventListener("DOMContentLoaded", async function () {
         try {
             const response = await fetch("/api/Leave/GetLeaveTypes");

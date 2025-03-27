@@ -19,11 +19,23 @@ namespace HR_KD.ApiControllers
             _context = context;
         }
 
-        // đăng ký nghỉ phép
+        private int? GetMaNvFromClaims()
+        {
+            var maNvClaim = User.FindFirst("MaNV")?.Value;
+            return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
+        }
+
         [HttpPost]
         [Route("SubmitLeave")]
         public async Task<IActionResult> SubmitLeave([FromBody] List<LeaveRequestDto> leaveRequests)
         {
+            // Lấy mã NV từ claims
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
             if (leaveRequests == null || !leaveRequests.Any())
             {
                 return BadRequest(new { success = false, message = "Dữ liệu nghỉ phép không hợp lệ." });
@@ -31,10 +43,9 @@ namespace HR_KD.ApiControllers
 
             try
             {
-                Console.WriteLine($"📩 Dữ liệu nhận được: {System.Text.Json.JsonSerializer.Serialize(leaveRequests)}");
-
                 foreach (var request in leaveRequests)
                 {
+                    // Validate dữ liệu
                     if (!DateTime.TryParse(request.NgayNghi, out DateTime ngayNghi))
                     {
                         return BadRequest(new { success = false, message = $"Ngày nghỉ không hợp lệ: {request.NgayNghi}" });
@@ -45,9 +56,10 @@ namespace HR_KD.ApiControllers
                         return BadRequest(new { success = false, message = "Mã loại ngày nghỉ không hợp lệ." });
                     }
 
+                    // Tạo bản ghi nghỉ phép
                     var leave = new NgayNghi
                     {
-                        MaNv = request.MaNv,
+                        MaNv = currentMaNv.Value, // Sử dụng mã NV từ claims
                         NgayNghi1 = DateOnly.FromDateTime(ngayNghi),
                         LyDo = request.LyDo ?? "Không có lý do",
                         TrangThai = "Chờ duyệt",
@@ -67,12 +79,21 @@ namespace HR_KD.ApiControllers
             }
         }
 
+
+
         [HttpGet]
         [Route("GetLeaveHistory")]
-        public async Task<IActionResult> GetLeaveHistory(int maNv)
+        public async Task<IActionResult> GetLeaveHistory()
         {
+            // Lấy mã NV từ claims
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
             var leaveHistory = await _context.NgayNghis
-                .Where(n => n.MaNv == maNv)
+                .Where(n => n.MaNv == currentMaNv.Value) // Sử dụng mã NV từ claims
                 .Join(_context.LoaiNgayNghis,
                       n => n.MaLoaiNgayNghi,
                       l => l.MaLoaiNgayNghi,
@@ -80,7 +101,7 @@ namespace HR_KD.ApiControllers
                       {
                           n.MaLoaiNgayNghi,
                           TenLoai = l.TenLoai,
-                          NgayNghi = n.NgayNghi1.ToString("yyyy-MM-dd"), // ✅ Chuyển về YYYY-MM-DD
+                          NgayNghi = n.NgayNghi1.ToString("yyyy-MM-dd"),
                           n.LyDo,
                           n.TrangThai
                       })
@@ -88,6 +109,7 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, leaveHistory });
         }
+
 
 
         // APi loại nghỉ phép
@@ -107,13 +129,13 @@ namespace HR_KD.ApiControllers
         }
 
 
-        // DTO dùng để nhận dữ liệu từ frontend
+
         public class LeaveRequestDto
         {
-            public int MaNv { get; set; } = 1; // Mặc định là 1
             public string NgayNghi { get; set; }
-            public string? LyDo { get; set; }
             public int? MaLoaiNgayNghi { get; set; }
+            public string LyDo { get; set; }
+            // Đã remove property MaNv
         }
 
     }

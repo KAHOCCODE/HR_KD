@@ -7,7 +7,9 @@ public partial class CauHinhLuongThue
 {
     public int MaCauHinh { get; set; }
 
-    public string TenCauHinh { get; set; } = null!;
+    public decimal? MucLuongTu { get; set; }
+
+    public decimal? MucLuongDen { get; set; }
 
     public decimal GiaTri { get; set; }
 

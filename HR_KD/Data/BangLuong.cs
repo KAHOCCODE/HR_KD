@@ -11,15 +11,25 @@ public partial class BangLuong
 
     public DateOnly ThangNam { get; set; }
 
-    public decimal LuongCoBan { get; set; }
+    public decimal PhuCapThem { get; set; } = 0;
 
-    public decimal? PhuCap { get; set; }
+    public decimal LuongThem { get; set; } = 0;
 
-    public decimal? ThuNhapKhac { get; set; }
+    public decimal LuongTangCa { get; set; } = 0;
+
+    public decimal BHXH { get; set; } = 0;
+
+    public decimal BHYT { get; set; } = 0;
+
+    public decimal BHTN { get; set; } = 0;
+
+    public decimal ThueTNCN { get; set; } = 0;
 
     public decimal? TongLuong { get; set; }
 
-    public string? TrangThai { get; set; }
+    public decimal ThucNhan { get; set; }
+
+    public string? TrangThai { get; set; } = "Chưa thanh toán";
 
     public string? GhiChu { get; set; }
 

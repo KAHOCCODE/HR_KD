@@ -65,7 +65,7 @@ public partial class HrDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Data Source=LAPTOP-QBAUIQJE\\Piemon;Initial Catalog=QuanLyNhanSu;Integrated Security=True;Trust Server Certificate=True");
+        => optionsBuilder.UseSqlServer("Data Source=DESKTOP-3TRF427\\HOANGKA;Initial Catalog=QuanLyNhanSu;Integrated Security=True;Trust Server Certificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,17 +76,10 @@ public partial class HrDbContext : DbContext
             entity.ToTable("BangLuong");
 
             entity.Property(e => e.GhiChu).HasMaxLength(255);
-            entity.Property(e => e.LuongCoBan).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.MaNv).HasColumnName("MaNV");
-            entity.Property(e => e.PhuCap)
-                .HasDefaultValue(0m)
-                .HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.ThuNhapKhac)
-                .HasDefaultValue(0m)
-                .HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TongLuong)
-                .HasComputedColumnSql("(([LuongCoBan]+[PhuCap])+[ThuNhapKhac])", false)
-                .HasColumnType("decimal(20, 2)");
+                .HasComputedColumnSql("([LuongThem] + [LuongTangCa] + [PhuCapThem] - ([BHXH] + [BHYT] + [BHTN] + [ThueTNCN]))", false)
+            .HasColumnType("decimal(20, 2)");
             entity.Property(e => e.TrangThai)
                 .HasMaxLength(50)
                 .HasDefaultValue("Chưa Thanh Toán");
@@ -105,7 +98,6 @@ public partial class HrDbContext : DbContext
 
             entity.Property(e => e.GiaTri).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.MoTa).HasMaxLength(255);
-            entity.Property(e => e.TenCauHinh).HasMaxLength(100);
         });
 
         modelBuilder.Entity<ChamCong>(entity =>

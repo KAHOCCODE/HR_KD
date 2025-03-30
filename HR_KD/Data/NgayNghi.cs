@@ -13,6 +13,8 @@ public partial class NgayNghi
 
     public string? LyDo { get; set; }
 
+    public DateTime NgayCapNhat { get; set; } = DateTime.Now;
+
     public string? TrangThai { get; set; }
 
     public int? MaLoaiNgayNghi { get; set; }

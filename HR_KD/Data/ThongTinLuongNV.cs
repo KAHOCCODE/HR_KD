@@ -1,11 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 namespace HR_KD.Data
 {
-    public class ThongTinLuongNhanVien
+    public class ThongTinLuongNV
     {
-        [Key]        
+        [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int MaLuongNV { get; set; }
 
@@ -23,6 +23,5 @@ namespace HR_KD.Data
         public string? GhiChu { get; set; }
 
         public virtual NhanVien NhanVien { get; set; } = null!;
-
     }
 }

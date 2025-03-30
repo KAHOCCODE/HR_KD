@@ -1,67 +1,188 @@
-﻿@model IEnumerable<HR_KD.Data.NhanVien>
-
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Gán nhân viên vào khóa đào tạo";
 }
 
 <div class="container mt-4">
-    <h2 class="mb-4">Gán nhân viên vào khóa: @ViewBag.DaoTao.TenDaoTao</h2>
+    <h2 class="mb-4" id="daoTaoTitle">Gán nhân viên vào khóa: <span id="tenKhoaDaoTao"></span></h2>
 
     <div class="card">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">Danh sách nhân viên</h5>
         </div>
         <div class="card-body">
-            <form asp-action="Assign">
-                <input type="hidden" name="maDaoTao" value="@ViewBag.DaoTao.MaDaoTao" />
+            <div id="statusMessage"></div>
 
-                @if (Model.Any())
-                {
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead class="thead-dark">
-                                <tr>
-                                    <th>
-                                        <input type="checkbox" id="selectAll" onclick="toggleCheckboxes(this)" />
-                                        Chọn tất cả
-                                    </th>
-                                    <th>Tên nhân viên</th>
-                                    <th>Email</th>
-                                    <th>Số điện thoại</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var nv in Model)
-                                {
-                                    <tr>
-                                        <td>
-                                            <input type="checkbox" name="maNvs" value="@nv.MaNv" class="employee-checkbox" />
-                                        </td>
-                                        <td>@nv.HoTen</td>
-                                        <td>@nv.Email</td>
-                                        <td>@nv.Sdt</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+            <div id="employeeList">
+                <!-- Dữ liệu nhân viên sẽ được thêm vào đây bằng JavaScript -->
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Đang tải...</span>
                     </div>
-                    <div class="form-group mt-3">
-                        <button type="submit" class="btn btn-success">Gán nhân viên</button>
-                        <a asp-action="Details" asp-route-id="@ViewBag.DaoTao.MaDaoTao" class="btn btn-secondary">Quay lại</a>
-                    </div>
-                }
-                else
-                {
-                    <div class="alert alert-info" role="alert">
-                        Không có nhân viên nào để gán. Tất cả nhân viên trong phòng ban đã được gán hoặc không có nhân viên nào thuộc phòng ban này.
-                    </div>
-                    <a asp-action="Details" asp-route-id="@ViewBag.DaoTao.MaDaoTao" class="btn btn-secondary">Quay lại</a>
-                }
-            </form>
+                </div>
+            </div>
+
+            <div class="form-group mt-3">
+                <a href="/DaoTao/Index" class="btn btn-secondary">Quay lại</a>
+            </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const maDaoTao = urlParams.get('id');
+
+            // Kiểm tra ID khóa đào tạo
+            if (!maDaoTao || isNaN(maDaoTao)) {
+                showError('ID khóa đào tạo không hợp lệ.');
+                return;
+            }
+
+            // Lấy thông tin khóa đào tạo để hiển thị tên
+            $.ajax({
+                url: `/api/DaoTaoApi/${maDaoTao}`,
+                method: 'GET',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function (daoTaoData) {
+                    $('#tenKhoaDaoTao').text(daoTaoData.tenDaoTao);
+                },
+                error: function (xhr) {
+                    console.error('Lỗi khi tải thông tin khóa đào tạo:', xhr.responseText);
+                }
+            });
+
+            // Gọi API để lấy danh sách nhân viên chưa được gán
+            $.ajax({
+                url: `/api/DaoTaoApi/assign/${maDaoTao}`,
+                method: 'GET',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function (employees) {
+                    if (employees && employees.length > 0) {
+                        // Hiển thị danh sách nhân viên
+                        let tableHtml = `
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Mã NV</th>
+                                            <th>Họ tên</th>
+                                            <th>Email</th>
+                                            <th>Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+
+                        employees.forEach(function (employee) {
+                            tableHtml += `
+                                <tr>
+                                    <td>${employee.maNv}</td>
+                                    <td>${employee.hoTen}</td>
+                                    <td>${employee.email || 'Không có'}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-primary btn-sm btn-assign"
+                                                data-manv="${employee.maNv}" data-name="${employee.hoTen}">
+                                            Gán
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        tableHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+
+                        $('#employeeList').html(tableHtml);
+
+                        // Xử lý sự kiện khi nhấn nút gán
+                        $('.btn-assign').on('click', function() {
+                            const maNv = $(this).data('manv');
+                            const tenNv = $(this).data('name');
+
+                            if (confirm(`Bạn có chắc muốn gán nhân viên ${tenNv} vào khóa đào tạo này?`)) {
+                                assignEmployee(maDaoTao, maNv);
+                            }
+                        });
+                    } else {
+                        $('#employeeList').html(`
+                            <div class="alert alert-info" role="alert">
+                                Không có nhân viên nào có thể được gán vào khóa đào tạo này.
+                            </div>
+                        `);
+                    }
+                },
+                error: function (xhr) {
+                    console.error('Lỗi khi tải danh sách nhân viên:', xhr.responseText);
+                    showError(`Lỗi khi tải danh sách nhân viên: ${xhr.status} - ${xhr.statusText}`);
+                }
+            });
+
+            // Hàm gán nhân viên vào khóa đào tạo
+            function assignEmployee(maDaoTao, maNv) {
+                $.ajax({
+                    url: '/api/DaoTaoApi/assign',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    data: JSON.stringify({
+                        maDaoTao: maDaoTao,
+                        maNvs: [maNv]
+                    }),
+                    success: function () {
+                        showSuccess('Đã gán nhân viên thành công!');
+
+                        // Tải lại danh sách sau khi gán
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    },
+                    error: function (xhr) {
+                        console.error('Lỗi khi gán nhân viên:', xhr.responseText);
+                        showError(`Lỗi khi gán nhân viên: ${xhr.status} - ${xhr.statusText}`);
+                    }
+                });
+            }
+
+            // Hiển thị thông báo lỗi
+            function showError(message) {
+                $('#statusMessage').html(`
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                `);
+                $('#employeeList').html('');
+            }
+
+            // Hiển thị thông báo thành công
+            function showSuccess(message) {
+                $('#statusMessage').html(`
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                `);
+            }
+        });
+    </script>
+}
 
 <style>
     .card-header {
@@ -76,13 +197,8 @@
         max-height: 400px;
         overflow-y: auto;
     }
-</style>
 
-<script>
-    function toggleCheckboxes(source) {
-        const checkboxes = document.querySelectorAll('.employee-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = source.checked;
-        });
+    .btn-assign {
+        min-width: 60px;
     }
-</script>
+</style>

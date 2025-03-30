@@ -1,6 +1,4 @@
-﻿@model HR_KD.DTOs.DaoTaoDTO
-
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Chỉnh sửa khóa đào tạo";
 }
@@ -10,109 +8,243 @@
 
     <div class="card shadow-lg">
         <div class="card-header bg-gradient-warning text-white">
-            <h5 class="mb-0">Chỉnh sửa khóa đào tạo: @Model.TenDaoTao</h5>
+            <h5 class="mb-0" id="tenDaoTaoTitle">Chỉnh sửa khóa đào tạo: <span></span></h5>
         </div>
         <div class="card-body">
-            <form asp-action="Edit" method="post">
-                <input type="hidden" asp-for="MaDaoTao" />
+            <form id="editForm">
+                <input type="hidden" id="maDaoTao" name="maDaoTao" />
 
                 <div class="form-group">
-                    <label asp-for="TenDaoTao" class="control-label font-weight-bold"></label>
-                    <input asp-for="TenDaoTao" class="form-control form-control-lg" placeholder="Nhập tên khóa đào tạo" />
-                    <span asp-validation-for="TenDaoTao" class="text-danger"></span>
+                    <label for="tenDaoTao" class="control-label font-weight-bold">Tên khóa đào tạo</label>
+                    <input id="tenDaoTao" name="tenDaoTao" class="form-control form-control-lg" placeholder="Nhập tên khóa đào tạo" />
+                    <span id="tenDaoTaoError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="MoTa" class="control-label font-weight-bold"></label>
-                    <textarea asp-for="MoTa" class="form-control" rows="4" placeholder="Nhập mô tả khóa đào tạo"></textarea>
-                    <span asp-validation-for="MoTa" class="text-danger"></span>
+                    <label for="moTa" class="control-label font-weight-bold">Mô tả</label>
+                    <textarea id="moTa" name="moTa" class="form-control" rows="4" placeholder="Nhập mô tả khóa đào tạo"></textarea>
+                    <span id="moTaError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="NoiDung" class="control-label font-weight-bold"></label>
-                    <textarea asp-for="NoiDung" class="form-control" rows="4" placeholder="Nhập nội dung khóa đào tạo"></textarea>
-                    <span asp-validation-for="NoiDung" class="text-danger"></span>
+                    <label for="noiDung" class="control-label font-weight-bold">Nội dung</label>
+                    <textarea id="noiDung" name="noiDung" class="form-control" rows="4" placeholder="Nhập nội dung khóa đào tạo"></textarea>
+                    <span id="noiDungError" class="text-danger"></span>
                 </div>
 
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="NgayBatDau" class="control-label font-weight-bold"></label>
-                            <input asp-for="NgayBatDau" class="form-control" type="date" />
-                            <span asp-validation-for="NgayBatDau" class="text-danger"></span>
+                            <label for="ngayBatDau" class="control-label font-weight-bold">Ngày bắt đầu</label>
+                            <input id="ngayBatDau" name="ngayBatDau" class="form-control" type="date" />
+                            <span id="ngayBatDauError" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label asp-for="NgayKetThuc" class="control-label font-weight-bold"></label>
-                            <input asp-for="NgayKetThuc" class="form-control" type="date" />
-                            <span asp-validation-for="NgayKetThuc" class="text-danger"></span>
+                            <label for="ngayKetThuc" class="control-label font-weight-bold">Ngày kết thúc</label>
+                            <input id="ngayKetThuc" name="ngayKetThuc" class="form-control" type="date" />
+                            <span id="ngayKetThucError" class="text-danger"></span>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="MaPhongBan" class="control-label font-weight-bold"></label>
-                    <select asp-for="MaPhongBan" class="form-control custom-select">
+                    <label for="maPhongBan" class="control-label font-weight-bold">Phòng ban</label>
+                    <select id="maPhongBan" name="maPhongBan" class="form-control custom-select">
                         <option value="">-- Chọn phòng ban --</option>
-                        @foreach (var item in ViewBag.PhongBans)
-                        {
-                            <option value="@item.Value" selected="@(item.Value == Model.MaPhongBan.ToString() ? "selected" : null)">@item.Text</option>
-                        }
                     </select>
-                    <span asp-validation-for="MaPhongBan" class="text-danger"></span>
+                    <span id="maPhongBanError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group mt-4 text-center">
                     <button type="submit" class="btn btn-primary btn-lg mr-2">Lưu thay đổi</button>
-                    <a asp-action="Index" class="btn btn-secondary btn-lg">Quay lại</a>
+                    <a href="/DaoTao/Index" class="btn btn-secondary btn-lg">Quay lại</a>
                 </div>
             </form>
 
             <!-- Hiển thị danh sách nhân viên đã gán -->
             <h5 class="mt-5 mb-3">Danh sách nhân viên đã gán</h5>
-            @if (ViewBag.AssignedEmployees != null && ViewBag.AssignedEmployees.Count > 0)
-            {
-                <form asp-action="UnassignAllEmployees" method="post" class="mb-3">
-                    <input type="hidden" name="maDaoTao" value="@Model.MaDaoTao" />
-                    <button type="submit" class="btn btn-danger">Hủy gán tất cả nhân viên</button>
-                </form>
-
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th>Tên nhân viên</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var emp in ViewBag.AssignedEmployees)
-                            {
-                                <tr>
-                                    <td>@emp.HoTen</td>
-                                    <td>
-                                        <form asp-action="UnassignEmployee" method="post" style="display:inline;">
-                                            <input type="hidden" name="maLichSu" value="@emp.MaLichSu" />
-                                            <input type="hidden" name="maDaoTao" value="@Model.MaDaoTao" />
-                                            <button type="submit" class="btn btn-sm btn-danger">Hủy gán</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="alert alert-info" role="alert">
-                    Chưa có nhân viên nào được gán vào khóa đào tạo này.
-                </div>
-            }
+            <div id="assignedEmployeesSection">
+                <!-- Dữ liệu nhân viên đã gán sẽ được thêm vào đây bằng JavaScript -->
+            </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Lấy maDaoTao từ URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const maDaoTao = urlParams.get('id');
+            $('#maDaoTao').val(maDaoTao);
+
+            // Gọi API để lấy thông tin khóa đào tạo
+            $.ajax({
+                url: `/api/DaoTaoApi/${maDaoTao}`,
+                method: 'GET',
+                success: function (data) {
+                    $('#tenDaoTaoTitle span').text(data.tenDaoTao);
+                    $('#tenDaoTao').val(data.tenDaoTao);
+                    $('#moTa').val(data.moTa || '');
+                    $('#noiDung').val(data.noiDung || '');
+                    $('#ngayBatDau').val(data.ngayBatDau ? data.ngayBatDau.split('T')[0] : '');
+                    $('#ngayKetThuc').val(data.ngayKetThuc ? data.ngayKetThuc.split('T')[0] : '');
+                    $('#maPhongBan').val(data.maPhongBan);
+                },
+                error: function (xhr, status, error) {
+                    alert('Lỗi khi tải thông tin khóa đào tạo: ' + error);
+                }
+            });
+
+            // Gọi API để lấy danh sách phòng ban
+            $.ajax({
+                url: '/api/PhongBanApi', // Thay bằng API thực tế của bạn
+                method: 'GET',
+                success: function (data) {
+                    var selectPhongBan = $('#maPhongBan');
+                    data.forEach(function (phongBan) {
+                        selectPhongBan.append(`<option value="${phongBan.maPhongBan}">${phongBan.tenPhongBan}</option>`);
+                    });
+                    // Đặt lại giá trị sau khi tải danh sách để đảm bảo chọn đúng
+                    $.ajax({
+                        url: `/api/DaoTaoApi/${maDaoTao}`,
+                        method: 'GET',
+                        success: function (daoTao) {
+                            $('#maPhongBan').val(daoTao.maPhongBan);
+                        }
+                    });
+                },
+                error: function (xhr, status, error) {
+                    $('#maPhongBanError').text('Lỗi khi tải danh sách phòng ban: ' + error);
+                }
+            });
+
+            // Gọi API để lấy danh sách nhân viên đã gán
+            $.ajax({
+                url: `/api/DaoTaoApi/${maDaoTao}/lichsu`,
+                method: 'GET',
+                success: function (lichSuData) {
+                    var assignedSection = $('#assignedEmployeesSection');
+                    if (lichSuData && lichSuData.length > 0) {
+                        assignedSection.html(`
+                            <form id="unassignAllForm" class="mb-3">
+                                <button type="submit" class="btn btn-danger">Hủy gán tất cả nhân viên</button>
+                            </form>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Tên nhân viên</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assignedEmployeesTable"></tbody>
+                                </table>
+                            </div>
+                        `);
+
+                        lichSuData.forEach(function (emp) {
+                            $('#assignedEmployeesTable').append(`
+                                <tr>
+                                    <td>${emp.hoTen}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger unassign-btn" data-ma-lich-su="${emp.maLichSu}">Hủy gán</button>
+                                    </td>
+                                </tr>
+                            `);
+                        });
+
+                        // Xử lý hủy gán tất cả
+                        $('#unassignAllForm').submit(function (e) {
+                            e.preventDefault();
+                            $.ajax({
+                                url: `/api/DaoTaoApi/unassignall/${maDaoTao}`,
+                                method: 'POST',
+                                success: function () {
+                                    location.reload();
+                                },
+                                error: function (xhr, status, error) {
+                                    alert('Lỗi khi hủy gán tất cả: ' + error);
+                                }
+                            });
+                        });
+
+                        // Xử lý hủy gán từng nhân viên
+                        $('.unassign-btn').click(function () {
+                            var maLichSu = $(this).data('ma-lich-su');
+                            $.ajax({
+                                url: `/api/DaoTaoApi/unassign/${maLichSu}/${maDaoTao}`,
+                                method: 'POST',
+                                success: function () {
+                                    location.reload();
+                                },
+                                error: function (xhr, status, error) {
+                                    alert('Lỗi khi hủy gán nhân viên: ' + error);
+                                }
+                            });
+                        });
+                    } else {
+                        assignedSection.html(`
+                            <div class="alert alert-info" role="alert">
+                                Chưa có nhân viên nào được gán vào khóa đào tạo này.
+                            </div>
+                        `);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#assignedEmployeesSection').html(`
+                        <div class="alert alert-danger" role="alert">
+                            Lỗi khi tải danh sách nhân viên: ${error}
+                        </div>
+                    `);
+                }
+            });
+
+            // Xử lý submit form chỉnh sửa
+            $('#editForm').submit(function (e) {
+                e.preventDefault();
+
+                $('.text-danger').text('');
+
+                var daoTaoData = {
+                    maDaoTao: parseInt($('#maDaoTao').val()),
+                    tenDaoTao: $('#tenDaoTao').val(),
+                    moTa: $('#moTa').val(),
+                    noiDung: $('#noiDung').val(),
+                    ngayBatDau: $('#ngayBatDau').val(),
+                    ngayKetThuc: $('#ngayKetThuc').val(),
+                    maPhongBan: parseInt($('#maPhongBan').val()) || null
+                };
+
+                $.ajax({
+                    url: `/api/DaoTaoApi/${maDaoTao}`,
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(daoTaoData),
+                    success: function () {
+                        window.location.href = '/DaoTao/Index';
+                    },
+                    error: function (xhr) {
+                        if (xhr.status === 400) {
+                            var errors = xhr.responseJSON.errors || {};
+                            if (errors.TenDaoTao) $('#tenDaoTaoError').text(errors.TenDaoTao[0]);
+                            if (errors.MoTa) $('#moTaError').text(errors.MoTa[0]);
+                            if (errors.NoiDung) $('#noiDungError').text(errors.NoiDung[0]);
+                            if (errors.NgayBatDau) $('#ngayBatDauError').text(errors.NgayBatDau[0]);
+                            if (errors.NgayKetThuc) $('#ngayKetThucError').text(errors.NgayKetThuc[0]);
+                            if (errors.MaPhongBan) $('#maPhongBanError').text(errors.MaPhongBan[0]);
+                        } else {
+                            alert('Lỗi khi lưu thay đổi: ' + xhr.statusText);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}
 
 <style>
     .card {

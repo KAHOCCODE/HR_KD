@@ -1,12 +1,14 @@
 ﻿using HR_KD.Data;
 using HR_KD.DTOs;
+using HR_KD.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace HR_KD.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class DaoTaoApiController : ControllerBase
     {
         private readonly HrDbContext _context;
@@ -18,6 +20,7 @@ namespace HR_KD.Controllers
 
         // GET: api/DaoTaoApi
         [HttpGet]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<ActionResult<IEnumerable<DaoTaoDTO>>> GetDaoTaos()
         {
             var daoTaos = await _context.DaoTaos
@@ -39,6 +42,7 @@ namespace HR_KD.Controllers
 
         // GET: api/DaoTaoApi/5
         [HttpGet("{id}")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<ActionResult<DaoTaoDTO>> GetDaoTao(int id)
         {
             var daoTao = await _context.DaoTaos
@@ -60,10 +64,33 @@ namespace HR_KD.Controllers
             return Ok(daoTao);
         }
 
+        // GET: api/DaoTaoApi/5/lichsu
+        [HttpGet("{id}/lichsu")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public async Task<ActionResult<IEnumerable<LichSuDaoTaoDTO>>> GetLichSuDaoTao(int id)
+        {
+            var lichSuDaoTaos = await _context.LichSuDaoTaos
+                .Include(ls => ls.MaNvNavigation)
+                .Where(ls => ls.MaDaoTao == id)
+                .Select(ls => new LichSuDaoTaoDTO
+                {
+                    MaLichSu = ls.MaLichSu,
+                    MaNv = ls.MaNv,
+                    HoTen = ls.MaNvNavigation.HoTen,
+                    MaDaoTao = ls.MaDaoTao,
+                    KetQua = ls.KetQua
+                })
+                .ToListAsync();
+            return Ok(lichSuDaoTaos);
+        }
+
         // POST: api/DaoTaoApi
         [HttpPost]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<ActionResult<DaoTaoDTO>> CreateDaoTao(DaoTaoDTO dto)
         {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
             var daoTao = new DaoTao
             {
                 TenDaoTao = dto.TenDaoTao,
@@ -83,12 +110,21 @@ namespace HR_KD.Controllers
 
         // PUT: api/DaoTaoApi/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateDaoTao(int id, DaoTaoDTO dto)
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public async Task<IActionResult> EditDaoTao(int id, DaoTaoDTO dto)
         {
             if (id != dto.MaDaoTao) return BadRequest();
 
-            var daoTao = await _context.DaoTaos.FindAsync(id);
+            var daoTao = await _context.DaoTaos
+                .Include(d => d.LichSuDaoTaos)
+                .FirstOrDefaultAsync(d => d.MaDaoTao == id);
+
             if (daoTao == null) return NotFound();
+
+            if (daoTao.MaPhongBan != dto.MaPhongBan)
+            {
+                _context.LichSuDaoTaos.RemoveRange(daoTao.LichSuDaoTaos);
+            }
 
             daoTao.TenDaoTao = dto.TenDaoTao;
             daoTao.MoTa = dto.MoTa;
@@ -103,6 +139,7 @@ namespace HR_KD.Controllers
 
         // DELETE: api/DaoTaoApi/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> DeleteDaoTao(int id)
         {
             var daoTao = await _context.DaoTaos.FindAsync(id);
@@ -113,28 +150,48 @@ namespace HR_KD.Controllers
             return NoContent();
         }
 
-        // POST: api/DaoTaoApi/assign
-        [HttpPost("assign")]
-        public async Task<IActionResult> AssignEmployees(AssignEmployeesDTO dto)
+        // GET: api/DaoTaoApi/assign/5
+        [HttpGet("assign/{id}")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public async Task<ActionResult<IEnumerable<NhanVien>>> GetEmployeesForAssign(int id)
         {
-            var daoTao = await _context.DaoTaos.FindAsync(dto.MaDaoTao);
-            if (daoTao == null) return NotFound("Khóa đào tạo không tồn tại");
+            var daoTao = await _context.DaoTaos.FindAsync(id);
+            if (daoTao == null) return NotFound();
+
+            var assignedMaNvs = _context.LichSuDaoTaos
+                .Where(ls => ls.MaDaoTao == id)
+                .Select(ls => ls.MaNv)
+                .ToList();
 
             var employees = await _context.NhanViens
-                .Where(nv => dto.MaNvs.Contains(nv.MaNv) && nv.MaPhongBan == daoTao.MaPhongBan)
+                .Where(nv => nv.MaPhongBan == daoTao.MaPhongBan && !assignedMaNvs.Contains(nv.MaNv))
                 .ToListAsync();
 
-            if (employees.Count != dto.MaNvs.Count)
-                return BadRequest("Một số nhân viên không thuộc phòng ban của khóa đào tạo");
+            return Ok(employees);
+        }
 
-            foreach (var maNv in dto.MaNvs)
+        
+        [HttpPost("assign")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public async Task<IActionResult> AssignEmployees([FromBody] AssignEmployeeModel model)
+        {
+            var daoTao = await _context.DaoTaos.FindAsync(model.MaDaoTao);
+            if (daoTao == null) return NotFound();
+
+            var employees = await _context.NhanViens
+                .Where(nv => model.MaNvs.Contains(nv.MaNv) && nv.MaPhongBan == daoTao.MaPhongBan)
+                .ToListAsync();
+
+            if (employees.Count != model.MaNvs.Count) return BadRequest();
+
+            foreach (var maNv in model.MaNvs)
             {
-                if (!_context.LichSuDaoTaos.Any(ls => ls.MaNv == maNv && ls.MaDaoTao == dto.MaDaoTao))
+                if (!_context.LichSuDaoTaos.Any(ls => ls.MaNv == maNv && ls.MaDaoTao == model.MaDaoTao))
                 {
                     _context.LichSuDaoTaos.Add(new LichSuDaoTao
                     {
                         MaNv = maNv,
-                        MaDaoTao = dto.MaDaoTao,
+                        MaDaoTao = model.MaDaoTao,
                         KetQua = "Chưa Hoàn Thành"
                     });
                 }
@@ -144,16 +201,101 @@ namespace HR_KD.Controllers
             return Ok();
         }
 
-        // PUT: api/DaoTaoApi/complete/5
-        [HttpPut("complete/{maLichSu}")]
-        public async Task<IActionResult> CompleteTraining(int maLichSu)
+
+        // GET: api/DaoTaoApi/viewtraining
+        [HttpGet("viewtraining")]
+        [Authorize(Roles = "EMPLOYEE")]
+        public async Task<ActionResult> ViewTraining()
+        {
+            var userName = User.Identity.Name;
+            if (string.IsNullOrEmpty(userName)) return Forbid();
+
+            var nhanVien = await _context.NhanViens
+                .FirstOrDefaultAsync(nv => nv.HoTen == userName);
+
+            if (nhanVien == null) return NotFound("Không tìm thấy nhân viên.");
+
+            int maNv = nhanVien.MaNv;
+
+            var lichSuDaoTaos = await _context.LichSuDaoTaos
+                .Include(ls => ls.MaDaoTaoNavigation)
+                .ThenInclude(d => d.PhongBan)
+                .Where(ls => ls.MaNv == maNv)
+                .Select(ls => new
+                {
+                    DaoTao = new DaoTaoDTO
+                    {
+                        MaDaoTao = ls.MaDaoTaoNavigation.MaDaoTao,
+                        TenDaoTao = ls.MaDaoTaoNavigation.TenDaoTao,
+                        MoTa = ls.MaDaoTaoNavigation.MoTa,
+                        NoiDung = ls.MaDaoTaoNavigation.NoiDung,
+                        NgayBatDau = ls.MaDaoTaoNavigation.NgayBatDau,
+                        NgayKetThuc = ls.MaDaoTaoNavigation.NgayKetThuc,
+                        MaPhongBan = ls.MaDaoTaoNavigation.MaPhongBan,
+                        TenPhongBan = ls.MaDaoTaoNavigation.PhongBan.TenPhongBan
+                    },
+                    LichSu = new LichSuDaoTaoDTO
+                    {
+                        MaLichSu = ls.MaLichSu,
+                        MaNv = ls.MaNv,
+                        MaDaoTao = ls.MaDaoTao,
+                        KetQua = ls.KetQua
+                    }
+                })
+                .ToListAsync();
+
+            return Ok(lichSuDaoTaos);
+        }
+
+        [HttpPost("unassign/{maLichSu}/{maDaoTao}")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public async Task<IActionResult> UnassignEmployee(int maLichSu, int maDaoTao)
         {
             var lichSu = await _context.LichSuDaoTaos.FindAsync(maLichSu);
+            if (lichSu == null || lichSu.MaDaoTao != maDaoTao) return NotFound();
+
+            _context.LichSuDaoTaos.Remove(lichSu);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpPost("unassignall/{maDaoTao}")]
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public async Task<IActionResult> UnassignAllEmployees(int maDaoTao)
+        {
+            var daoTao = await _context.DaoTaos
+                .Include(d => d.LichSuDaoTaos)
+                .FirstOrDefaultAsync(d => d.MaDaoTao == maDaoTao);
+
+            if (daoTao == null) return NotFound();
+
+            _context.LichSuDaoTaos.RemoveRange(daoTao.LichSuDaoTaos);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        
+
+        [HttpPost("completetraining")]
+        [Authorize(Roles = "EMPLOYEE")]
+        public async Task<IActionResult> CompleteTraining([FromBody] CompleteTrainingDTO model)
+        {
+            var lichSu = await _context.LichSuDaoTaos.FindAsync(model.MaLichSu);
             if (lichSu == null) return NotFound();
+
+            var userName = User.Identity.Name;
+            if (string.IsNullOrEmpty(userName)) return Forbid();
+
+            var nhanVien = await _context.NhanViens
+                .FirstOrDefaultAsync(nv => nv.HoTen == userName);
+
+            if (nhanVien == null) return NotFound("Không tìm thấy nhân viên.");
+            if (lichSu.MaNv != nhanVien.MaNv) return Forbid();
 
             lichSu.KetQua = "Hoàn Thành";
             await _context.SaveChangesAsync();
-            return NoContent();
+            return Ok();
         }
+
     }
 }

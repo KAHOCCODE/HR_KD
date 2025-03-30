@@ -1,6 +1,4 @@
-﻿@model IEnumerable<dynamic>
-
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Khóa đào tạo của bạn";
 }
@@ -12,64 +10,113 @@
         <div class="card-header bg-gradient-primary text-white">
             <h5 class="mb-0">Danh sách khóa đào tạo</h5>
         </div>
-        <div class="card-body">
-            @if (Model.Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th>Tên khóa đào tạo</th>
-                                <th>Mô tả</th>
-                                <th>Phòng ban</th>
-                                <th>Ngày bắt đầu</th>
-                                <th>Ngày kết thúc</th>
-                                <th>Trạng thái</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr>
-                                    <td>@item.DaoTao.TenDaoTao</td>
-                                    <td>@(string.IsNullOrEmpty(item.DaoTao.MoTa) ? "Không có mô tả" : item.DaoTao.MoTa)</td>
-                                    <td>@item.DaoTao.TenPhongBan</td>
-                                    <td>@(item.DaoTao.NgayBatDau?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</td>
-                                    <td>@(item.DaoTao.NgayKetThuc?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</td>
-                                    <td>
-                                        <span class="badge @(item.LichSu.KetQua == "Hoàn Thành" ? "badge-success" : "badge-warning")">
-                                            @item.LichSu.KetQua
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if (item.LichSu.KetQua == "Chưa Hoàn Thành")
-                                        {
-                                            <form asp-action="CompleteTraining" method="post" style="display:inline;">
-                                                <input type="hidden" name="maLichSu" value="@item.LichSu.MaLichSu" />
-                                                <button type="submit" class="btn btn-sm btn-success">Tham gia</button>
-                                            </form>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Đã hoàn thành</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="alert alert-info shadow-sm" role="alert">
-                    Bạn chưa được gán vào khóa đào tạo nào.
-                </div>
-            }
+        <div class="card-body" id="trainingList">
+            <!-- Dữ liệu khóa đào tạo sẽ được thêm vào đây bằng JavaScript -->
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Gọi API để lấy danh sách khóa đào tạo của nhân viên
+            $.ajax({
+                url: '/api/DaoTaoApi/viewtraining',
+                method: 'GET',
+                success: function (data) {
+                    var trainingList = $('#trainingList');
+                    trainingList.empty();
+
+                    if (data && data.length > 0) {
+                        trainingList.append(`
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Tên khóa đào tạo</th>
+                                            <th>Mô tả</th>
+                                            <th>Phòng ban</th>
+                                            <th>Ngày bắt đầu</th>
+                                            <th>Ngày kết thúc</th>
+                                            <th>Trạng thái</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="trainingTableBody"></tbody>
+                                </table>
+                            </div>
+                        `);
+
+                        data.forEach(function (item) {
+                            var ngayBatDau = item.daoTao.ngayBatDau ? new Date(item.daoTao.ngayBatDau).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                            var ngayKetThuc = item.daoTao.ngayKetThuc ? new Date(item.daoTao.ngayKetThuc).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                            var moTa = item.daoTao.moTa || 'Không có mô tả';
+
+                            var row = `
+                                <tr>
+                                    <td>${item.daoTao.tenDaoTao}</td>
+                                    <td>${moTa}</td>
+                                    <td>${item.daoTao.tenPhongBan}</td>
+                                    <td>${ngayBatDau}</td>
+                                    <td>${ngayKetThuc}</td>
+                                    <td>
+                                        <span class="badge ${item.lichSu.ketQua === 'Hoàn Thành' ? 'badge-success' : 'badge-warning'}">
+                                            ${item.lichSu.ketQua}
+                                        </span>
+                                    </td>
+                                    <td>
+                            `;
+
+                            if (item.lichSu.ketQua === 'Chưa Hoàn Thành') {
+                                row += `
+                                    <button class="btn btn-sm btn-success complete-btn" data-ma-lich-su="${item.lichSu.maLichSu}">Tham gia</button>
+                                `;
+                            } else {
+                                row += `
+                                    <span class="text-muted">Đã hoàn thành</span>
+                                `;
+                            }
+
+                            row += `</td></tr>`;
+                            $('#trainingTableBody').append(row);
+                        });
+
+                        // Xử lý sự kiện hoàn thành khóa đào tạo
+                        $('.complete-btn').click(function () {
+                            var maLichSu = $(this).data('ma-lich-su');
+                            $.ajax({
+                                url: '/api/DaoTaoApi/completetraining',
+                                method: 'POST',
+                                contentType: 'application/json',
+                                data: JSON.stringify({ maLichSu: maLichSu }),
+                                success: function () {
+                                    location.reload(); // Reload trang để cập nhật trạng thái
+                                },
+                                error: function (xhr, status, error) {
+                                    alert('Lỗi khi hoàn thành khóa đào tạo: ' + error);
+                                }
+                            });
+                        });
+                    } else {
+                        trainingList.html(`
+                            <div class="alert alert-info shadow-sm" role="alert">
+                                Bạn chưa được gán vào khóa đào tạo nào.
+                            </div>
+                        `);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#trainingList').html(`
+                        <div class="alert alert-danger shadow-sm" role="alert">
+                            Lỗi khi tải danh sách khóa đào tạo: ${error}
+                        </div>
+                    `);
+                }
+            });
+        });
+    </script>
+}
 
 <style>
     .card {

@@ -11,12 +11,12 @@
             <input type="text" class="form-control" id="tenNgayLe" required>
         </div>
         <div class="mb-3">
-            <label class="form-label">Ngày Lễ</label>
-            <input type="date" class="form-control" id="ngayLe" required>
+            <label class="form-label">Ngày Lễ</label>          
+            <input type="text" class="form-control date-picker" id="holidayDate" placeholder="Chọn ngày lễ" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Số Ngày Nghỉ</label>
-            <input type="number" class="form-control" id="soNgayNghi" min="0">
+            <input type="number" class="form-control" id="soNgayNghi" min="1" value="1">
         </div>
         <div class="mb-3">
             <label class="form-label">Mô Tả</label>
@@ -25,7 +25,17 @@
         <button type="button" class="btn btn-primary" id="saveHoliday">Lưu Ngày Lễ</button>
     </form>
 
-    <h3 class="mt-4">Danh Sách Ngày Lễ</h3>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mt-4">Danh Sách Ngày Lễ</h3>
+        <div class="d-flex align-items-center">
+            <label class="me-2">Năm:</label>
+            <select id="yearFilter" class="form-select" style="width: 150px;">
+                <option value="">Tất cả</option>
+                <!-- Các năm sẽ được thêm tự động -->
+            </select>
+        </div>
+    </div>
+
     <table class="table table-bordered mt-3">
         <thead>
             <tr>
@@ -34,59 +44,300 @@
                 <th>Ngày</th>
                 <th>Số Ngày Nghỉ</th>
                 <th>Mô Tả</th>
+                <th>Thao tác</th>
             </tr>
         </thead>
         <tbody id="holidayTableBody"></tbody>
     </table>
 </div>
 
-<script>
-document.getElementById("saveHoliday").addEventListener("click", function() {
-    const tenNgayLe = document.getElementById("tenNgayLe").value.trim();
-    const ngayLe = document.getElementById("ngayLe").value;
-    const soNgayNghi = document.getElementById("soNgayNghi").value || null;
-    const moTa = document.getElementById("moTa").value.trim();
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa ngày lễ này?</p>
+                <p class="text-danger"><strong>Lưu ý:</strong> Tất cả dữ liệu chấm công của nhân viên liên quan đến ngày lễ này cũng sẽ bị xóa.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-    if (!tenNgayLe || !ngayLe) {
-        alert("Vui lòng nhập đầy đủ thông tin.");
-        return;
+<!-- Import thư viện Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Biến lưu ID ngày lễ cần xóa
+    let holidayIdToDelete = null;
+
+    // Modal xác nhận xóa
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+
+    // Mảng lưu trữ các ngày lễ đã tồn tại
+    let existingHolidays = [];
+
+    // Hàm khởi tạo DatePicker
+    function initializeDatePicker() {
+        flatpickr("#holidayDate", {
+            dateFormat: "Y-m-d",
+            disable: [
+                function(date) {
+                    let today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // Chặn ngày trong quá khứ và Chủ Nhật
+                    if (date < today || date.getDay() === 0) {
+                        return true;
+                    }
+
+                    // Chặn các ngày đã tồn tại trong hệ thống
+                    const dateString = date.toISOString().split("T")[0];
+                    return existingHolidays.includes(dateString);
+                }
+            ],
+            locale: {
+                firstDayOfWeek: 1 // Đặt Thứ Hai là ngày đầu tuần
+            }
+        });
     }
 
-    const data = { TenNgayLe: tenNgayLe, NgayLe1: ngayLe, SoNgayNghi: soNgayNghi, MoTa: moTa };
-
-    fetch('/api/Holidays/Add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    }).then(response => response.json())
-      .then(result => {
-          if (result.success) {
-              alert("Thêm ngày lễ thành công!");
-              fetchHolidays();
-          } else {
-              alert("Lỗi khi thêm ngày lễ.");
-          }
-      });
-});
-
-function fetchHolidays() {
-    fetch('/api/Holidays/GetAll')
-        .then(response => response.json())
-        .then(data => {
-            let tableBody = document.getElementById("holidayTableBody");
-            tableBody.innerHTML = "";
-            data.forEach(h => {
-                let row = `<tr>
-                    <td>${h.maNgayLe}</td>
-                    <td>${h.tenNgayLe}</td>
-                    <td>${h.ngayLe1}</td>
-                    <td>${h.soNgayNghi || '-'}</td>
-                    <td>${h.moTa || '-'}</td>
-                </tr>`;
-                tableBody.innerHTML += row;
+    // Hàm lấy tất cả các ngày lễ đã tồn tại
+    function fetchExistingHolidays() {
+        return fetch('/api/Holidays/GetAll')
+            .then(response => response.json())
+            .then(data => {
+                existingHolidays = data.map(h => h.ngayLe1);
+                return existingHolidays;
             });
-        });
-}
+    }
 
-document.addEventListener("DOMContentLoaded", fetchHolidays);
+    document.getElementById("saveHoliday").addEventListener("click", function () {
+        const tenNgayLe = document.getElementById("tenNgayLe").value.trim();
+        const ngayLe = document.getElementById("holidayDate").value;
+        let soNgayNghi = parseInt(document.getElementById("soNgayNghi").value) || 1;
+        const moTa = document.getElementById("moTa").value.trim();
+
+        if (!tenNgayLe || !ngayLe) {
+            alert("Vui lòng nhập đầy đủ thông tin.");
+            return;
+        }
+
+        // Tạo danh sách ngày nghỉ dựa vào số ngày nghỉ
+        let holidayDates = [];
+        let currentDate = new Date(ngayLe);
+
+        for (let i = 0; i < soNgayNghi; i++) {
+            // Nếu ngày hiện tại là Chủ Nhật thì tăng lên 1 ngày
+            while (currentDate.getDay() === 0) {
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            const dateString = currentDate.toISOString().split("T")[0];
+
+            // Kiểm tra xem ngày đã tồn tại chưa
+            if (existingHolidays.includes(dateString)) {
+                alert(`Ngày ${dateString} đã tồn tại trong hệ thống!`);
+                return;
+            }
+
+            holidayDates.push(dateString);
+            currentDate.setDate(currentDate.getDate() + 1); // Tiến tới ngày tiếp theo
+        }
+
+        // Gửi danh sách ngày lễ lên API
+        let requests = holidayDates.map(ngay => {
+            return fetch('/api/Holidays/Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    TenNgayLe: tenNgayLe,
+                    NgayLe1: ngay,
+                    SoNgayNghi: 1, // Mỗi ngày lưu như 1 ngày lễ riêng
+                    MoTa: moTa
+                })
+            }).then(response => response.json());
+        });
+
+        Promise.all(requests).then(results => {
+            if (results.every(res => res.success)) {
+                alert("Thêm ngày lễ và chấm công thành công!");
+
+                // Cập nhật lại danh sách ngày lễ đã tồn tại
+                fetchExistingHolidays().then(() => {
+                    // Khởi tạo lại date picker với danh sách mới
+                    initializeDatePicker();
+
+                    // Cập nhật lại danh sách với năm được chọn
+                    fetchHolidays(document.getElementById('yearFilter').value);
+
+                    // Reset form
+                    document.getElementById("tenNgayLe").value = "";
+                    document.getElementById("holidayDate").value = "";
+                    document.getElementById("soNgayNghi").value = "1";
+                    document.getElementById("moTa").value = "";
+                });
+            } else {
+                alert("Lỗi khi thêm một số ngày lễ.");
+            }
+        });
+    });
+
+    function fetchHolidays(year) {
+        fetch('/api/Holidays/GetAll')
+            .then(response => response.json())
+            .then(data => {
+                // Cập nhật danh sách ngày lễ đã tồn tại
+                existingHolidays = data.map(h => h.ngayLe1);
+
+                // Lọc theo năm nếu có chọn năm
+                let filteredData = data;
+                if (year) {
+                    filteredData = data.filter(h => {
+                        if (!h.ngayLe1) return false;
+                        const holidayDate = new Date(h.ngayLe1);
+                        return holidayDate.getFullYear() === parseInt(year);
+                    });
+                }
+
+                // Hiển thị dữ liệu đã lọc
+                let tableBody = document.getElementById("holidayTableBody");
+                tableBody.innerHTML = "";
+                filteredData.forEach(h => {
+                    let row = `<tr>
+                        <td>${h.maNgayLe}</td>
+                        <td>${h.tenNgayLe}</td>
+                        <td>${h.ngayLe1}</td>
+                        <td>${h.soNgayNghi || '-'}</td>
+                        <td>${h.moTa || '-'}</td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm delete-btn" 
+                                    data-id="${h.maNgayLe}" data-name="${h.tenNgayLe}" data-date="${h.ngayLe1}">
+                                Xóa
+                            </button>
+                        </td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                });
+
+                // Thêm sự kiện cho các nút xóa
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        const name = this.getAttribute('data-name');
+                        const date = this.getAttribute('data-date');
+
+                        // Lưu ID để sử dụng khi xác nhận xóa
+                        holidayIdToDelete = id;
+
+                        // Hiển thị thông tin ngày lễ trong modal
+                        document.querySelector('#deleteConfirmModal .modal-body p:first-child').textContent = 
+                            `Bạn có chắc chắn muốn xóa ngày lễ "${name}" (${date})?`;
+
+                        // Hiển thị modal xác nhận
+                        deleteModal.show();
+                    });
+                });
+
+                // Cập nhật danh sách năm trong dropdown
+                updateYearOptions(data);
+            });
+    }
+
+    // Xử lý sự kiện xác nhận xóa
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (holidayIdToDelete) {
+            // Gửi yêu cầu xóa lên server
+            fetch(`/api/Holidays/Delete/${holidayIdToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Ẩn modal
+                    deleteModal.hide();
+
+                    // Thông báo thành công
+                    alert(`Đã xóa ngày lễ và ${result.deletedAttendanceCount} bản ghi chấm công liên quan thành công!`);
+
+                    // Cập nhật lại danh sách
+                    fetchExistingHolidays().then(() => {
+                        initializeDatePicker();
+                        fetchHolidays(document.getElementById('yearFilter').value);
+                    });
+                } else {
+                    alert("Lỗi khi xóa: " + (result.message || "Không xác định"));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Đã xảy ra lỗi khi xóa ngày lễ!");
+            });
+        }
+    });
+
+    // Hàm cập nhật danh sách năm cho dropdown
+    function updateYearOptions(data) {
+        const yearSelect = document.getElementById('yearFilter');
+
+        // Chỉ cập nhật options nếu chưa có
+        if (yearSelect.options.length <= 1) {
+            // Lấy danh sách các năm từ dữ liệu
+            const years = new Set();
+            data.forEach(h => {
+                if (h.ngayLe1) {
+                    const year = new Date(h.ngayLe1).getFullYear();
+                    years.add(year);
+                }
+            });
+
+            // Chuyển Set thành mảng và sắp xếp giảm dần
+            const yearArray = [...years].sort((a, b) => b - a);
+
+            // Thêm năm hiện tại nếu chưa có
+            const currentYear = new Date().getFullYear();
+            if (!yearArray.includes(currentYear)) {
+                yearArray.unshift(currentYear);
+            }
+
+            // Thêm các option năm
+            yearArray.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            });
+
+            // Chọn năm hiện tại làm mặc định
+            yearSelect.value = currentYear;
+        }
+    }
+
+    // Thêm event listener cho dropdown năm
+    document.getElementById('yearFilter').addEventListener('change', function() {
+        fetchHolidays(this.value);
+    });
+
+    // Khởi tạo ứng dụng - lấy dữ liệu trước khi khởi tạo date picker
+    fetchExistingHolidays().then(() => {
+        // Sau khi có dữ liệu về ngày lễ đã tồn tại, khởi tạo date picker
+        initializeDatePicker();
+
+        // Khởi tạo với năm hiện tại làm mặc định
+        const currentYear = new Date().getFullYear();
+        fetchHolidays(currentYear);
+    });
+});
 </script>

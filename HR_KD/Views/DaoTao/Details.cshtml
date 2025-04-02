@@ -1,6 +1,4 @@
-﻿@model HR_KD.DTOs.DaoTaoDTO
-
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Chi tiết khóa đào tạo";
 }
@@ -8,96 +6,169 @@
 <div class="container mt-4">
     <h2 class="mb-4">@ViewData["Title"]</h2>
 
-    <div class="card mb-4">
+    <div class="card mb-4" id="daoTaoCard">
         <div class="card-header bg-info text-white">
-            <h5 class="mb-0">@Model.TenDaoTao</h5>
+            <h5 class="mb-0" id="tenDaoTao"></h5>
         </div>
-        <div class="card-body">
-            <dl class="row">
-                <dt class="col-sm-3">Phòng ban</dt>
-                <dd class="col-sm-9">@Model.TenPhongBan</dd>
-
-                <dt class="col-sm-3">Mô tả</dt>
-                <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.MoTa) ? "Không có mô tả" : Model.MoTa)</dd>
-
-                <dt class="col-sm-3">Nội dung</dt>
-                <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.NoiDung) ? "Không có nội dung" : Model.NoiDung)</dd>
-
-                <dt class="col-sm-3">Ngày bắt đầu</dt>
-                <dd class="col-sm-9">@(Model.NgayBatDau?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</dd>
-
-                <dt class="col-sm-3">Ngày kết thúc</dt>
-                <dd class="col-sm-9">@(Model.NgayKetThuc?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</dd>
-            </dl>
+        <div class="card-body" id="daoTaoDetails">
+            <!-- Thông tin khóa đào tạo sẽ được thêm vào đây bằng JavaScript -->
         </div>
         <div class="card-footer bg-light">
             <div class="btn-group">
-                <a asp-action="Edit" asp-route-id="@Model.MaDaoTao" class="btn btn-warning">Sửa</a>
-                <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                <a id="editLink" class="btn btn-warning">Sửa</a>
+                <a href="/DaoTao/Index" class="btn btn-secondary">Quay lại</a>
             </div>
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="lichSuCard">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">Lịch sử đào tạo</h5>
         </div>
-        <div class="card-body">
-            @if (ViewBag.LichSuDaoTaos != null && (ViewBag.LichSuDaoTaos as List<HR_KD.DTOs.LichSuDaoTaoDTO>).Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th>Tên nhân viên</th>
-                                <th>Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var ls in ViewBag.LichSuDaoTaos as List<HR_KD.DTOs.LichSuDaoTaoDTO>)
-                            {
-                                <tr>
-                                    <td>@ls.HoTen</td>
-                                    <td>
-                                        <span class="badge @(ls.KetQua == "Hoàn Thành" ? "badge-success" : "badge-warning")">
-                                            @ls.KetQua
-                                        </span>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="alert alert-info" role="alert">
-                    Chưa có nhân viên nào tham gia khóa đào tạo này.
-                </div>
-            }
+        <div class="card-body" id="lichSuDetails">
+            <!-- Lịch sử đào tạo sẽ được thêm vào đây bằng JavaScript -->
         </div>
     </div>
 </div>
 
-<style>
-    .card-header {
-        padding: 0.75rem 1.25rem;
-    }
+@section Scripts {
+    <!-- Thêm jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    .table th, .table td {
-        vertical-align: middle;
-    }
+    <!-- Script xử lý dữ liệu -->
+    <script>
+        $(document).ready(function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const maDaoTao = urlParams.get('id');
 
-    .table-responsive {
-        max-height: 400px;
-        overflow-y: auto;
-    }
+            // Kiểm tra ID hợp lệ trước khi gọi API
+            if (!maDaoTao || isNaN(maDaoTao)) {
+                $('#daoTaoDetails').html(`
+                    <div class="alert alert-danger">
+                        ID khóa đào tạo không hợp lệ.
+                    </div>
+                `);
+                return;
+            }
 
-    .badge-success {
-        background-color: #28a745;
-    }
+            // Gọi API để lấy thông tin khóa đào tạo
+            $.ajax({
+                url: `/api/DaoTaoApi/${maDaoTao}`,
+                method: 'GET',
+                xhrFields: {
+                    withCredentials: true // Cho phép gửi cookie
+                },
+                success: function (data) {
+                    $('#tenDaoTao').text(data.tenDaoTao);
+                    $('#editLink').attr('href', `/DaoTao/Edit?id=${data.maDaoTao}`);
 
-    .badge-warning {
-        background-color: #ffc107;
-    }
-</style>
+                    var ngayBatDau = data.ngayBatDau ? new Date(data.ngayBatDau).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                    var ngayKetThuc = data.ngayKetThuc ? new Date(data.ngayKetThuc).toLocaleDateString('vi-VN') : 'Chưa xác định';
+
+                    $('#daoTaoDetails').html(`
+                        <dl class="row">
+                            <dt class="col-sm-3">Phòng ban</dt>
+                            <dd class="col-sm-9">${data.tenPhongBan}</dd>
+                            <dt class="col-sm-3">Mô tả</dt>
+                            <dd class="col-sm-9">${data.moTa || 'Không có mô tả'}</dd>
+                            <dt class="col-sm-3">Nội dung</dt>
+                            <dd class="col-sm-9">${data.noiDung || 'Không có nội dung'}</dd>
+                            <dt class="col-sm-3">Ngày bắt đầu</dt>
+                            <dd class="col-sm-9">${ngayBatDau}</dd>
+                            <dt class="col-sm-3">Ngày kết thúc</dt>
+                            <dd class="col-sm-9">${ngayKetThuc}</dd>
+                        </dl>
+                    `);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Lỗi chi tiết:', xhr.responseText);
+                    $('#daoTaoDetails').html(`
+                        <div class="alert alert-danger" role="alert">
+                            Lỗi khi tải thông tin khóa đào tạo: ${xhr.responseText || error}.
+                        </div>
+                    `);
+                }
+            });
+
+            // Gọi API để lấy lịch sử đào tạo
+            $.ajax({
+                url: `/api/DaoTaoApi/${maDaoTao}/lichsu`,
+                method: 'GET',
+                xhrFields: {
+                    withCredentials: true // Cho phép gửi cookie
+                },
+                success: function (lichSuData) {
+                    var lichSuDetails = $('#lichSuDetails');
+                    lichSuDetails.empty();
+
+                    if (lichSuData && lichSuData.length > 0) {
+                        lichSuDetails.append(`
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Tên nhân viên</th>
+                                            <th>Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lichSuTableBody"></tbody>
+                                </table>
+                            </div>
+                        `);
+
+                        lichSuData.forEach(function (ls) {
+                            $('#lichSuTableBody').append(`
+                                <tr>
+                                    <td>${ls.hoTen}</td>
+                                    <td>
+                                        <span class="badge ${ls.ketQua === 'Hoàn Thành' ? 'badge-success' : 'badge-warning'}">
+                                            ${ls.ketQua}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `);
+                        });
+                    } else {
+                        lichSuDetails.html(`
+                            <div class="alert alert-info" role="alert">
+                                Chưa có nhân viên nào tham gia khóa đào tạo này.
+                            </div>
+                        `);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Lỗi lịch sử:', xhr.responseText);
+                    $('#lichSuDetails').html(`
+                        <div class="alert alert-danger" role="alert">
+                            Lỗi khi tải lịch sử đào tạo: ${xhr.responseText || error}.
+                        </div>
+                    `);
+                }
+            });
+        });
+    </script>
+
+    <!-- Style tùy chỉnh -->
+    <style>
+        .card-header {
+            padding: 0.75rem 1.25rem;
+        }
+
+        .table th, .table td {
+            vertical-align: middle;
+        }
+
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .badge-success {
+            background-color: #28a745;
+        }
+
+        .badge-warning {
+            background-color: #ffc107;
+        }
+    </style>
+}

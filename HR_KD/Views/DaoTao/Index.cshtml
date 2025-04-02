@@ -1,6 +1,4 @@
-﻿@model IEnumerable<HR_KD.DTOs.DaoTaoDTO>
-
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Danh sách khóa đào tạo";
 }
@@ -8,47 +6,78 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-center">@ViewData["Title"]</h2>
-        <a asp-action="Create" class="btn btn-success btn-lg shadow-sm">Tạo mới khóa đào tạo</a>
+        <a href="/DaoTao/Create" class="btn btn-success btn-lg shadow-sm">Tạo mới khóa đào tạo</a>
     </div>
 
-    <div class="row">
-        @if (Model != null && Model.Any())
-        {
-            @foreach (var item in Model)
-            {
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 shadow-lg border-0">
-                        <div class="card-header bg-gradient-primary text-white text-center">
-                            <h5 class="mb-0">@item.TenDaoTao</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text"><strong>Phòng ban:</strong> @item.TenPhongBan</p>
-                            <p class="card-text"><strong>Ngày bắt đầu:</strong> @(item.NgayBatDau?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</p>
-                            <p class="card-text"><strong>Ngày kết thúc:</strong> @(item.NgayKetThuc?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</p>
-                            <p class="card-text"><strong>Mô tả:</strong> @(string.IsNullOrEmpty(item.MoTa) ? "Không có mô tả" : item.MoTa)</p>
-                        </div>
-                        <div class="card-footer bg-light text-center">
-                            <div class="btn-group" role="group">
-                                <a asp-action="Details" asp-route-id="@item.MaDaoTao" class="btn btn-info btn-sm">Chi tiết</a>
-                                <a asp-action="Edit" asp-route-id="@item.MaDaoTao" class="btn btn-warning btn-sm">Sửa</a>
-                                <a asp-action="Delete" asp-route-id="@item.MaDaoTao" class="btn btn-danger btn-sm">Xóa</a>
-                                <a asp-action="Assign" asp-route-id="@item.MaDaoTao" class="btn btn-secondary btn-sm">Gán nhân viên</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="col-12">
-                <div class="alert alert-info shadow-sm" role="alert">
-                    Không có khóa đào tạo nào.
-                </div>
-            </div>
-        }
+    <div class="row" id="daoTaoList">
+        <!-- Dữ liệu sẽ được thêm vào đây bằng JavaScript -->
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                url: '/api/DaoTaoApi', // Gọi API để lấy danh sách khóa đào tạo
+                method: 'GET',
+                success: function (data) {
+                    var daoTaoList = $('#daoTaoList');
+                    daoTaoList.empty(); // Xóa nội dung hiện tại
+
+                    if (data && data.length > 0) {
+                        data.forEach(function (item) {
+                            var ngayBatDau = item.ngayBatDau ? new Date(item.ngayBatDau).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                            var ngayKetThuc = item.ngayKetThuc ? new Date(item.ngayKetThuc).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                            var moTa = item.moTa || 'Không có mô tả';
+
+                            daoTaoList.append(`
+                                <div class="col-md-4 mb-4">
+                                    <div class="card h-100 shadow-lg border-0">
+                                        <div class="card-header bg-gradient-primary text-white text-center">
+                                            <h5 class="mb-0">${item.tenDaoTao}</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="card-text"><strong>Phòng ban:</strong> ${item.tenPhongBan}</p>
+                                            <p class="card-text"><strong>Ngày bắt đầu:</strong> ${ngayBatDau}</p>
+                                            <p class="card-text"><strong>Ngày kết thúc:</strong> ${ngayKetThuc}</p>
+                                            <p class="card-text"><strong>Mô tả:</strong> ${moTa}</p>
+                                        </div>
+                                        <div class="card-footer bg-light text-center">
+                                            <div class="btn-group" role="group">
+                                                <a href="/DaoTao/Details?id=${item.maDaoTao}" class="btn btn-info btn-sm">Chi tiết</a>
+                                                <a href="/DaoTao/Edit?id=${item.maDaoTao}" class="btn btn-warning btn-sm">Sửa</a>
+                                                <a href="/DaoTao/Delete?id=${item.maDaoTao}" class="btn btn-danger btn-sm">Xóa</a>
+                                                <a href="/DaoTao/Assign?id=${item.maDaoTao}" class="btn btn-secondary btn-sm">Gán nhân viên</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+                        });
+                    } else {
+                        daoTaoList.append(`
+                            <div class="col-12">
+                                <div class="alert alert-info shadow-sm" role="alert">
+                                    Không có khóa đào tạo nào.
+                                </div>
+                            </div>
+                        `);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#daoTaoList').html(`
+                        <div class="col-12">
+                            <div class="alert alert-danger shadow-sm" role="alert">
+                                Lỗi khi tải dữ liệu: ${error}
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+        });
+    </script>
+}
 
 <style>
     .card {

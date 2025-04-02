@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250329111956_UpDateBangLuongCauHinhThueAndAddNgayCapNhatToNgayNghiAndAddTBTTLNV")]
+    partial class UpDateBangLuongCauHinhThueAndAddNgayCapNhatToNgayNghiAndAddTBTTLNV
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,7 +71,7 @@ namespace HR_KD.Migrations
                     b.Property<decimal?>("TongLuong")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("decimal(20, 2)")
-                        .HasComputedColumnSql("([LuongThem] + [LuongTangCa] + [PhuCapThem] - ([BHXH] + [BHYT] + [BHTN] + [ThueTNCN]))", false);
+                        .HasComputedColumnSql("(([LuongCoBan]+[PhuCap])+[ThuNhapKhac])", false);
 
                     b.Property<string>("TrangThai")
                         .ValueGeneratedOnAdd()
@@ -757,39 +760,6 @@ namespace HR_KD.Migrations
                     b.ToTable("ThongBao", (string)null);
                 });
 
-            modelBuilder.Entity("HR_KD.Data.ThongTinLuongNV", b =>
-                {
-                    b.Property<int>("MaLuongNV")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaLuongNV"));
-
-                    b.Property<string>("GhiChu")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("LuongCoBan")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("MaNv")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("NgayApDng")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("PhuCapCoDinh")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("ThuongCoDinh")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("MaLuongNV");
-
-                    b.HasIndex("MaNv");
-
-                    b.ToTable("ThongTinLuongNVs");
-                });
-
             modelBuilder.Entity("HR_KD.Data.TieuChiDanhGiaFullTime", b =>
                 {
                     b.Property<int>("MaTieuChiDanhGia")
@@ -1090,17 +1060,6 @@ namespace HR_KD.Migrations
                         .HasConstraintName("FK__ThongBao__MaNV__01142BA1");
 
                     b.Navigation("MaNvNavigation");
-                });
-
-            modelBuilder.Entity("HR_KD.Data.ThongTinLuongNV", b =>
-                {
-                    b.HasOne("HR_KD.Data.NhanVien", "NhanVien")
-                        .WithMany()
-                        .HasForeignKey("MaNv")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("NhanVien");
                 });
 
             modelBuilder.Entity("HR_KD.Data.TieuChiDanhGiaFullTime", b =>

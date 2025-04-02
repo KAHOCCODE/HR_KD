@@ -172,52 +172,56 @@ flatpickr("#attendanceDateRange", {
 
 
 // Xử lý gửi dữ liệu chấm công
-document.getElementById("submitAttendance").addEventListener("click", function() {
-    const checkIn = document.getElementById("checkInTime").value;
-    const checkOut = document.getElementById("checkOutTime").value;
-    const note = document.getElementById("attendanceNote").value.trim();
-    const maNV = document.getElementById("employeeFilter").value;
+        document.getElementById("submitAttendance").addEventListener("click", function () {
+            const checkIn = document.getElementById("checkInTime").value;
+            const checkOut = document.getElementById("checkOutTime").value;
+            const note = document.getElementById("attendanceNote").value.trim();
+            const maNV = document.getElementById("employeeFilter").value;
 
-    if (selectedWorkDays.size === 0) {
-        Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
-        return;
-    }
+            if (!maNV) {
+                Swal.fire("Lỗi!", "Vui lòng chọn nhân viên.", "error");
+                return;
+            }
 
-    let attendanceData = [...selectedWorkDays].map(day => ({
-        MaNV: maNV,
-        NgayLamViec: day,
-        GioVao: checkIn || null,
-        GioRa: checkOut || null,
-        TongGio: calculateDailyHours(checkIn, checkOut),
-        TrangThai: "Yêu cầu chấm công",
-        GhiChu: note || null
-    }));
+            if (selectedWorkDays.size === 0) {
+                Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
+                return;
+            }
 
-    // Ghi log dữ liệu trước khi gửi
-    console.log("Dữ liệu gửi đi:", JSON.stringify(attendanceData, null, 2));
+            let attendanceData = [...selectedWorkDays].map(day => ({
+                MaNV: maNV,
+                NgayLamViec: day,
+                GioVaoMoi: checkIn || null,
+                GioRaMoi: checkOut || null,
+                TongGio: calculateDailyHours(checkIn, checkOut),
+                TrangThai: 0,
+                LyDo: note || null
+            }));
 
-    fetch('/api/Attendance/SubmitAttendance', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(attendanceData)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            Swal.fire("Thành công!", "Chấm công đã được ghi nhận.", "success").then(() => {
-                resetForm(); // Reset form sau khi gửi thành công
+            // Ghi log dữ liệu trước khi gửi
+            console.log("Dữ liệu gửi đi:", JSON.stringify(attendanceData, null, 2));
+
+            fetch('/api/AttendanceRequestManager/SubmitAttendanceRequest', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(attendanceData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    Swal.fire("Thành công!", "Chấm công đã được ghi nhận.", "success").then(() => {
+                        resetForm(); // Reset form sau khi gửi thành công
+                    });
+                } else {
+                    Swal.fire("Lỗi!", "Có lỗi xảy ra khi chấm công.", "error");
+                }
+            })
+            .catch(error => {
+                Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error");
             });
-        } else {
-            Swal.fire("Lỗi!", "Có lỗi xảy ra khi chấm công.", "error");
-        }
-    })
-    .catch(error => {
-        Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error");
-    });
-});
-
+        });
 // Hàm tính số giờ làm
 function calculateDailyHours(checkIn, checkOut) {
     if (checkIn && checkOut) {

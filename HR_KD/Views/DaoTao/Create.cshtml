@@ -1,6 +1,4 @@
-﻿@model HR_KD.DTOs.DaoTaoDTO
-
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Tạo mới khóa đào tạo";
 }
@@ -13,55 +11,118 @@
             <h5 class="mb-0">Tạo mới khóa đào tạo</h5>
         </div>
         <div class="card-body">
-            <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <form id="createForm">
+                <div id="validationSummary" class="text-danger mb-3"></div>
 
                 <div class="form-group">
-                    <label asp-for="TenDaoTao" class="control-label"></label>
-                    <input asp-for="TenDaoTao" class="form-control" placeholder="Nhập tên khóa đào tạo" />
-                    <span asp-validation-for="TenDaoTao" class="text-danger"></span>
+                    <label for="tenDaoTao" class="control-label">Tên khóa đào tạo</label>
+                    <input id="tenDaoTao" name="tenDaoTao" class="form-control" placeholder="Nhập tên khóa đào tạo" />
+                    <span id="tenDaoTaoError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="MoTa" class="control-label"></label>
-                    <textarea asp-for="MoTa" class="form-control" rows="3" placeholder="Nhập mô tả khóa đào tạo"></textarea>
-                    <span asp-validation-for="MoTa" class="text-danger"></span>
+                    <label for="moTa" class="control-label">Mô tả</label>
+                    <textarea id="moTa" name="moTa" class="form-control" rows="3" placeholder="Nhập mô tả khóa đào tạo"></textarea>
+                    <span id="moTaError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="NoiDung" class="control-label"></label>
-                    <textarea asp-for="NoiDung" class="form-control" rows="3" placeholder="Nhập nội dung khóa đào tạo"></textarea>
-                    <span asp-validation-for="NoiDung" class="text-danger"></span>
+                    <label for="noiDung" class="control-label">Nội dung</label>
+                    <textarea id="noiDung" name="noiDung" class="form-control" rows="3" placeholder="Nhập nội dung khóa đào tạo"></textarea>
+                    <span id="noiDungError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="NgayBatDau" class="control-label"></label>
-                    <input asp-for="NgayBatDau" class="form-control" type="date" />
-                    <span asp-validation-for="NgayBatDau" class="text-danger"></span>
+                    <label for="ngayBatDau" class="control-label">Ngày bắt đầu</label>
+                    <input id="ngayBatDau" name="ngayBatDau" class="form-control" type="date" />
+                    <span id="ngayBatDauError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="NgayKetThuc" class="control-label"></label>
-                    <input asp-for="NgayKetThuc" class="form-control" type="date" />
-                    <span asp-validation-for="NgayKetThuc" class="text-danger"></span>
+                    <label for="ngayKetThuc" class="control-label">Ngày kết thúc</label>
+                    <input id="ngayKetThuc" name="ngayKetThuc" class="form-control" type="date" />
+                    <span id="ngayKetThucError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="MaPhongBan" class="control-label"></label>
-                    <select asp-for="MaPhongBan" class="form-control" asp-items="ViewBag.PhongBans">
+                    <label for="maPhongBan" class="control-label">Phòng ban</label>
+                    <select id="maPhongBan" name="maPhongBan" class="form-control">
                         <option value="">-- Chọn phòng ban --</option>
                     </select>
-                    <span asp-validation-for="MaPhongBan" class="text-danger"></span>
+                    <span id="maPhongBanError" class="text-danger"></span>
                 </div>
 
                 <div class="form-group mt-3">
                     <button type="submit" class="btn btn-success">Tạo khóa đào tạo</button>
-                    <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                    <a href="/DaoTao/Index" class="btn btn-secondary">Quay lại</a>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Giả định có API để lấy danh sách phòng ban
+            $.ajax({
+                url: '/api/PhongBanApi', // Thay bằng API thực tế của bạn để lấy danh sách phòng ban
+                method: 'GET',
+                success: function (data) {
+                    var selectPhongBan = $('#maPhongBan');
+                    data.forEach(function (phongBan) {
+                        selectPhongBan.append(`<option value="${phongBan.maPhongBan}">${phongBan.tenPhongBan}</option>`);
+                    });
+                },
+                error: function (xhr, status, error) {
+                    $('#maPhongBanError').text('Lỗi khi tải danh sách phòng ban: ' + error);
+                }
+            });
+
+            // Xử lý submit form
+            $('#createForm').submit(function (e) {
+                e.preventDefault();
+
+                // Xóa thông báo lỗi cũ
+                $('.text-danger').text('');
+
+                var daoTaoData = {
+                    tenDaoTao: $('#tenDaoTao').val(),
+                    moTa: $('#moTa').val(),
+                    noiDung: $('#noiDung').val(),
+                    ngayBatDau: $('#ngayBatDau').val(),
+                    ngayKetThuc: $('#ngayKetThuc').val(),
+                    maPhongBan: parseInt($('#maPhongBan').val()) || null
+                };
+
+                $.ajax({
+                    url: '/api/DaoTaoApi',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(daoTaoData),
+                    success: function (response) {
+                        window.location.href = '/DaoTao/Index';
+                    },
+                    error: function (xhr) {
+                        if (xhr.status === 400) {
+                            var errors = xhr.responseJSON.errors || {};
+                            if (errors.TenDaoTao) $('#tenDaoTaoError').text(errors.TenDaoTao[0]);
+                            if (errors.MoTa) $('#moTaError').text(errors.MoTa[0]);
+                            if (errors.NoiDung) $('#noiDungError').text(errors.NoiDung[0]);
+                            if (errors.NgayBatDau) $('#ngayBatDauError').text(errors.NgayBatDau[0]);
+                            if (errors.NgayKetThuc) $('#ngayKetThucError').text(errors.NgayKetThuc[0]);
+                            if (errors.MaPhongBan) $('#maPhongBanError').text(errors.MaPhongBan[0]);
+                            $('#validationSummary').text('Vui lòng kiểm tra lại thông tin nhập.');
+                        } else {
+                            alert('Lỗi khi tạo khóa đào tạo: ' + xhr.statusText);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}
 
 <style>
     .card-header {

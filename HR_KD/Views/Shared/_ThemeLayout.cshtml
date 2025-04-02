@@ -153,7 +153,7 @@
                         </li>
 
                         <!-- Chỉ hiển thị dropdown "Nhân viên" nếu người dùng có vai trò EMPLOYEE_MANAGER -->
-                        @if (User.IsInRole("EMPLOYEE_MANAGER"))
+                        @if (User.IsInRole("LINE_MANAGER"))
                         {
                             <li class="submenu">
                                 <a href="#"><i class="fa fa-users"></i> <span>Nhân viên</span> <span class="menu-arrow"></span></a>

@@ -12,6 +12,4 @@ public partial class LoaiNgayNghi
     public string? MoTa { get; set; }
 
     public virtual ICollection<NgayNghi> NgayNghis { get; set; } = new List<NgayNghi>();
-
-    public virtual ICollection<SoDuPhep> SoDuPheps { get; set; } = new List<SoDuPhep>();
 }

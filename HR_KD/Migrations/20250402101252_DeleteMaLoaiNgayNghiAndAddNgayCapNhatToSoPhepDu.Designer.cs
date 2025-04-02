@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250402101252_DeleteMaLoaiNgayNghiAndAddNgayCapNhatToSoPhepDu")]
+    partial class DeleteMaLoaiNgayNghiAndAddNgayCapNhatToSoPhepDu
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -589,6 +592,9 @@ namespace HR_KD.Migrations
                     b.Property<int>("Nam")
                         .HasColumnType("int");
 
+                    b.Property<int?>("LoaiNgayNghiMaLoaiNgayNghi")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("NgayCapNhat")
                         .HasColumnType("datetime2");
 
@@ -597,6 +603,8 @@ namespace HR_KD.Migrations
 
                     b.HasKey("MaNv", "Nam")
                         .HasName("PK__SoDuPhep__070385985BD7438C");
+
+                    b.HasIndex("LoaiNgayNghiMaLoaiNgayNghi");
 
                     b.ToTable("SoDuPhep", (string)null);
                 });
@@ -1020,6 +1028,10 @@ namespace HR_KD.Migrations
 
             modelBuilder.Entity("HR_KD.Data.SoDuPhep", b =>
                 {
+                    b.HasOne("HR_KD.Data.LoaiNgayNghi", null)
+                        .WithMany("SoDuPheps")
+                        .HasForeignKey("LoaiNgayNghiMaLoaiNgayNghi");
+
                     b.HasOne("HR_KD.Data.NhanVien", "MaNvNavigation")
                         .WithMany("SoDuPheps")
                         .HasForeignKey("MaNv")
@@ -1133,6 +1145,8 @@ namespace HR_KD.Migrations
             modelBuilder.Entity("HR_KD.Data.LoaiNgayNghi", b =>
                 {
                     b.Navigation("NgayNghis");
+
+                    b.Navigation("SoDuPheps");
                 });
 
             modelBuilder.Entity("HR_KD.Data.NhanVien", b =>

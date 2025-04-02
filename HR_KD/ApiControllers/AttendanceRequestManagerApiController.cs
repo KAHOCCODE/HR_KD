@@ -2,6 +2,7 @@
 using HR_KD.Data;
 using System.Linq;
 using HR_KD.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 [Route("api/AttendanceRequestManager")]
 [ApiController]
@@ -13,7 +14,11 @@ public class AttendanceRequestManagerApiController : ControllerBase
     {
         _context = context;
     }
-
+    private int? GetMaNvFromClaims()
+    {
+        var maNvClaim = User.FindFirst("MaNV")?.Value;
+        return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
+    }
     // 🔹 Lấy danh sách phòng ban
     [HttpGet("GetDepartmentsManager")]
     public IActionResult GetDepartments()
@@ -80,20 +85,59 @@ public class AttendanceRequestManagerApiController : ControllerBase
         return Ok(new { success = true, records });
     }
 
-    // 🔹 Duyệt hoặc từ chối chấm công
-    [HttpPost("ApproveAttendanceManager")]
-    public IActionResult ApproveAttendance( ApproveAttendanceRequestDTO request)
+    // API Chấm công
+    [HttpPost]
+    [Route("SubmitAttendanceRequest")]
+    public async Task<IActionResult> SubmitAttendanceRequest(List<YeuCauSuaChamCongDTO> attendanceData)
     {
-        var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == request.MaChamCong);
-        if (chamCong == null)
+        var maNv = GetMaNvFromClaims();
+        if (!maNv.HasValue)
         {
-            return BadRequest(new { success = false, message = "Không tìm thấy chấm công." });
+            return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
         }
 
-        chamCong.TrangThai = request.TrangThai;
-        _context.SaveChanges();
+        if (attendanceData == null || !attendanceData.Any())
+        {
+            return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
+        }
 
-        return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+        try
+        {
+            foreach (var entry in attendanceData)
+            {
+                if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
+                {
+                    return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
+                }
+
+                bool daChamCong = await _context.YeuCauSuaChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.NgayLamViec == ngayLamViec);
+                if (daChamCong)
+                {
+                    return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã có yêu cầu sửa chấm công ngày {entry.NgayLamViec}." });
+                }
+
+                var yeuCauSuaChamCong = new YeuCauSuaChamCong
+                {
+                    MaNv = maNv.Value,
+                    NgayLamViec = ngayLamViec,
+                    GioVaoMoi = TimeOnly.TryParse(entry.GioVaoMoi, out var parsedGioVao) ? parsedGioVao : null,
+                    GioRaMoi = TimeOnly.TryParse(entry.GioRaMoi, out var parsedGioRa) ? parsedGioRa : null,
+                    TongGio = entry.TongGio ?? 0,
+                    TrangThai = entry.TrangThai,
+                    LyDo = entry.LyDo
+                };
+
+                _context.YeuCauSuaChamCongs.Add(yeuCauSuaChamCong);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Yêu cầu sửa chấm công thành công." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+        }
     }
+
 }
 

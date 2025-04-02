@@ -245,11 +245,12 @@
         <div class="col-md-12">
             <div class="leave-info-card">
                 <h6>Nghỉ phép năm</h6>
-                <p>Số ngày còn lại: <strong>12 ngày</strong></p>
+                <p>Số ngày còn lại: <strong>Đang tải...</strong></p>
             </div>
         </div>
     </div>
 </div>
+
 
 
 <div class="leave-history bg-white p-4 mt-4">
@@ -556,4 +557,29 @@
     });
 
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('/api/Leave/SoNgayConLai')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Lỗi khi lấy dữ liệu');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    const soNgayConLaiElement = document.querySelector('.leave-info-card strong');
+                    if (soNgayConLaiElement) {
+                        soNgayConLaiElement.textContent = `${data.soNgayConLai} ngày`;
+                    }
+                } else {
+                    console.error('Lỗi:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+            });
+    });
 
+
+</script>

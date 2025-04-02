@@ -129,6 +129,68 @@ namespace HR_KD.ApiControllers
         }
 
 
+        [HttpGet("SoNgayConLai")]
+        public async Task<IActionResult> GetSoNgayConLai()
+        {
+            // Lấy MaNV từ claims
+            var maNv = GetMaNvFromClaims();
+            if (maNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
+            // Lấy thông tin nhân viên (NgayVaoLam)
+            var nhanVien = await _context.NhanViens
+                .FirstOrDefaultAsync(nv => nv.MaNv == maNv.Value);
+            if (nhanVien == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy nhân viên." });
+            }
+
+            // Kiểm tra nhanVien.NgayVaoLam có giá trị hay không
+            if (!nhanVien.NgayVaoLam.HasValue)
+            {
+                return BadRequest(new { success = false, message = "Ngày vào làm không hợp lệ." });
+            }
+
+            // Tính số năm làm việc
+            var soNamLamViec = DateTime.Now.Year - nhanVien.NgayVaoLam.Value.Year;
+            if (DateOnly.FromDateTime(DateTime.Now) < nhanVien.NgayVaoLam.Value.AddYears(soNamLamViec))
+            {
+                soNamLamViec--;
+            }
+
+
+            // Tính số ngày phép được cộng thêm
+            var soNgayPhepCongThem = 0;
+            if (soNamLamViec >= 5)
+            {
+                soNgayPhepCongThem = (soNamLamViec / 5); // Mỗi 5 năm tăng 1 ngày phép
+            }
+
+            // Lấy thông tin SoNgayConLai từ bảng SoDuPhep (lấy bản ghi có NgayCapNhat gần nhất)
+            var soDuPhep = await _context.SoDuPheps
+                .Where(sd => sd.MaNv == maNv.Value && sd.Nam == DateTime.Now.Year)
+                .OrderByDescending(sd => sd.NgayCapNhat)
+                .FirstOrDefaultAsync();
+
+            // Nếu không có bản ghi, tạo mới với SoNgayConLai mặc định là 12 + số ngày phép cộng thêm
+            if (soDuPhep == null)
+            {
+                soDuPhep = new SoDuPhep
+                {
+                    MaNv = maNv.Value,
+                    Nam = DateTime.Now.Year,
+                    SoNgayConLai = 12 + soNgayPhepCongThem,
+                    NgayCapNhat = DateTime.Now
+                };
+                _context.SoDuPheps.Add(soDuPhep);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { success = true, soNgayConLai = soDuPhep.SoNgayConLai });
+        }
+
 
         public class LeaveRequestDto
         {

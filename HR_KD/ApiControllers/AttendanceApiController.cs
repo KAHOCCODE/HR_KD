@@ -112,6 +112,40 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, records });
         }
-        
+        [HttpGet("GetAttendanceRequests")]
+        public async Task<IActionResult> GetAttendanceRequests(string? ngayLamViec = null)
+        {
+            // Lấy mã nhân viên từ claims của người dùng đăng nhập
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
+            }
+
+            var query = _context.YeuCauSuaChamCongs.Where(c => c.MaNv == maNv.Value);
+
+            if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
+            {
+                query = query.Where(c => c.NgayLamViec == ngay);
+            }
+
+            var requests = await query
+                .Select(c => new
+                {
+                    c.NgayLamViec,
+                    GioVaoMoi = c.GioVaoMoi.HasValue ? c.GioVaoMoi.Value.ToString("HH:mm") : null,
+                    GioRaMoi = c.GioRaMoi.HasValue ? c.GioRaMoi.Value.ToString("HH:mm") : null,
+                    c.LyDo,
+                    c.TrangThai
+                })
+                .ToListAsync();
+
+            return Ok(new { success = true, requests });
+        }
+
+      
+
+
+
     }
 }

@@ -52,7 +52,32 @@
      
     <!-- Nút gửi dữ liệu -->
     <button class="btn btn-primary mt-3" id="submitAttendance">Chấm công</button>
-    <table class="table mt-3">
+<!-- Các nút để chuyển đổi bảng -->
+<div class="btn-group" role="group" aria-label="Chọn bảng">
+    <button type="button" class="btn btn-primary mt-3" id="showAttendanceRequests">Yêu cầu Chấm Công</button>
+
+    <button type="button" class="btn btn-primary mt-3" id="showAttendance">Chấm Công</button>
+</div>
+
+<!-- Bảng Yêu Cầu Chấm Công -->
+<table class="table mt-3" id="attendanceRequestsTable" ">
+    <thead>
+        <tr>
+            <th>Ngày Làm Việc</th>
+            <th>Giờ Vào Mới</th>
+            <th>Giờ Ra Mới</th>
+            <th>Lý Do</th>
+            <th>Trạng Thái</th>
+            <th>Hành Động</th>
+        </tr>
+    </thead>
+    <tbody id="attendancerequestsTableBody">
+
+    </tbody>
+</table>
+
+<!-- Bảng Chấm Công -->
+<table class="table mt-3" id="attendanceTable" ">
     <thead>
         <tr>
             <th>Ngày làm việc</th>
@@ -63,8 +88,11 @@
             <th>Ghi chú</th>
         </tr>
     </thead>
-    <tbody id="attendanceTableBody"></tbody>
+    <tbody id="attendanceTableBody">
+        <!-- Dữ liệu chấm công sẽ được chèn vào đây -->
+    </tbody>
 </table>
+
 
 </div>
 
@@ -72,6 +100,18 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // Khi bấm vào nút "Yêu cầu Chấm Công", hiển thị bảng yêu cầu chấm công và ẩn bảng chấm công
+document.getElementById("showAttendanceRequests").addEventListener("click", function() {
+    document.getElementById("attendanceRequestsTable").style.display = "block";  // Hiển thị bảng yêu cầu chấm công
+    document.getElementById("attendanceTable").style.display = "none"; // Ẩn bảng chấm công
+});
+
+// Khi bấm vào nút "Chấm Công", hiển thị bảng chấm công và ẩn bảng yêu cầu chấm công
+document.getElementById("showAttendance").addEventListener("click", function() {
+    document.getElementById("attendanceTable").style.display = "block";  // Hiển thị bảng chấm công
+    document.getElementById("attendanceRequestsTable").style.display = "none"; // Ẩn bảng yêu cầu chấm công
+});
+
 let selectedWorkDays = new Set();
 let attendanceRecords = new Set(); // Chứa danh sách ngày đã chấm công
 // Cấu hình Flatpickr
@@ -184,7 +224,8 @@ function resetForm() {
     document.getElementById("attendanceNote").value = "";
     selectedWorkDays.clear();
     updateTotalHours(); // Cập nhật lại tổng số giờ làm về 0
-    fetchAttendanceRecords(); // Reload lại bảng chấm công
+    // fetchAttendanceRecords(); // Reload lại bảng chấm công
+    // fetchAttendanceRequestsRecords(); // Reload lại bảng yêu cầu chấm công
 }
 
 // Lắng nghe thay đổi giờ check-in/check-out để cập nhật tổng giờ làm
@@ -193,7 +234,7 @@ document.getElementById("checkOutTime").addEventListener("change", updateTotalHo
 
 // Gọi API để lấy danh sách chấm công
 function fetchAttendanceRecords() {
-    fetch('/api/Attendance/GetAttendanceRecords?maNv=1')
+    fetch('/api/Attendance/GetAttendanceRecords')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -222,6 +263,42 @@ function renderAttendanceTable(records) {
         tableBody.innerHTML += row;
     });
 }
+
+// Gọi API để lấy danh sách yêu cầu chỉnh sửa chấm công
+function fetchAttendanceRequestsRecords() {
+    fetch('/api/Attendance/GetAttendanceRequests')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderAttendanceRequestsTable(data.records);
+            } else {
+                console.error("Lỗi lấy dữ liệu yêu cầu chấm công.");
+            }
+        })
+        .catch(error => console.error("Lỗi kết nối API:", error));
+}
+
+// Hiển thị bảng yêu cầu chỉnh sửa chấm công
+function renderAttendanceRequestsTable(records) {
+    let tableBody = document.getElementById("attendancerequestsTableBody");
+    tableBody.innerHTML = "";
+
+    records.forEach(record => { 
+        let row = `<tr>
+            <td>${record.ngayLamViec}</td>
+            <td>${record.gioVaoMoi ?? '-'}</td>
+            <td>${record.gioRaMoi ?? '-'}</td>
+            <td>${record.lyDo || "-"}</td>
+            <td>${record.trangThai || "-"}</td>
+            <td>
+                <button class="btn btn-success" , true)">Chấp nhận</button>
+                <button class="btn btn-danger" , false)">Từ chối</button>
+            </td>
+        </tr>`;
+        tableBody.innerHTML += row;
+    });
+}
+
 
 document.addEventListener("DOMContentLoaded", function() {
     let calendarEl = document.getElementById("attendanceCalendar");
@@ -269,7 +346,10 @@ function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
 
 
 // Gọi API khi trang tải xong
-document.addEventListener("DOMContentLoaded", fetchAttendanceRecords);
+document.addEventListener("DOMContentLoaded", function() {
+    fetchAttendanceRecords();
+    fetchAttendanceRequestsRecords();
+});
 
 </script>
 

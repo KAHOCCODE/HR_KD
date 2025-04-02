@@ -18,6 +18,13 @@ namespace HR_KD.Data
 
         public decimal? ThuongCoDinh { get; set; } = 0;
 
+        // Add the new fields for BHXH, BHYT, and BHTN
+        public decimal BHXH { get; set; } = 0;
+
+        public decimal BHYT { get; set; } = 0;
+
+        public decimal BHTN { get; set; } = 0;
+
         public DateTime NgayApDng { get; set; } = DateTime.Now;
 
         public string? GhiChu { get; set; }

@@ -79,9 +79,8 @@ public partial class HrDbContext : DbContext
 
             entity.Property(e => e.GhiChu).HasMaxLength(255);
             entity.Property(e => e.MaNv).HasColumnName("MaNV");
-            entity.Property(e => e.TongLuong)
-                .HasComputedColumnSql("([LuongThem] + [LuongTangCa] + [PhuCapThem] - ([BHXH] + [BHYT] + [BHTN] + [ThueTNCN]))", false)
-            .HasColumnType("decimal(20, 2)");
+            // Remove the computed column definition for TongLuong
+            entity.Property(e => e.TongLuong).HasColumnType("decimal(20, 2)");
             entity.Property(e => e.TrangThai)
                 .HasMaxLength(50)
                 .HasDefaultValue("Chưa Thanh Toán");

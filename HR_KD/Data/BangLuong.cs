@@ -17,14 +17,14 @@ public partial class BangLuong
 
     public decimal LuongTangCa { get; set; } = 0;
 
-    public decimal BHXH { get; set; } = 0;
-
-    public decimal BHYT { get; set; } = 0;
-
-    public decimal BHTN { get; set; } = 0;
+    // Remove BHXH, BHYT, and BHTN fields
+    // public decimal BHXH { get; set; } = 0;
+    // public decimal BHYT { get; set; } = 0;
+    // public decimal BHTN { get; set; } = 0;
 
     public decimal ThueTNCN { get; set; } = 0;
 
+    // Remove the computed column for TongLuong
     public decimal? TongLuong { get; set; }
 
     public decimal ThucNhan { get; set; }

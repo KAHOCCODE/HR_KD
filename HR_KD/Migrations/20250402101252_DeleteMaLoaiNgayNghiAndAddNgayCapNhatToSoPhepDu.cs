@@ -11,13 +11,22 @@ namespace HR_KD.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK__SoDuPhep__MaLoai__5535A963",
-                table: "SoDuPhep");
+            migrationBuilder.Sql(@"
+                DECLARE @constraint NVARCHAR(200);
+                SELECT @constraint = name FROM sys.foreign_keys 
+                WHERE parent_object_id = OBJECT_ID('SoDuPhep') AND referenced_object_id = OBJECT_ID('LoaiNgayNghi');
+                IF @constraint IS NOT NULL 
+                EXEC('ALTER TABLE SoDuPhep DROP CONSTRAINT ' + @constraint);
+            ");
 
-            migrationBuilder.DropPrimaryKey(
-                name: "PK__SoDuPhep__070385985BD7438C",
-                table: "SoDuPhep");
+            // Xóa khóa chính bằng cách tìm tên động
+            migrationBuilder.Sql(@"
+                DECLARE @pkName NVARCHAR(200);
+                SELECT @pkName = name FROM sys.key_constraints 
+                WHERE type = 'PK' AND parent_object_id = OBJECT_ID('SoDuPhep');
+                IF @pkName IS NOT NULL 
+                EXEC('ALTER TABLE SoDuPhep DROP CONSTRAINT ' + @pkName);
+            ");
 
             migrationBuilder.Sql(@"
                 IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SoDuPhep_MaLoaiNgayNghi' AND object_id = OBJECT_ID('SoDuPhep'))

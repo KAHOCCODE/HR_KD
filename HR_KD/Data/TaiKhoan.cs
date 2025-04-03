@@ -11,9 +11,7 @@ public partial class TaiKhoan
 
     public string PasswordHash { get; set; } = null!;
 
-    public string MaQuyenHan { get; set; } = null!;
-
     public virtual NhanVien MaNvNavigation { get; set; } = null!;
 
-    public virtual QuyenHan MaQuyenHanNavigation { get; set; } = null!;
+    public virtual ICollection<TaiKhoanQuyenHan> TaiKhoanQuyenHans { get; set; } = new List<TaiKhoanQuyenHan>();
 }

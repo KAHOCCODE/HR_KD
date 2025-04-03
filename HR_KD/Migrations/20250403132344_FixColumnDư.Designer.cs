@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250403132344_FixColumnDư")]
+    partial class FixColumnDư
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -671,17 +674,25 @@ namespace HR_KD.Migrations
 
                     b.Property<string>("MaQuyenHan")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("QuyenHanMaQuyenHan")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TaiKhoanUsername")
+                        .IsRequired()
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MaQuyenHan");
+                    b.HasIndex("QuyenHanMaQuyenHan");
 
-                    b.HasIndex("Username");
+                    b.HasIndex("TaiKhoanUsername");
 
                     b.ToTable("TaiKhoanQuyenHans");
                 });
@@ -1073,13 +1084,13 @@ namespace HR_KD.Migrations
                 {
                     b.HasOne("HR_KD.Data.QuyenHan", "QuyenHan")
                         .WithMany("TaiKhoanQuyenHans")
-                        .HasForeignKey("MaQuyenHan")
+                        .HasForeignKey("QuyenHanMaQuyenHan")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("HR_KD.Data.TaiKhoan", "TaiKhoan")
                         .WithMany("TaiKhoanQuyenHans")
-                        .HasForeignKey("Username")
+                        .HasForeignKey("TaiKhoanUsername")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

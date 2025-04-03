@@ -11,5 +11,6 @@ public partial class QuyenHan
 
     public string MoTaQuyenHan { get; set; } = null!;
 
-    public virtual ICollection<TaiKhoan> TaiKhoans { get; set; } = new List<TaiKhoan>();
+    public virtual ICollection<TaiKhoanQuyenHan> TaiKhoanQuyenHans { get; set; } = new List<TaiKhoanQuyenHan>();
+
 }

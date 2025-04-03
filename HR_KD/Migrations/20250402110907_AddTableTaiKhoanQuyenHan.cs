@@ -11,8 +11,21 @@ namespace HR_KD.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK__TaiKhoan__MaQuye__4316F928",
+                name: "FK__TaiKhoan__MaQuye__09A971A2",
                 table: "TaiKhoan");
+            //migrationBuilder.Sql(@"
+            //    DECLARE @constraint NVARCHAR(200);
+            //    SELECT @constraint = name 
+            //    FROM sys.foreign_keys 
+            //    WHERE parent_object_id = OBJECT_ID('TaiKhoan') 
+            //    AND referenced_object_id = OBJECT_ID('QuyenHan')
+            //    AND delete_referential_action = 1;
+
+            //    IF @constraint IS NOT NULL 
+            //    BEGIN
+            //        EXEC('ALTER TABLE TaiKhoan DROP CONSTRAINT [' + @constraint + '];');
+            //    END
+            //");
 
             migrationBuilder.Sql(@"
                 IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_TaiKhoan_MaQuyenHan' AND object_id = OBJECT_ID('TaiKhoan'))

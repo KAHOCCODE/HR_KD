@@ -13,8 +13,10 @@ namespace HR_KD.Data
 
         public string MaQuyenHan { get; set; } = null!;
 
+        [ForeignKey("Username")]
         public virtual TaiKhoan TaiKhoan { get; set; } = null!;
 
+        [ForeignKey("MaQuyenHan")]
         public virtual QuyenHan QuyenHan { get; set; } = null!;
     }
 }

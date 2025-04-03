@@ -66,12 +66,12 @@
             <th>Ngày Làm Việc</th>
             <th>Giờ Vào Mới</th>
             <th>Giờ Ra Mới</th>
+            <th>Tổng giờ</th>
             <th>Lý Do</th>
-            <th>Trạng Thái</th>
             <th>Hành Động</th>
         </tr>
     </thead>
-    <tbody id="attendancerequestsTableBody">
+    <tbody id="attendanceTableBody2">
 
     </tbody>
 </table>
@@ -270,7 +270,7 @@ function fetchAttendanceRequestsRecords() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                renderAttendanceRequestsTable(data.records);
+                renderAttendanceRequestsTable(data.requests);
             } else {
                 console.error("Lỗi lấy dữ liệu yêu cầu chấm công.");
             }
@@ -278,26 +278,116 @@ function fetchAttendanceRequestsRecords() {
         .catch(error => console.error("Lỗi kết nối API:", error));
 }
 
-// Hiển thị bảng yêu cầu chỉnh sửa chấm công
-function renderAttendanceRequestsTable(records) {
-    let tableBody = document.getElementById("attendancerequestsTableBody");
+// Hiển thị bảng yêu cầu chỉnh sửa chấm công và tính tổng giờ
+function renderAttendanceRequestsTable(requests) {
+    let tableBody = document.getElementById("attendanceTableBody2");
     tableBody.innerHTML = "";
 
-    records.forEach(record => { 
+    requests.forEach(request => { 
+        let gioVaoMoi = request.gioVaoMoi ?? '-';
+        let gioRaMoi = request.gioRaMoi ?? '-';
+        let dailyHours = calculateDailyHours(gioVaoMoi, gioRaMoi); // Calculate hours worked for each day
         let row = `<tr>
-            <td>${record.ngayLamViec}</td>
-            <td>${record.gioVaoMoi ?? '-'}</td>
-            <td>${record.gioRaMoi ?? '-'}</td>
-            <td>${record.lyDo || "-"}</td>
-            <td>${record.trangThai || "-"}</td>
+            <td>${request.ngayLamViec}</td>
+            <td>${gioVaoMoi}</td>
+            <td>${gioRaMoi}</td>
+            <td>${dailyHours.toFixed(2)} </td>
+            <td>${request.lyDo || "-"}</td>
             <td>
-                <button class="btn btn-success" , true)">Chấp nhận</button>
-                <button class="btn btn-danger" , false)">Từ chối</button>
+                <button class="btn btn-success" onclick="acceptRequest(${request.maYeuCau}, '${request.ngayLamViec}', '${gioVaoMoi}', '${gioRaMoi}')">Chấp nhận</button>
+                <button class="btn btn-danger" onclick="rejectRequest(${request.maYeuCau})">Từ chối</button>
             </td>
         </tr>`;
         tableBody.innerHTML += row;
     });
 }
+
+
+//
+
+// Chấp nhận yêu cầu chấm công
+function acceptRequest(maYeuCau) {
+    // Lấy thông tin từ hàng trong bảng
+    const row = event.target.closest('tr');
+    const ngayLamViec = row.cells[0].textContent;
+    const gioVaoMoi = row.cells[1].textContent !== '-' ? row.cells[1].textContent : null;
+    const gioRaMoi = row.cells[2].textContent !== '-' ? row.cells[2].textContent : null;
+
+    const tongGio = calculateDailyHours(gioVaoMoi, gioRaMoi);
+
+    // Prepare the data to be sent to the API
+    const requestData = [{
+        NgayLamViec: ngayLamViec,
+        GioVao: gioVaoMoi,
+        GioRa: gioRaMoi,
+        TongGio: tongGio,
+        TrangThai: 'Đã duyệt',  // Set status to approved
+        GhiChu: 'Chấp nhận yêu cầu chấm công',
+        MaYeuCau: maYeuCau  // Add maYeuCau to the request data
+    }];
+
+    fetch('/api/Attendance/AcceptAttendanceRequest', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            maYeuCau: maYeuCau,
+            attendanceData: requestData 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            fetchAttendanceRequestsRecords(); // Refresh the table
+        } else {
+            alert("Lỗi: " + data.message);
+        }
+    })
+    .catch(error => console.error("Lỗi kết nối API:", error));
+
+
+}
+
+
+
+
+// Xử lý sự kiện Từ chối yêu cầu
+function rejectRequest(requestId) {
+    Swal.fire({
+        title: 'Từ chối yêu cầu?',
+        text: "Bạn có chắc chắn muốn từ chối yêu cầu chấm công này?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Từ chối',
+        cancelButtonText: 'Hủy'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Gọi API để từ chối yêu cầu
+            fetch(`/api/Attendance/RejectRequest/${requestId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire("Thành công!", "Yêu cầu đã bị từ chối.", "success");
+                    fetchAttendanceRequestsRecords(); // Cập nhật lại bảng yêu cầu chấm công
+                } else {
+                    Swal.fire("Lỗi!", data.message || "Có lỗi xảy ra khi từ chối yêu cầu.", "error");
+                }
+            })
+            .catch(error => {
+                Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error");
+            });
+        }
+    });
+}
+
+//
 
 
 document.addEventListener("DOMContentLoaded", function() {

@@ -53,6 +53,8 @@ public partial class HrDbContext : DbContext
 
     public virtual DbSet<TaiKhoanNganHang> TaiKhoanNganHangs { get; set; }
 
+    public virtual DbSet<TaiKhoanQuyenHan> TaiKhoanQuyenHans { get; set; }
+
     public virtual DbSet<TangCa> TangCas { get; set; }
 
     public virtual DbSet<ThongBao> ThongBaos { get; set; }
@@ -351,7 +353,6 @@ public partial class HrDbContext : DbContext
 
             entity.Property(e => e.Username).HasMaxLength(50);
             entity.Property(e => e.MaNv).HasColumnName("MaNV");
-            entity.Property(e => e.MaQuyenHan).HasMaxLength(50);
             entity.Property(e => e.PasswordHash).HasMaxLength(512);
 
             entity.HasOne(d => d.MaNvNavigation).WithMany(p => p.TaiKhoans)
@@ -359,10 +360,6 @@ public partial class HrDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__TaiKhoan__MaNV__4222D4EF");
 
-            entity.HasOne(d => d.MaQuyenHanNavigation).WithMany(p => p.TaiKhoans)
-                .HasForeignKey(d => d.MaQuyenHan)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TaiKhoan__MaQuye__4316F928");
         });
 
         modelBuilder.Entity<TaiKhoanNganHang>(entity =>

@@ -188,7 +188,24 @@ namespace HR_KD.ApiControllers
 
                 transaction.Commit();
 
-                return CreatedAtAction(nameof(GetEmployees), new { id = maNvMoi }, employee);
+                // Tạo DTO để trả về
+                var responseDto = new
+                {
+                    MaNv = employee.MaNv,
+                    HoTen = employee.HoTen,
+                    NgaySinh = employee.NgaySinh,
+                    GioiTinh = employee.GioiTinh.HasValue ? (employee.GioiTinh.Value ? "Nam" : "Nữ") : "Không xác định",
+                    DiaChi = employee.DiaChi,
+                    Sdt = employee.Sdt,
+                    Email = employee.Email,
+                    TrinhDoHocVan = employee.TrinhDoHocVan,
+                    NgayVaoLam = employee.NgayVaoLam,
+                    MaPhongBan = employee.MaPhongBan,
+                    MaChucVu = employee.MaChucVu,
+                    AvatarUrl = employee.AvatarUrl
+                };
+
+                return CreatedAtAction(nameof(GetEmployees), new { id = maNvMoi }, responseDto);
             }
             catch (Exception ex)
             {

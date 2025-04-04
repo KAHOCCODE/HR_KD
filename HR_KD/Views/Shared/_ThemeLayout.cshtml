@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using HR_KD.Helpers
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -152,8 +154,7 @@
                             <a href="~/Home/Index"><i class="fa fa-dashboard"></i> <span>Dashboard</span></a>
                         </li>
 
-                        <!-- Chỉ hiển thị dropdown "Nhân viên" nếu người dùng có vai trò EMPLOYEE_MANAGER -->
-                        @if (User.IsInRole("LINE_MANAGER"))
+                        @if (User.HasAnyRole("LINE_MANAGER", "EMPLOYEE_MANAGER"))
                         {
                             <li class="submenu">
                                 <a href="#"><i class="fa fa-users"></i> <span>Nhân viên</span> <span class="menu-arrow"></span></a>

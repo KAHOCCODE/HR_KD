@@ -31,13 +31,10 @@ namespace HR_KD.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            if (!ModelState.IsValid) return View(model);
 
             var user = _context.TaiKhoans
-                .Include(t => t.TaiKhoanQuyenHans) // ✅ Load quyền hạn của tài khoản
+                .Include(t => t.TaiKhoanQuyenHans)
                 .FirstOrDefault(x => x.Username == model.Username);
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
@@ -53,28 +50,35 @@ namespace HR_KD.Controllers
                 return View(model);
             }
 
-            // ✅ Lấy danh sách quyền từ bảng TaiKhoanQuyenHan
+            // ✅ Load và add nhiều Role Claims
             var userRoles = user.TaiKhoanQuyenHans.Select(q => q.MaQuyenHan).ToList();
-            var validRoles = new List<string> { "EMPLOYEE", "EMPLOYEE_MANAGER", "LINE_MANAGER" };
-            var assignedRole = userRoles.FirstOrDefault(role => validRoles.Contains(role)) ?? "EMPLOYEE"; // ✅ Kiểm tra quyền hợp lệ
-
             var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, nhanVien.HoTen),
-                new Claim(ClaimTypes.Role, assignedRole), // ✅ Gán quyền hợp lệ
-                new Claim("MaNV", user.MaNv.ToString())
-            };
+    {
+        new Claim(ClaimTypes.Name, nhanVien.HoTen),
+        new Claim("MaNV", user.MaNv.ToString())
+    };
+            claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
 
+            // ✅ Đăng nhập & tạo session
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = model.RememberMe
-            };
-
+            var authProperties = new AuthenticationProperties { IsPersistent = model.RememberMe };
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
-            // ✅ Lưu HoTen vào Session thay vì Username
             _httpContextAccessor.HttpContext.Session.SetString("HoTen", nhanVien.HoTen);
+
+            // ✅ Log đăng nhập
+            var loginLog = new LoginHistory
+            {
+                LoginId = Guid.NewGuid(),
+                UserId = user.MaNv.ToString(),
+                Username = user.Username,
+                Roles = string.Join(",", userRoles),
+                LoginTime = DateTime.Now,
+                IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = HttpContext.Request.Headers["User-Agent"]
+            };
+            _context.LoginHistories.Add(loginLog);
+            await _context.SaveChangesAsync();
 
             return RedirectToAction("Index", "Home");
         }

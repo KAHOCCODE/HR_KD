@@ -144,7 +144,7 @@ namespace HR_KD.ApiControllers
             return Ok(new { success = true, requests });
         }
         [HttpPost("AcceptAttendanceRequest")]
-        public async Task<IActionResult> AcceptAttendanceRequest([FromBody] AcceptAttendanceRequestDto request)
+        public async Task<IActionResult> AcceptAttendanceRequest( AcceptAttendanceRequestDTO request)
         {
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
@@ -218,19 +218,56 @@ namespace HR_KD.ApiControllers
         }
 
 
-        // Thêm DTO cho request
-        public class AcceptAttendanceRequestDto
+        [HttpPost("RejectAttendanceRequest")]
+        public async Task<IActionResult> RejectAttendanceRequest(RejectAttendanceRequestDTO request)
         {
-            public int MaYeuCau { get; set; }
-            public List<ChamCongRequestDto> AttendanceData { get; set; }
+            try
+            {
+                // Tìm yêu cầu chấm công trong database
+                var requestRecord = await _context.YeuCauSuaChamCongs
+                    .FirstOrDefaultAsync(a => a.MaYeuCau == request.MaYeuCau);
+
+                if (requestRecord == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy yêu cầu chấm công." });
+                }
+
+                // Kiểm tra giá trị NgayLamViec hợp lệ
+                if (request.NgayLamViec == default(DateOnly) || request.NgayLamViec == DateOnly.MinValue)
+                {
+                    return BadRequest(new { success = false, message = "Ngày làm việc không hợp lệ." });
+                }
+
+                // Tạo bản ghi NgayNghi
+                var ngayNghi = new NgayNghi
+                {
+                    MaNv = requestRecord.MaNv,
+                    NgayNghi1 = request.NgayLamViec, // Đảm bảo NgayLamViec được lưu chính xác
+                    LyDo = !string.IsNullOrEmpty(request.LyDo) ? request.LyDo : "Không có lý do cụ thể",
+                    MaLoaiNgayNghi = request.MaLoaiNgayNghi,
+                    TrangThai = "Từ chối",
+                    NgayCapNhat = DateTime.Now
+                };
+
+                // Thêm vào database
+                _context.NgayNghis.Add(ngayNghi);
+                await _context.SaveChangesAsync(); // Lưu ngay nghỉ trước khi xóa yêu cầu
+
+                // Xóa yêu cầu chấm công sau khi đã lưu thành công vào bảng NgayNghi
+                _context.YeuCauSuaChamCongs.Remove(requestRecord);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Yêu cầu chấm công đã bị từ chối và lưu vào NgayNghi." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
         }
 
-        public class ChamCongRequestDto
-        {
-            public string NgayLamViec { get; set; }
-            public string GioVao { get; set; }
-            public string GioRa { get; set; }
-        }
+
+
+
 
 
 

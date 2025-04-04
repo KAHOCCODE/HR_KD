@@ -49,7 +49,7 @@
         <label class="form-label">Ghi chú</label>
         <textarea class="form-control" id="attendanceNote" placeholder="Nhập ghi chú (nếu có)"></textarea>
     </div>
-     
+
     <!-- Nút gửi dữ liệu -->
     <button class="btn btn-primary mt-3" id="submitAttendance">Chấm công</button>
 <!-- Các nút để chuyển đổi bảng -->
@@ -156,7 +156,7 @@ document.getElementById("submitAttendance").addEventListener("click", function()
         return;
     }
     let attendanceData = [...selectedWorkDays].map(day => ({
-        
+
         NgayLamViec: day,
         GioVao: checkIn || null,
         GioRa: checkOut || null,
@@ -295,7 +295,8 @@ function renderAttendanceRequestsTable(requests) {
             <td>${request.lyDo || "-"}</td>
             <td>
                 <button class="btn btn-success" onclick="acceptRequest(${request.maYeuCau}, '${request.ngayLamViec}', '${gioVaoMoi}', '${gioRaMoi}')">Chấp nhận</button>
-                <button class="btn btn-danger" onclick="rejectRequest(${request.maYeuCau})">Từ chối</button>
+               <button class="btn btn-danger" onclick="rejectRequest(event, ${request.maYeuCau})">Từ chối</button>
+
             </td>
         </tr>`;
         tableBody.innerHTML += row;
@@ -353,39 +354,121 @@ function acceptRequest(maYeuCau) {
 
 
 
-// Xử lý sự kiện Từ chối yêu cầu
-function rejectRequest(requestId) {
-    Swal.fire({
-        title: 'Từ chối yêu cầu?',
-        text: "Bạn có chắc chắn muốn từ chối yêu cầu chấm công này?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Từ chối',
-        cancelButtonText: 'Hủy'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Gọi API để từ chối yêu cầu
-            fetch(`/api/Attendance/RejectRequest/${requestId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+// Hàm từ chối yêu cầu chấm công với lý do
+async function rejectRequest(event, maYeuCau) {
+    try {
+        const response = await fetch("/api/Leave/GetLeaveTypes");
+        const result = await response.json();
+
+        if (result && result.success && Array.isArray(result.leaveTypes)) {
+            let leaveTypeOptions = result.leaveTypes.map(
+                leaveType => `<option value="${leaveType.maLoaiNgayNghi}">${leaveType.tenLoai}</option>`
+            ).join("");
+
+            // Lấy hàng (`tr`) chứa nút bấm
+            const row = event.target.closest('tr');
+            if (!row) {
+                console.error("Không tìm thấy hàng chứa dữ liệu!");
+                return;
+            }
+
+            const ngayLamViec = row.cells[0]?.textContent.trim() || ""; // Lấy ngày làm việc từ cột đầu tiên
+
+            if (!ngayLamViec) {
+                console.error("Không lấy được NgayLamViec!");
+                Swal.fire("Lỗi!", "Không tìm thấy ngày làm việc.", "error");
+                return;
+            }
+
+            Swal.fire({
+                title: "Xác nhận từ chối?",
+                html: `
+                    <select id="leaveTypeSelect" class="swal2-select">
+                        <option value="">Chọn loại nghỉ</option>
+                        ${leaveTypeOptions}
+                    </select>
+                    <input type="text" id="rejectReason" class="swal2-input" placeholder="Nhập lý do từ chối (nếu có)">
+                `,
+                showCancelButton: true,
+                confirmButtonText: "Từ chối",
+                cancelButtonText: "Hủy",
+                preConfirm: () => {
+                    const leaveType = document.getElementById("leaveTypeSelect").value;
+                    const reason = document.getElementById("rejectReason").value.trim();
+
+                    if (!leaveType) {
+                        Swal.showValidationMessage("Vui lòng chọn loại nghỉ!");
+                        return false;
+                    }
+
+                    return { leaveType, reason };
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire("Thành công!", "Yêu cầu đã bị từ chối.", "success");
-                    fetchAttendanceRequestsRecords(); // Cập nhật lại bảng yêu cầu chấm công
-                } else {
-                    Swal.fire("Lỗi!", data.message || "Có lỗi xảy ra khi từ chối yêu cầu.", "error");
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    console.log("Mã yêu cầu:", maYeuCau);
+                    console.log("Loại nghỉ:", result.value.leaveType);
+                    console.log("Lý do từ chối:", result.value.reason);
+                    console.log("Ngày làm việc:", ngayLamViec);
+
+                    // Gửi dữ liệu từ chối lên server
+                    sendRejection(maYeuCau, result.value.leaveType, result.value.reason, ngayLamViec);
                 }
-            })
-            .catch(error => {
-                Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error");
             });
+        } else {
+            console.error("Lỗi dữ liệu từ API:", result);
+            Swal.fire("Lỗi!", "Dữ liệu không hợp lệ.", "error");
         }
-    });
+    } catch (error) {
+        console.error("Lỗi hệ thống:", error);
+        Swal.fire("Lỗi!", "Lỗi hệ thống. Vui lòng thử lại sau.", "error");
+    }
 }
+
+
+// Hàm gửi yêu cầu từ chối lên server
+async function sendRejection(maYeuCau, loaiNghi, lyDo, ngayLamViec) {
+    try {
+        if (!ngayLamViec) {
+            console.error("Lỗi: Ngày làm việc không hợp lệ.");
+            Swal.fire("Lỗi!", "Không tìm thấy ngày làm việc.", "error");
+            return;
+        }
+
+        const bodyData = {
+            MaYeuCau: maYeuCau,
+            MaLoaiNgayNghi: loaiNghi,
+            LyDo: lyDo,
+            NgayLamViec: ngayLamViec
+        };
+
+        console.log("Dữ liệu gửi đi:", bodyData);
+
+        const response = await fetch("/api/Attendance/RejectAttendanceRequest", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(bodyData)
+        });
+
+        if (!response.ok) {
+            throw new Error('Không thể từ chối yêu cầu.');
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            Swal.fire("Thành công!", "Yêu cầu đã bị từ chối.", "success");
+            fetchAttendanceRequestsRecords(); // Refresh dữ liệu
+        } else {
+            Swal.fire("Lỗi!", result.message || "Không thể từ chối yêu cầu.", "error");
+        }
+    } catch (error) {
+        console.error("Lỗi khi gửi từ chối:", error);
+        Swal.fire("Lỗi!", "Đã xảy ra lỗi khi gửi dữ liệu.", "error");
+    }
+}
+
 
 //
 

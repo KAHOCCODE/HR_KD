@@ -120,13 +120,14 @@ namespace HR_KD.ApiControllers
             var leaveTypes = await _context.LoaiNgayNghis
                 .Select(l => new
                 {
-                    l.MaLoaiNgayNghi,
-                    l.TenLoai
+                    maLoaiNgayNghi = l.MaLoaiNgayNghi, // Đảm bảo tên đúng với frontend
+                    tenLoai = l.TenLoai
                 })
                 .ToListAsync();
 
             return Ok(new { success = true, leaveTypes });
         }
+
 
 
         [HttpGet("SoNgayConLai")]

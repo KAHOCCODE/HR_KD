@@ -1,0 +1,648 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Nghỉ Phép</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+      
+        .tabs {
+            display: flex;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .tab.active {
+            background-color: white;
+            border-bottom: 3px solid #1e88e5;
+        }
+        .search-bar {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+        .search-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .filter-container {
+            display: flex;
+            gap: 10px;
+        }
+        .filter-select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .leave-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .leave-table th {
+            background-color: #f8f9fa;
+            text-align: center;
+             vertical-align: middle; /* Căn giữa theo chiều dọc */
+            padding: 12px 15px;
+            border-bottom: 2px solid #ddd;
+        }
+        .leave-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+                text-align: center;
+                vertical-align: middle; /* Căn giữa theo chiều dọc */
+        }
+        .status {
+            font-weight: bold;
+            display: inline-block;
+            width: 100%; /* Chiếm toàn bộ chiều rộng của ô */
+            height: 100%; /* Chiếm toàn bộ chiều cao của ô */
+            text-align: center; /* Căn giữa theo chiều ngang */
+            line-height: 1.5; /* Điều chỉnh chiều cao dòng để căn giữa theo chiều dọc */
+            padding: 6px 0; /* Thêm padding để tránh bị chèn */
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center; /* Căn giữa theo chiều ngang */
+            align-items: center; /* Căn giữa theo chiều dọc */
+            gap: 5px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        /* Nút Duyệt */
+        .btn-approve {
+            background-color: #28a745; /* xanh lá */
+            color: white;
+        }
+
+            .btn-approve:hover {
+                background-color: #218838;
+                transform: scale(1.05);
+            }
+
+        /* Nút Từ chối */
+        .btn-reject {
+            background-color: #dc3545; /* đỏ */
+            color: white;
+        }
+
+            .btn-reject:hover {
+                background-color: #c82333;
+                transform: scale(1.05);
+            }
+
+        /* Container nút thao tác */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px auto;
+            padding: 10px;
+            width: fit-content;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background: #f8f9fa;
+        }
+
+            .pagination button {
+                min-width: 36px;
+                padding: 6px 12px;
+                border: 1px solid #dee2e6;
+                background: white;
+                color: #495057;
+                transition: all 0.3s ease;
+                border-radius: 4px;
+            }
+
+                .pagination button.active {
+                    background: #1976d2;
+                    color: white;
+                    border-color: #1976d2;
+                }
+
+                .pagination button:hover:not(:disabled) {
+                    background: #e9ecef;
+                    transform: translateY(-1px);
+                }
+
+                .pagination button:disabled {
+                    opacity: 0.5;
+                    cursor: default;
+                }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 500px;
+            max-width: 90%;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        .close {
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .statistics {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            flex: 1;
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e88e5;
+        }
+    </style>
+</head>
+<body>
+    <h2 class="title">Quản lý nghỉ phép</h2>
+   
+        <div class="tabs">
+            <div class="tab active">Đang chờ duyệt</div>
+            <div class="tab">Đã duyệt</div>
+            <div class="tab">Tất cả đơn nghỉ phép</div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" class="search-input" placeholder="Tìm kiếm theo mã nhân viên, tên...">
+            <div class="filter-container">
+                <select class="filter-select">
+                    <option>Trạng thái</option>
+                    <option>Chờ duyệt</option>
+                    <option>Đã duyệt</option>
+                    <option>Từ chối</option>
+                </select>
+                <select class="filter-select">
+                    <option>Tháng</option>
+                    <option>01/2025</option>
+                    <option>02/2025</option>
+                    <option>03/2025</option>
+                </select>
+            </div>
+        </div>
+
+    <div class="statistics">
+        <div class="stat-card">
+            <h3>Đơn chờ duyệt</h3>
+            <div class="stat-number" id="pending-count">--</div>
+        </div>
+        <div class="stat-card">
+            <h3>Đơn đã duyệt hôm nay</h3>
+            <div class="stat-number" id="approved-today-count">--</div>
+        </div>
+        <div class="stat-card">
+            <h3>Tổng đơn tháng <span id="current-month-year">--</span></h3>
+            <div class="stat-number" id="current-month-count">--</div>
+        </div>
+    </div>
+
+    <table class="leave-table">
+        <thead>
+            <tr>
+                <th>Mã Ngày Nghỉ</th>
+                <th>Mã NV</th>
+                <th>Tên Nhân Viên</th>
+                <th>Ngày Nghỉ</th>
+                <th>Lý Do</th>
+                <th>Trạng Thái</th>
+                <th>Số Dư Ngày Phép</th>
+                <th>Thao Tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Nội dung được load động bằng JavaScript -->
+        </tbody>
+    </table>
+
+            
+    <script>
+        // Đặt hàm updateStatus trong phạm vi toàn cục
+        function updateStatus(maNgayNghi, trangThai) {
+            fetch('/LeaveManager/UpdateStatus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ maNgayNghi, trangThai })
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error("Lỗi kết nối: " + res.statusText);
+                    }
+                    return res.json();
+                })
+                .then(res => {
+                    if (res.success) {
+                        alert(res.message);
+                        location.reload(); // Tải lại trang để cập nhật dữ liệu
+                    } else {
+                        alert("Lỗi: " + res.message);
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi khi gửi yêu cầu:", error);
+                    alert("Có lỗi xảy ra khi gửi yêu cầu.");
+                });
+        }
+
+        function fetchLeaveStatistics() {
+            fetch('/LeaveManager/GetSummary')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật các số liệu thống kê
+                        document.getElementById('pending-count').textContent = data.data.pendingCount;
+                        document.getElementById('approved-today-count').textContent = data.data.approvedTodayCount;
+                        document.getElementById('current-month-count').textContent = data.data.currentMonthCount;
+                    } else {
+                        console.error('API returned success=false');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching leave statistics:', error);
+                });
+        }
+
+        // Sự kiện DOMContentLoaded
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabs = document.querySelectorAll(".tab");
+            const leaveTableBody = document.querySelector(".leave-table tbody");
+            const searchInput = document.querySelector(".search-input");
+            const statusFilter = document.querySelectorAll(".filter-select")[0];
+            const monthFilter = document.querySelectorAll(".filter-select")[1];
+
+            let currentPage = 1;
+            const itemsPerPage = 5;
+            let dataList = [];
+            let originalData = []; // Lưu trữ toàn bộ dữ liệu gốc
+
+            // Thiết lập tháng/năm hiện tại cho thống kê
+            const currentDate = new Date();
+            const monthNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+            const currentMonthYear = `${monthNames[currentDate.getMonth()]}/${currentDate.getFullYear()}`;
+            const monthYearElement = document.getElementById('current-month-year');
+            if (monthYearElement) {
+                monthYearElement.textContent = currentMonthYear;
+            }
+
+            // Lấy dữ liệu thống kê khi trang tải
+            fetchLeaveStatistics();
+
+            // Thiết lập làm mới dữ liệu thống kê mỗi 5 phút
+            setInterval(fetchLeaveStatistics, 300000);
+
+            // Tạo options cho select tháng
+            populateMonthFilter();
+
+            // Hàm tạo options cho bộ lọc tháng - phiên bản đơn giản hóa
+            function populateMonthFilter() {
+                // Xóa tất cả options hiện tại trừ option đầu tiên
+                while (monthFilter.options.length > 1) {
+                    monthFilter.remove(1);
+                }
+
+                // Lấy tháng và năm hiện tại
+                const currentMonth = currentDate.getMonth(); // 0-11
+                const currentYear = currentDate.getFullYear();
+
+                // Mảng tên tháng để hiển thị
+                const monthLabels = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+                    "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
+
+                // Tạo options cho 6 tháng gần nhất
+                for (let i = 0; i < 6; i++) {
+                    // Tính toán tháng và năm dựa trên tháng hiện tại
+                    let month = currentMonth - i;
+                    let year = currentYear;
+
+                    // Điều chỉnh nếu month < 0 (năm trước)
+                    if (month < 0) {
+                        month = 12 + month; // Ví dụ: -1 → 11 (tháng 12)
+                        year -= 1;
+                    }
+
+                    const option = document.createElement("option");
+                    option.value = `${month + 1}/${year}`; // Giá trị: 1/2025, 2/2025,...
+                    option.textContent = `${monthLabels[month]} ${year}`; // Hiển thị: Tháng 3 2025
+                    monthFilter.appendChild(option);
+                }
+            }
+
+            // Hàm để lấy dữ liệu từ API
+            function fetchData(statusFilter = null) {
+                fetch("/LeaveManager/GetAll")
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            originalData = res.data; // Lưu trữ dữ liệu gốc
+                            dataList = [...originalData]; // Copy dữ liệu
+
+                            if (statusFilter) {
+                                dataList = dataList.filter(item => item.trangThai === statusFilter);
+                            }
+
+                            // Reset lại các bộ lọc
+                            document.querySelector(".search-input").value = "";
+                            document.querySelectorAll(".filter-select")[0].selectedIndex = 0;
+                            document.querySelectorAll(".filter-select")[1].selectedIndex = 0;
+
+                            currentPage = 1;
+                            renderTable(currentPage);
+                            renderPagination();
+                        }
+                    });
+            }
+
+            // Hàm để lọc dữ liệu
+            function filterData() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedStatus = statusFilter.value === "Trạng thái" ? null : statusFilter.value;
+                const selectedMonth = monthFilter.value === "Tháng" ? null : monthFilter.value;
+
+                // Bắt đầu từ dữ liệu gốc
+                dataList = [...originalData];
+
+                // Lọc theo từ khóa tìm kiếm
+                if (searchTerm) {
+                    dataList = dataList.filter(item =>
+                        item.maNv.toString().toLowerCase().includes(searchTerm) ||
+                        item.hoTen.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                // Lọc theo trạng thái
+                if (selectedStatus) {
+                    dataList = dataList.filter(item => item.trangThai === selectedStatus);
+                }
+
+                // Lọc theo tháng
+                if (selectedMonth) {
+                    const [month, year] = selectedMonth.split('/');
+                    dataList = dataList.filter(item => {
+                        // Chuyển đổi định dạng ngày từ "dd/MM/yyyy" sang Date object
+                        const parts = item.ngayNghi.split('/');
+                        const itemDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                        return (itemDate.getMonth() + 1 == parseInt(month) && itemDate.getFullYear() == parseInt(year));
+                    });
+                }
+
+                // Reset trang và render lại bảng
+                currentPage = 1;
+                renderTable(currentPage);
+                renderPagination();
+            }
+
+            // Sự kiện cho ô tìm kiếm
+            searchInput.addEventListener("input", filterData);
+
+            // Sự kiện cho bộ lọc trạng thái
+            statusFilter.addEventListener("change", filterData);
+
+            // Sự kiện cho bộ lọc tháng
+            monthFilter.addEventListener("change", filterData);
+
+            // Hàm để render bảng
+            function renderTable(page) {
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                leaveTableBody.innerHTML = "";
+
+                if (dataList.length === 0) {
+                    // Hiển thị thông báo không có dữ liệu
+                    const row = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">Không tìm thấy dữ liệu</td>
+                    </tr>`;
+                    leaveTableBody.innerHTML = row;
+                    return;
+                }
+
+                dataList.slice(start, end).forEach(item => {
+                    // Kiểm tra trạng thái
+                    const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Từ chối";
+
+                    // Tạo nội dung cho cột "Thao tác"
+                    const actionContent = isProcessed
+                        ? `<div class="action-buttons">Đã xử lý</div>`
+                        : `<div class="action-buttons">
+                             <button class="btn btn-approve" onclick="updateStatus(${item.maNgayNghi}, 'Đã duyệt')">Duyệt</button>
+                             <button class="btn btn-reject" onclick="updateStatus(${item.maNgayNghi}, 'Từ chối')">Từ chối</button>
+                         </div>`;
+
+                    // Tạo hàng dữ liệu
+                    const row = `
+                    <tr>
+                        <td>${item.maNgayNghi}</td>
+                        <td>${item.maNv}</td>
+                        <td>${item.hoTen}</td>
+                        <td>${item.ngayNghi}</td>
+                        <td>${item.lyDo}</td>
+                        <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                        <td>${item.soNgayConLai}</td>
+                        <td>${actionContent}</td>
+                    </tr>`;
+                    leaveTableBody.innerHTML += row;
+                });
+            }
+
+            // Hàm để render phân trang
+            function renderPagination() {
+                const totalPages = Math.ceil(dataList.length / itemsPerPage);
+                let paginationContainer = document.getElementById('pagination-container');
+
+                if (!paginationContainer) {
+                    paginationContainer = document.createElement('div');
+                    paginationContainer.id = 'pagination-container';
+                    paginationContainer.className = 'pagination';
+                    document.querySelector('.leave-table').parentNode.appendChild(paginationContainer);
+                } else {
+                    paginationContainer.innerHTML = '';
+                }
+
+                if (totalPages <= 1) return;
+
+                // Nút Previous
+                const prevButton = document.createElement('button');
+                prevButton.textContent = 'Trước';
+                prevButton.disabled = currentPage === 1;
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderTable(currentPage);
+                        renderPagination();
+                    }
+                });
+
+                // Các nút trang
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.textContent = i;
+                    pageButton.className = currentPage === i ? 'active' : '';
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        renderTable(currentPage);
+                        renderPagination();
+                    });
+                    paginationContainer.appendChild(pageButton);
+                }
+
+                // Nút Next
+                const nextButton = document.createElement('button');
+                nextButton.textContent = 'Sau';
+                nextButton.disabled = currentPage === totalPages;
+                nextButton.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderTable(currentPage);
+                        renderPagination();
+                    }
+                });
+
+                paginationContainer.prepend(prevButton);
+                paginationContainer.appendChild(nextButton);
+            }
+
+            // Hàm để lấy class CSS dựa trên trạng thái
+            function getStatusClass(status) {
+                switch (status) {
+                    case 'Đã duyệt': return 'status-approved';
+                    case 'Từ chối': return 'status-rejected';
+                    default: return 'status-pending';
+                }
+            }
+
+            // Xử lý sự kiện khi người dùng chuyển tab
+            tabs.forEach(tab => {
+                tab.addEventListener("click", function () {
+                    tabs.forEach(t => t.classList.remove("active"));
+                    this.classList.add("active");
+
+                    const tabText = this.textContent.trim();
+                    let statusFilter = null;
+
+                    if (tabText === "Đang chờ duyệt") {
+                        statusFilter = "Chờ duyệt";
+                    } else if (tabText === "Đã duyệt") {
+                        statusFilter = "Đã duyệt";
+                    } else if (tabText === "Tất cả đơn nghỉ phép") {
+                        statusFilter = null;
+                    }
+
+                    fetchData(statusFilter);
+                });
+            });
+
+            // Khởi tạo dữ liệu khi trang được load
+            fetchData("Chờ duyệt");
+        });
+    </script>
+</body>
+</html>

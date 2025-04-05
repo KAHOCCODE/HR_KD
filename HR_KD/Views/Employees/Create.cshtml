@@ -247,23 +247,7 @@
             $("#createEmployeeForm").submit(function (e) {
                 e.preventDefault();
 
-                let formData = new FormData();
-                formData.append("HoTen", $("#HoTen").val());
-                formData.append("NgaySinh", $("#NgaySinh").val());
-                formData.append("GioiTinh", $("#GioiTinh").val());
-                formData.append("DiaChi", $("#DiaChiDayDu").val()); // Lấy địa chỉ đầy đủ
-                formData.append("Sdt", $("#Sdt").val());
-                formData.append("Email", $("#Email").val());
-                formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
-                formData.append("MaChucVu", $("#MaChucVu").val());
-                formData.append("MaPhongBan", $("#MaPhongBan").val());
-                formData.append("NgayVaoLam", $("#NgayVaoLam").val());
-                let avatar = $("#AvatarUrl")[0].files[0];
-                if (avatar) {
-                    formData.append("AvatarUrl", avatar);
-                }
-
-                // Kiểm tra các trường bắt buộc
+                // Kiểm tra các trường bắt buộc của nhân viên
                 let requiredFields = [
                     { id: "HoTen", name: "Họ và Tên" },
                     { id: "NgaySinh", name: "Ngày Sinh" },
@@ -272,7 +256,7 @@
                     { id: "Email", name: "Email" },
                     { id: "MaChucVu", name: "Chức Vụ" },
                     { id: "MaPhongBan", name: "Phòng Ban" },
-                    { id: "NgayVaoLam", name: "Ngày vào làm" }
+                    { id: "NgayVaoLam", name: "Ngày Vào Làm" }
                 ];
 
                 for (let field of requiredFields) {
@@ -286,6 +270,24 @@
                     }
                 }
 
+                // Tạo FormData cho nhân viên
+                let formData = new FormData();
+                formData.append("HoTen", $("#HoTen").val());
+                formData.append("NgaySinh", $("#NgaySinh").val());
+                formData.append("GioiTinh", $("#GioiTinh").val());
+                formData.append("DiaChi", $("#DiaChiDayDu").val());
+                formData.append("Sdt", $("#Sdt").val());
+                formData.append("Email", $("#Email").val());
+                formData.append("TrinhDoHocVan", $("#TrinhDoHocVan").val());
+                formData.append("MaChucVu", $("#MaChucVu").val());
+                formData.append("MaPhongBan", $("#MaPhongBan").val());
+                formData.append("NgayVaoLam", $("#NgayVaoLam").val());
+                let avatar = $("#AvatarUrl")[0].files[0];
+                if (avatar) {
+                    formData.append("AvatarUrl", avatar);
+                }
+
+                // Gửi dữ liệu nhân viên qua API
                 $.ajax({
                     url: "/api/EmployeesApi/CreateEmployee",
                     type: "POST",
@@ -293,6 +295,17 @@
                     contentType: false,
                     processData: false,
                     success: function (response) {
+                        // Lấy maNv từ response
+                        let maNv = response.maNv; // Giả sử API trả về maNv trong response
+                        if (!maNv) {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Lỗi!",
+                                text: "Không thể lấy mã nhân viên từ response."
+                            });
+                            return;
+                        }
+
                         Swal.fire({
                             icon: "success",
                             title: "Thành công!",
@@ -300,7 +313,8 @@
                             timer: 2000,
                             showConfirmButton: false
                         }).then(() => {
-                            location.reload();
+                            // Chuyển hướng đến trang SetupSalary với maNv
+                            window.location.href = `/Employees/SetupSalary?maNv=${maNv}`;
                         });
                     },
                     error: function (xhr) {

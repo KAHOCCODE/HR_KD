@@ -264,16 +264,5 @@ namespace HR_KD.ApiControllers
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
         }
-
-
-
-
-
-
-
-
-
-
-
     }
 }

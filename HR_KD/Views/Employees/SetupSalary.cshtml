@@ -1,0 +1,235 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4 text-center" style="color: #007bff; font-weight: bold;">Thiết Lập Lương Cho Nhân Viên</h2>
+    <form id="setupSalaryForm" class="card shadow-lg p-4">
+        <input type="hidden" id="MaNv" value="@ViewBag.MaNv" />
+        <div class="row">
+            <!-- Cột trái -->
+            <div class="col-md-6">
+                <!-- Lương Cơ Bản -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Lương Cơ Bản <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" class="form-control" id="LuongCoBan" required />
+                </div>
+
+                <!-- Thưởng Cố Định -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Thưởng Cố Định</label>
+                    <input type="number" step="0.01" class="form-control" id="ThuongCoDinh" value="0" />
+                </div>
+
+                <!-- BHYT -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">BHYT</label>
+                    <input type="number" step="0.01" class="form-control" id="BHYT" value="0" />
+                </div>
+
+                <!-- Ngày Áp Dụng -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Ngày Áp Dụng <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control flatpickr" id="NgayApDng" required />
+                </div>
+            </div>
+
+            <!-- Cột phải -->
+            <div class="col-md-6">
+                <!-- Phụ Cấp Cố Định -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Phụ Cấp Cố Định</label>
+                    <input type="number" step="0.01" class="form-control" id="PhuCapCoDinh" value="0" />
+                </div>
+
+                <!-- BHXH -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">BHXH</label>
+                    <input type="number" step="0.01" class="form-control" id="BHXH" value="0" />
+                </div>
+
+                <!-- BHTN -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">BHTN</label>
+                    <input type="number" step="0.01" class="form-control" id="BHTN" value="0" />
+                </div>
+
+                <!-- Ghi Chú -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Ghi Chú</label>
+                    <textarea class="form-control" id="GhiChu"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nút Submit -->
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg me-2">Lưu Thông Tin Lương</button>
+            <a href="/Employees/Index" class="btn btn-secondary btn-lg">Quay Lại</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card {
+        border-radius: 15px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-label {
+        color: #333;
+        font-size: 16px;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+    }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+            outline: none;
+        }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #007bff 0%, #00c4ff 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 30px;
+        font-size: 16px;
+        transition: background 0.3s ease;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #0056b3 0%, #0096cc 100%);
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 30px;
+        font-size: 16px;
+        color: white;
+        transition: background-color 0.3s ease;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+    .text-primary {
+        color: #007bff !important;
+    }
+
+    .flatpickr-input {
+        background: white !important;
+        cursor: pointer !important;
+    }
+</style>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        $(document).ready(function () {
+            // Khởi tạo Flatpickr cho Ngày Áp Dụng
+            flatpickr("#NgayApDng", {
+                dateFormat: "Y-m-d",
+                minDate: "today",
+                defaultDate: "today", // Đặt giá trị mặc định là ngày hiện tại
+                onReady: function(selectedDates, dateStr, instance) {
+                    $(instance.input).removeAttr("disabled");
+                    $(instance.input).removeAttr("readonly");
+                }
+            });
+
+            // Xử lý submit form
+            $("#setupSalaryForm").submit(function (e) {
+                e.preventDefault();
+
+                // Kiểm tra các trường bắt buộc
+                let requiredFields = [
+                    { id: "LuongCoBan", name: "Lương Cơ Bản" },
+                    { id: "NgayApDng", name: "Ngày Áp Dụng" }
+                ];
+
+                for (let field of requiredFields) {
+                    if (!$("#" + field.id).val()) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Thiếu thông tin",
+                            text: `Vui lòng nhập ${field.name}!`
+                        });
+                        return;
+                    }
+                }
+
+                // Kiểm tra giá trị không âm
+                let salaryFields = ["LuongCoBan", "PhuCapCoDinh", "ThuongCoDinh", "BHXH", "BHYT", "BHTN"];
+                for (let field of salaryFields) {
+                    let value = parseFloat($("#" + field).val());
+                    if (value < 0) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Dữ liệu không hợp lệ",
+                            text: `Giá trị ${field} không được âm!`
+                        });
+                        return;
+                    }
+                }
+
+                // Tạo dữ liệu lương
+                let salaryData = {
+                    MaNv: parseInt($("#MaNv").val()),
+                    LuongCoBan: parseFloat($("#LuongCoBan").val()),
+                    PhuCapCoDinh: parseFloat($("#PhuCapCoDinh").val()) || 0,
+                    ThuongCoDinh: parseFloat($("#ThuongCoDinh").val()) || 0,
+                    BHXH: parseFloat($("#BHXH").val()) || 0,
+                    BHYT: parseFloat($("#BHYT").val()) || 0,
+                    BHTN: parseFloat($("#BHTN").val()) || 0,
+                    NgayApDng: $("#NgayApDng").val(),
+                    GhiChu: $("#GhiChu").val()
+                };
+
+                // Gửi dữ liệu qua API
+                $.ajax({
+                    url: "/api/SalaryApi/setup",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(salaryData),
+                    success: function () {
+                        Swal.fire({
+                            icon: "success",
+                            title: "Thành công!",
+                            text: "Thông tin lương đã được thiết lập thành công!",
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = "/Employees/Index";
+                        });
+                    },
+                    error: function (xhr) {
+                        let errorMessage = "Lỗi không xác định!";
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.responseText) {
+                            errorMessage = xhr.responseText;
+                        }
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi!",
+                            text: errorMessage
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

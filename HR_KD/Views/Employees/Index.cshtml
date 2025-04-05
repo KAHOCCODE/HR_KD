@@ -5,6 +5,15 @@
 <div class="container mt-4">
     <h2 class="text-center mb-4">Quản Lý Nhân Viên</h2>
 
+    <!-- Hiển thị thông báo lỗi nếu có -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <!-- Bộ lọc & Tìm kiếm -->
     <div class="d-flex justify-content-between mb-3">
         <div class="d-flex">
@@ -33,6 +42,7 @@
                     <th>Email</th>
                     <th>Phòng Ban</th>
                     <th>Chức Vụ</th>
+                    <th>Lương</th>
                 </tr>
             </thead>
             <tbody>
@@ -71,7 +81,40 @@
     </div>
 </div>
 
+<!-- Modal Thông Tin Lương -->
+<div class="modal fade" id="salaryModal" tabindex="-1" aria-labelledby="salaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="salaryModalLabel">Thông Tin Lương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="salaryDetails">
+                    <p><strong>Lương Cơ Bản:</strong> <span id="modalLuongCoBan"></span></p>
+                    <p><strong>Phụ Cấp Cố Định:</strong> <span id="modalPhuCapCoDinh"></span></p>
+                    <p><strong>Thưởng Cố Định:</strong> <span id="modalThuongCoDinh"></span></p>
+                    <p><strong>BHXH:</strong> <span id="modalBHXH"></span></p>
+                    <p><strong>BHYT:</strong> <span id="modalBHYT"></span></p>
+                    <p><strong>BHTN:</strong> <span id="modalBHTN"></span></p>
+                    <p><strong>Ngày Áp Dụng:</strong> <span id="modalNgayApDng"></span></p>
+                    <p><strong>Ghi Chú:</strong> <span id="modalGhiChu"></span></p>
+                </div>
+                <div id="noSalaryMessage" style="display: none;">
+                    <p>Nhân viên này chưa có thông tin lương.</p>
+                    <p>Bạn có muốn thêm thông tin lương không?</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-add-salary" style="display: none;">Thêm Thông Tin Lương</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         loadEmployees();
@@ -92,34 +135,72 @@
 
     function loadFilters() {
         fetch('/api/PhongBanApi')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Lỗi khi tải danh sách phòng ban! Mã trạng thái: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 let filterPhongBan = document.getElementById("filterPhongBan");
                 data.forEach(pb => {
-                    let option = new Option(pb.tenPhongBan, pb.id);
+                    let option = new Option(pb.tenPhongBan, pb.maPhongBan);
                     filterPhongBan.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading PhongBan:', error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: "Không thể tải danh sách phòng ban. Vui lòng kiểm tra lại."
                 });
             });
 
         fetch('/api/ChucVuApi')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Lỗi khi tải danh sách chức vụ! Mã trạng thái: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 let filterChucVu = document.getElementById("filterChucVu");
                 data.forEach(cv => {
-                    let option = new Option(cv.tenChucVu, cv.id);
+                    let option = new Option(cv.tenChucVu, cv.maChucVu);
                     filterChucVu.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading ChucVu:', error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: "Không thể tải danh sách chức vụ. Vui lòng kiểm tra lại."
                 });
             });
     }
 
     function loadEmployees() {
         fetch('/api/EmployeesApi')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Lỗi khi tải danh sách nhân viên! Mã trạng thái: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 window.allEmployees = data;
                 renderTable(data);
             })
-            .catch(error => console.error('Lỗi:', error));
+            .catch(error => {
+                console.error('Error loading Employees:', error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: "Không thể tải danh sách nhân viên. Vui lòng kiểm tra lại."
+                });
+            });
     }
 
     function applyFilters() {
@@ -128,8 +209,8 @@
         let searchKeyword = document.getElementById("searchInput").value.toLowerCase();
 
         let filteredData = window.allEmployees.filter(emp => {
-            let matchesPhongBan = phongBanFilter ? emp.phongBanId == phongBanFilter : true;
-            let matchesChucVu = chucVuFilter ? emp.chucVuId == chucVuFilter : true;
+            let matchesPhongBan = phongBanFilter ? emp.maPhongBan == phongBanFilter : true;
+            let matchesChucVu = chucVuFilter ? emp.maChucVu == chucVuFilter : true;
             let matchesSearch = emp.hoTen.toLowerCase().includes(searchKeyword) ||
                 emp.email.toLowerCase().includes(searchKeyword) ||
                 emp.sdt.includes(searchKeyword);
@@ -144,19 +225,31 @@
         let tableContent = "";
         data.forEach(employee => {
             tableContent += `
-                    <tr onclick="showEmployeeDetails(this)">
-                        <td class="avatar-col"><img src="${employee.avatarUrl || '/default-avatar.png'}" class="rounded-circle" width="50"></td>
-                        <td>${employee.maNv}</td>
-                        <td>${employee.hoTen}</td>
-                        <td>${employee.ngaySinh}</td>
-                        <td>${employee.gioiTinh}</td>
-                        <td>${employee.sdt}</td>
-                        <td>${employee.email}</td>
-                        <td>${employee.phongBan || "Chưa cập nhật"}</td>
-                        <td>${employee.chucVu || "Chưa cập nhật"}</td>
-                    </tr>`;
+                <tr onclick="showEmployeeDetails(this)" data-manv="${employee.maNv}">
+                    <td class="avatar-col"><img src="${employee.avatarUrl || '/default-avatar.png'}" class="rounded-circle" width="50"></td>
+                    <td>${employee.maNv}</td>
+                    <td>${employee.hoTen}</td>
+                    <td>${new Date(employee.ngaySinh).toLocaleDateString('vi-VN')}</td>
+                    <td>${employee.gioiTinh ? "Nam" : "Nữ"}</td>
+                    <td>${employee.sdt}</td>
+                    <td>${employee.email}</td>
+                    <td>${employee.phongBan || "Chưa cập nhật"}</td>
+                    <td>${employee.chucVu || "Chưa cập nhật"}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm btn-view-salary" data-manv="${employee.maNv}">Xem lương</button>
+                    </td>
+                </tr>`;
         });
         document.querySelector("#employeeTable tbody").innerHTML = tableContent;
+
+        // Thêm sự kiện cho nút "Xem lương"
+        document.querySelectorAll(".btn-view-salary").forEach(button => {
+            button.addEventListener("click", function (e) {
+                e.stopPropagation();
+                let maNv = this.getAttribute("data-manv");
+                fetchSalaryDetails(maNv);
+            });
+        });
     }
 
     function showEmployeeDetails(row) {
@@ -174,4 +267,59 @@
 
         new bootstrap.Modal(document.getElementById("employeeModal")).show();
     }
+
+    function fetchSalaryDetails(maNv) {
+        fetch(`/api/SalaryApi/${maNv}`)
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error("Bạn không có quyền truy cập thông tin lương.");
+                    }
+                    if (response.status === 404) {
+                        throw new Error("Không tìm thấy thông tin lương.");
+                    }
+                    return response.text().then(text => {
+                        throw new Error(`Lỗi khi lấy thông tin lương! Mã trạng thái: ${response.status}, Phản hồi: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Hiển thị thông tin lương
+                document.getElementById("salaryDetails").style.display = "block";
+                document.getElementById("noSalaryMessage").style.display = "none";
+                document.querySelector(".btn-add-salary").style.display = "none";
+
+                document.getElementById("modalLuongCoBan").textContent = data.luongCoBan.toLocaleString('vi-VN') + " VND";
+                document.getElementById("modalPhuCapCoDinh").textContent = (data.phuCapCoDinh || 0).toLocaleString('vi-VN') + " VND";
+                document.getElementById("modalThuongCoDinh").textContent = (data.thuongCoDinh || 0).toLocaleString('vi-VN') + " VND";
+                document.getElementById("modalBHXH").textContent = data.bhxh.toLocaleString('vi-VN') + " VND";
+                document.getElementById("modalBHYT").textContent = data.bhyt.toLocaleString('vi-VN') + " VND";
+                document.getElementById("modalBHTN").textContent = data.bhtn.toLocaleString('vi-VN') + " VND";
+                document.getElementById("modalNgayApDng").textContent = new Date(data.ngayApDng).toLocaleDateString('vi-VN');
+                document.getElementById("modalGhiChu").textContent = data.ghiChu || "Không có ghi chú";
+
+                // Hiển thị modal
+                new bootstrap.Modal(document.getElementById("salaryModal")).show();
+            })
+            .catch(error => {
+                console.error('Error fetching salary details:', error);
+                // Hiển thị thông báo không có lương và tùy chọn thêm lương
+                document.getElementById("salaryDetails").style.display = "none";
+                document.getElementById("noSalaryMessage").style.display = "block";
+                document.querySelector(".btn-add-salary").style.display = "block";
+
+                // Lưu MaNv để dùng cho thêm lương
+                document.getElementById("salaryModal").setAttribute("data-maNv", maNv);
+
+                // Hiển thị modal
+                new bootstrap.Modal(document.getElementById("salaryModal")).show();
+            });
+    }
+
+    // Sự kiện cho nút "Thêm Thông Tin Lương"
+    document.querySelector(".btn-add-salary").addEventListener("click", function () {
+        let maNv = document.getElementById("salaryModal").getAttribute("data-maNv");
+        window.location.href = `/Employees/SetupSalary?maNv=${maNv}`;
+    });
 </script>

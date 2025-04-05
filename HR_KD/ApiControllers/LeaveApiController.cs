@@ -161,12 +161,12 @@ namespace HR_KD.ApiControllers
                 soNamLamViec--;
             }
 
-
-            // Tính số ngày phép được cộng thêm
+            // Tính số ngày phép được cộng thêm theo luật lao động và luật công ty
             var soNgayPhepCongThem = 0;
             if (soNamLamViec >= 5)
             {
-                soNgayPhepCongThem = (soNamLamViec / 5); // Mỗi 5 năm tăng 1 ngày phép
+                var soDot5Nam = soNamLamViec / 5;
+                soNgayPhepCongThem = soDot5Nam * 2; // Mỗi 5 năm được +2 ngày (1 lao động + 1 công ty)
             }
 
             // Lấy thông tin SoNgayConLai từ bảng SoDuPhep (lấy bản ghi có NgayCapNhat gần nhất)
@@ -178,6 +178,7 @@ namespace HR_KD.ApiControllers
             // Nếu không có bản ghi, tạo mới với SoNgayConLai mặc định là 12 + số ngày phép cộng thêm
             if (soDuPhep == null)
             {
+                // Nếu chưa có bản ghi => tạo mới
                 soDuPhep = new SoDuPhep
                 {
                     MaNv = maNv.Value,
@@ -187,6 +188,18 @@ namespace HR_KD.ApiControllers
                 };
                 _context.SoDuPheps.Add(soDuPhep);
                 await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Nếu đã có bản ghi => kiểm tra và cộng thêm ngày phép nếu chưa đủ
+                int soNgayPhepDuKien = 12 + soNgayPhepCongThem;
+                if (soDuPhep.SoNgayConLai < soNgayPhepDuKien)
+                {
+                    soDuPhep.SoNgayConLai = soNgayPhepDuKien;
+                    soDuPhep.NgayCapNhat = DateTime.Now;
+                    _context.SoDuPheps.Update(soDuPhep);
+                    await _context.SaveChangesAsync();
+                }
             }
 
             return Ok(new { success = true, soNgayConLai = soDuPhep.SoNgayConLai });

@@ -52,14 +52,10 @@
 
     <!-- Nút gửi dữ liệu -->
     <button class="btn btn-primary mt-3" id="submitAttendance">Chấm công</button>
-<!-- Các nút để chuyển đổi bảng -->
-<div class="btn-group" role="group" aria-label="Chọn bảng">
-    <button type="button" class="btn btn-primary mt-3" id="showAttendanceRequests">Yêu cầu Chấm Công</button>
 
-    <button type="button" class="btn btn-primary mt-3" id="showAttendance">Chấm Công</button>
-</div>
 
 <!-- Bảng Yêu Cầu Chấm Công -->
+<h2>Bảng chấm công đã duyệt</h2>
 <table class="table mt-3" id="attendanceRequestsTable" ">
     <thead>
         <tr>
@@ -77,6 +73,7 @@
 </table>
 
 <!-- Bảng Chấm Công -->
+<h2>Bảng chấm công đã duyệt</h2>
 <table class="table mt-3" id="attendanceTable" ">
     <thead>
         <tr>
@@ -93,6 +90,24 @@
     </tbody>
 </table>
 
+<!-- Bảng Lịch Sử Chấm Công -->
+<h2>Bảng lịch sử chấm công</h2>
+<table class="table mt-3" id="attendanceTableHistory">
+    <thead>
+        <tr>
+            <th>Ngày làm việc</th>
+            <th>Giờ vào</th>
+            <th>Giờ ra</th>
+            <th>Tổng giờ</th>
+            <th>Trạng thái</th>
+            <th>Ghi chú</th>
+        </tr>
+    </thead>
+    <tbody id="attendanceTableBodyHistory">
+        <!-- Dữ liệu lịch sử sẽ được chèn vào đây -->
+    </tbody>
+</table>
+
 
 </div>
 
@@ -100,17 +115,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // Khi bấm vào nút "Yêu cầu Chấm Công", hiển thị bảng yêu cầu chấm công và ẩn bảng chấm công
-document.getElementById("showAttendanceRequests").addEventListener("click", function() {
-    document.getElementById("attendanceRequestsTable").style.display = "block";  // Hiển thị bảng yêu cầu chấm công
-    document.getElementById("attendanceTable").style.display = "none"; // Ẩn bảng chấm công
-});
 
-// Khi bấm vào nút "Chấm Công", hiển thị bảng chấm công và ẩn bảng yêu cầu chấm công
-document.getElementById("showAttendance").addEventListener("click", function() {
-    document.getElementById("attendanceTable").style.display = "block";  // Hiển thị bảng chấm công
-    document.getElementById("attendanceRequestsTable").style.display = "none"; // Ẩn bảng yêu cầu chấm công
-});
 
 let selectedWorkDays = new Set();
 let attendanceRecords = new Set(); // Chứa danh sách ngày đã chấm công
@@ -232,37 +237,44 @@ function resetForm() {
 document.getElementById("checkInTime").addEventListener("change", updateTotalHours);
 document.getElementById("checkOutTime").addEventListener("change", updateTotalHours);
 
-// Gọi API để lấy danh sách chấm công
-function fetchAttendanceRecords() {
-    fetch('/api/Attendance/GetAttendanceRecords')
+// Gọi API để lấy danh sách lịch sử chấm công
+function fetchAttendanceTableHistory() {
+    fetch('/api/Attendance/GetAttendanceHistoryRecords')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                renderAttendanceTable(data.records);
+                renderAttendanceHistoryTable(data.records);
             } else {
-                console.error("Lỗi lấy dữ liệu chấm công.");
+                console.error("Lỗi lấy dữ liệu lịch sử chấm công.");
             }
         })
         .catch(error => console.error("Lỗi kết nối API:", error));
 }
 
-// Hiển thị bảng chấm công
-function renderAttendanceTable(records) {
-    let tableBody = document.getElementById("attendanceTableBody");
-    tableBody.innerHTML = "";
+// Hiển thị bảng lịch sử chấm công
+function renderAttendanceHistoryTable(records) {
+    let tableBody = document.getElementById("attendanceTableBodyHistory");
+    tableBody.innerHTML = ""; // Xóa dữ liệu cũ
 
     records.forEach(record => {
-        let row = `<tr>
-            <td>${record.ngayLamViec}</td>
-            <td>${record.gioVao || "-"}</td>
-            <td>${record.gioRa || "-"}</td>
-            <td>${record.tongGio}</td>
-            <td>${record.trangThai || "-"}</td>
-            <td>${record.ghiChu || "-"}</td>
-        </tr>`;
+        let row = `
+            <tr>
+                <td>${record.ngay}</td>
+                <td>${record.gioVao || "-"}</td>
+                <td>${record.gioRa || "-"}</td>
+                <td>${record.tongGio}</td>
+                <td>${record.trangThai || "-"}</td>
+                <td>${record.ghiChu || "-"}</td>
+            </tr>`;
         tableBody.innerHTML += row;
     });
 }
+
+// Gọi API khi trang tải xong
+document.addEventListener("DOMContentLoaded", function() {
+    fetchAttendanceTableHistory();
+});
+
 
 // Gọi API để lấy danh sách yêu cầu chỉnh sửa chấm công
 function fetchAttendanceRequestsRecords() {
@@ -303,9 +315,37 @@ function renderAttendanceRequestsTable(requests) {
     });
 }
 
+// Gọi API để lấy danh sách chấm công
+function fetchAttendanceRecords() {
+    fetch('/api/Attendance/GetAttendanceRecords')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderAttendanceTable(data.records);
+            } else {
+                console.error("Lỗi lấy dữ liệu chấm công.");
+            }
+        })
+        .catch(error => console.error("Lỗi kết nối API:", error));
+}
 
-//
+// Hiển thị bảng chấm công
+function renderAttendanceTable(records) {
+    let tableBody = document.getElementById("attendanceTableBody");
+    tableBody.innerHTML = "";
 
+    records.forEach(record => {
+        let row = `<tr>
+            <td>${record.ngayLamViec}</td>
+            <td>${record.gioVao || "-"}</td>
+            <td>${record.gioRa || "-"}</td>
+            <td>${record.tongGio}</td>
+            <td>${record.trangThai || "-"}</td>
+            <td>${record.ghiChu || "-"}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+    });
+}
 // Chấp nhận yêu cầu chấm công
 function acceptRequest(maYeuCau) {
     // Lấy thông tin từ hàng trong bảng

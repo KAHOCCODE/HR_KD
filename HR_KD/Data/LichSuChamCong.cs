@@ -11,7 +11,7 @@ public partial class LichSuChamCong
 
     public DateOnly Ngay { get; set; }
 
-    public TimeOnly GioVao { get; set; }
+    public TimeOnly? GioVao { get; set; }
 
     public TimeOnly? GioRa { get; set; }
 

@@ -64,7 +64,7 @@ public class AttendanceManagerController : ControllerBase
     public IActionResult GetAttendanceRecords(int maNv)
     {
         var records = _context.LichSuChamCongs
-            .Where(cc => cc.MaNv == maNv)
+            .Where(cc => cc.MaNv == maNv && (cc.TrangThai == null || cc.TrangThai == "Chờ duyệt"))
             .Select(cc => new
             {
                 cc.MaLichSuChamCong,

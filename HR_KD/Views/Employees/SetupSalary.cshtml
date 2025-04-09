@@ -30,7 +30,7 @@
                 <!-- Ngày Áp Dụng -->
                 <div class="mb-3">
                     <label class="form-label fw-bold">Ngày Áp Dụng <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control flatpickr" id="NgayApDng" required />
+                    <input type="text" class="form-control flatpickr" id="NgayApDung" required />
                 </div>
             </div>
 
@@ -131,7 +131,25 @@
         background: white !important;
         cursor: pointer !important;
     }
+
+    .flatpickr-calendar {
+        display: none !important;
+    }
+
+        .flatpickr-calendar.open {
+            display: block !important;
+        }
+
+        .flatpickr-calendar .arrowUp,
+        .flatpickr-calendar .arrowDown {
+            display: none !important; /* Hide the navigation arrows if they’re causing issues */
+        }
+
+    .flatpickr-weekdaycontainer {
+        font-size: 14px !important; /* Adjust the size of the weekday text if needed */
+    }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -140,13 +158,20 @@
     <script>
         $(document).ready(function () {
             // Khởi tạo Flatpickr cho Ngày Áp Dụng
-            flatpickr("#NgayApDng", {
+            flatpickr("#NgayApDung", {
                 dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/Y",
                 minDate: "today",
-                defaultDate: "today", // Đặt giá trị mặc định là ngày hiện tại
+                defaultDate: "today",
+                appendTo: document.getElementById("NgayApDung").parentNode,
                 onReady: function(selectedDates, dateStr, instance) {
                     $(instance.input).removeAttr("disabled");
                     $(instance.input).removeAttr("readonly");
+                    instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
+                },
+                onOpen: function(selectedDates, dateStr, instance) {
+                    instance.calendarContainer.style.zIndex = "9999";
                 }
             });
 
@@ -157,7 +182,7 @@
                 // Kiểm tra các trường bắt buộc
                 let requiredFields = [
                     { id: "LuongCoBan", name: "Lương Cơ Bản" },
-                    { id: "NgayApDng", name: "Ngày Áp Dụng" }
+                    { id: "NgayApDung", name: "Ngày Áp Dụng" }
                 ];
 
                 for (let field of requiredFields) {
@@ -194,7 +219,7 @@
                     BHXH: parseFloat($("#BHXH").val()) || 0,
                     BHYT: parseFloat($("#BHYT").val()) || 0,
                     BHTN: parseFloat($("#BHTN").val()) || 0,
-                    NgayApDng: $("#NgayApDng").val(),
+                    NgayApDung: $("#NgayApDung").val(),
                     GhiChu: $("#GhiChu").val()
                 };
 

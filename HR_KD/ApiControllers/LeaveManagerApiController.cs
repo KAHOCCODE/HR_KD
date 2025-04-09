@@ -37,26 +37,54 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, data });
         }
-
         [HttpPost]
         [Route("LeaveManager/UpdateStatus")]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusRequest request)
         {
+            // Tìm ngày nghỉ theo mã
             var ngayNghi = await _context.NgayNghis.FindAsync(request.MaNgayNghi);
             if (ngayNghi == null)
             {
-                return NotFound(new { success = false, message = "Không tìm thấy bản ghi." });
+                return NotFound(new { success = false, message = "Không tìm thấy bản ghi ngày nghỉ." });
             }
 
-            // Cập nhật trạng thái và ngày cập nhật
+            // Kiểm tra trạng thái cũ để tránh trừ phép nhiều lần nếu cập nhật trùng
+            bool isAlreadyApproved = ngayNghi.TrangThai == "Đã duyệt";
+
+            if (request.TrangThai == "Đã duyệt" && !isAlreadyApproved)
+            {
+                var nam = ngayNghi.NgayNghi1.Year;
+
+                var sdp = await _context.SoDuPheps
+                    .FirstOrDefaultAsync(x => x.MaNv == ngayNghi.MaNv && x.Nam == nam);
+
+                if (sdp == null)
+                {
+                    return BadRequest(new { success = false, message = "Không tìm thấy số dư phép của nhân viên." });
+                }
+
+                if (sdp.SoNgayConLai <= 0)
+                {
+                    return BadRequest(new { success = false, message = "Nhân viên không còn ngày nghỉ phép." });
+                }
+
+                // Trừ 1 ngày phép
+                sdp.SoNgayConLai -= 1;
+                sdp.NgayCapNhat = DateTime.Now;
+                _context.SoDuPheps.Update(sdp);
+            }
+
+            // Cập nhật trạng thái của ngày nghỉ
             ngayNghi.TrangThai = request.TrangThai;
-            ngayNghi.NgayCapNhat = DateTime.Now; // Thêm dòng này
+            ngayNghi.NgayCapNhat = DateTime.Now;
 
             _context.NgayNghis.Update(ngayNghi);
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
         }
+
+
 
         [HttpGet]
         [Route("LeaveManager/GetSummary")]

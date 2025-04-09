@@ -133,14 +133,12 @@ namespace HR_KD.ApiControllers
         [HttpGet("SoNgayConLai")]
         public async Task<IActionResult> GetSoNgayConLai()
         {
-            // Lấy MaNV từ claims
             var maNv = GetMaNvFromClaims();
             if (maNv == null)
             {
                 return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
             }
 
-            // Lấy thông tin nhân viên (NgayVaoLam)
             var nhanVien = await _context.NhanViens
                 .FirstOrDefaultAsync(nv => nv.MaNv == maNv.Value);
             if (nhanVien == null)
@@ -148,62 +146,54 @@ namespace HR_KD.ApiControllers
                 return NotFound(new { success = false, message = "Không tìm thấy nhân viên." });
             }
 
-            // Kiểm tra nhanVien.NgayVaoLam có giá trị hay không
             if (!nhanVien.NgayVaoLam.HasValue)
             {
                 return BadRequest(new { success = false, message = "Ngày vào làm không hợp lệ." });
             }
 
-            // Tính số năm làm việc
             var soNamLamViec = DateTime.Now.Year - nhanVien.NgayVaoLam.Value.Year;
             if (DateOnly.FromDateTime(DateTime.Now) < nhanVien.NgayVaoLam.Value.AddYears(soNamLamViec))
             {
                 soNamLamViec--;
             }
 
-            // Tính số ngày phép được cộng thêm theo luật lao động và luật công ty
             var soNgayPhepCongThem = 0;
             if (soNamLamViec >= 5)
             {
                 var soDot5Nam = soNamLamViec / 5;
-                soNgayPhepCongThem = soDot5Nam * 2; // Mỗi 5 năm được +2 ngày (1 lao động + 1 công ty)
+                soNgayPhepCongThem = soDot5Nam * 2;
             }
 
-            // Lấy thông tin SoNgayConLai từ bảng SoDuPhep (lấy bản ghi có NgayCapNhat gần nhất)
-            var soDuPhep = await _context.SoDuPheps
-                .Where(sd => sd.MaNv == maNv.Value && sd.Nam == DateTime.Now.Year)
-                .OrderByDescending(sd => sd.NgayCapNhat)
-                .FirstOrDefaultAsync();
+            var currentYear = DateTime.Now.Year;
 
-            // Nếu không có bản ghi, tạo mới với SoNgayConLai mặc định là 12 + số ngày phép cộng thêm
+            var soDuPhep = await _context.SoDuPheps
+                .FirstOrDefaultAsync(sd => sd.MaNv == maNv.Value && sd.Nam == currentYear);
+
             if (soDuPhep == null)
             {
-                // Nếu chưa có bản ghi => tạo mới
+                // Chỉ tạo nếu chưa có bản ghi
                 soDuPhep = new SoDuPhep
                 {
                     MaNv = maNv.Value,
-                    Nam = DateTime.Now.Year,
+                    Nam = currentYear,
                     SoNgayConLai = 12 + soNgayPhepCongThem,
                     NgayCapNhat = DateTime.Now
                 };
+
                 _context.SoDuPheps.Add(soDuPhep);
                 await _context.SaveChangesAsync();
             }
-            else
-            {
-                // Nếu đã có bản ghi => kiểm tra và cộng thêm ngày phép nếu chưa đủ
-                int soNgayPhepDuKien = 12 + soNgayPhepCongThem;
-                if (soDuPhep.SoNgayConLai < soNgayPhepDuKien)
-                {
-                    soDuPhep.SoNgayConLai = soNgayPhepDuKien;
-                    soDuPhep.NgayCapNhat = DateTime.Now;
-                    _context.SoDuPheps.Update(soDuPhep);
-                    await _context.SaveChangesAsync();
-                }
-            }
 
-            return Ok(new { success = true, soNgayConLai = soDuPhep.SoNgayConLai });
+            return Ok(new
+            {
+                success = true,
+                soNgayConLai = soDuPhep?.SoNgayConLai,
+                maNv = maNv,
+                nam = currentYear,
+                soDuTonTai = soDuPhep != null
+            });
         }
+
 
 
         public class LeaveRequestDto

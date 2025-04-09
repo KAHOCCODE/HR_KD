@@ -7,6 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <title>Quản Lý Nghỉ Phép</title>
     <style>
         body {
@@ -278,10 +279,7 @@
                     <option>Từ chối</option>
                 </select>
                 <select class="filter-select">
-                    <option>Tháng</option>
-                    <option>01/2025</option>
-                    <option>02/2025</option>
-                    <option>03/2025</option>
+                  
                 </select>
             </div>
         </div>
@@ -319,7 +317,7 @@
         </tbody>
     </table>
 
-            
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Đặt hàm updateStatus trong phạm vi toàn cục
         function updateStatus(maNgayNghi, trangThai) {
@@ -336,17 +334,34 @@
                 })
                 .then(res => {
                     if (res.success) {
-                        alert(res.message);
-                        location.reload(); // Tải lại trang để cập nhật dữ liệu
+                        Swal.fire({
+                            title: 'Thành công',
+                            text: res.message,
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            location.reload(); // Tải lại trang để cập nhật dữ liệu
+                        });
                     } else {
-                        alert("Lỗi: " + res.message);
+                        Swal.fire({
+                            title: 'Lỗi',
+                            text: "Lỗi: " + res.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
                     }
                 })
                 .catch(error => {
                     console.error("Lỗi khi gửi yêu cầu:", error);
-                    alert("Có lỗi xảy ra khi gửi yêu cầu.");
+                    Swal.fire({
+                        title: 'Lỗi',
+                        text: 'Có lỗi xảy ra khi gửi yêu cầu.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 });
         }
+
 
         function fetchLeaveStatistics() {
             fetch('/LeaveManager/GetSummary')

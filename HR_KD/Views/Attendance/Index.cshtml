@@ -229,8 +229,9 @@ function resetForm() {
     document.getElementById("attendanceNote").value = "";
     selectedWorkDays.clear();
     updateTotalHours(); // Cập nhật lại tổng số giờ làm về 0
-    // fetchAttendanceRecords(); // Reload lại bảng chấm công
-    // fetchAttendanceRequestsRecords(); // Reload lại bảng yêu cầu chấm công
+    fetchAttendanceRecords(); // Reload lại bảng chấm công
+    fetchAttendanceRequestsRecords(); // Reload lại bảng yêu cầu chấm công
+    fetchAttendanceTableHistory();// Reload lại bảng lịch sử chấm công
 }
 
 // Lắng nghe thay đổi giờ check-in/check-out để cập nhật tổng giờ làm

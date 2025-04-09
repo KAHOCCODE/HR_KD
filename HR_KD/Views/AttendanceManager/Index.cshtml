@@ -43,91 +43,187 @@
     </table>
 </div>
 
+<div id="salarySection" class="dashboard-card bg-white p-4 mt-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-money-check-alt me-2"></i> Bảng Lương</h5>
+
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Tháng Năm</th>
+                <th>Lương Tăng Ca</th>
+                <th>Thuế TNCN</th>
+                <th>Tổng Lương</th>
+                <th>Thực Nhận</th>
+                <th>Trạng Thái</th>
+                <th>Ghi Chú</th>
+            </tr>
+        </thead>
+        <tbody id="salaryTableBody"></tbody>
+    </table>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     loadDepartments();
     loadPositions();
+    loadEmployees(); // Load toàn bộ nhân viên ban đầu
 
     document.getElementById("departmentFilter").addEventListener("change", loadEmployees);
     document.getElementById("positionFilter").addEventListener("change", loadEmployees);
     document.getElementById("employeeFilter").addEventListener("change", function () {
-        if (this.value) fetchAttendanceRecords(this.value);
+        const maNv = this.value;
+        if (maNv) {
+            fetchAttendanceRecords(maNv);
+            fetchSalaryRecords(maNv);
+        } else {
+            clearTables();
+        }
     });
 });
 
+// Xóa bảng khi chưa có nhân viên được chọn
+function clearTables() {
+    document.getElementById("attendanceTableBody").innerHTML = '';
+    document.getElementById("salaryTableBody").innerHTML = '';
+}
+
+// Load bộ lọc
 function loadDepartments() {
     fetch("/api/AttendanceManager/GetDepartmentsManager")
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-            let select = document.getElementById("departmentFilter");
+            const select = document.getElementById("departmentFilter");
             select.innerHTML = '<option value="">Tất cả</option>';
-            data.forEach(pb => select.innerHTML += `<option value="${pb.maPhongBan}">${pb.tenPhongBan}</option>`);
+            data.forEach(d => select.innerHTML += `<option value="${d.maPhongBan}">${d.tenPhongBan}</option>`);
         });
 }
 
 function loadPositions() {
     fetch("/api/AttendanceManager/GetPositionsManager")
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-            let select = document.getElementById("positionFilter");
+            const select = document.getElementById("positionFilter");
             select.innerHTML = '<option value="">Tất cả</option>';
-            data.forEach(cv => select.innerHTML += `<option value="${cv.maChucVu}">${cv.tenChucVu}</option>`);
+            data.forEach(d => select.innerHTML += `<option value="${d.maChucVu}">${d.tenChucVu}</option>`);
         });
 }
 
 function loadEmployees() {
-    let maPhongBan = document.getElementById("departmentFilter").value;
-    let maChucVu = document.getElementById("positionFilter").value;
+    const pb = document.getElementById("departmentFilter").value;
+    const cv = document.getElementById("positionFilter").value;
 
-    fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${maPhongBan}&maChucVu=${maChucVu}`)
-        .then(response => response.json())
+    fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${pb}&maChucVu=${cv}`)
+        .then(res => res.json())
         .then(data => {
-            let select = document.getElementById("employeeFilter");
+            const select = document.getElementById("employeeFilter");
             select.innerHTML = '<option value="">Chọn nhân viên</option>';
-            data.forEach(nv => select.innerHTML += `<option value="${nv.maNv}">${nv.hoTen}</option>`);
+            data.forEach(d => select.innerHTML += `<option value="${d.maNv}">${d.hoTen}</option>`);
+
+            // Nếu có nhân viên thì tự động load dữ liệu cho nhân viên đầu tiên
+            if (data.length > 0) {
+                select.value = data[0].maNv;
+                fetchAttendanceRecords(data[0].maNv);
+                fetchSalaryRecords(data[0].maNv);
+            } else {
+                clearTables();
+            }
         });
 }
 
+// Bảng chấm công
 function fetchAttendanceRecords(maNv) {
     fetch(`/api/AttendanceManager/GetAttendanceManagerRecords?maNv=${maNv}`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             if (data.success) renderAttendanceTable(data.records);
         });
 }
 
 function renderAttendanceTable(records) {
-    let tableBody = document.getElementById("attendanceTableBody");
-    tableBody.innerHTML = records.map(record => `
+    const body = document.getElementById("attendanceTableBody");
+    body.innerHTML = records.map(r => `
         <tr>
-            <td>${record.ngayLamViec}</td>
-            <td>${record.gioVao || "-"}</td>
-            <td>${record.gioRa || "-"}</td>
-            <td>${record.tongGio}</td>
-            <td class="${getStatusClass(record.trangThai)}">${record.trangThai || "Chờ duyệt"}</td>
-            <td>${record.ghiChu || "-"}</td>
+            <td>${r.ngay}</td>
+            <td>${r.gioVao || "-"}</td>
+            <td>${r.gioRa || "-"}</td>
+            <td>${r.tongGio}</td>
+            <td class="${getStatusClass(r.trangThai)}">${r.trangThai}</td>
+            <td>${r.ghiChu || "-"}</td>
             <td>
-                <button class="btn btn-success btn-sm" onclick="approveAttendance(${record.maChamCong}, 'Đã duyệt')">✔</button>
-                <button class="btn btn-danger btn-sm" onclick="approveAttendance(${record.maChamCong}, 'Từ chối')">✖</button>
+                <button class="btn btn-success btn-sm me-1" onclick="approveAttendance(${r.maLichSuChamCong}, 'Đã duyệt')">✔</button>
+                <button class="btn btn-danger btn-sm" onclick="approveAttendance(${r.maLichSuChamCong}, 'Từ chối')">✖</button>
             </td>
         </tr>
     `).join("");
 }
 
 function getStatusClass(status) {
-    return status === "Duyệt" ? "text-success" : status === "Từ chối" ? "text-danger" : "text-warning";
+    return status === "Đã duyệt" ? "text-success" : status === "Từ chối" ? "text-danger" : "text-warning";
 }
 
-function approveAttendance(maChamCong, trangThai) {
+function approveAttendance(maLichSuChamCong, trangThai) {
+    // Bước 1: Gọi API duyệt chấm công trước
     fetch("/api/AttendanceManager/ApproveAttendanceManager", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maChamCong, trangThai })
+        body: JSON.stringify({ maChamCong: maLichSuChamCong, trangThai: trangThai })
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
+        // Hiển thị thông báo kết quả duyệt
         alert(data.message);
-        fetchAttendanceRecords(document.getElementById("employeeFilter").value);
+
+        if (data.success) {
+            // Nếu duyệt thành công và trạng thái là "Đã duyệt", mới gọi cập nhật bảng lương
+            if (trangThai === "Đã duyệt") {
+                fetch("/api/AttendanceManager/ApproveAttendanceAndUpdateSalary", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ maChamCong: maLichSuChamCong, trangThai: trangThai })
+                })
+                .then(res => res.json())
+                .then(salaryData => {
+                    alert(salaryData.message);
+
+                    const selected = document.getElementById("employeeFilter").value;
+                    if (selected) {
+                        fetchAttendanceRecords(selected);
+                        fetchSalaryRecords(selected); // Cập nhật bảng lương
+                    }
+                });
+            } else {
+                const selected = document.getElementById("employeeFilter").value;
+                if (selected) {
+                    fetchAttendanceRecords(selected); // Chỉ cập nhật lại chấm công nếu là từ chối
+                }
+            }
+        }
     });
 }
+
+
+// Bảng lương
+function fetchSalaryRecords(maNv) {
+    fetch(`/api/AttendanceManager/GetEmployeeSalaries?maNv=${maNv}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) renderSalaryTable(data.records);
+        });
+}
+
+function renderSalaryTable(records) {
+    const body = document.getElementById("salaryTableBody");
+    body.innerHTML = records.map(r => `
+        <tr>
+            <td>${r.thangNam}</td>
+            <td>${r.luongTangCa.toLocaleString()}</td>
+            <td>${r.thueTNCN.toLocaleString()}</td>
+            <td>${r.tongLuong.toLocaleString()}</td>
+            <td>${r.thucNhan.toLocaleString()}</td>
+            <td>${r.trangThai}</td>
+            <td>${r.ghiChu || "-"}</td>
+        </tr>
+    `).join("");
+}
 </script>
+

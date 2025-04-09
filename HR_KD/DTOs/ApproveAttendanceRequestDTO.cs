@@ -5,7 +5,8 @@ namespace HR_KD.DTOs
 {
     public class ApproveAttendanceRequestDTO
     {
-        public int MaChamCong { get; set; }
-        public string TrangThai { get; set; } = "Chờ duyệt";
+        public int MaChamCong { get; set; }       // Chính là MaLichSuChamCong
+        public string TrangThai { get; set; } = ""; // "Đã duyệt" hoặc "Từ chối"
+
     }
 }

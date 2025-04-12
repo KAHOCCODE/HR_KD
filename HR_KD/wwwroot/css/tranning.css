@@ -1,0 +1,135 @@
+﻿
+
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+/* Gradient Backgrounds */
+.bg-gradient-blue {
+    background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+    color: white;
+}
+
+.bg-gradient-green {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    color: white;
+}
+
+.bg-gradient-orange {
+    background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+    color: white;
+}
+
+/* Icon Box */
+.icon-box {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.icon-small {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Background Light Colors */
+.bg-light-success {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.bg-light-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+/* Badge Styles */
+.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+/* Table Styles */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .table th {
+        font-weight: 600;
+        border-top: none;
+    }
+
+    .table tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+/* Button Styles */
+.btn {
+    border-radius: 5px;
+    padding: 0.375rem 1rem;
+}
+
+.btn-group .btn {
+    border-radius: 5px;
+}
+
+    .btn-group .btn:not(:last-child) {
+        margin-right: 5px;
+    }
+
+/* Progress Bar */
+.progress {
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 15px;
+}
+
+.modal-header {
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+/* Toast Notification */
+.toast {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    opacity: 1;
+}
+
+.toast-header {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: none;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    .icon-box {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+    }
+}

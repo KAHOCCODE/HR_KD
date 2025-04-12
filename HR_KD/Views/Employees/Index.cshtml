@@ -1,325 +1,769 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
-
-<div class="container mt-4">
-    <h2 class="text-center mb-4">Quản Lý Nhân Viên</h2>
-
-    <!-- Hiển thị thông báo lỗi nếu có -->
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <!-- Bộ lọc & Tìm kiếm -->
-    <div class="d-flex justify-content-between mb-3">
-        <div class="d-flex">
-            <select id="filterPhongBan" class="form-select me-2">
-                <option value="">Tất cả Phòng Ban</option>
-            </select>
-            <select id="filterChucVu" class="form-select me-2">
-                <option value="">Tất cả Chức Vụ</option>
-            </select>
-            <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm...">
-        </div>
-        <button class="btn btn-primary" id="toggleAvatar">Ẩn/Hiện Ảnh</button>
-    </div>
-
-    <!-- Danh Sách Nhân Viên -->
-    <div class="table-responsive">
-        <table id="employeeTable" class="table table-striped table-hover">
-            <thead class="table-dark">
-                <tr>
-                    <th class="avatar-col">Ảnh</th>
-                    <th>ID</th>
-                    <th>Họ Tên</th>
-                    <th>Ngày Sinh</th>
-                    <th>Giới Tính</th>
-                    <th>SĐT</th>
-                    <th>Email</th>
-                    <th>Phòng Ban</th>
-                    <th>Chức Vụ</th>
-                    <th>Lương</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Dữ liệu sẽ được tải từ API -->
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Modal Chi Tiết Nhân Viên -->
-<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="employeeModalLabel">Thông Tin Nhân Viên</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-4 text-center">
-                        <img id="modalAvatar" src="" class="rounded-circle" width="120">
+<link rel="stylesheet" href="~/css/employee.css">
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Quản Lý Nhân Viên</h3>
+                        <button class="btn btn-light btn-sm" id="toggleAvatar">
+                            <i class="fa fa-image me-1"></i> Ẩn/Hiện Ảnh
+                        </button>
                     </div>
-                    <div class="col-md-8">
-                        <p><strong>ID:</strong> <span id="modalMaNv"></span></p>
-                        <p><strong>Họ Tên:</strong> <span id="modalHoTen"></span></p>
-                        <p><strong>Ngày Sinh:</strong> <span id="modalNgaySinh"></span></p>
-                        <p><strong>Giới Tính:</strong> <span id="modalGioiTinh"></span></p>
-                        <p><strong>Số Điện Thoại:</strong> <span id="modalSdt"></span></p>
-                        <p><strong>Email:</strong> <span id="modalEmail"></span></p>
-                        <p><strong>Phòng Ban:</strong> <span id="modalPhongBan"></span></p>
-                        <p><strong>Chức Vụ:</strong> <span id="modalChucVu"></span></p>
+                </div>
+                <div class="card-body">
+                    <!-- Thông báo lỗi -->
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fa fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <!-- Bộ lọc & Tìm kiếm -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-2 mb-md-0">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fa fa-search text-muted"></i>
+                                </span>
+                                <input type="text" id="searchInput" class="form-control" placeholder="Tìm theo tên, email, SĐT...">
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2 mb-md-0">
+                            <select id="filterPhongBan" class="form-select">
+                                <option value="">Tất cả Phòng Ban</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2 mb-md-0">
+                            <select id="filterChucVu" class="form-select">
+                                <option value="">Tất cả Chức Vụ</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex justify-content-end">
+                            <div class="btn-group">
+                                <button class="btn btn-success" id="exportExcel">
+                                    <i class="fa fa-file-excel me-1"></i> Xuất Excel
+                                </button>
+                                <button class="btn btn-danger" id="exportPdf">
+                                    <i class="fa fa-file-pdf me-1"></i> Xuất PDF
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Thống kê nhanh -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <div class="card border-0 bg-primary bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-primary fw-bold mb-0">Tổng nhân viên</h6>
+                                            <h3 class="mt-2 mb-0" id="totalEmployees">0</h3>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <div class="card border-0 bg-success bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-success fw-bold mb-0">Nam</h6>
+                                            <h3 class="mt-2 mb-0" id="maleCount">0</h3>
+                                        </div>
+                                        <div class="bg-success bg-opacity-25 p-3 rounded-circle">
+                                            <i class="fa fa-male fa-2x" style="color: white;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <div class="card border-0 bg-info bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-info fw-bold mb-0">Nữ</h6>
+                                            <h3 class="mt-2 mb-0" id="femaleCount">0</h3>
+                                        </div>
+                                        <div class="bg-info bg-opacity-25 p-3 rounded-circle">
+                                            <i class="fa fa-female fa-2x" style="color: white;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 bg-warning bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-warning fw-bold mb-0">Phòng ban</h6>
+                                            <h3 class="mt-2 mb-0" id="departmentCount">0</h3>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danh Sách Nhân Viên -->
+                    <div class="table-responsive">
+                        <table id="employeeTable" class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="avatar-col text-center">Ảnh</th>
+                                    <th>ID</th>
+                                    <th>Họ Tên</th>
+                                    <th>Ngày Sinh</th>
+                                    <th>Giới Tính</th>
+                                    <th>SĐT</th>
+                                    <th>Email</th>
+                                    <th>Phòng Ban</th>
+                                    <th>Chức Vụ</th>
+                                    <th>Lương</th>                              
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dữ liệu sẽ được tải từ API -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Phân trang -->
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center" id="pagination">
+                            <!-- Phân trang sẽ được tạo động -->
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 
 <!-- Modal Thông Tin Lương -->
 <div class="modal fade" id="salaryModal" tabindex="-1" aria-labelledby="salaryModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="salaryModalLabel">Thông Tin Lương</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="salaryDetails">
-                    <p><strong>Lương Cơ Bản:</strong> <span id="modalLuongCoBan"></span></p>
-                    <p><strong>Phụ Cấp Cố Định:</strong> <span id="modalPhuCapCoDinh"></span></p>
-                    <p><strong>Thưởng Cố Định:</strong> <span id="modalThuongCoDinh"></span></p>
-                    <p><strong>BHXH:</strong> <span id="modalBHXH"></span></p>
-                    <p><strong>BHYT:</strong> <span id="modalBHYT"></span></p>
-                    <p><strong>BHTN:</strong> <span id="modalBHTN"></span></p>
-                    <p><strong>Ngày Áp Dụng:</strong> <span id="modalNgayApDng"></span></p>
-                    <p><strong>Ghi Chú:</strong> <span id="modalGhiChu"></span></p>
+                <!-- Tên nhân viên -->
+                <div class="text-center mb-4">
+                    <h5 id="modalSalaryName" class="mb-0"></h5>
+                    <small class="text-muted">Mã NV: <span id="modalSalaryId"></span></small>
                 </div>
+
+                <!-- Thông tin lương -->
+                <div id="salaryDetails">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa fa-file-invoice-dollar me-2"></i>Lương & Phụ Cấp</h6>
+                            <div class="row mb-2">
+                                <div class="col-7">Lương Cơ Bản:</div>
+                                <div class="col-5 text-end fw-bold" id="modalLuongCoBan"></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-7">Phụ Cấp Cố Định:</div>
+                                <div class="col-5 text-end" id="modalPhuCapCoDinh"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-7">Thưởng Cố Định:</div>
+                                <div class="col-5 text-end" id="modalThuongCoDinh"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa fa-shield-alt me-2"></i>Bảo Hiểm</h6>
+                            <div class="row mb-2">
+                                <div class="col-7">BHXH:</div>
+                                <div class="col-5 text-end" id="modalBHXH"></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-7">BHYT:</div>
+                                <div class="col-5 text-end" id="modalBHYT"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-7">BHTN:</div>
+                                <div class="col-5 text-end" id="modalBHTN"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa fa-info-circle me-2"></i>Thông Tin Khác</h6>
+                            <div class="row mb-2">
+                                <div class="col-7">Ngày Áp Dụng:</div>
+                                <div class="col-5 text-end" id="modalNgayApDng"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">Ghi Chú:</div>
+                                <div class="col-12 mt-1">
+                                    <p class="border rounded p-2 bg-light" id="modalGhiChu"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thông báo không có lương -->
                 <div id="noSalaryMessage" style="display: none;">
-                    <p>Nhân viên này chưa có thông tin lương.</p>
-                    <p>Bạn có muốn thêm thông tin lương không?</p>
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="fa fa-exclamation-circle fa-4x text-muted"></i>
+                        </div>
+                        <h5>Nhân viên này chưa có thông tin lương</h5>
+                        <p class="text-muted">Bạn có muốn thêm thông tin lương không?</p>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary btn-add-salary" style="display: none;">Thêm Thông Tin Lương</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-success btn-add-salary" style="display: none;">
+                    <i class="fa fa-plus me-1"></i> Thêm Thông Tin Lương
+                </button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fa fa-times me-1"></i> Đóng
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Scripts -->
+<!-- Link Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+
+<!-- Link SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Script -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         loadEmployees();
         loadFilters();
         let showAvatar = true;
 
+        // Thiết lập số lượng nhân viên hiển thị trên mỗi trang
+        const itemsPerPage = 10;
+        let currentPage = 1;
+        let allEmployeesData = [];
+
+        // Cập nhật sự kiện nút ẩn/hiện ảnh
         document.getElementById("toggleAvatar").addEventListener("click", function () {
             showAvatar = !showAvatar;
             document.querySelectorAll(".avatar-col, .avatar-col img").forEach(el => {
                 el.style.display = showAvatar ? "table-cell" : "none";
             });
+            // Lưu trạng thái vào localStorage
+            localStorage.setItem('showAvatar', showAvatar);
         });
 
+        // Kiểm tra trạng thái ẩn/hiện avatar từ localStorage
+        if (localStorage.getItem('showAvatar') === 'false') {
+            showAvatar = false;
+            document.querySelectorAll(".avatar-col, .avatar-col img").forEach(el => {
+                el.style.display = "none";
+            });
+        }
+
+        // Các sự kiện lọc
         document.getElementById("filterPhongBan").addEventListener("change", applyFilters);
         document.getElementById("filterChucVu").addEventListener("change", applyFilters);
         document.getElementById("searchInput").addEventListener("input", applyFilters);
-    });
 
-    function loadFilters() {
-        fetch('/api/PhongBanApi')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Lỗi khi tải danh sách phòng ban! Mã trạng thái: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                let filterPhongBan = document.getElementById("filterPhongBan");
-                data.forEach(pb => {
-                    let option = new Option(pb.tenPhongBan, pb.maPhongBan);
-                    filterPhongBan.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading PhongBan:', error);
-                Swal.fire({
-                    icon: "error",
-                    title: "Lỗi",
-                    text: "Không thể tải danh sách phòng ban. Vui lòng kiểm tra lại."
-                });
-            });
-
-        fetch('/api/ChucVuApi')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Lỗi khi tải danh sách chức vụ! Mã trạng thái: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                let filterChucVu = document.getElementById("filterChucVu");
-                data.forEach(cv => {
-                    let option = new Option(cv.tenChucVu, cv.maChucVu);
-                    filterChucVu.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading ChucVu:', error);
-                Swal.fire({
-                    icon: "error",
-                    title: "Lỗi",
-                    text: "Không thể tải danh sách chức vụ. Vui lòng kiểm tra lại."
-                });
-            });
-    }
-
-    function loadEmployees() {
-        fetch('/api/EmployeesApi')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Lỗi khi tải danh sách nhân viên! Mã trạng thái: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                window.allEmployees = data;
-                renderTable(data);
-            })
-            .catch(error => {
-                console.error('Error loading Employees:', error);
-                Swal.fire({
-                    icon: "error",
-                    title: "Lỗi",
-                    text: "Không thể tải danh sách nhân viên. Vui lòng kiểm tra lại."
-                });
-            });
-    }
-
-    function applyFilters() {
-        let phongBanFilter = document.getElementById("filterPhongBan").value;
-        let chucVuFilter = document.getElementById("filterChucVu").value;
-        let searchKeyword = document.getElementById("searchInput").value.toLowerCase();
-
-        let filteredData = window.allEmployees.filter(emp => {
-            let matchesPhongBan = phongBanFilter ? emp.maPhongBan == phongBanFilter : true;
-            let matchesChucVu = chucVuFilter ? emp.maChucVu == chucVuFilter : true;
-            let matchesSearch = emp.hoTen.toLowerCase().includes(searchKeyword) ||
-                emp.email.toLowerCase().includes(searchKeyword) ||
-                emp.sdt.includes(searchKeyword);
-
-            return matchesPhongBan && matchesChucVu && matchesSearch;
+        // Thêm sự kiện cho nút xem lương từ modal thông tin nhân viên
+        document.getElementById("btnViewSalary").addEventListener("click", function () {
+            let maNv = document.getElementById("modalMaNv").textContent;
+            fetchSalaryDetails(maNv);
         });
 
-        renderTable(filteredData);
-    }
-
-    function renderTable(data) {
-        let tableContent = "";
-        data.forEach(employee => {
-            tableContent += `
-                <tr onclick="showEmployeeDetails(this)" data-manv="${employee.maNv}">
-                    <td class="avatar-col"><img src="${employee.avatarUrl || '/default-avatar.png'}" class="rounded-circle" width="50"></td>
-                    <td>${employee.maNv}</td>
-                    <td>${employee.hoTen}</td>
-                    <td>${new Date(employee.ngaySinh).toLocaleDateString('vi-VN')}</td>
-                    <td>${employee.gioiTinh ? "Nam" : "Nữ"}</td>
-                    <td>${employee.sdt}</td>
-                    <td>${employee.email}</td>
-                    <td>${employee.phongBan || "Chưa cập nhật"}</td>
-                    <td>${employee.chucVu || "Chưa cập nhật"}</td>
-                    <td>
-                        <button class="btn btn-info btn-sm btn-view-salary" data-manv="${employee.maNv}">Xem lương</button>
-                    </td>
-                </tr>`;
-        });
-        document.querySelector("#employeeTable tbody").innerHTML = tableContent;
-
-        // Thêm sự kiện cho nút "Xem lương"
-        document.querySelectorAll(".btn-view-salary").forEach(button => {
-            button.addEventListener("click", function (e) {
-                e.stopPropagation();
-                let maNv = this.getAttribute("data-manv");
-                fetchSalaryDetails(maNv);
+        // Sự kiện xuất báo cáo
+        document.getElementById("exportExcel").addEventListener("click", function () {
+            Swal.fire({
+                title: "Xuất Excel",
+                text: "Bạn có muốn xuất danh sách nhân viên ra Excel?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Xuất",
+                cancelButtonText: "Hủy",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Thêm code xuất Excel ở đây
+                    Swal.fire("Thành công!", "Xuất Excel thành công!", "success");
+                }
             });
         });
-    }
 
-    function showEmployeeDetails(row) {
-        let cells = row.getElementsByTagName("td");
+        document.getElementById("exportPdf").addEventListener("click", function () {
+            Swal.fire({
+                title: "Xuất PDF",
+                text: "Bạn có muốn xuất danh sách nhân viên ra PDF?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Xuất",
+                cancelButtonText: "Hủy",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Thêm code xuất PDF ở đây
+                    Swal.fire("Thành công!", "Xuất PDF thành công!", "success");
+                }
+            });
+        });
 
-        document.getElementById("modalAvatar").src = cells[0].querySelector("img").src;
-        document.getElementById("modalMaNv").textContent = cells[1].textContent;
-        document.getElementById("modalHoTen").textContent = cells[2].textContent;
-        document.getElementById("modalNgaySinh").textContent = cells[3].textContent;
-        document.getElementById("modalGioiTinh").textContent = cells[4].textContent;
-        document.getElementById("modalSdt").textContent = cells[5].textContent;
-        document.getElementById("modalEmail").textContent = cells[6].textContent;
-        document.getElementById("modalPhongBan").textContent = cells[7].textContent;
-        document.getElementById("modalChucVu").textContent = cells[8].textContent;
-
-        new bootstrap.Modal(document.getElementById("employeeModal")).show();
-    }
-
-    function fetchSalaryDetails(maNv) {
-        fetch(`/api/SalaryApi/${maNv}`)
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        throw new Error("Bạn không có quyền truy cập thông tin lương.");
+        function loadFilters() {
+            fetch('/api/PhongBanApi')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Lỗi khi tải danh sách phòng ban! Mã trạng thái: ${response.status}`);
                     }
-                    if (response.status === 404) {
-                        throw new Error("Không tìm thấy thông tin lương.");
-                    }
-                    return response.text().then(text => {
-                        throw new Error(`Lỗi khi lấy thông tin lương! Mã trạng thái: ${response.status}, Phản hồi: ${text}`);
+                    return response.json();
+                })
+                .then(data => {
+                    let filterPhongBan = document.getElementById("filterPhongBan");
+                    data.forEach(pb => {
+                        let option = new Option(pb.tenPhongBan, pb.maPhongBan);
+                        filterPhongBan.appendChild(option);
                     });
+
+                    // Cập nhật số lượng phòng ban
+                    document.getElementById("departmentCount").textContent = data.length;
+                })
+                .catch(error => {
+                    console.error('Error loading PhongBan:', error);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi",
+                        text: "Không thể tải danh sách phòng ban. Vui lòng kiểm tra lại."
+                    });
+                });
+
+            fetch('/api/ChucVuApi')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Lỗi khi tải danh sách chức vụ! Mã trạng thái: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let filterChucVu = document.getElementById("filterChucVu");
+                    data.forEach(cv => {
+                        let option = new Option(cv.tenChucVu, cv.maChucVu);
+                        filterChucVu.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading ChucVu:', error);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi",
+                        text: "Không thể tải danh sách chức vụ. Vui lòng kiểm tra lại."
+                    });
+                });
+        }
+
+        function loadEmployees() {
+            // Hiển thị loading spinner
+            Swal.fire({
+                title: 'Đang tải...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
-                return response.json();
-            })
-            .then(data => {
-                // Hiển thị thông tin lương
-                document.getElementById("salaryDetails").style.display = "block";
-                document.getElementById("noSalaryMessage").style.display = "none";
-                document.querySelector(".btn-add-salary").style.display = "none";
-
-                document.getElementById("modalLuongCoBan").textContent = data.luongCoBan.toLocaleString('vi-VN') + " VND";
-                document.getElementById("modalPhuCapCoDinh").textContent = (data.phuCapCoDinh || 0).toLocaleString('vi-VN') + " VND";
-                document.getElementById("modalThuongCoDinh").textContent = (data.thuongCoDinh || 0).toLocaleString('vi-VN') + " VND";
-                document.getElementById("modalBHXH").textContent = data.bhxh.toLocaleString('vi-VN') + " VND";
-                document.getElementById("modalBHYT").textContent = data.bhyt.toLocaleString('vi-VN') + " VND";
-                document.getElementById("modalBHTN").textContent = data.bhtn.toLocaleString('vi-VN') + " VND";
-                document.getElementById("modalNgayApDng").textContent = new Date(data.ngayApDng).toLocaleDateString('vi-VN');
-                document.getElementById("modalGhiChu").textContent = data.ghiChu || "Không có ghi chú";
-
-                // Hiển thị modal
-                new bootstrap.Modal(document.getElementById("salaryModal")).show();
-            })
-            .catch(error => {
-                console.error('Error fetching salary details:', error);
-                // Hiển thị thông báo không có lương và tùy chọn thêm lương
-                document.getElementById("salaryDetails").style.display = "none";
-                document.getElementById("noSalaryMessage").style.display = "block";
-                document.querySelector(".btn-add-salary").style.display = "block";
-
-                // Lưu MaNv để dùng cho thêm lương
-                document.getElementById("salaryModal").setAttribute("data-maNv", maNv);
-
-                // Hiển thị modal
-                new bootstrap.Modal(document.getElementById("salaryModal")).show();
             });
-    }
 
-    // Sự kiện cho nút "Thêm Thông Tin Lương"
-    document.querySelector(".btn-add-salary").addEventListener("click", function () {
-        let maNv = document.getElementById("salaryModal").getAttribute("data-maNv");
-        window.location.href = `/Employees/SetupSalary?maNv=${maNv}`;
+            fetch('/api/EmployeesApi')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Lỗi khi tải danh sách nhân viên! Mã trạng thái: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Đóng loading spinner
+                    Swal.close();
+
+                    allEmployeesData = data;
+                    window.allEmployees = data;
+
+                    // Cập nhật thống kê
+                    updateStatistics(data);
+
+                    // Hiển thị danh sách nhân viên theo trang
+                    renderEmployees(data, currentPage, itemsPerPage);
+                })
+                .catch(error => {
+                    console.error('Error loading Employees:', error);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi",
+                        text: "Không thể tải danh sách nhân viên. Vui lòng kiểm tra lại."
+                    });
+                });
+        }
+
+        function updateStatistics(data) {
+            // Tổng số nhân viên
+            document.getElementById("totalEmployees").textContent = data.length;
+
+            // Số lượng nhân viên nam/nữ
+            const maleCount = data.filter(emp => emp.gioiTinh).length;
+            const femaleCount = data.filter(emp => !emp.gioiTinh).length;
+
+            document.getElementById("maleCount").textContent = maleCount;
+            document.getElementById("femaleCount").textContent = femaleCount;
+        }
+
+        function applyFilters() {
+            let phongBanFilter = document.getElementById("filterPhongBan").value;
+            let chucVuFilter = document.getElementById("filterChucVu").value;
+            let searchKeyword = document.getElementById("searchInput").value.toLowerCase();
+
+            let filteredData = window.allEmployees.filter(emp => {
+                // Kiểm tra phòng ban
+                let matchesPhongBan = phongBanFilter ? emp.maPhongBan == phongBanFilter : true;
+
+                // Kiểm tra chức vụ
+                let matchesChucVu = chucVuFilter ? emp.maChucVu == chucVuFilter : true;
+
+                // Kiểm tra từ khóa tìm kiếm
+                let matchesSearch = emp.hoTen.toLowerCase().includes(searchKeyword) ||
+                    emp.email.toLowerCase().includes(searchKeyword) ||
+                    emp.sdt.includes(searchKeyword);
+
+                return matchesPhongBan && matchesChucVu && matchesSearch;
+            });
+
+            // Reset về trang 1 khi lọc
+            currentPage = 1;
+
+            // Cập nhật thống kê trên dữ liệu đã lọc
+            updateStatistics(filteredData);
+
+            // Hiển thị dữ liệu đã lọc
+            renderEmployees(filteredData, currentPage, itemsPerPage);
+        }
+
+
+        function renderEmployees(data, page, itemsPerPage) {
+            // Tính toán các item hiển thị cho trang hiện tại
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+            const displayedData = data.slice(startIndex, endIndex);
+
+            let tableContent = "";
+
+            // Kiểm tra nếu không có dữ liệu
+            if (displayedData.length === 0) {
+                tableContent = `
+                        <tr>
+                            <td colspan="11" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fa fa-search fa-2x mb-3"></i>
+                                    <p>Không tìm thấy nhân viên nào phù hợp với điều kiện tìm kiếm</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+            } else {
+                displayedData.forEach(employee => {
+                    const genderBadge = employee.gioiTinh
+                        ? '<span class="badge bg-primary bg-opacity-10 text-primary">Nam</span>'
+                        : '<span class="badge bg-info bg-opacity-10 text-info">Nữ</span>';
+
+                    tableContent += `
+            <tr>
+                <td class="avatar-col text-center">
+                    <img src="${employee.avatarUrl || '/default-avatar.png'}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">
+                </td>
+                <td><span class="badge bg-light text-dark">${employee.maNv}</span></td>
+                <td>
+                    <div class="fw-bold">${employee.hoTen}</div>
+                </td>
+                <td>${new Date(employee.ngaySinh).toLocaleDateString('vi-VN')}</td>
+                <td>${genderBadge}</td>
+                <td>${employee.sdt}</td>
+                <td>${employee.email}</td>
+                <td>${employee.phongBan || '<span class="text-muted fst-italic">Chưa cập nhật</span>'}</td>
+                <td>${employee.chucVu || '<span class="text-muted fst-italic">Chưa cập nhật</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info btn-view-salary" data-manv="${employee.maNv}">
+                        <i class="fa fa-money-bill me-1"></i> Xem lương
+                    </button>
+                </td>
+                <!-- Xóa cột này -->
+                <!-- <td class="text-center">
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-primary btn-view-details" data-manv="${employee.maNv}">
+                            <i class="fa fa-info-circle"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                    </div>
+                </td> -->
+            </tr>`;
+                });
+
+            }
+
+            document.querySelector("#employeeTable tbody").innerHTML = tableContent;
+
+            // Cập nhật phân trang
+            renderPagination(data.length, page, itemsPerPage);
+
+            // Thêm sự kiện cho nút "Xem lương"
+            document.querySelectorAll(".btn-view-salary").forEach(button => {
+                button.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    let maNv = this.getAttribute("data-manv");
+                    fetchSalaryDetails(maNv);
+                });
+            });
+
+        
+
+            // Thêm sự kiện khi nhấp vào hàng trong bảng
+            document.querySelectorAll("#employeeTable tbody tr").forEach(row => {
+                row.addEventListener("click", function () {
+                    if (this.querySelector(".btn-view-details")) {
+                        const maNv = this.querySelector(".btn-view-details").getAttribute("data-manv");
+                        showEmployeeDetails(maNv);
+                    }
+                });
+            });
+        }
+
+
+        function renderPagination(totalItems, currentPage, itemsPerPage) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            let paginationHTML = '';
+
+            // Không hiển thị phân trang nếu chỉ có 1 trang
+            if (totalPages <= 1) {
+                document.getElementById("pagination").innerHTML = '';
+                return;
+            }
+
+            // Nút Trang trước
+            paginationHTML += `
+                            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                                <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        `;
+
+            // Xác định số trang hiển thị
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+
+            // Điều chỉnh nếu không đủ 5 trang
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            // Hiển thị trang đầu tiên nếu startPage > 1
+            if (startPage > 1) {
+                paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+                if (startPage > 2) {
+                    paginationHTML += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+                }
+            }
+
+            // Hiển thị các trang giữa
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                                </li>
+                            `;
+            }
+
+            // Hiển thị trang cuối cùng nếu endPage < totalPages
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHTML += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+                }
+                paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+            }
+
+            // Nút Trang sau
+            paginationHTML += `
+                            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                                <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        `;
+
+            document.getElementById("pagination").innerHTML = paginationHTML;
+
+            // Thêm sự kiện cho các nút phân trang
+            document.querySelectorAll("#pagination .page-link").forEach(link => {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    const pageNumber = parseInt(this.getAttribute("data-page"));
+                    if (!isNaN(pageNumber)) {
+                        currentPage = pageNumber;
+                        renderEmployees(window.filteredEmployees || window.allEmployees, currentPage, itemsPerPage);
+                    }
+                });
+            });
+        }
+
+        function showEmployeeDetails(maNv) {
+            // Tìm nhân viên theo mã
+            const employee = window.allEmployees.find(emp => emp.maNv == maNv);
+
+            if (!employee) {
+                console.error('Employee not found:', maNv);
+                return;
+            }
+
+            // Hiển thị thông tin trong modal
+            document.getElementById("modalAvatar").src = employee.avatarUrl || '/default-avatar.png';
+            document.getElementById("modalMaNv").textContent = employee.maNv;
+            document.getElementById("modalHoTen").textContent = employee.hoTen;
+            document.getElementById("modalNgaySinh").textContent = new Date(employee.ngaySinh).toLocaleDateString('vi-VN');
+            document.getElementById("modalGioiTinh").textContent = employee.gioiTinh ? "Nam" : "Nữ";
+            document.getElementById("modalSdt").textContent = employee.sdt;
+            document.getElementById("modalEmail").textContent = employee.email;
+            document.getElementById("modalPhongBan").textContent = employee.phongBan || "Chưa cập nhật";
+            document.getElementById("modalChucVu").textContent = employee.chucVu || "Chưa cập nhật";
+            document.getElementById("modalChucVu2").textContent = employee.chucVu || "Chưa cập nhật";
+
+            // Lưu mã nhân viên để sử dụng cho nút xem lương
+            document.getElementById("btnViewSalary").setAttribute("data-manv", employee.maNv);
+
+            // Hiển thị modal
+            new bootstrap.Modal(document.getElementById("employeeModal")).show();
+        }
+
+        function fetchSalaryDetails(maNv) {
+            // Tìm thông tin nhân viên để hiển thị tên trong modal lương
+            const employee = window.allEmployees.find(emp => emp.maNv == maNv);
+            if (employee) {
+                document.getElementById("modalSalaryName").textContent = employee.hoTen;
+                document.getElementById("modalSalaryId").textContent = employee.maNv;
+            }
+
+            // Hiển thị loading
+            Swal.fire({
+                title: 'Đang tải...',
+                text: 'Vui lòng đợi trong giây lát',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                timer: 1000,
+                timerProgressBar: true
+            });
+
+            fetch(`/api/SalaryApi/${maNv}`)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            throw new Error("Bạn không có quyền truy cập thông tin lương.");
+                        }
+                        if (response.status === 404) {
+                            throw new Error("Không tìm thấy thông tin lương.");
+                        }
+                        return response.text().then(text => {
+                            throw new Error(`Lỗi khi lấy thông tin lương! Mã trạng thái: ${response.status}, Phản hồi: ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Đóng loading
+                    Swal.close();
+
+                    // Hiển thị thông tin lương
+                    document.getElementById("salaryDetails").style.display = "block";
+                    document.getElementById("noSalaryMessage").style.display = "none";
+                    document.querySelector(".btn-add-salary").style.display = "none";
+
+                    // Format các giá trị tiền tệ
+                    document.getElementById("modalLuongCoBan").textContent = formatCurrency(data.luongCoBan);
+                    document.getElementById("modalPhuCapCoDinh").textContent = formatCurrency(data.phuCapCoDinh || 0);
+                    document.getElementById("modalThuongCoDinh").textContent = formatCurrency(data.thuongCoDinh || 0);
+                    document.getElementById("modalBHXH").textContent = formatCurrency(data.bhxh);
+                    document.getElementById("modalBHYT").textContent = formatCurrency(data.bhyt);
+                    document.getElementById("modalBHTN").textContent = formatCurrency(data.bhtn);
+                    document.getElementById("modalNgayApDng").textContent = new Date(data.ngayApDng).toLocaleDateString('vi-VN');
+                    document.getElementById("modalGhiChu").textContent = data.ghiChu || "Không có ghi chú";
+
+                    // Hiển thị modal
+                    new bootstrap.Modal(document.getElementById("salaryModal")).show();
+                })
+                .catch(error => {
+                    console.error('Error fetching salary details:', error);
+
+                    // Đóng loading
+                    Swal.close();
+
+                    // Hiển thị thông báo không có lương và tùy chọn thêm lương
+                    document.getElementById("salaryDetails").style.display = "none";
+                    document.getElementById("noSalaryMessage").style.display = "block";
+                    document.querySelector(".btn-add-salary").style.display = "block";
+
+                    // Lưu MaNv để dùng cho thêm lương
+                    document.getElementById("salaryModal").setAttribute("data-maNv", maNv);
+
+                    // Hiển thị modal
+                    new bootstrap.Modal(document.getElementById("salaryModal")).show();
+                });
+        }
+
+        // Hàm định dạng tiền tệ
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        // Sự kiện cho nút "Thêm Thông Tin Lương"
+        document.querySelector(".btn-add-salary").addEventListener("click", function () {
+            let maNv = document.getElementById("salaryModal").getAttribute("data-maNv");
+
+            // Hiển thị xác nhận trước khi chuyển hướng
+            Swal.fire({
+                title: 'Thêm thông tin lương',
+                text: 'Bạn sẽ được chuyển đến trang thiết lập lương cho nhân viên này. Tiếp tục?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Tiếp tục',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `/Employees/SetupSalary?maNv=${maNv}`;
+                }
+            });
+        });
+
+        // Thêm animation cho các phần tử khi trang được tải
+        setTimeout(function () {
+            document.querySelectorAll('.card').forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.transition = 'all 0.3s ease';
+                    card.style.transform = 'translateY(0)';
+                    card.style.opacity = '1';
+                }, index * 100);
+            });
+        }, 300);
     });
 </script>
+

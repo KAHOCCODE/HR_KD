@@ -53,10 +53,10 @@ namespace HR_KD.Controllers
             // ✅ Load và add nhiều Role Claims
             var userRoles = user.TaiKhoanQuyenHans.Select(q => q.MaQuyenHan).ToList();
             var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.Name, nhanVien.HoTen),
-        new Claim("MaNV", user.MaNv.ToString())
-    };
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim("MaNV", user.MaNv.ToString())
+            };
             claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             // ✅ Đăng nhập & tạo session

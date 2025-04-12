@@ -1,0 +1,163 @@
+﻿@model List<HR_KD.DTOs.ImportNhanVienDto>
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Xem trước dữ liệu import";
+    var chucVuMap = (Dictionary<int, string>)ViewBag.ChucVus ?? new();
+    var phongBanMap = (Dictionary<int, string>)ViewBag.PhongBans ?? new();
+}
+
+<style>
+    input.form-control, select.form-control {
+        min-width: 160px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+<h2 class="text-primary mt-4 mb-3"><i class="fa fa-file-excel-o"></i> Xem trước dữ liệu nhân viên</h2>
+
+<form id="saveAllForm" method="post" action="/api/EmployeesApi/SaveImportBatch">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover shadow align-middle text-center" id="importTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Họ Tên</th>
+                    <th>Ngày Sinh</th>
+                    <th>Giới Tính</th>
+                    <th>SĐT</th>
+                    <th>Email</th>
+                    <th>Trình Độ</th>
+                    <th>Chức Vụ</th>
+                    <th>Phòng Ban</th>
+                    <th>Ngày Vào Làm</th>
+                    <th>Ghi chú lỗi</th>
+                    <th>Xóa</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Count; i++)
+                {
+                    var emp = Model[i];
+                    bool hasError = !string.IsNullOrWhiteSpace(emp.RowError);
+                    string rowClass = hasError ? "table-danger" : "";
+
+                    <tr class="@rowClass">
+                        <td>
+                            @if (hasError)
+                            {
+                                <i class="fa fa-exclamation-circle text-danger" title="@emp.RowError"></i>
+                            }
+                            else
+                            {
+                                <i class="fa fa-check-circle text-success" title="Hợp lệ"></i>
+                            }
+                        </td>
+                        <td><input type="text" class="form-control" name="[@i].HoTen" value="@emp.HoTen" /></td>
+                        <td><input type="date" class="form-control" name="[@i].NgaySinh" value="@emp.NgaySinh.ToString("yyyy-MM-dd")" /></td>
+                        <td>
+                            <select class="form-control" name="[@i].GioiTinh">
+                                <option value="true" selected="@emp.GioiTinh">Nam</option>
+                                <option value="false" selected="@(!emp.GioiTinh)">Nữ</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="form-control" name="[@i].Sdt" value="@emp.Sdt" /></td>
+                        <td><input type="email" class="form-control" name="[@i].Email" value="@emp.Email" /></td>
+                        <td><input type="text" class="form-control" name="[@i].TrinhDoHocVan" value="@emp.TrinhDoHocVan" /></td>
+                        <td>
+                            @{
+                                var maChucVu = emp.MaChucVu;
+                                var tenChucVu = (maChucVu != null && chucVuMap.ContainsKey(maChucVu.Value))
+                                ? chucVuMap[maChucVu.Value]
+                                : emp.TenChucVu ?? "Không rõ";
+                            }
+                            <input type="text" class="form-control" readonly value="@($"{maChucVu} - {tenChucVu}")" />
+                            <input type="hidden" name="[@i].MaChucVu" value="@maChucVu" />
+
+                        </td>
+                        <td>
+                            @{
+                                var maPhongBan = emp.MaPhongBan;
+                                var tenPhongBan = (maPhongBan != null && phongBanMap.ContainsKey(maPhongBan.Value))
+                                ? phongBanMap[maPhongBan.Value]
+                                : emp.TenPhongBan ?? "Không rõ";
+                            }
+                            <input type="text" class="form-control" readonly value="@($"{maPhongBan} - {tenPhongBan}")" />
+                            <input type="hidden" name="[@i].MaPhongBan" value="@maPhongBan" />
+                        </td>
+                        <td><input type="date" class="form-control" name="[@i].NgayVaoLam" value="@emp.NgayVaoLam.ToString("yyyy-MM-dd")" /></td>
+                        <td class="text-danger small">@emp.RowError</td>
+                        <td>
+                            <button type="button" class="btn btn-outline-danger btn-sm" title="Xóa dòng này"
+                                    onclick="$(this).closest('tr').remove();">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-center">
+        <button type="button" class="btn btn-outline-primary" onclick="addNewRow()">
+            <i class="fa fa-plus"></i> Thêm dòng
+        </button>
+
+        <button type="submit" class="btn btn-success px-4 ms-2">
+            <i class="fa fa-save"></i> Lưu toàn bộ hợp lệ
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let rowIndex = @Model.Count;
+
+        function addNewRow() {
+            const row = `
+                    <tr>
+                        <td><i class="fa fa-question-circle text-secondary" title="Dòng mới"></i></td>
+                        <td><input type="text" class="form-control" name="[${rowIndex}].HoTen" /></td>
+                        <td><input type="date" class="form-control" name="[${rowIndex}].NgaySinh" /></td>
+                        <td>
+                            <select class="form-control" name="[${rowIndex}].GioiTinh">
+                                <option value="true">Nam</option>
+                                <option value="false">Nữ</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="form-control" name="[${rowIndex}].Sdt" /></td>
+                        <td><input type="email" class="form-control" name="[${rowIndex}].Email" /></td>
+                        <td><input type="text" class="form-control" name="[${rowIndex}].TrinhDoHocVan" /></td>
+                        <td>
+                            <select class="form-control" name="[${rowIndex}].MaChucVu">
+                                <option value="">-- Chọn chức vụ --</option>
+                                @foreach (var cv in chucVuMap)
+                                {
+                                    <text><option value="@cv.Key">@cv.Key - @cv.Value</option></text>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <select class="form-control" name="[${rowIndex}].MaPhongBan">
+                                <option value="">-- Chọn phòng ban --</option>
+                                @foreach (var pb in phongBanMap)
+                                {
+                                    <text><option value="@pb.Key">@pb.Key - @pb.Value</option></text>
+                                }
+                            </select>
+                        </td>
+                        <td><input type="date" class="form-control" name="[${rowIndex}].NgayVaoLam" /></td>
+                        <td></td>
+                        <td>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="$(this).closest('tr').remove();">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            $('#importTable tbody').append(row);
+            rowIndex++;
+        }
+    </script>
+}

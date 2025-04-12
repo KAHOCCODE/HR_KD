@@ -1,0 +1,130 @@
+﻿@model List<HR_KD.Data.TaiKhoan>
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    var allRoles = (List<HR_KD.Data.QuyenHan>)ViewBag.AllRoles;
+}
+
+<h2 class="text-primary mt-4 mb-3"><i class="fa fa-key"></i> Phân quyền nhân viên</h2>
+
+<table class="table table-bordered table-hover shadow">
+    <thead class="table-dark">
+        <tr>
+            <th>Username</th>
+            <th>Họ tên</th>
+            <th>Chức vụ</th>
+            <th>Quyền hiện tại</th>
+            <th>Phân quyền</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var acc in Model)
+        {
+            <tr>
+                <td>@acc.Username</td>
+                <td>@acc.MaNvNavigation.HoTen</td>
+                <td>@acc.MaNvNavigation.MaChucVuNavigation.TenChucVu</td>
+                <td>
+                    @foreach (var role in acc.TaiKhoanQuyenHans)
+                    {
+                        <span class="badge bg-success me-1">@role.QuyenHan.TenQuyenHan</span>
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm"
+                            data-username="@acc.Username"
+                            data-hoten="@acc.MaNvNavigation.HoTen"
+                            data-roles='@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(acc.TaiKhoanQuyenHans.Select(r => r.MaQuyenHan)))'
+                            onclick="openModalFromButton(this)">
+                        <i class="fa fa-edit"></i> Sửa quyền
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <form id="roleForm" class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Phân quyền cho <span id="modalHoTen"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modalUsername" name="username" />
+                @foreach (var role in allRoles)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input role-checkbox" type="checkbox" value="@role.MaQuyenHan" id="role_@role.MaQuyenHan" name="roles" />
+                        <label class="form-check-label" for="role_@role.MaQuyenHan">@role.TenQuyenHan</label>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Lưu</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let currentUsername = "";
+
+        function openModal(username, hoTen, existingRoles) {
+            $('#modalUsername').val(username);
+            $('#modalHoTen').text(hoTen);
+            $('.role-checkbox').prop('checked', false);
+            currentUsername = username;
+
+            if (Array.isArray(existingRoles)) {
+                existingRoles.forEach(role => {
+                    $('#role_' + role).prop('checked', true);
+                });
+            }
+
+            $('#roleModal').modal('show');
+        }
+
+        function openModalFromButton(button) {
+            const username = button.dataset.username;
+            const hoTen = button.dataset.hoten;
+            let existingRoles = [];
+
+            try {
+                existingRoles = JSON.parse(button.dataset.roles || '[]');
+            } catch (e) {
+                console.error("JSON parse error: ", e);
+            }
+
+            openModal(username, hoTen, existingRoles);
+        }
+
+        $('#roleForm').submit(function (e) {
+            e.preventDefault();
+            const roles = $('.role-checkbox:checked').map(function () {
+                return this.value;
+            }).get();
+
+            $.ajax({
+                url: '/Employees/UpdateRoles',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    username: currentUsername,
+                    roles: roles
+                }),
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire('Thành công', 'Phân quyền đã được cập nhật', 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
+                    }
+                }
+            });
+        });
+    </script>
+}

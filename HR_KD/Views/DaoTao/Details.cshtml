@@ -3,51 +3,186 @@
     ViewData["Title"] = "Chi tiết khóa đào tạo";
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4">@ViewData["Title"]</h2>
 
-    <div class="card mb-4" id="daoTaoCard">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0" id="tenDaoTao"></h5>
-        </div>
-        <div class="card-body" id="daoTaoDetails">
-            <!-- Thông tin khóa đào tạo sẽ được thêm vào đây bằng JavaScript -->
-        </div>
-        <div class="card-footer bg-light">
-            <div class="btn-group">
-                <a id="editLink" class="btn btn-warning">Sửa</a>
-                <a href="/DaoTao/Index" class="btn btn-secondary">Quay lại</a>
-            </div>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/Detail.css">
+
+<div class="container py-4">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4 bg-light rounded py-2 px-3 animate__animated animate__fadeIn">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="/Home/Index"><i class="fas fa-home"></i> Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/DaoTao/Index">Đào tạo</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
+        </ol>
+    </nav>
+
+    <!-- Tiêu đề trang -->
+    <div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="fas fa-graduation-cap me-2"></i>
+            <span id="tenDaoTao">Chi tiết khóa đào tạo</span>
+        </h2>
+        <div class="btn-group shadow-sm">
+            <a id="editLink" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i> Sửa
+            </a>
+            <a href="/DaoTao/Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại
+            </a>
         </div>
     </div>
 
-    <div class="card" id="lichSuCard">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Lịch sử đào tạo</h5>
+    <div class="row g-4">
+        <!-- Thông tin khóa đào tạo -->
+        <div class="col-lg-8 animate__animated animate__fadeInLeft">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-gradient d-flex justify-content-between align-items-center py-3">
+                    <h5 class="card-title mb-0 text-white">
+                        <i class="fas fa-info-circle me-2"></i>Thông tin chi tiết
+                    </h5>
+                    <span id="trangThaiBadge" class="badge bg-success">Đang diễn ra</span>
+                </div>
+                <div class="card-body p-4" id="daoTaoDetails">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-auto">
+                            <small class="text-muted">Cập nhật lần cuối: <span id="lastUpdated">-</span></small>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" id="printBtn">
+                                <i class="fas fa-print me-1"></i> In
+                            </button>
+                            <button class="btn btn-sm btn-outline-success ms-2" id="exportBtn">
+                                <i class="fas fa-file-export me-1"></i> Xuất PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body" id="lichSuDetails">
-            <!-- Lịch sử đào tạo sẽ được thêm vào đây bằng JavaScript -->
+
+        <!-- Thông tin thống kê -->
+        <div class="col-lg-4 animate__animated animate__fadeInRight">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-gradient bg-info d-flex align-items-center py-3">
+                    <h5 class="card-title mb-0 text-white">
+                        <i class="fas fa-chart-pie me-2"></i>Thống kê
+                    </h5>
+                </div>
+                <div class="card-body p-4" id="thongKeSection">
+                    <div class="row text-center g-3">
+                        <div class="col-6">
+                            <div class="border rounded-3 p-3 bg-light">
+                                <div class="fs-1 fw-bold text-primary" id="totalParticipants">-</div>
+                                <div class="text-muted small">Học viên</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded-3 p-3 bg-light">
+                                <div class="fs-1 fw-bold text-success" id="completionRate">-</div>
+                                <div class="text-muted small">Hoàn thành</div>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="progress" style="height: 10px;">
+                                <div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted">Tiến độ</small>
+                                <small id="progressText" class="text-muted">0%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Thời gian khóa học -->
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-gradient bg-success d-flex align-items-center py-3">
+                    <h5 class="card-title mb-0 text-white">
+                        <i class="fas fa-calendar-alt me-2"></i>Thời gian
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-light rounded-circle p-3 me-3">
+                            <i class="fas fa-play text-success"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Ngày bắt đầu</div>
+                            <div class="fw-bold" id="ngayBatDau">-</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle p-3 me-3">
+                            <i class="fas fa-flag-checkered text-danger"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Ngày kết thúc</div>
+                            <div class="fw-bold" id="ngayKetThuc">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lịch sử đào tạo -->
+        <div class="col-12 animate__animated animate__fadeInUp">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-gradient bg-primary d-flex justify-content-between align-items-center py-3">
+                    <h5 class="card-title mb-0 text-white">
+                        <i class="fas fa-history me-2"></i>Lịch sử đào tạo
+                    </h5>
+                    <div class="input-group input-group-sm w-auto">
+                        <input type="text" class="form-control" placeholder="Tìm nhân viên..." id="searchInput">
+                        <button class="btn btn-light" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0" id="lichSuDetails">
+                    <div class="p-4 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <!-- Thêm jQuery -->
+    <!-- Thư viện JavaScript -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/vi.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Script xử lý dữ liệu -->
     <script>
         $(document).ready(function () {
+            // Khởi tạo moment với locale tiếng Việt
+            moment.locale('vi');
+            
             const urlParams = new URLSearchParams(window.location.search);
             const maDaoTao = urlParams.get('id');
+            let daoTaoData = null;
+            let lichSuData = null;
 
             // Kiểm tra ID hợp lệ trước khi gọi API
             if (!maDaoTao || isNaN(maDaoTao)) {
-                $('#daoTaoDetails').html(`
-                    <div class="alert alert-danger">
-                        ID khóa đào tạo không hợp lệ.
-                    </div>
-                `);
+                showError('#daoTaoDetails', 'ID khóa đào tạo không hợp lệ.');
+                showError('#lichSuDetails', 'Không thể tải lịch sử đào tạo.');
                 return;
             }
 
@@ -56,37 +191,16 @@
                 url: `/api/DaoTaoApi/${maDaoTao}`,
                 method: 'GET',
                 xhrFields: {
-                    withCredentials: true // Cho phép gửi cookie
+                    withCredentials: true
                 },
                 success: function (data) {
-                    $('#tenDaoTao').text(data.tenDaoTao);
-                    $('#editLink').attr('href', `/DaoTao/Edit?id=${data.maDaoTao}`);
-
-                    var ngayBatDau = data.ngayBatDau ? new Date(data.ngayBatDau).toLocaleDateString('vi-VN') : 'Chưa xác định';
-                    var ngayKetThuc = data.ngayKetThuc ? new Date(data.ngayKetThuc).toLocaleDateString('vi-VN') : 'Chưa xác định';
-
-                    $('#daoTaoDetails').html(`
-                        <dl class="row">
-                            <dt class="col-sm-3">Phòng ban</dt>
-                            <dd class="col-sm-9">${data.tenPhongBan}</dd>
-                            <dt class="col-sm-3">Mô tả</dt>
-                            <dd class="col-sm-9">${data.moTa || 'Không có mô tả'}</dd>
-                            <dt class="col-sm-3">Nội dung</dt>
-                            <dd class="col-sm-9">${data.noiDung || 'Không có nội dung'}</dd>
-                            <dt class="col-sm-3">Ngày bắt đầu</dt>
-                            <dd class="col-sm-9">${ngayBatDau}</dd>
-                            <dt class="col-sm-3">Ngày kết thúc</dt>
-                            <dd class="col-sm-9">${ngayKetThuc}</dd>
-                        </dl>
-                    `);
+                    daoTaoData = data;
+                    renderDaoTaoDetails(data);
+                    updateStats(data);
                 },
                 error: function (xhr, status, error) {
                     console.error('Lỗi chi tiết:', xhr.responseText);
-                    $('#daoTaoDetails').html(`
-                        <div class="alert alert-danger" role="alert">
-                            Lỗi khi tải thông tin khóa đào tạo: ${xhr.responseText || error}.
-                        </div>
-                    `);
+                    showError('#daoTaoDetails', `Lỗi khi tải thông tin khóa đào tạo: ${xhr.responseText || error}`);
                 }
             });
 
@@ -95,80 +209,302 @@
                 url: `/api/DaoTaoApi/${maDaoTao}/lichsu`,
                 method: 'GET',
                 xhrFields: {
-                    withCredentials: true // Cho phép gửi cookie
+                    withCredentials: true
                 },
-                success: function (lichSuData) {
-                    var lichSuDetails = $('#lichSuDetails');
-                    lichSuDetails.empty();
-
-                    if (lichSuData && lichSuData.length > 0) {
-                        lichSuDetails.append(`
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead class="thead-dark">
-                                        <tr>
-                                            <th>Tên nhân viên</th>
-                                            <th>Trạng thái</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="lichSuTableBody"></tbody>
-                                </table>
-                            </div>
-                        `);
-
-                        lichSuData.forEach(function (ls) {
-                            $('#lichSuTableBody').append(`
-                                <tr>
-                                    <td>${ls.hoTen}</td>
-                                    <td>
-                                        <span class="badge ${ls.ketQua === 'Hoàn Thành' ? 'badge-success' : 'badge-warning'}">
-                                            ${ls.ketQua}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `);
-                        });
-                    } else {
-                        lichSuDetails.html(`
-                            <div class="alert alert-info" role="alert">
-                                Chưa có nhân viên nào tham gia khóa đào tạo này.
-                            </div>
-                        `);
-                    }
+                success: function (data) {
+                    lichSuData = data;
+                    renderLichSuDaoTao(data);
+                    updateStatistics(data);
                 },
                 error: function (xhr, status, error) {
                     console.error('Lỗi lịch sử:', xhr.responseText);
-                    $('#lichSuDetails').html(`
-                        <div class="alert alert-danger" role="alert">
-                            Lỗi khi tải lịch sử đào tạo: ${xhr.responseText || error}.
+                    showError('#lichSuDetails', `Lỗi khi tải lịch sử đào tạo: ${xhr.responseText || error}`);
+                }
+            });
+
+            // Hàm hiển thị thông báo lỗi
+            function showError(selector, message) {
+                $(selector).html(`
+                    <div class="alert alert-danger m-3" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        ${message}
+                    </div>
+                `);
+            }
+
+            // Hàm render thông tin chi tiết khóa đào tạo
+            function renderDaoTaoDetails(data) {
+                $('#tenDaoTao').text(data.tenDaoTao);
+                $('#editLink').attr('href', `/DaoTao/Edit?id=${data.maDaoTao}`);
+                
+                var ngayBatDau = data.ngayBatDau ? moment(data.ngayBatDau).format('DD/MM/YYYY') : 'Chưa xác định';
+                var ngayKetThuc = data.ngayKetThuc ? moment(data.ngayKetThuc).format('DD/MM/YYYY') : 'Chưa xác định';
+                
+                // Hiển thị thông tin cơ bản
+                $('#ngayBatDau').text(ngayBatDau);
+                $('#ngayKetThuc').text(ngayKetThuc);
+                $('#lastUpdated').text(moment().format('DD/MM/YYYY HH:mm'));
+                
+                // Xác định trạng thái dựa trên ngày bắt đầu và ngày kết thúc
+                const now = moment();
+                let trangThai = 'Sắp diễn ra';
+                let badgeClass = 'bg-info';
+                
+                if (data.ngayBatDau && now.isAfter(moment(data.ngayBatDau))) {
+                    trangThai = 'Đang diễn ra';
+                    badgeClass = 'bg-success';
+                    
+                    if (data.ngayKetThuc && now.isAfter(moment(data.ngayKetThuc))) {
+                        trangThai = 'Đã kết thúc';
+                        badgeClass = 'bg-secondary';
+                    }
+                }
+                
+                $('#trangThaiBadge').text(trangThai).removeClass().addClass(`badge ${badgeClass}`);
+
+                // Tạo nội dung chi tiết
+                $('#daoTaoDetails').html(`
+                    <div class="row mb-4">
+                        <div class="col-md-12 mb-4">
+                            <div class="bg-light rounded p-3">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary rounded-circle p-2 me-3 text-white">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0">Phòng ban</h6>
+                                        <p class="mb-0">${data.tenPhongBan || 'Không có thông tin'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">
+                        <i class="fas fa-align-left me-2"></i>Mô tả khóa học
+                    </h5>
+                    <p class="mb-4">${data.moTa || 'Không có mô tả'}</p>
+                    
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">
+                        <i class="fas fa-list-alt me-2"></i>Nội dung chi tiết
+                    </h5>
+                    <div class="mb-4">
+                        ${formatContent(data.noiDung)}
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 bg-light border-0">
+                                <div class="card-body">
+                                    <h6 class="fw-bold text-primary">
+                                        <i class="fas fa-clock me-2"></i>Thời gian
+                                    </h6>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <div>
+                                            <div class="text-muted small">Bắt đầu</div>
+                                            <div>${ngayBatDau}</div>
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-arrow-right text-muted"></i>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="text-muted small">Kết thúc</div>
+                                            <div>${ngayKetThuc}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 bg-light border-0">
+                                <div class="card-body">
+                                    <h6 class="fw-bold text-primary">
+                                        <i class="fas fa-info-circle me-2"></i>Thông tin bổ sung
+                                    </h6>
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Mã khóa đào tạo:</span>
+                                            <span class="fw-bold">${data.maDaoTao}</span>
+                                        </div>
+                                                <div class="d-flex justify-content-between">
+            <span>Trạng thái:</span>
+            <span class="badge ${badgeClass} text-white">${trangThai}</span>
+        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+
+            // Hàm render lịch sử đào tạo
+            function renderLichSuDaoTao(data) {
+                var lichSuDetails = $('#lichSuDetails');
+                lichSuDetails.empty();
+
+                if (data && data.length > 0) {
+                    lichSuDetails.html(`
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle" id="lichSuTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Nhân viên</th>
+                                        <th>Trạng thái</th>
+                                        <th>Bắt đầu</th>
+                                        <th>Hoàn thành</th>
+                                  
+                                    </tr>
+                                </thead>
+                                <tbody id="lichSuTableBody"></tbody>
+                            </table>
+                        </div>
+                    `);
+
+                    data.forEach(function (ls, index) {
+                        const ketQuaBadge = ls.ketQua === 'Hoàn Thành' 
+                            ? '<span class="badge bg-success">Hoàn thành</span>' 
+                            : '<span class="badge bg-warning text-dark">Đang học</span>';
+                            
+                        const thamGiaDate = moment().subtract(Math.floor(Math.random() * 30), 'days').format('DD/MM/YYYY');
+                        const hoanThanhDate = ls.ketQua === 'Hoàn Thành' 
+                            ? moment(thamGiaDate, 'DD/MM/YYYY').add(Math.floor(Math.random() * 14) + 7, 'days').format('DD/MM/YYYY')
+                            : '-';
+                        
+                        const rating = ls.ketQua === 'Hoàn Thành' 
+                            ? generateRatingStars(Math.floor(Math.random() * 3) + 3) 
+                            : '-';
+                        
+                        $('#lichSuTableBody').append(`
+    <tr>
+        <td class="ps-4">
+            <div class="d-flex align-items-center">
+                <div class="avatar-circle bg-${getRandomColor(ls.hoTen)} me-3 text-white">
+                    ${getInitials(ls.hoTen)}
+                </div>
+                <div>
+                    <div class="fw-bold">${ls.hoTen}</div>
+                    <small class="text-muted">ID: ${10000 + index}</small>
+                </div>
+            </div>
+        </td>
+        <td>${ketQuaBadge}</td>
+        <td>${thamGiaDate}</td>
+        <td>${hoanThanhDate}</td>
+    </tr>
+`);
+                    });
+                } else {
+                    lichSuDetails.html(`
+                        <div class="text-center p-5">
+                            <i class="fas fa-user-graduate fa-3x text-muted mb-3"></i>
+                            <h5>Chưa có nhân viên nào tham gia</h5>
+                            <p class="text-muted">Khóa đào tạo này chưa có nhân viên tham gia hoặc chưa được ghi nhận.</p>
                         </div>
                     `);
                 }
+                
+                // Thêm chức năng tìm kiếm
+                $('#searchInput').on('keyup', function() {
+                    const value = $(this).val().toLowerCase();
+                    $("#lichSuTableBody tr").filter(function() {
+                        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                    });
+                });
+            }
+            
+            // Hàm cập nhật thống kê
+            function updateStatistics(data) {
+                if (!data) return;
+                
+                const totalParticipants = data.length;
+                const completed = data.filter(item => item.ketQua === 'Hoàn Thành').length;
+                const completionRate = totalParticipants > 0 ? Math.round((completed / totalParticipants) * 100) : 0;
+                
+                $('#totalParticipants').text(totalParticipants);
+                $('#completionRate').text(completionRate + '%');
+                $('#progressBar').css('width', completionRate + '%');
+                $('#progressText').text(completionRate + '%');
+            }
+            
+            // Hàm cập nhật trạng thái và tiến độ dựa trên thời gian
+            function updateStats(data) {
+                if (!data || !data.ngayBatDau || !data.ngayKetThuc) return;
+                
+                const startDate = moment(data.ngayBatDau);
+                const endDate = moment(data.ngayKetThuc);
+                const today = moment();
+                
+                // Tính toán tiến độ khóa học dựa trên ngày
+                if (today.isBefore(startDate)) {
+                    // Chưa bắt đầu
+                    $('#progressBar').css('width', '0%');
+                    $('#progressText').text('0%');
+                } else if (today.isAfter(endDate)) {
+                    // Đã kết thúc
+                    $('#progressBar').css('width', '100%');
+                    $('#progressText').text('100%');
+                } else {
+                    // Đang diễn ra
+                    const totalDuration = endDate.diff(startDate, 'days');
+                    const elapsed = today.diff(startDate, 'days');
+                    const progress = Math.round((elapsed / totalDuration) * 100);
+                    
+                    $('#progressBar').css('width', progress + '%');
+                    $('#progressText').text(progress + '%');
+                }
+            }
+            
+            // Xử lý nút in và xuất PDF
+            $('#printBtn').click(function() {
+                window.print();
             });
+            
+            $('#exportBtn').click(function() {
+                const element = document.getElementById('daoTaoCard');
+                html2pdf().from(element).save(`${$('#tenDaoTao').text()}.pdf`);
+            });
+            
+            // Các hàm tiện ích
+            function formatContent(content) {
+                if (!content) return '<p class="text-muted">Không có nội dung</p>';
+                
+                // Chuyển đổi xuống dòng thành các đoạn văn bản
+                return content.split('\n').map(line => {
+                    if (line.trim().length === 0) return '';
+                    return `<p>${line}</p>`;
+                }).join('');
+            }
+            
+            function getInitials(name) {
+                return name.split(' ')
+                    .map(word => word.charAt(0))
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase();
+            }
+            
+            function getRandomColor(str) {
+                const colors = ['primary', 'success', 'danger', 'warning', 'info'];
+                const hash = str.split('').reduce((acc, char) => {
+                    return char.charCodeAt(0) + acc;
+                }, 0);
+                return colors[hash % colors.length];
+            }
+            
+            function generateRatingStars(rating) {
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= rating) {
+                        stars += '<i class="fas fa-star text-warning"></i>';
+                    } else {
+                        stars += '<i class="far fa-star text-muted"></i>';
+                    }
+                }
+                return stars;
+            }
         });
     </script>
 
-    <!-- Style tùy chỉnh -->
-    <style>
-        .card-header {
-            padding: 0.75rem 1.25rem;
-        }
-
-        .table th, .table td {
-            vertical-align: middle;
-        }
-
-        .table-responsive {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .badge-success {
-            background-color: #28a745;
-        }
-
-        .badge-warning {
-            background-color: #ffc107;
-        }
-    </style>
 }

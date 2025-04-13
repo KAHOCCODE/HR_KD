@@ -1,168 +1,341 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
-
-<div class="container mt-5">
-    <h2 class="mb-4 text-center text-primary">Thêm Nhân Viên</h2>
-    <form id="createEmployeeForm" class="card shadow-lg p-4">
-        <div class="row">
-            <!-- Họ và Tên -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Họ và Tên <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="HoTen" required />
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Nhân Viên Mới</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/createemploy.css">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="card shadow border-0 overflow-hidden">
+            <div class="card-header bg-primary text-white p-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-user-plus fa-2x me-3"></i>
+                    <h2 class="mb-0 fw-bold">Thêm Nhân Viên Mới</h2>
+                </div>
+            </div>
+            
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" 
+                     id="formProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
 
-            <!-- Ngày Sinh -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Ngày Sinh <span class="text-danger">*</span></label>
-                <input type="date" class="form-control" id="NgaySinh" required />
-            </div>
+            <div class="card-body p-4">
+                <form id="createEmployeeForm" class="needs-validation" novalidate>
+                    <div class="row g-4">
+                        <!-- Left Column -->
+                        <div class="col-lg-8">
+                            <!-- Thông tin cá nhân -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white py-3">
+                                    <h5 class="mb-0 text-primary">
+                                        <i class="fas fa-id-card me-2"></i>Thông Tin Cá Nhân
+                                    </h5>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-3">
+                                        <!-- Họ và Tên -->
+                                        <div class="col-md-6">
+                                            <label for="HoTen" class="form-label">
+                                                <i class="fas fa-user me-1 text-muted"></i>Họ và Tên <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control form-control-lg" id="HoTen" required />
+                                            <div class="invalid-feedback">Vui lòng nhập họ và tên</div>
+                                        </div>
 
-            <!-- Giới Tính -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Giới Tính <span class="text-danger">*</span></label>
-                <select class="form-control" id="GioiTinh" required>
-                    <option value="">-- Chọn giới tính --</option>
-                    <option value="true">Nam</option>
-                    <option value="false">Nữ</option>
-                </select>
-            </div>
+                                        <!-- Ngày Sinh -->
+                                        <div class="col-md-6">
+                                            <label for="NgaySinh" class="form-label">
+                                                <i class="fas fa-birthday-cake me-1 text-muted"></i>Ngày Sinh <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="date" class="form-control form-control-lg" id="NgaySinh" required />
+                                            <div class="invalid-feedback">Vui lòng chọn ngày sinh</div>
+                                        </div>
 
-            <!-- Số Điện Thoại -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Số Điện Thoại <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="Sdt" required />
-            </div>
+                                        <!-- Giới Tính -->
+                                        <div class="col-md-6">
+                                            <label for="GioiTinh" class="form-label">
+                                                <i class="fas fa-venus-mars me-1 text-muted"></i>Giới Tính <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select form-select-lg" id="GioiTinh" required>
+                                                <option value="">-- Chọn giới tính --</option>
+                                                <option value="true">Nam</option>
+                                                <option value="false">Nữ</option>
+                                            </select>
+                                            <div class="invalid-feedback">Vui lòng chọn giới tính</div>
+                                        </div>
 
-            <!-- Email -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" id="Email" required />
-            </div>
+                                        <!-- Trình Độ Học Vấn -->
+                                        <div class="col-md-6">
+                                            <label for="TrinhDoHocVan" class="form-label">
+                                                <i class="fas fa-graduation-cap me-1 text-muted"></i>Trình Độ Học Vấn
+                                            </label>
+                                            <select class="form-select form-select-lg" id="TrinhDoHocVan">
+                                                <option value="">-- Chọn trình độ --</option>
+                                                <option value="Trung học">Trung học</option>
+                                                <option value="Cao đẳng">Cao đẳng</option>
+                                                <option value="Đại học">Đại học</option>
+                                                <option value="Thạc sĩ">Thạc sĩ</option>
+                                                <option value="Tiến sĩ">Tiến sĩ</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-            <!-- Trình Độ Học Vấn -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Trình Độ Học Vấn</label>
-                <input type="text" class="form-control" id="TrinhDoHocVan" />
-            </div>
+                            <!-- Thông tin liên hệ -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white py-3">
+                                    <h5 class="mb-0 text-primary">
+                                        <i class="fas fa-address-book me-2"></i>Thông Tin Liên Hệ
+                                    </h5>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-3">
+                                        <!-- Email -->
+                                        <div class="col-md-6">
+                                            <label for="Email" class="form-label">
+                                                <i class="fas fa-envelope me-1 text-muted"></i>Email <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group input-group-lg">
+                                                <span class="input-group-text bg-light"><i class="fas fa-at"></i></span>
+                                                <input type="email" class="form-control" id="Email" required />
+                                            </div>
+                                            <div class="invalid-feedback">Vui lòng nhập email hợp lệ</div>
+                                        </div>
 
-            <!-- Ngày Vào Làm -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Ngày Vào Làm <span class="text-danger">*</span></label>
-                <input type="date" class="form-control" id="NgayVaoLam" required />
-            </div>
+                                        <!-- Số Điện Thoại -->
+                                        <div class="col-md-6">
+                                            <label for="Sdt" class="form-label">
+                                                <i class="fas fa-phone me-1 text-muted"></i>Số Điện Thoại <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group input-group-lg">
+                                                <span class="input-group-text bg-light"><i class="fas fa-phone"></i></span>
+                                                <input type="text" class="form-control" id="Sdt" required />
+                                            </div>
+                                            <div class="invalid-feedback">Vui lòng nhập số điện thoại</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-            <!-- Chức Vụ -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Chức Vụ <span class="text-danger">*</span></label>
-                <select id="MaChucVu" class="form-control" required></select>
-            </div>
+                            <!-- Địa chỉ -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white py-3">
+                                    <h5 class="mb-0 text-primary">
+                                        <i class="fas fa-map-marker-alt me-2"></i>Địa Chỉ
+                                    </h5>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-3">
+                                        <!-- Tỉnh/Thành phố -->
+                                        <div class="col-md-6">
+                                            <label for="TinhThanh" class="form-label">
+                                                <i class="fas fa-city me-1 text-muted"></i>Tỉnh/Thành phố
+                                            </label>
+                                            <select class="form-select form-select-lg" id="TinhThanh">
+                                                <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                            </select>
+                                        </div>
 
-            <!-- Phòng Ban -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Phòng Ban <span class="text-danger">*</span></label>
-                <select id="MaPhongBan" class="form-control" required></select>
-            </div>
+                                        <!-- Quận/Huyện -->
+                                        <div class="col-md-6">
+                                            <label for="QuanHuyen" class="form-label">
+                                                <i class="fas fa-building me-1 text-muted"></i>Quận/Huyện
+                                            </label>
+                                            <select class="form-select form-select-lg" id="QuanHuyen">
+                                                <option value="">-- Chọn Quận/Huyện --</option>
+                                            </select>
+                                        </div>
 
-            <!-- Ảnh Đại Diện -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Ảnh Đại Diện</label>
-                <input type="file" class="form-control" id="AvatarUrl" name="AvatarUrl" accept=".jpg,.png,.jpeg" />
+                                        <!-- Phường/Xã -->
+                                        <div class="col-md-6">
+                                            <label for="PhuongXa" class="form-label">
+                                                <i class="fas fa-home me-1 text-muted"></i>Phường/Xã
+                                            </label>
+                                            <select class="form-select form-select-lg" id="PhuongXa">
+                                                <option value="">-- Chọn Phường/Xã --</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Số nhà, đường -->
+                                        <div class="col-md-6">
+                                            <label for="SoNhaDuong" class="form-label">
+                                                <i class="fas fa-road me-1 text-muted"></i>Số nhà, đường
+                                            </label>
+                                            <input type="text" class="form-control form-control-lg" id="SoNhaDuong" />
+                                        </div>
+
+                                        <!-- Địa chỉ đầy đủ -->
+                                        <div class="col-12">
+                                            <label for="DiaChiDayDu" class="form-label">
+                                                <i class="fas fa-map me-1 text-muted"></i>Địa Chỉ Đầy Đủ
+                                            </label>
+                                            <textarea class="form-control bg-light" id="DiaChiDayDu" rows="2" readonly></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="col-lg-4">
+                            <!-- Ảnh đại diện -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white py-3">
+                                    <h5 class="mb-0 text-primary">
+                                        <i class="fas fa-image me-2"></i>Ảnh Đại Diện
+                                    </h5>
+                                </div>
+                                <div class="card-body p-4 text-center">
+                                    <div class="avatar-upload mb-3">
+                                        <div class="avatar-preview rounded-circle mx-auto mb-3" style="width: 180px; height: 180px; overflow: hidden; border: 3px solid #eee;">
+                                            <img id="avatarPreview" src="/api/placeholder/180/180" class="w-100 h-100" style="object-fit: cover;" alt="Avatar Preview" />
+                                        </div>
+                                        <label for="AvatarUrl" class="btn btn-outline-primary">
+                                            <i class="fas fa-upload me-2"></i>Chọn ảnh
+                                        </label>
+                                        <input type="file" class="form-control d-none" id="AvatarUrl" name="AvatarUrl" accept=".jpg,.png,.jpeg" onchange="previewAvatar(this)" />
+                                        <div class="small text-muted mt-2">Định dạng: JPG, PNG (Tối đa 5MB)</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Thông tin công việc -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white py-3">
+                                    <h5 class="mb-0 text-primary">
+                                        <i class="fas fa-briefcase me-2"></i>Thông Tin Công Việc
+                                    </h5>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="mb-3">
+                                        <label for="NgayVaoLam" class="form-label">
+                                            <i class="fas fa-calendar-check me-1 text-muted"></i>Ngày Vào Làm <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="date" class="form-control form-control-lg" id="NgayVaoLam" required />
+                                        <div class="invalid-feedback">Vui lòng chọn ngày vào làm</div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="MaChucVu" class="form-label">
+                                            <i class="fas fa-user-tie me-1 text-muted"></i>Chức Vụ <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select form-select-lg" id="MaChucVu" required>
+                                            <option value="">-- Chọn chức vụ --</option>
+                                        </select>
+                                        <div class="invalid-feedback">Vui lòng chọn chức vụ</div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="MaPhongBan" class="form-label">
+                                            <i class="fas fa-sitemap me-1 text-muted"></i>Phòng Ban <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select form-select-lg" id="MaPhongBan" required>
+                                            <option value="">-- Chọn phòng ban --</option>
+                                        </select>
+                                        <div class="invalid-feedback">Vui lòng chọn phòng ban</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nút Submit -->
+                    <div class="text-center mt-4">
+                        <button type="button" class="btn btn-light btn-lg me-2">
+                            <i class="fas fa-times me-2"></i>Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save me-2"></i>Lưu & Tiếp Tục
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- Phần Địa Chỉ -->
-        <div class="mb-3">
-            <label class="form-label fw-bold">Địa Chỉ</label>
-            <div class="row">
-                <!-- Số nhà, đường -->
-                <div class="col-md-3 mb-3">
-                    <input type="text" class="form-control" id="SoNhaDuong" placeholder="Số nhà, đường" />
-                </div>
-
-                <!-- Phường/Xã -->
-                <div class="col-md-3 mb-3">
-                    <select class="form-control" id="PhuongXa">
-                        <option value="">-- Chọn Phường/Xã --</option>
-                    </select>
-                </div>
-
-                <!-- Quận/Huyện -->
-                <div class="col-md-3 mb-3">
-                    <select class="form-control" id="QuanHuyen">
-                        <option value="">-- Chọn Quận/Huyện --</option>
-                    </select>
-                </div>
-
-                <!-- Tỉnh/Thành phố -->
-                <div class="col-md-3 mb-3">
-                    <select class="form-control" id="TinhThanh">
-                        <option value="">-- Chọn Tỉnh/Thành phố --</option>
-                    </select>
+        <!-- Tooltip Card -->
+        <div class="card border-0 shadow-sm mt-4 bg-light">
+            <div class="card-body p-3 d-flex align-items-center">
+                <i class="fas fa-info-circle text-primary me-3 fa-2x"></i>
+                <div>
+                    <p class="mb-0">Sau khi thêm nhân viên thành công, bạn sẽ được chuyển đến trang <strong>Thiết lập Lương</strong> cho nhân viên này.</p>
                 </div>
             </div>
-
-            <!-- Địa chỉ đầy đủ (readonly) -->
-            <div class="mb-3">
-                <label class="form-label fw-bold">Địa Chỉ Đầy Đủ</label>
-                <input type="text" class="form-control" id="DiaChiDayDu" readonly />
-            </div>
         </div>
+    </div>
 
-        <!-- Nút Submit -->
-        <div class="text-center">
-            <button type="submit" class="btn btn-primary btn-lg">Thêm Nhân Viên</button>
-        </div>
-    </form>
-</div>
+ 
 
-<style>
-    .card {
-        border-radius: 15px;
-        border: none;
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.0/sweetalert2.all.min.js"></script>
 
-    .form-label {
-        color: #333;
-    }
-
-    .form-control {
-        border-radius: 8px;
-        border: 1px solid #ced4da;
-        transition: border-color 0.3s ease;
-    }
-
-        .form-control:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-        }
-
-    .btn-primary {
-        background: linear-gradient(90deg, #007bff 0%, #00c4ff 100%);
-        border: none;
-        border-radius: 8px;
-        padding: 10px 30px;
-        transition: background 0.3s ease;
-    }
-
-        .btn-primary:hover {
-            background: linear-gradient(90deg, #0056b3 0%, #0096cc 100%);
-        }
-
-    .text-primary {
-        color: #007bff !important;
-    }
-</style>
-
-@section Scripts {
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function () {
+            // Theo dõi tiến trình điền form
+            updateProgress();
+            $('input, select').on('change', updateProgress);
+
+            // Bootstrap form validation
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        highlightFirstError();
+                    } else {
+                        submitForm(event);
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+
+            // Highlight first error with smooth scroll
+            function highlightFirstError() {
+                const firstInvalid = document.querySelector('.form-control:invalid, .form-select:invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Add attention animation
+                    firstInvalid.classList.add('attention');
+                    setTimeout(() => {
+                        firstInvalid.classList.remove('attention');
+                    }, 1000);
+                }
+            }
+
+            // Update progress bar
+            function updateProgress() {
+                const requiredFields = $('#createEmployeeForm [required]');
+                const filledFields = requiredFields.filter((i, field) => $(field).val() !== '');
+                const progressPercentage = (filledFields.length / requiredFields.length) * 100;
+                
+                $('#formProgress').css('width', progressPercentage + '%');
+                $('#formProgress').attr('aria-valuenow', progressPercentage);
+                
+                // Change color based on progress
+                if (progressPercentage < 33) {
+                    $('#formProgress').removeClass('bg-warning bg-success').addClass('bg-danger');
+                } else if (progressPercentage < 66) {
+                    $('#formProgress').removeClass('bg-danger bg-success').addClass('bg-warning');
+                } else {
+                    $('#formProgress').removeClass('bg-danger bg-warning').addClass('bg-success');
+                }
+            }
+
             // Load danh sách chức vụ
             $.get("/api/ChucVuApi", function (data) {
                 let dropdown = $("#MaChucVu");
-                dropdown.append('<option value="">-- Chọn chức vụ --</option>');
+                dropdown.html('<option value="">-- Chọn chức vụ --</option>');
                 data.forEach(item => {
                     dropdown.append(`<option value="${item.maChucVu}">${item.tenChucVu}</option>`);
                 });
@@ -171,7 +344,7 @@
             // Load danh sách phòng ban
             $.get("/api/PhongBanApi", function (data) {
                 let dropdown = $("#MaPhongBan");
-                dropdown.append('<option value="">-- Chọn phòng ban --</option>');
+                dropdown.html('<option value="">-- Chọn phòng ban --</option>');
                 data.forEach(item => {
                     dropdown.append(`<option value="${item.maPhongBan}">${item.tenPhongBan}</option>`);
                 });
@@ -180,7 +353,7 @@
             // Load danh sách Tỉnh/Thành phố từ API
             $.get("https://provinces.open-api.vn/api/p/", function (data) {
                 let tinhThanhDropdown = $("#TinhThanh");
-                tinhThanhDropdown.append('<option value="">-- Chọn Tỉnh/Thành phố --</option>');
+                tinhThanhDropdown.html('<option value="">-- Chọn Tỉnh/Thành phố --</option>');
                 data.forEach(item => {
                     tinhThanhDropdown.append(`<option value="${item.code}" data-name="${item.name}">${item.name}</option>`);
                 });
@@ -243,32 +416,19 @@
                 $("#DiaChiDayDu").val(diaChiDayDu);
             }
 
-            // Xử lý submit form
-            $("#createEmployeeForm").submit(function (e) {
+            // Gửi form 
+            function submitForm(e) {
                 e.preventDefault();
 
-                // Kiểm tra các trường bắt buộc của nhân viên
-                let requiredFields = [
-                    { id: "HoTen", name: "Họ và Tên" },
-                    { id: "NgaySinh", name: "Ngày Sinh" },
-                    { id: "GioiTinh", name: "Giới Tính" },
-                    { id: "Sdt", name: "Số Điện Thoại" },
-                    { id: "Email", name: "Email" },
-                    { id: "MaChucVu", name: "Chức Vụ" },
-                    { id: "MaPhongBan", name: "Phòng Ban" },
-                    { id: "NgayVaoLam", name: "Ngày Vào Làm" }
-                ];
-
-                for (let field of requiredFields) {
-                    if (!$("#" + field.id).val()) {
-                        Swal.fire({
-                            icon: "warning",
-                            title: "Thiếu thông tin",
-                            text: `Vui lòng nhập ${field.name}!`
-                        });
-                        return;
+                // Hiển thị loading
+                Swal.fire({
+                    title: 'Đang xử lý...',
+                    html: 'Vui lòng chờ trong giây lát',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
                     }
-                }
+                });
 
                 // Tạo FormData cho nhân viên
                 let formData = new FormData();
@@ -296,7 +456,7 @@
                     processData: false,
                     success: function (response) {
                         // Lấy maNv từ response
-                        let maNv = response.maNv; // Giả sử API trả về maNv trong response
+                        let maNv = response.maNv;
                         if (!maNv) {
                             Swal.fire({
                                 icon: "error",
@@ -332,7 +492,19 @@
                         });
                     }
                 });
-            });
+            }
         });
+
+        // Hiển thị ảnh xem trước
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#avatarPreview').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
     </script>
-}
+</body>
+</html>

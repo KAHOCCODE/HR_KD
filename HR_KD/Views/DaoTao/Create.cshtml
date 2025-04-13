@@ -1,81 +1,289 @@
-﻿@{
+﻿
+@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Tạo mới khóa đào tạo";
 }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo mới khóa đào tạo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="~/css/create.css">
+</head>
+<body>
+    <div class="progress-indicator" id="progressBar"></div>
+    <div class="toast-container" id="toastContainer"></div>
 
-<div class="container mt-4">
-    <h2 class="mb-4">@ViewData["Title"]</h2>
-
-    <div class="card">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0">Tạo mới khóa đào tạo</h5>
+    <div class="container py-5">
+        <div class="page-header text-white p-4 mb-5">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="page-title mb-2">Tạo mới khóa đào tạo</h1>
+                    <p class="mb-0 opacity-75">Tạo và quản lý khóa đào tạo cho nhân viên trong doanh nghiệp</p>
+                </div>
+              
+            </div>
         </div>
-        <div class="card-body">
-            <form id="createForm">
-                <div id="validationSummary" class="text-danger mb-3"></div>
 
-                <div class="form-group">
-                    <label for="tenDaoTao" class="control-label">Tên khóa đào tạo</label>
-                    <input id="tenDaoTao" name="tenDaoTao" class="form-control" placeholder="Nhập tên khóa đào tạo" />
-                    <span id="tenDaoTaoError" class="text-danger"></span>
+        <div class="card">
+            <div class="card-header text-white">
+                <div class="d-flex align-items-center">
+                    <div class="card-header-icon me-3">
+                        <i class="fas fa-graduation-cap fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0">Thông tin khóa đào tạo</h5>
+                        <p class="mb-0 mt-1 opacity-75">Điền đầy đủ thông tin để tạo khóa đào tạo mới</p>
+                    </div>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="moTa" class="control-label">Mô tả</label>
-                    <textarea id="moTa" name="moTa" class="form-control" rows="3" placeholder="Nhập mô tả khóa đào tạo"></textarea>
-                    <span id="moTaError" class="text-danger"></span>
-                </div>
+            <div class="card-body">
+                <form id="createForm">
+                    <div id="validationSummary" class="alert alert-danger d-none">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span>Vui lòng kiểm tra lại thông tin nhập.</span>
+                    </div>
 
-                <div class="form-group">
-                    <label for="noiDung" class="control-label">Nội dung</label>
-                    <textarea id="noiDung" name="noiDung" class="form-control" rows="3" placeholder="Nhập nội dung khóa đào tạo"></textarea>
-                    <span id="noiDungError" class="text-danger"></span>
-                </div>
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-info"></i>
+                            </div>
+                            <h5 class="mb-0">Thông tin cơ bản</h5>
+                        </div>
 
-                <div class="form-group">
-                    <label for="ngayBatDau" class="control-label">Ngày bắt đầu</label>
-                    <input id="ngayBatDau" name="ngayBatDau" class="form-control" type="date" />
-                    <span id="ngayBatDauError" class="text-danger"></span>
-                </div>
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label for="tenDaoTao" class="form-label">Tên khóa đào tạo <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-book-open text-primary"></i>
+                                    </span>
+                                    <input id="tenDaoTao" name="tenDaoTao" class="form-control" placeholder="Nhập tên khóa đào tạo" />
+                                </div>
+                                <div id="tenDaoTaoError" class="text-danger"></div>
+                            </div>
 
-                <div class="form-group">
-                    <label for="ngayKetThuc" class="control-label">Ngày kết thúc</label>
-                    <input id="ngayKetThuc" name="ngayKetThuc" class="form-control" type="date" />
-                    <span id="ngayKetThucError" class="text-danger"></span>
-                </div>
+                            <div class="col-md-6">
+                                <label for="ngayBatDau" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-calendar-alt text-primary"></i>
+                                    </span>
+                                    <input id="ngayBatDau" name="ngayBatDau" class="form-control" type="date" />
+                                </div>
+                                <div id="ngayBatDauError" class="text-danger"></div>
+                            </div>
 
-                <div class="form-group">
-                    <label for="maPhongBan" class="control-label">Phòng ban</label>
-                    <select id="maPhongBan" name="maPhongBan" class="form-control">
-                        <option value="">-- Chọn phòng ban --</option>
-                    </select>
-                    <span id="maPhongBanError" class="text-danger"></span>
-                </div>
+                            <div class="col-md-6">
+                                <label for="ngayKetThuc" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-calendar-check text-primary"></i>
+                                    </span>
+                                    <input id="ngayKetThuc" name="ngayKetThuc" class="form-control" type="date" />
+                                </div>
+                                <div id="ngayKetThucError" class="text-danger"></div>
+                            </div>
 
-                <div class="form-group mt-3">
-                    <button type="submit" class="btn btn-success">Tạo khóa đào tạo</button>
-                    <a href="/DaoTao/Index" class="btn btn-secondary">Quay lại</a>
-                </div>
-            </form>
+                            <div class="col-12">
+                                <label for="maPhongBan" class="form-label">Phòng ban <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-sitemap text-primary"></i>
+                                    </span>
+                                    <select id="maPhongBan" name="maPhongBan" class="form-select">
+                                        <option value="">-- Chọn phòng ban --</option>
+                                    </select>
+                                </div>
+                                <div id="maPhongBanError" class="text-danger"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <h5 class="mb-0">Nội dung chi tiết</h5>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label for="moTa" class="form-label">Mô tả khóa đào tạo</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-align-left text-primary"></i>
+                                    </span>
+                                    <textarea id="moTa" name="moTa" class="form-control" rows="3" placeholder="Nhập mô tả ngắn gọn về khóa đào tạo"></textarea>
+                                </div>
+                                <div id="moTaError" class="text-danger"></div>
+                                <small class="text-muted">Viết mô tả ngắn gọn về mục đích và lợi ích của khóa đào tạo</small>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="noiDung" class="form-label">Nội dung chi tiết</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-edit text-primary"></i>
+                                    </span>
+                                    <textarea id="noiDung" name="noiDung" class="form-control" rows="5" placeholder="Nhập nội dung chi tiết của khóa đào tạo"></textarea>
+                                </div>
+                                <div id="noiDungError" class="text-danger"></div>
+                                <small class="text-muted">Mô tả chi tiết các chủ đề, hoạt động và kết quả học tập mong đợi</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4 pt-2">
+                        <a href="/DaoTao/Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Quay lại
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Tạo khóa đào tạo
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Giả định có API để lấy danh sách phòng ban
+            // Hiệu ứng progress bar khi load trang
+            $('#progressBar').animate({ width: '100%' }, 800, function () {
+                setTimeout(() => {
+                    $(this).css('width', '0');
+                }, 300);
+            });
+
+            // Function hiển thị toast
+            function showToast(type, message) {
+                const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+                const toastClass = type === 'success' ? 'toast-success' : 'toast-error';
+                const title = type === 'success' ? 'Thành công' : 'Lỗi';
+
+                const toast = $(`
+                  <div class="custom-toast ${toastClass}">
+                    <div class="toast-header d-flex align-items-center">
+                      <i class="fas ${iconClass} me-2" style="color: ${type === 'success' ? '#2ec4b6' : '#e63946'}"></i>
+                      <strong class="me-auto">${title}</strong>
+                      <button type="button" class="btn-close" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body py-3 px-4">
+                      ${message}
+                    </div>
+                  </div>
+                `);
+
+                $('#toastContainer').append(toast);
+
+                // Xóa toast sau 3 giây
+                setTimeout(() => {
+                    toast.css({
+                        'opacity': '0',
+                        'transform': 'translateX(50px)',
+                        'transition': 'all 0.3s ease'
+                    });
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+
+                // Đóng toast khi nhấn nút close
+                toast.find('.btn-close').on('click', function () {
+                    toast.css({
+                        'opacity': '0',
+                        'transform': 'translateX(50px)',
+                        'transition': 'all 0.3s ease'
+                    });
+                    setTimeout(() => toast.remove(), 300);
+                });
+            }
+
+            // Cài đặt validation cho form
+            function validateForm() {
+                let isValid = true;
+
+                // Validate tên đào tạo
+                if (!$('#tenDaoTao').val().trim()) {
+                    $('#tenDaoTaoError').text('Vui lòng nhập tên khóa đào tạo');
+                    isValid = false;
+                } else {
+                    $('#tenDaoTaoError').text('');
+                }
+
+                // Validate ngày bắt đầu
+                if (!$('#ngayBatDau').val()) {
+                    $('#ngayBatDauError').text('Vui lòng chọn ngày bắt đầu');
+                    isValid = false;
+                } else {
+                    $('#ngayBatDauError').text('');
+                }
+
+                // Validate ngày kết thúc
+                if (!$('#ngayKetThuc').val()) {
+                    $('#ngayKetThucError').text('Vui lòng chọn ngày kết thúc');
+                    isValid = false;
+                } else if ($('#ngayBatDau').val() && $('#ngayKetThuc').val() &&
+                    new Date($('#ngayKetThuc').val()) <= new Date($('#ngayBatDau').val())) {
+                    $('#ngayKetThucError').text('Ngày kết thúc phải sau ngày bắt đầu');
+                    isValid = false;
+                } else {
+                    $('#ngayKetThucError').text('');
+                }
+
+                // Validate phòng ban
+                if (!$('#maPhongBan').val()) {
+                    $('#maPhongBanError').text('Vui lòng chọn phòng ban');
+                    isValid = false;
+                } else {
+                    $('#maPhongBanError').text('');
+                }
+
+                if (!isValid) {
+                    $('#validationSummary').removeClass('d-none');
+                } else {
+                    $('#validationSummary').addClass('d-none');
+                }
+
+                return isValid;
+            }
+
+            // Tải danh sách phòng ban
             $.ajax({
-                url: '/api/PhongBanApi', // Thay bằng API thực tế của bạn để lấy danh sách phòng ban
+                url: '/api/PhongBanApi',
                 method: 'GET',
+                beforeSend: function () {
+                    $('#progressBar').css('width', '30%');
+                },
                 success: function (data) {
+                    $('#progressBar').css('width', '90%');
                     var selectPhongBan = $('#maPhongBan');
+
                     data.forEach(function (phongBan) {
                         selectPhongBan.append(`<option value="${phongBan.maPhongBan}">${phongBan.tenPhongBan}</option>`);
                     });
+
+                    setTimeout(() => {
+                        $('#progressBar').css('width', '100%');
+                        setTimeout(() => {
+                            $('#progressBar').css('width', '0');
+                        }, 300);
+                    }, 300);
                 },
                 error: function (xhr, status, error) {
+                    $('#progressBar').css('width', '100%');
+                    setTimeout(() => {
+                        $('#progressBar').css('width', '0');
+                    }, 300);
+
+                    showToast('error', 'Không thể tải danh sách phòng ban. Vui lòng thử lại sau.');
                     $('#maPhongBanError').text('Lỗi khi tải danh sách phòng ban: ' + error);
                 }
             });
@@ -84,8 +292,13 @@
             $('#createForm').submit(function (e) {
                 e.preventDefault();
 
+                if (!validateForm()) {
+                    return false;
+                }
+
                 // Xóa thông báo lỗi cũ
                 $('.text-danger').text('');
+                $('#validationSummary').addClass('d-none');
 
                 var daoTaoData = {
                     tenDaoTao: $('#tenDaoTao').val(),
@@ -96,15 +309,31 @@
                     maPhongBan: parseInt($('#maPhongBan').val()) || null
                 };
 
+                $('#progressBar').css('width', '30%');
+
                 $.ajax({
                     url: '/api/DaoTaoApi',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(daoTaoData),
+                    beforeSend: function () {
+                        $('#progressBar').css('width', '50%');
+                    },
                     success: function (response) {
-                        window.location.href = '/DaoTao/Index';
+                        $('#progressBar').css('width', '100%');
+
+                        showToast('success', 'Tạo khóa đào tạo thành công! Đang chuyển hướng...');
+
+                        setTimeout(() => {
+                            window.location.href = '/DaoTao/Index';
+                        }, 1500);
                     },
                     error: function (xhr) {
+                        $('#progressBar').css('width', '100%');
+                        setTimeout(() => {
+                            $('#progressBar').css('width', '0');
+                        }, 300);
+
                         if (xhr.status === 400) {
                             var errors = xhr.responseJSON.errors || {};
                             if (errors.TenDaoTao) $('#tenDaoTaoError').text(errors.TenDaoTao[0]);
@@ -113,27 +342,33 @@
                             if (errors.NgayBatDau) $('#ngayBatDauError').text(errors.NgayBatDau[0]);
                             if (errors.NgayKetThuc) $('#ngayKetThucError').text(errors.NgayKetThuc[0]);
                             if (errors.MaPhongBan) $('#maPhongBanError').text(errors.MaPhongBan[0]);
-                            $('#validationSummary').text('Vui lòng kiểm tra lại thông tin nhập.');
+
+                            $('#validationSummary').removeClass('d-none');
+                            showToast('error', 'Vui lòng kiểm tra lại thông tin nhập.');
                         } else {
-                            alert('Lỗi khi tạo khóa đào tạo: ' + xhr.statusText);
+                            showToast('error', 'Lỗi khi tạo khóa đào tạo: ' + xhr.statusText);
                         }
                     }
                 });
             });
+
+            // Set min dates cho input date
+            const today = new Date().toISOString().split('T')[0];
+            $('#ngayBatDau').attr('min', today);
+
+            // Update min date của ngày kết thúc khi ngày bắt đầu thay đổi
+            $('#ngayBatDau').change(function () {
+                const startDate = $(this).val();
+                if (startDate) {
+                    $('#ngayKetThuc').attr('min', startDate);
+
+                    // Nếu ngày kết thúc đã chọn nhỏ hơn ngày bắt đầu mới, reset
+                    if ($('#ngayKetThuc').val() && new Date($('#ngayKetThuc').val()) < new Date(startDate)) {
+                        $('#ngayKetThuc').val('');
+                    }
+                }
+            });
         });
     </script>
-}
-
-<style>
-    .card-header {
-        padding: 0.75rem 1.25rem;
-    }
-
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-control {
-        border-radius: 0.25rem;
-    }
-</style>
+</body>
+</html>

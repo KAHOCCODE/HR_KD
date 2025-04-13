@@ -292,6 +292,7 @@
             fetchSalaryDetails(maNv);
         });
 
+
         // Sự kiện xuất báo cáo
         document.getElementById("exportExcel").addEventListener("click", function () {
             Swal.fire({
@@ -739,7 +740,6 @@
         document.querySelector(".btn-add-salary").addEventListener("click", function () {
             let maNv = document.getElementById("salaryModal").getAttribute("data-maNv");
 
-            // Hiển thị xác nhận trước khi chuyển hướng
             Swal.fire({
                 title: 'Thêm thông tin lương',
                 text: 'Bạn sẽ được chuyển đến trang thiết lập lương cho nhân viên này. Tiếp tục?',
@@ -753,6 +753,7 @@
                 }
             });
         });
+
 
         // Thêm animation cho các phần tử khi trang được tải
         setTimeout(function () {

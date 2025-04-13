@@ -9,6 +9,21 @@ body {
     background-color: #f8fafc;
 }
 
+/* Loại bỏ gạch chân trên các liên kết trong sidebar */
+.sidebar a,
+.sidebar .nav-link,
+.sidebar-nav a,
+.sidebar-nav .nav-link {
+    text-decoration: none !important;
+}
+
+/* Nếu các liên kết sidebar có class cụ thể, hãy thêm selector cụ thể */
+.sidebar-menu a,
+.sidebar-menu-item a,
+.nav-sidebar a {
+    text-decoration: none !important;
+}
+
 .form-control, .form-select {
     padding: 0.6rem 1rem;
     border-radius: 0.5rem;

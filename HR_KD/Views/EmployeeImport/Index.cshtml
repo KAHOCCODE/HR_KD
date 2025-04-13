@@ -1,0 +1,26 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<h2 class="text-primary">📥 Import Nhân Viên từ Excel</h2>
+
+<p>Thực hiện theo các bước sau:</p>
+<ol>
+    <li>Tải <strong>file mẫu</strong> bên dưới</li>
+    <li>Nhập thông tin nhân viên vào <code>Sheet NhanVienImport</code></li>
+    <li>Tham chiếu <code>MaChucVu</code> & <code>MaPhongBan</code> trong sheet <code>DanhMucThamChieu</code></li>
+    <li>Lưu file và upload tại đây</li>
+</ol>
+
+<a href="/EmployeeImport/DownloadTemplate" class="btn btn-success mb-3">
+    <i class="fa fa-file-excel-o"></i> Tải File Mẫu
+</a>
+
+<form method="post" enctype="multipart/form-data" asp-action="UploadExcel" asp-controller="EmployeeImport">
+    <div class="mb-3">
+        <input type="file" name="file" accept=".xlsx" class="form-control" required />
+    </div>
+    <button type="submit" class="btn btn-primary">
+        <i class="fa fa-upload"></i> Upload Excel
+    </button>
+</form>

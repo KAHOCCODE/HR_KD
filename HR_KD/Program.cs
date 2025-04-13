@@ -1,6 +1,10 @@
-﻿using HR_KD.Data;
+﻿using HR_KD.Authorization;
+using HR_KD.Data;
+using HR_KD.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +21,8 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IAuthorizationHandler, ManageSubordinateHandler>();
+builder.Services.AddScoped<ExcelTemplateService>();
 
 // Cấu hình Authentication 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -28,6 +34,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("CanManageSubordinates", policy =>
+        policy.Requirements.Add(new ManageSubordinateRequirement()));
     options.AddPolicy("EMPLOYEE", policy => policy.RequireRole("EMPLOYEE"));
     options.AddPolicy("EMPLOYEE_MANAGER", policy => policy.RequireRole("EMPLOYEE_MANAGER"));
     options.AddPolicy("LINE_MANAGER", policy => policy.RequireRole("LINE_MANAGER"));

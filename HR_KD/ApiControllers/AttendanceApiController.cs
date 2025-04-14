@@ -251,6 +251,49 @@ namespace HR_KD.ApiControllers
             }
         }
 
+        [HttpGet("GetStatusForMonth")]
+        public async Task<IActionResult> GetStatusForMonth(int maNV, string? monthYear = null)
+        {
+            // Default to current month if monthYear is not provided
+            DateTime selectedMonth = string.IsNullOrEmpty(monthYear)
+                ? DateTime.Now
+                : DateTime.TryParseExact(monthYear, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out DateTime parsedMonth)
+                    ? parsedMonth
+                    : DateTime.Now;
+
+            // Query ChamCong with DateOnly comparison
+            var records = await _context.ChamCongs
+                .Where(c => c.MaNv == maNV &&
+                            c.NgayLamViec.Year == selectedMonth.Year &&
+                            c.NgayLamViec.Month == selectedMonth.Month &&
+                            c.TrangThai.Trim() == "Đã duyệt") // Chỉ lấy bản ghi "Đã duyệt" để đồng bộ với GeneratePayroll
+                .ToListAsync();
+
+            if (!records.Any())
+            {
+                // Check if there are any records in LichSuChamCong as a fallback
+                var historyRecords = await _context.LichSuChamCongs
+                    .Where(c => c.MaNv == maNV &&
+                                c.Ngay.Year == selectedMonth.Year &&
+                                c.Ngay.Month == selectedMonth.Month &&
+                                c.TrangThai.Trim() == "Đã duyệt")
+                    .ToListAsync();
+
+                if (!historyRecords.Any())
+                {
+                    return Ok(new { status = "Chưa có dữ liệu chấm công đã duyệt" });
+                }
+
+                var historyApprovedCount = historyRecords.Count;
+                var historyTotalDays = historyRecords.Count;
+                return Ok(new { status = $"Lịch sử: {historyApprovedCount}/{historyTotalDays} ngày đã duyệt" });
+            }
+
+            var approvedCount = records.Count;
+            var totalDays = records.Count;
+
+            return Ok(new { status = $"{approvedCount}/{totalDays} ngày đã duyệt" });
+        }
 
         [HttpPost("RejectAttendanceRequest")]
         public async Task<IActionResult> RejectAttendanceRequest(RejectAttendanceRequestDTO request)

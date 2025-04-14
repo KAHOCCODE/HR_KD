@@ -1,0 +1,265 @@
+﻿/* Variables và thiết lập cơ bản */
+:root {
+    --primary: #3498db;
+    --primary-dark: #2980b9;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --light: #f8f9fa;
+    --dark: #343a40;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
+body {
+    background-color: #f5f7fa;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Card styling */
+.dashboard-card {
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    margin-bottom: 2rem;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+    .dashboard-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--primary);
+    }
+
+    .dashboard-card:hover {
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+/* Headers */
+h5.text-primary {
+    font-weight: 600;
+    color: var(--primary) !important;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px !important;
+    font-size: 1.25rem;
+}
+
+    h5.text-primary i {
+        background-color: rgba(52, 152, 219, 0.1);
+        padding: 8px;
+        border-radius: 50%;
+        color: var(--primary);
+    }
+
+/* Form Elements */
+.form-label {
+    font-weight: 500;
+    color: var(--dark);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 10px 12px;
+    transition: var(--transition);
+    box-shadow: none;
+}
+
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+
+select.form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23343a40' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    padding-right: 36px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Tables */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .table th {
+        font-weight: 600;
+        color: var(--dark);
+        background-color: rgba(0, 0, 0, 0.02);
+        border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+        padding: 14px 16px;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .table td {
+        padding: 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        color: var(--dark);
+        font-size: 0.9375rem;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(52, 152, 219, 0.03);
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+/* Status Colors */
+.text-success {
+    color: var(--success) !important;
+    font-weight: 600;
+}
+
+.text-danger {
+    color: var(--danger) !important;
+    font-weight: 600;
+}
+
+.text-warning {
+    color: var(--warning) !important;
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+    border-radius: var(--border-radius);
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: var(--transition);
+    box-shadow: none;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 0.875rem;
+    border-radius: calc(var(--border-radius) - 2px);
+}
+
+.btn-success {
+    background-color: var(--success);
+    border-color: var(--success);
+}
+
+    .btn-success:hover {
+        background-color: #27ae60;
+        border-color: #27ae60;
+        box-shadow: 0 4px 8px rgba(46, 204, 113, 0.25);
+    }
+
+.btn-danger {
+    background-color: var(--danger);
+    border-color: var(--danger);
+}
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+        border-color: #c0392b;
+        box-shadow: 0 4px 8px rgba(231, 76, 60, 0.25);
+    }
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .row.mb-3 > div {
+        margin-bottom: 1rem;
+    }
+
+    .table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .btn-sm {
+        padding: 6px 10px;
+    }
+}
+
+/* Animation cho hiển thị dữ liệu */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#attendanceTableBody tr,
+#salaryTableBody tr {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Styling cho các ô số liệu trong bảng lương */
+#salaryTableBody td:nth-child(2),
+#salaryTableBody td:nth-child(3),
+#salaryTableBody td:nth-child(4),
+#salaryTableBody td:nth-child(5) {
+    font-family: 'Roboto Mono', monospace, 'Segoe UI';
+    text-align: right;
+    font-weight: 500;
+}
+
+/* Status badge cho chấm công */
+#attendanceTableBody td:nth-child(5) {
+    position: relative;
+    padding-left: 22px;
+}
+
+    #attendanceTableBody td:nth-child(5)::before {
+        content: '';
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+#attendanceTableBody td.text-success::before {
+    background-color: var(--success);
+}
+
+#attendanceTableBody td.text-danger::before {
+    background-color: var(--danger);
+}
+
+#attendanceTableBody td.text-warning::before {
+    background-color: var(--warning);
+}
+
+/* Style thời gian làm việc */
+#attendanceTableBody td:first-child {
+    font-weight: 500;
+}
+
+/* Làm nổi bật tổng lương */
+#salaryTableBody td:nth-child(5) {
+    font-weight: 700;
+    color: var(--primary-dark);
+}

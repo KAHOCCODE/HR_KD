@@ -209,20 +209,36 @@ flatpickr("#attendanceDateRange", {
                 },
                 body: JSON.stringify(attendanceData)
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    Swal.fire("Thành công!", "Chấm công đã được ghi nhận.", "success").then(() => {
-                        resetForm(); // Reset form sau khi gửi thành công
-                    });
-                } else {
-                    Swal.fire("Lỗi!", "Có lỗi xảy ra khi chấm công.", "error");
-                }
-            })
-            .catch(error => {
-                Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error");
+            .then(async response => {
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            Swal.fire("Thành công!", result.message || "Chấm công đã được ghi nhận.", "success").then(() => {
+                resetForm();
             });
-        });
+        } else {
+            showApiError(result);
+        }
+    })
+    .catch(error => {
+        showApiError({ message: "Không thể kết nối đến server.", error: error.message });
+    });
+});
+
+function showApiError(result, fallbackMessage = "Có lỗi xảy ra khi chấm công.") {
+    let errorMessage = `<strong>${result.message || fallbackMessage}</strong>`;
+
+    
+
+    Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        html: errorMessage,
+        customClass: {
+            popup: 'swal-wide'
+        }
+    });
+}
 // Hàm tính số giờ làm
 function calculateDailyHours(checkIn, checkOut) {
     if (checkIn && checkOut) {

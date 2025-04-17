@@ -26,7 +26,6 @@ namespace HR_KD.ApiControllers
             return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
         }
 
-        // API Chấm công
         [HttpPost]
         [Route("SubmitAttendance")]
         public async Task<IActionResult> SubmitAttendance(List<ChamCongDTO> attendanceData)
@@ -57,6 +56,13 @@ namespace HR_KD.ApiControllers
                         return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
                     }
 
+                    // Kiểm tra ngày nghỉ của nhân viên
+                    bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
+                    if (daNghi)
+                    {
+                        return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave", stackTrace = "NgayNghi check failed." });
+                    }
+
                     var chamCong = new LichSuChamCong
                     {
                         MaNv = maNv.Value,
@@ -76,9 +82,16 @@ namespace HR_KD.ApiControllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Lỗi hệ thống.",
+                    error = ex.Message,
+                    stackTrace = ex.StackTrace
+                });
             }
         }
+
 
         // API Lấy dữ liệu chấm công
         [HttpGet]
@@ -125,6 +138,40 @@ namespace HR_KD.ApiControllers
             }
 
             var query = _context.LichSuChamCongs.Where(c => c.MaNv == maNv.Value ); // Lọc trạng thái "Đã duyệt"
+
+            if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
+            {
+                query = query.Where(c => c.Ngay == ngay);
+            }
+
+            var records = await query
+                .Select(c => new
+                {
+                    c.Ngay,
+                    GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
+                    GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
+                    c.TongGio,
+                    c.TrangThai,
+                    c.GhiChu
+                })
+                .ToListAsync();
+
+            return Ok(new { success = true, records });
+        }
+        //api lấy dữ liệu lịch sử chấm công chưa duyệt
+        // API Lấy lịch sử chấm công
+
+        [HttpGet]
+        [Route("GetAttendanceHistoryRecords2")]
+        public async Task<IActionResult> GetAttendanceHistoryRecords2(string? ngayLamViec = null)
+        {
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
+            }
+            // Lọc trạng thái "chờ duyệt"
+            var query = _context.LichSuChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Chờ duyệt");
 
             if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
             {

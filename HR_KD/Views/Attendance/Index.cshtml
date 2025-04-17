@@ -20,6 +20,7 @@
              <div id="attendanceCalendar"></div>
          </div>
     </div>
+    <button id="resetCalendarBtn" class="btn btn-secondary mb-3">Làm mới lịch</button>
 
     <!-- Hiển thị các ngày làm việc đã chọn -->
     <div class="mt-3">
@@ -35,8 +36,12 @@
         </div>
         <div class="col-md-6">
             <label class="form-label">Giờ check-out</label>
-            <input type="time" class="form-control" id="checkOutTime">
+            <div class="d-flex">
+                <input type="time" class="form-control me-2" id="checkOutTime">
+                <button class="btn btn-outline-secondary" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 17h">8h</button>
+            </div>
         </div>
+
     </div>
 
     <!-- Hiển thị tổng số giờ làm -->
@@ -117,6 +122,30 @@
 
 <script>
 
+document.getElementById("set8hBtn").addEventListener("click", function () {
+    document.getElementById("checkInTime").value = "08:00";
+    document.getElementById("checkOutTime").value = "17:00";
+    updateTotalHours(); // Cập nhật lại tổng giờ làm
+});
+let calendar; // Định nghĩa biến calendar ngoài `DOMContentLoaded` để truy cập lại sau
+
+document.addEventListener("DOMContentLoaded", function () {
+    let calendarEl = document.getElementById("attendanceCalendar");
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        locale: "vi",
+        events: fetchCalendarEvents
+    });
+    calendar.render();
+});
+
+// Sự kiện click nút reset
+document.getElementById("resetCalendarBtn").addEventListener("click", function () {
+    if (calendar) {
+        calendar.refetchEvents(); // Gọi lại hàm fetchCalendarEvents
+    }
+});
+
 
 let selectedWorkDays = new Set();
 let attendanceRecords = new Set(); // Chứa danh sách ngày đã chấm công
@@ -148,7 +177,7 @@ flatpickr("#attendanceDateRange", {
 
 
 // Xử lý gửi dữ liệu chấm công
-document.getElementById("submitAttendance").addEventListener("click", function() {
+document.getElementById("submitAttendance").addEventListener("click", function () {
     const checkIn = document.getElementById("checkInTime").value;
     const checkOut = document.getElementById("checkOutTime").value;
     const note = document.getElementById("attendanceNote").value.trim();
@@ -157,12 +186,13 @@ document.getElementById("submitAttendance").addEventListener("click", function()
         Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
         return;
     }
-     if (!checkIn || !checkOut) {
+
+    if (!checkIn || !checkOut) {
         Swal.fire("Lỗi!", "Vui lòng nhập cả giờ check-in và check-out.", "error");
         return;
     }
-    let attendanceData = [...selectedWorkDays].map(day => ({
 
+    let attendanceData = [...selectedWorkDays].map(day => ({
         NgayLamViec: day,
         GioVao: checkIn || null,
         GioRa: checkOut || null,
@@ -171,7 +201,6 @@ document.getElementById("submitAttendance").addEventListener("click", function()
         GhiChu: note || null
     }));
 
-    // Ghi log dữ liệu trước khi gửi
     console.log("Dữ liệu gửi đi:", JSON.stringify(attendanceData, null, 2));
 
     fetch('/api/Attendance/SubmitAttendance', {
@@ -181,33 +210,56 @@ document.getElementById("submitAttendance").addEventListener("click", function()
         },
         body: JSON.stringify(attendanceData)
     })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            Swal.fire("Thành công!", "Chấm công đã được ghi nhận.", "success").then(() => {
-                resetForm(); // Reset form sau khi gửi thành công
+    .then(async response => {
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            Swal.fire("Thành công!", result.message || "Chấm công đã được ghi nhận.", "success").then(() => {
+                resetForm();
             });
         } else {
-            Swal.fire("Lỗi!", "Có lỗi xảy ra khi chấm công.", "error");
+            showApiError(result);
         }
     })
     .catch(error => {
-        Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error");
+        showApiError({ message: "Không thể kết nối đến server.", error: error.message });
     });
 });
 
-// Hàm tính số giờ làm
+function showApiError(result, fallbackMessage = "Có lỗi xảy ra khi chấm công.") {
+    let errorMessage = `<strong>${result.message || fallbackMessage}</strong>`;
+
+   
+
+    Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        html: errorMessage,
+        customClass: {
+            popup: 'swal-wide'
+        }
+    });
+}
+
 function calculateDailyHours(checkIn, checkOut) {
     if (checkIn && checkOut) {
         const checkInTime = new Date(`2000-01-01T${checkIn}:00`);
         const checkOutTime = new Date(`2000-01-01T${checkOut}:00`);
 
         if (checkOutTime > checkInTime) {
-            return parseFloat(((checkOutTime - checkInTime) / (1000 * 60 * 60)).toFixed(2));
+            let hours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
+
+            // Nếu thời gian làm >= 5 tiếng thì trừ 1 tiếng nghỉ trưa
+            if (hours >= 5) {
+                hours -= 1;
+            }
+
+            return parseFloat(hours.toFixed(2));
         }
     }
     return 0.00;
 }
+
 
 // Hàm cập nhật tổng số giờ làm
 function updateTotalHours() {
@@ -369,29 +421,48 @@ function acceptRequest(maYeuCau) {
         MaYeuCau: maYeuCau  // Add maYeuCau to the request data
     }];
 
-    fetch('/api/Attendance/AcceptAttendanceRequest', {
+    fetch('/api/Attendance/SubmitAttendance', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-            maYeuCau: maYeuCau,
-            attendanceData: requestData 
-        })
+        body: JSON.stringify(requestData)  // Use requestData here
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            fetchAttendanceRequestsRecords(); // Refresh the table
+    .then(async response => {
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            Swal.fire("Thành công!", result.message || "Chấm công đã được ghi nhận.", "success").then(() => {
+                resetForm();
+            });
         } else {
-            alert("Lỗi: " + data.message);
+            // Trường hợp lỗi với response.ok false
+            showApiError(result);
         }
     })
-    .catch(error => console.error("Lỗi kết nối API:", error));
+    .catch(error => {
+        // Lỗi không phải từ API, có thể lỗi mạng hoặc lỗi không thể kết nối server
+        showApiError({ message: "Không thể kết nối đến server.", error: error.message });
+    });
 
+    function showApiError(result, fallbackMessage = "Có lỗi xảy ra khi chấm công.") {
+        let errorMessage = `<strong>${result.message || fallbackMessage}</strong>`;
 
+        
+
+        // Hiển thị thông báo lỗi
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            html: errorMessage,
+            customClass: {
+                popup: 'swal-wide' // Thêm class nếu cần tùy chỉnh
+            }
+        });
+    }
 }
+
+
 
 
 
@@ -525,40 +596,52 @@ document.addEventListener("DOMContentLoaded", function() {
     calendar.render();
 });
 
-// Lấy dữ liệu lịch từ API
+// Lấy dữ liệu lịch từ API hiện ra hộp lịch
 function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
-    fetch(`/api/Attendance/GetAttendanceRecords`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                let events = data.records.map(record => {
-                    let status = record.trangThai ? record.trangThai.trim().toLowerCase() : "";
-                    let eventTitle = "Đã duyệt";
-                    let eventColor = "green";
+    Promise.all([
+        fetch('/api/Attendance/GetAttendanceRecords').then(res => res.json()),
+        fetch('/api/Leave/GetLeaveHistory').then(res => res.json()),
+        fetch('/api/Attendance/GetAttendanceHistoryRecords2').then(res => res.json())
+    ])
+    .then(([attendanceData, leaveData, pendingData]) => {
+        let events = [];
 
-                    if (status === "yêu cầu chấm công") {
-                        eventTitle = "Yêu cầu chấm công";
-                        eventColor = "yellow";
-                    } else if (status === "chờ duyệt") {
-                        eventTitle = "Chưa duyệt";
-                        eventColor = "blue";
-                    }
+        // Process attendance data - green events
+        if (attendanceData.success) {
+            const greenEvents = attendanceData.records.map(record => ({
+                title: "Đã duyệt",
+                start: record.ngayLamViec,
+                color: "green"
+            }));
+            events.push(...greenEvents);
+        }
 
-                    return {
-                        title: eventTitle,
-                        start: record.ngayLamViec,
-                        color: eventColor
-                    };
-                });
+        // Process leave data - yellow events
+        if (leaveData.success) {
+            const yellowEvents = leaveData.leaveHistory.map(record => ({
+                title: "Ngày nghỉ", // Adjust title if needed
+                start: record.ngayNghi,
+                color: "Teal"
+            }));
+            events.push(...yellowEvents);
+        }
 
-                successCallback(events);
-            } else {
-                failureCallback(new Error(data.message || "Không thể lấy dữ liệu"));
-            }
-        })
-        .catch(error => failureCallback(error));
+        // Process pending attendance data - blue events
+        if (pendingData.success) {
+            const blueEvents = pendingData.records.map(record => ({
+                title: "Chưa duyệt",
+                start: record.ngay,
+                color: "blue"
+            }));
+            events.push(...blueEvents);
+        }
+
+        successCallback(events);
+    })
+    .catch(error => {
+        failureCallback(error);
+    });
 }
-
 
 // Gọi API khi trang tải xong
 document.addEventListener("DOMContentLoaded", function() {

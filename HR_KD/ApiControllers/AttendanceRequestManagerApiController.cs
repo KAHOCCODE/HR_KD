@@ -115,7 +115,11 @@ public class AttendanceRequestManagerApiController : ControllerBase
                 {
                     return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã có yêu cầu sửa chấm công ngày {entry.NgayLamViec}." });
                 }
-
+                bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
+                if (daNghi)
+                {
+                    return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave", stackTrace = "NgayNghi check failed." });
+                }
                 var yeuCauSuaChamCong = new YeuCauSuaChamCong
                 {
                     MaNv = maNv.Value,
@@ -135,7 +139,13 @@ public class AttendanceRequestManagerApiController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Lỗi hệ thống.",
+                error = ex.Message,
+                stackTrace = ex.StackTrace
+            });
         }
     }
 

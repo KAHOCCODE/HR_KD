@@ -422,8 +422,8 @@
             document.getElementById("totalEmployees").textContent = data.length;
 
             // Số lượng nhân viên nam/nữ
-            const maleCount = data.filter(emp => emp.gioiTinh).length;
-            const femaleCount = data.filter(emp => !emp.gioiTinh).length;
+            const maleCount = data.filter(emp => emp.gioiTinh == "Nam").length;
+            const femaleCount = data.filter(emp => emp.gioiTinh == "Nữ").length;
 
             document.getElementById("maleCount").textContent = maleCount;
             document.getElementById("femaleCount").textContent = femaleCount;
@@ -481,10 +481,13 @@
                         </tr>
                     `;
             } else {
+
                 displayedData.forEach(employee => {
-                    const genderBadge = employee.gioiTinh
+                    const genderBadge = (employee.gioiTinh === "Nam")
                         ? '<span class="badge bg-primary bg-opacity-10 text-primary">Nam</span>'
-                        : '<span class="badge bg-info bg-opacity-10 text-info">Nữ</span>';
+                        : (employee.gioiTinh === "Nữ")
+                            ? '<span class="badge bg-info bg-opacity-10 text-info">Nữ</span>'
+                            : '<span class="badge bg-secondary bg-opacity-10 text-muted">Không xác định</span>';
 
                     tableContent += `
             <tr>

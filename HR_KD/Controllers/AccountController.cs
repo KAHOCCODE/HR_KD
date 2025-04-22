@@ -36,8 +36,14 @@ namespace HR_KD.Controllers
             var user = _context.TaiKhoans
                 .Include(t => t.TaiKhoanQuyenHans)
                 .FirstOrDefault(x => x.Username == model.Username);
+            if (user == null)
+            {
+                TempData["Error"] = "Sai tài khoản hoặc mật khẩu";
+                return View(model);
+            }
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+            var SaltedPassword = model.Password + user.PasswordSalt;
+            if (!BCrypt.Net.BCrypt.Verify(SaltedPassword, user.PasswordHash))
             {
                 TempData["Error"] = "Sai tài khoản hoặc mật khẩu";
                 return View(model);

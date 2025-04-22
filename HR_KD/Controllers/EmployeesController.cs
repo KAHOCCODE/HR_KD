@@ -32,7 +32,7 @@ namespace HR_KD.Controllers
                 // Gọi API để thiết lập lương
                 using (var client = new HttpClient())
                 {
-                    client.BaseAddress = new Uri("http://localhost:5012/api/"); // Thay bằng URL API của bạn
+                    client.BaseAddress = new Uri("/api/"); // Thay bằng URL API của bạn
                     salaryDTO.MaNv = nhanVien.MaNv;
                     var response = await client.PostAsJsonAsync("SalaryApi/setup", salaryDTO);
 
@@ -48,6 +48,7 @@ namespace HR_KD.Controllers
             }
             return View(nhanVien);
         }
+        #region SetUpSalary
         public async Task<IActionResult> SetupSalary(int maNv)
         {
             var nhanVien = await _context.NhanViens.FindAsync(maNv);
@@ -70,6 +71,8 @@ namespace HR_KD.Controllers
             ViewBag.MaNv = maNv;
             return View();
         }
+        #endregion
+
         #region phân quyền 
         [Authorize(Policy = "CanManageSubordinates")]
         public IActionResult Roles()

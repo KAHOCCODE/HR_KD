@@ -1,26 +1,33 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Import Nhân Viên Từ Excel";
 }
 
-<h2 class="text-primary">📥 Import Nhân Viên từ Excel</h2>
+<div class="container py-5">
+    <div class="card shadow border-0">
+        <div class="card-header bg-success text-white py-4">
+            <h2 class="mb-0 fw-bold"><i class="fa fa-file-excel-o me-2"></i>Import Nhân Viên</h2>
+        </div>
+        <div class="card-body p-4">
+            <ol class="text-muted small">
+                <li>Tải file mẫu Excel</li>
+                <li>Nhập thông tin tại Sheet <code>NhanVienImport</code></li>
+                <li>Tạo folder <code>wwwroot/avatars</code> và đặt tên file ảnh theo cú pháp <code>email-sdt.jpg</code></li>
+                <li>Sau đó upload file Excel để xem trước và lưu hàng loạt</li>
+            </ol>
 
-<p>Thực hiện theo các bước sau:</p>
-<ol>
-    <li>Tải <strong>file mẫu</strong> bên dưới</li>
-    <li>Nhập thông tin nhân viên vào <code>Sheet NhanVienImport</code></li>
-    <li>Tham chiếu <code>MaChucVu</code> & <code>MaPhongBan</code> trong sheet <code>DanhMucThamChieu</code></li>
-    <li>Lưu file và upload tại đây</li>
-</ol>
+            <a href="/EmployeeImport/DownloadTemplate" class="btn btn-outline-success mb-4">
+                <i class="fa fa-download me-2"></i>Tải File Mẫu Excel
+            </a>
 
-<a href="/EmployeeImport/DownloadTemplate" class="btn btn-success mb-3">
-    <i class="fa fa-file-excel-o"></i> Tải File Mẫu
-</a>
-
-<form method="post" enctype="multipart/form-data" asp-action="UploadExcel" asp-controller="EmployeeImport">
-    <div class="mb-3">
-        <input type="file" name="file" accept=".xlsx" class="form-control" required />
+            <form method="post" enctype="multipart/form-data" asp-action="UploadExcel">
+                <div class="mb-3">
+                    <input type="file" name="file" accept=".xlsx" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="fa fa-upload me-2"></i>Upload & Xem Trước
+                </button>
+            </form>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">
-        <i class="fa fa-upload"></i> Upload Excel
-    </button>
-</form>
+</div>

@@ -23,6 +23,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IAuthorizationHandler, ManageSubordinateHandler>();
 builder.Services.AddScoped<ExcelTemplateService>();
+builder.Services.AddScoped<UsernameGeneratorService>();
 
 // Cấu hình Authentication 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

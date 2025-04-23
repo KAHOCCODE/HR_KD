@@ -28,7 +28,7 @@ namespace HR_KD.ApiControllers
 
         [HttpPost]
         [Route("SubmitAttendance")]
-        public async Task<IActionResult> SubmitAttendance(List<ChamCongDTO> attendanceData)
+        public async Task<IActionResult> SubmitAttendance(AttendanceDataDTO data)
         {
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
@@ -36,48 +36,75 @@ namespace HR_KD.ApiControllers
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
 
-            if (attendanceData == null || !attendanceData.Any())
+            if (data == null || (data.attendance == null || !data.attendance.Any()) && (data.overtime == null || !data.overtime.Any()))
             {
                 return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
             }
 
             try
             {
-                foreach (var entry in attendanceData)
+                if (data.attendance != null && data.attendance.Any())
                 {
-                    if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
+                    foreach (var entry in data.attendance)
                     {
-                        return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
+                        if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
+                        {
+                            return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
+                        }
+
+                        bool daChamCong = await _context.LichSuChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.Ngay == ngayLamViec);
+                        if (daChamCong)
+                        {
+                            return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
+                        }
+
+                        // Kiểm tra ngày nghỉ của nhân viên
+                        bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
+                        if (daNghi)
+                        {
+                            return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave", stackTrace = "NgayNghi check failed." });
+                        }
+
+                        var chamCong = new LichSuChamCong
+                        {
+                            MaNv = maNv.Value,
+                            Ngay = ngayLamViec,
+                            GioVao = TimeOnly.TryParse(entry.GioVao, out var parsedGioVao) ? parsedGioVao : null,
+                            GioRa = TimeOnly.TryParse(entry.GioRa, out var parsedGioRa) ? parsedGioRa : null,
+                            TongGio = entry.TongGio ?? 0,
+                            TrangThai = entry.TrangThai,
+                            GhiChu = entry.GhiChu
+                        };
+                        _context.LichSuChamCongs.Add(chamCong);
                     }
+                    await _context.SaveChangesAsync();
 
-                    bool daChamCong = await _context.LichSuChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.Ngay == ngayLamViec);
-                    if (daChamCong)
-                    {
-                        return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
-                    }
-
-                    // Kiểm tra ngày nghỉ của nhân viên
-                    bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
-                    if (daNghi)
-                    {
-                        return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave", stackTrace = "NgayNghi check failed." });
-                    }
-
-                    var chamCong = new LichSuChamCong
-                    {
-                        MaNv = maNv.Value,
-                        Ngay = ngayLamViec,
-                        GioVao = TimeOnly.TryParse(entry.GioVao, out var parsedGioVao) ? parsedGioVao : null,
-                        GioRa = TimeOnly.TryParse(entry.GioRa, out var parsedGioRa) ? parsedGioRa : null,
-                        TongGio = entry.TongGio ?? 0,
-                        TrangThai = entry.TrangThai,
-                        GhiChu = entry.GhiChu
-                    };
-
-                    _context.LichSuChamCongs.Add(chamCong);
                 }
 
-                await _context.SaveChangesAsync();
+
+                if (data.overtime != null && data.overtime.Any())
+                {
+                    foreach (var entry in data.overtime)
+                    {
+                        if (!DateOnly.TryParse(entry.NgayTangCa, out var ngayTangCa))
+                        {
+                            return BadRequest(new { success = false, message = $"Ngày tăng ca không hợp lệ: {entry.NgayTangCa}" });
+                        }
+
+                        var tangCa = new TangCa
+                        {
+                            MaNv = maNv.Value,
+                            NgayTangCa = ngayTangCa,
+                            SoGioTangCa = entry.SoGioTangCa,
+                            TyLeTangCa = 1, // Ví dụ: Tỷ lệ tăng ca mặc định là 1. Bạn có thể lấy từ cấu hình hoặc input khác.
+                            TrangThai = "Chờ duyệt" // Hoặc trạng thái phù hợp
+                        };
+                        _context.TangCas.Add(tangCa);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+
                 return Ok(new { success = true, message = "Chấm công thành công." });
             }
             catch (Exception ex)

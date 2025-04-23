@@ -225,7 +225,78 @@ public IActionResult ApproveAttendanceAndUpdateSalary(ApproveAttendanceRequestDT
 
         return Ok(new { success = true, records = salaries });
     }
+    // lấy danh sách tăng ca của nhân viên
+    [HttpGet("GetOvertimeRecords")]
+    public IActionResult GetOvertimeRecords(int maNv)
+    {
+        var overtimeRecords = _context.TangCas
+            .Where(tc => tc.MaNv == maNv && (tc.TrangThai == null || tc.TrangThai == "Chờ duyệt"))
+            .Select(tc => new
+            {
+                tc.MaTangCa,
+                tc.NgayTangCa,
+                tc.SoGioTangCa,
+                tc.TyLeTangCa,
+                TrangThai = tc.TrangThai ?? "Chờ duyệt"
+            })
+            .ToList();
 
+        return Ok(new { success = true, records = overtimeRecords });
+    }
+    // duyệt hoặc từ chối tăng ca
+    [HttpPost("ApproveOvertime")]
+    public IActionResult ApproveOvertime(ApproveAttendanceRequestDTO request)
+    {
+        // Tìm bản ghi trong bảng TangCa
+        var tangCa = _context.TangCas.FirstOrDefault(tc => tc.MaTangCa == request.MaChamCong);
+        if (tangCa == null)
+        {
+            return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu tăng ca." });
+        }
+
+        // Nếu từ chối thì chỉ cập nhật trạng thái
+        if (request.TrangThai == "Từ chối")
+        {
+            CapNhatTrangThaiTangCa(request.MaChamCong, "Từ chối");
+            _context.SaveChanges();
+            return Ok(new { success = true, message = "Đã từ chối yêu cầu tăng ca." });
+        }
+
+        // Nếu duyệt thì chuyển sang bảng ChamCong
+        var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == tangCa.MaNv && cc.NgayLamViec == tangCa.NgayTangCa);
+        if (daTonTai)
+        {
+            return BadRequest(new { success = false, message = "Chấm công đã tồn tại trong bảng chính." });
+        }
+
+        var chamCong = new ChamCong
+        {
+            MaNv = tangCa.MaNv,
+            NgayLamViec = tangCa.NgayTangCa,
+            GioVao = null,
+            GioRa = null,
+            TongGio = tangCa.SoGioTangCa,
+            TrangThai = "Đã duyệt",
+            GhiChu = "Tăng ca"
+        };
+
+        _context.ChamCongs.Add(chamCong);
+
+        // Gọi hàm cập nhật trạng thái lịch sử
+        CapNhatTrangThaiTangCa(request.MaChamCong, "Đã duyệt");
+
+        _context.SaveChanges();
+
+        return Ok(new { success = true, message = "Duyệt yêu cầu tăng ca thành công." });
+    }
+    private void CapNhatTrangThaiTangCa(int maTangCa, string trangThai)
+    {
+        var tangCa = _context.TangCas.FirstOrDefault(tc => tc.MaTangCa == maTangCa);
+        if (tangCa != null)
+        {
+            tangCa.TrangThai = trangThai;
+        }
+    }
 }
 
 

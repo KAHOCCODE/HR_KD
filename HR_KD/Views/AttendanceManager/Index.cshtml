@@ -64,6 +64,154 @@
     </table>
 </div>
 
+
+
+<div id="overtimeSection" class="dashboard-card bg-white p-4 mt-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-clock me-2"></i> Bảng Tăng Ca</h5>
+
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Ngày tăng ca</th>
+                <th>Số giờ tăng ca</th>
+                <th>Tỉ lệ tăng ca</th>
+                <th>Trạng thái</th>
+                <th>Duyệt</th>
+            </tr>
+        </thead>
+        <tbody id="overtimeTableBody"></tbody>
+    </table>
+</div>
+
+
+
+
+
+<script>
+    
+document.addEventListener("DOMContentLoaded", function () {
+    loadDepartments();
+    loadPositions();
+    loadEmployees(); // Load toàn bộ nhân viên ban đầu
+
+    document.getElementById("departmentFilter").addEventListener("change", loadEmployees);
+    document.getElementById("positionFilter").addEventListener("change", loadEmployees);
+    document.getElementById("employeeFilter").addEventListener("change", function () {
+        const maNv = this.value;
+        if (maNv) {
+            fetchAttendanceRecords(maNv);
+            fetchOvertimeRecords(maNv);
+            fetchSalaryRecords(maNv);
+        } else {
+            clearTables();
+        }
+    });
+});
+
+// Xóa bảng khi chưa có nhân viên được chọn
+function clearTables() {
+    document.getElementById("attendanceTableBody").innerHTML = '';
+    document.getElementById("overtimeTableBody").innerHTML = '';
+    document.getElementById("salaryTableBody").innerHTML = '';
+}
+
+// Load bộ lọc
+function loadDepartments() {
+    fetch("/api/AttendanceManager/GetDepartmentsManager")
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById("departmentFilter");
+            select.innerHTML = '<option value="">Tất cả</option>';
+            data.forEach(d => select.innerHTML += `<option value="${d.maPhongBan}">${d.tenPhongBan}</option>`);
+        });
+}
+
+function loadPositions() {
+    fetch("/api/AttendanceManager/GetPositionsManager")
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById("positionFilter");
+            select.innerHTML = '<option value="">Tất cả</option>';
+            data.forEach(d => select.innerHTML += `<option value="${d.maChucVu}">${d.tenChucVu}</option>`);
+        });
+}
+
+function loadEmployees() {
+    const pb = document.getElementById("departmentFilter").value;
+    const cv = document.getElementById("positionFilter").value;
+
+    fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${pb}&maChucVu=${cv}`)
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById("employeeFilter");
+            select.innerHTML = '<option value="">Chọn nhân viên</option>';
+            data.forEach(d => select.innerHTML += `<option value="${d.maNv}">${d.hoTen}</option>`);
+
+            // Nếu có nhân viên thì tự động load dữ liệu cho nhân viên đầu tiên
+            if (data.length > 0) {
+                select.value = data[0].maNv;
+                fetchAttendanceRecords(data[0].maNv);
+                fetchOvertimeRecords(data[0].maNv);
+                fetchSalaryRecords(data[0].maNv);
+            } else {
+                clearTables();
+            }
+        });
+}
+
+// Bảng chấm công
+function fetchAttendanceRecords(maNv) {
+    fetch(`/api/AttendanceManager/GetAttendanceManagerRecords?maNv=${maNv}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) renderAttendanceTable(data.records);
+        });
+}
+
+function renderAttendanceTable(records) {
+    const body = document.getElementById("attendanceTableBody");
+    body.innerHTML = records.map(r => `
+        <tr>
+            <td>${r.ngay}</td>
+            <td>${r.gioVao || "-"}</td>
+            <td>${r.gioRa || "-"}</td>
+            <td>${r.tongGio}</td>
+            <td class="${getStatusClass(r.trangThai)}">${r.trangThai}</td>
+            <td>${r.ghiChu || "-"}</td>
+            <td>
+                <button class="btn btn-success btn-sm me-1" onclick="approveAttendance(${r.maLichSuChamCong}, 'Đã duyệt')">✔</button>
+                <button class="btn btn-danger btn-sm" onclick="approveAttendance(${r.maLichSuChamCong}, 'Từ chối')">✖</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+
+
+// Bảng lương
+function fetchSalaryRecords(maNv) {
+    fetch(`/api/AttendanceManager/GetEmployeeSalaries?maNv=${maNv}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) renderSalaryTable(data.records);
+        });
+}
+
+function renderSalaryTable(records) {
+    const body = document.getElementById("salaryTableBody");
+    body.innerHTML = records.map(r => `
+        <tr>
+            <td>${r.thangNam}</td>
+            <td>${r.luongTangCa.toLocaleString()}</td>
+            <td>${r.thueTNCN.toLocaleString()}</td>
+            <td>${r.tongLuong.toLocaleString()}</td>
+            <td>${r.thucNhan.toLocaleString()}</td>
+            <td>${r.trangThai}</td>
+            <td>${r.ghiChu || "-"}</td>
+        </tr>
+    `).join("");
+}
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     loadDepartments();
@@ -227,5 +375,70 @@ function renderSalaryTable(records) {
         </tr>
     `).join("");
 }
+// lấy thông tin bảng tăng ca
+    function fetchOvertimeRecords(maNv) {
+        fetch(`/api/AttendanceManager/GetOvertimeRecords?maNv=${maNv}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) renderOvertimeTable(data.records);
+            });
+    }
+    function renderOvertimeTable(records) {
+        const body = document.getElementById("overtimeTableBody");
+        body.innerHTML = records.map(r => `
+            <tr>
+                <td>${r.ngayTangCa}</td>
+                <td>${r.soGioTangCa || "-"}</td>
+                <td>${r.tyLeTangCa || "-"}</td>
+                <td class="${getStatusClass(r.trangThai)}">${r.trangThai}</td>
+
+                <td>
+                    <button class="btn btn-success btn-sm me-1" onclick="approveOvertime(${r.maTangCa}, 'Đã duyệt')">✔</button>
+                    <button class="btn btn-danger btn-sm" onclick="cancelOvertime(${r.maTangCa}, 'Từ chối')">✖</button>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+function approveOvertime(maTangCa, trangThai) {
+    // Gọi API duyệt/từ chối tăng ca
+    fetch("/api/AttendanceManager/ApproveOvertime", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maChamCong: maTangCa, trangThai: trangThai }) // Sử dụng maChamCong theo backend
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+
+        if (data.success) {
+            const selected = document.getElementById("employeeFilter").value;
+            if (selected) {
+                fetchOvertimeRecords(selected);
+            }
+        }
+    });
+}
+
+function cancelOvertime(maTangCa) {
+    // Gọi API duyệt/từ chối tăng ca với trạng thái "Từ chối"
+    fetch("/api/AttendanceManager/ApproveOvertime", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maChamCong: maTangCa, trangThai: "Từ chối" }) // Sử dụng maChamCong theo backend
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+
+        if (data.success) {
+            const selected = document.getElementById("employeeFilter").value;
+            if (selected) {
+                fetchOvertimeRecords(selected);
+            }
+        }
+    });
+}
+
 </script>
 

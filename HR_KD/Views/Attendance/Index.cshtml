@@ -10,25 +10,22 @@
 <div id="attendanceSection" class="dashboard-card bg-white p-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-fingerprint me-2"></i> Chấm công</h5>
 
-    <!-- Chọn ngày làm việc -->
     <div class="row mb-3">
-      <div class="col-md-6">
+        <div class="col-md-6">
             <label class="form-label">Chọn ngày làm việc</label>
             <input type="text" class="form-control date-range" id="attendanceDateRange" placeholder="Chọn ngày làm việc">
         </div>
         <div class="col-md-6">
-             <div id="attendanceCalendar"></div>
-         </div>
+            <div id="attendanceCalendar"></div>
+        </div>
     </div>
     <button id="resetCalendarBtn" class="btn btn-secondary mb-3">Làm mới lịch</button>
 
-    <!-- Hiển thị các ngày làm việc đã chọn -->
     <div class="mt-3">
-        <label class="form-label">Các ngày làm việc đã chọn</label>
-        <div id="selectedDates"></div>
+        <h6>Ngày làm việc đã chọn:</h6>
+        <ul id="selectedWorkDaysList" class="list-inline"></ul>
     </div>
 
-    <!-- Giờ làm việc -->
     <div class="row mt-3">
         <div class="col-md-6">
             <label class="form-label">Giờ check-in</label>
@@ -38,26 +35,32 @@
             <label class="form-label">Giờ check-out</label>
             <div class="d-flex">
                 <input type="time" class="form-control me-2" id="checkOutTime">
-                <button class="btn btn-outline-secondary" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 17h">8h</button>
+                <button class="btn btn-outline-secondary me-2" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 17h">8h</button>
+                <button class="btn btn-outline-secondary me-2" id="set8hPlus2Btn" title="Tự động điền giờ làm 8h + 2h tăng ca">8 + 2</button>
+                <button class="btn btn-outline-secondary" id="set8hPlus4Btn" title="Tự động điền giờ làm 8h + 4h tăng ca">8 + 4</button>
             </div>
         </div>
 
     </div>
 
-    <!-- Hiển thị tổng số giờ làm -->
-    <div class="mt-3">
-        <label class="form-label">Tổng số giờ làm trong tuần:</label>
-        <input type="text" class="form-control w-50" id="weeklyHours" readonly>
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <label class="form-label">Giờ vào tăng ca (nếu có)</label>
+            <input type="time" class="form-control" id="checkInOTTime">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Giờ ra tăng ca (nếu có)</label>
+            <input type="time" class="form-control" id="checkOutOTTime">
+        </div>
     </div>
 
-    <!-- Ghi chú -->
-    <div class="mt-3">
-        <label class="form-label">Ghi chú</label>
-        <textarea class="form-control" id="attendanceNote" placeholder="Nhập ghi chú (nếu có)"></textarea>
+    <div class="mb-3">
+        <label for="attendanceNote" class="form-label">Ghi chú</label>
+        <textarea class="form-control" id="attendanceNote" rows="3"></textarea>
     </div>
 
-    <!-- Nút gửi dữ liệu -->
     <button class="btn btn-primary mt-3" id="submitAttendance">Chấm công</button>
+</div>
 
 
 <!-- Bảng Yêu Cầu Chấm Công -->
@@ -125,9 +128,27 @@
 document.getElementById("set8hBtn").addEventListener("click", function () {
     document.getElementById("checkInTime").value = "08:00";
     document.getElementById("checkOutTime").value = "17:00";
-    updateTotalHours(); // Cập nhật lại tổng giờ làm
+    document.getElementById("checkInOTTime").value = "";
+    document.getElementById("checkOutOTTime").value = "";
+    updateTotalHours();
 });
-let calendar; // Định nghĩa biến calendar ngoài `DOMContentLoaded` để truy cập lại sau
+
+document.getElementById("set8hPlus2Btn").addEventListener("click", function () {
+    document.getElementById("checkInTime").value = "08:00";
+    document.getElementById("checkOutTime").value = "17:00";
+    document.getElementById("checkInOTTime").value = "17:00";
+    document.getElementById("checkOutOTTime").value = "19:00";
+    updateTotalHours();
+});
+
+document.getElementById("set8hPlus4Btn").addEventListener("click", function () {
+    document.getElementById("checkInTime").value = "08:00";
+    document.getElementById("checkOutTime").value = "17:00";
+    document.getElementById("checkInOTTime").value = "17:00";
+    document.getElementById("checkOutOTTime").value = "21:00";
+    updateTotalHours();
+});
+let calendar;
 
 document.addEventListener("DOMContentLoaded", function () {
     let calendarEl = document.getElementById("attendanceCalendar");
@@ -142,7 +163,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // Sự kiện click nút reset
 document.getElementById("resetCalendarBtn").addEventListener("click", function () {
     if (calendar) {
-        calendar.refetchEvents(); // Gọi lại hàm fetchCalendarEvents
+        calendar.refetchEvents();
     }
 });
 
@@ -180,6 +201,8 @@ flatpickr("#attendanceDateRange", {
 document.getElementById("submitAttendance").addEventListener("click", function () {
     const checkIn = document.getElementById("checkInTime").value;
     const checkOut = document.getElementById("checkOutTime").value;
+    const checkInOT = document.getElementById("checkInOTTime").value;
+    const checkOutOT = document.getElementById("checkOutOTTime").value;
     const note = document.getElementById("attendanceNote").value.trim();
 
     if (selectedWorkDays.size === 0) {
@@ -201,14 +224,25 @@ document.getElementById("submitAttendance").addEventListener("click", function (
         GhiChu: note || null
     }));
 
-    console.log("Dữ liệu gửi đi:", JSON.stringify(attendanceData, null, 2));
+    // Dữ liệu tăng ca (nếu có)
+    let overtimeData = [...selectedWorkDays].map(day => ({
+        NgayTangCa: day,
+        GioVaoTangCa: checkInOT || null,
+        GioRaTangCa: checkOutOT || null,
+        SoGioTangCa: calculateOvertimeHours(checkInOT, checkOutOT),
+    }));
+
+    console.log("Dữ liệu gửi đi:", JSON.stringify({ attendance: attendanceData, overtime: overtimeData }, null, 2));
 
     fetch('/api/Attendance/SubmitAttendance', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(attendanceData)
+        body: JSON.stringify({
+            attendance: attendanceData,
+            overtime: overtimeData.filter(item => item.SoGioTangCa > 0)
+        })
     })
     .then(async response => {
         const result = await response.json();
@@ -229,8 +263,6 @@ document.getElementById("submitAttendance").addEventListener("click", function (
 function showApiError(result, fallbackMessage = "Có lỗi xảy ra khi chấm công.") {
     let errorMessage = `<strong>${result.message || fallbackMessage}</strong>`;
 
-   
-
     Swal.fire({
         icon: 'error',
         title: 'Lỗi!',
@@ -240,7 +272,18 @@ function showApiError(result, fallbackMessage = "Có lỗi xảy ra khi chấm c
         }
     });
 }
+function calculateOvertimeHours (checkInOT, checkOutOT) {
+	if (checkInOT && checkOutOT) {
+		const checkInOTTime = new Date(`2000-01-01T${checkInOT}:00`);
+		const checkOutOTTime = new Date(`2000-01-01T${checkOutOT}:00`);
 
+		if (checkOutOTTime > checkInOTTime) {
+			let hours = (checkOutOTTime - checkInOTTime) / (1000 * 60 * 60);
+			return parseFloat(hours.toFixed(2));
+		}
+	}
+	return 0.00;
+}
 function calculateDailyHours(checkIn, checkOut) {
     if (checkIn && checkOut) {
         const checkInTime = new Date(`2000-01-01T${checkIn}:00`);
@@ -249,7 +292,6 @@ function calculateDailyHours(checkIn, checkOut) {
         if (checkOutTime > checkInTime) {
             let hours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
 
-            // Nếu thời gian làm >= 5 tiếng thì trừ 1 tiếng nghỉ trưa
             if (hours >= 5) {
                 hours -= 1;
             }
@@ -259,6 +301,7 @@ function calculateDailyHours(checkIn, checkOut) {
     }
     return 0.00;
 }
+
 
 
 // Hàm cập nhật tổng số giờ làm
@@ -279,19 +322,20 @@ function resetForm() {
     document.getElementById("selectedDates").innerHTML = "";
     document.getElementById("checkInTime").value = "";
     document.getElementById("checkOutTime").value = "";
+    document.getElementById("checkInOTTime").value = "";
+    document.getElementById("checkOutOTTime").value = "";
     document.getElementById("attendanceNote").value = "";
     selectedWorkDays.clear();
-    updateTotalHours(); // Cập nhật lại tổng số giờ làm về 0
-    fetchAttendanceRecords(); // Reload lại bảng chấm công
-    fetchAttendanceRequestsRecords(); // Reload lại bảng yêu cầu chấm công
-    fetchAttendanceTableHistory();// Reload lại bảng lịch sử chấm công
+    updateTotalHours();
+    fetchAttendanceRecords();
+    fetchAttendanceRequestsRecords();
+    fetchAttendanceTableHistory();
 }
 
 // Lắng nghe thay đổi giờ check-in/check-out để cập nhật tổng giờ làm
 document.getElementById("checkInTime").addEventListener("change", updateTotalHours);
 document.getElementById("checkOutTime").addEventListener("change", updateTotalHours);
 
-// Gọi API để lấy danh sách lịch sử chấm công
 function fetchAttendanceTableHistory() {
     fetch('/api/Attendance/GetAttendanceHistoryRecords')
         .then(response => response.json())

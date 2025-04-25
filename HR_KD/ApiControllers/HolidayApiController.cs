@@ -41,35 +41,16 @@ namespace HR_KD.ApiControllers
                 TenNgayLe = holidayDto.TenNgayLe,
                 NgayLe1 = DateOnly.FromDateTime(holidayDto.NgayLe1), // Chuyển đổi từ DateTime sang DateOnly
                 SoNgayNghi = holidayDto.SoNgayNghi,
-                MoTa = holidayDto.MoTa
+                MoTa = holidayDto.MoTa,
+                TrangThai = "Chờ duyệt"
             };
 
             _context.NgayLes.Add(holiday);
             _context.SaveChanges();
 
-            // Lấy danh sách tất cả nhân viên để cập nhật chấm công
-            var allEmployees = _context.NhanViens.ToList();
-
-            foreach (var employee in allEmployees)
-            {
-                var attendance = new ChamCong
-                {
-                    MaNv = employee.MaNv,
-                    NgayLamViec = holiday.NgayLe1,
-                    GioVao = new TimeOnly(8, 0, 0), // 08:00 AM
-                    GioRa = new TimeOnly(17, 0, 0), // 17:00 PM
-                    TongGio = 8.0m, // 8 tiếng làm việc
-                    TrangThai = "Đã duyệt",
-                    GhiChu = $"Ngày lễ: {holiday.TenNgayLe}"
-                };
-
-                _context.ChamCongs.Add(attendance);
-            }
-
-            _context.SaveChanges();
-
-            return Ok(new { success = true, message = "Ngày lễ đã được thêm và chấm công cho nhân viên!" });
+            return Ok(new { success = true, message = "Ngày lễ đã được thêm !" });
         }
+
 
         [HttpGet("GetAll")]
         public IActionResult GetAllHolidays()

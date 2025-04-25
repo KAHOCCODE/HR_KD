@@ -152,35 +152,49 @@ namespace HR_KD.ApiControllers
                 return BadRequest(new { success = false, message = "Ngày vào làm không hợp lệ." });
             }
 
-            var soNamLamViec = DateTime.Now.Year - nhanVien.NgayVaoLam.Value.Year;
-            if (DateOnly.FromDateTime(DateTime.Now) < nhanVien.NgayVaoLam.Value.AddYears(soNamLamViec))
+            var currentDate = DateTime.Now;
+            var currentYear = currentDate.Year;
+
+            // Tính số năm làm việc
+            var soNamLamViec = currentYear - nhanVien.NgayVaoLam.Value.Year;
+            if (DateOnly.FromDateTime(currentDate) < DateOnly.FromDateTime(new DateTime(currentYear, nhanVien.NgayVaoLam.Value.Month, nhanVien.NgayVaoLam.Value.Day)))
             {
                 soNamLamViec--;
             }
 
-            var soNgayPhepCongThem = 0;
+            // Số ngày phép mặc định
+            int soNgayPhepMacDinh = 12;
+
+            // Tính số ngày phép bổ sung
+            int soNgayPhepBoSung = 0;
+
+            // Luật Lao động: Làm đủ 5 năm liên tục, tăng 1 ngày phép
             if (soNamLamViec >= 5)
             {
-                var soDot5Nam = soNamLamViec / 5;
-                soNgayPhepCongThem = soDot5Nam * 2;
+                soNgayPhepBoSung += 1;
             }
 
-            var currentYear = DateTime.Now.Year;
+            // Luật công ty: Cứ 5 năm tăng 1 ngày phép
+            int soDot5Nam = soNamLamViec / 5;
+            soNgayPhepBoSung += soDot5Nam;
 
+            // Tổng số ngày phép
+            int tongSoNgayPhep = soNgayPhepMacDinh + soNgayPhepBoSung;
+
+            // Kiểm tra và cập nhật số dư phép cho năm hiện tại
             var soDuPhep = await _context.SoDuPheps
                 .FirstOrDefaultAsync(sd => sd.MaNv == maNv.Value && sd.Nam == currentYear);
 
             if (soDuPhep == null)
             {
-                // Chỉ tạo nếu chưa có bản ghi
+                // Tạo mới nếu chưa có bản ghi cho năm hiện tại
                 soDuPhep = new SoDuPhep
                 {
                     MaNv = maNv.Value,
                     Nam = currentYear,
-                    SoNgayConLai = 12 + soNgayPhepCongThem,
-                    NgayCapNhat = DateTime.Now
+                    SoNgayConLai = tongSoNgayPhep,
+                    NgayCapNhat = currentDate
                 };
-
                 _context.SoDuPheps.Add(soDuPhep);
                 await _context.SaveChangesAsync();
             }
@@ -188,10 +202,12 @@ namespace HR_KD.ApiControllers
             return Ok(new
             {
                 success = true,
-                soNgayConLai = soDuPhep?.SoNgayConLai,
+                soNgayConLai = soDuPhep.SoNgayConLai,
                 maNv = maNv,
                 nam = currentYear,
-                soDuTonTai = soDuPhep != null
+                soNamLamViec = soNamLamViec,
+                ngayPhepMacDinh = soNgayPhepMacDinh,
+                ngayPhepBoSung = soNgayPhepBoSung
             });
         }
 

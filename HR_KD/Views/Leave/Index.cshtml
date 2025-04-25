@@ -203,13 +203,13 @@
         .table tbody tr:hover {
             background-color: #f5f5f5; /* Đổi màu nền khi hover */
         }
-  
+
     .weekend-day, .past-day {
         position: relative;
         cursor: not-allowed !important;
     }
 
-       
+
 
     .weekend-day {
         text-decoration: line-through;
@@ -220,7 +220,7 @@
         color: #b2b2b2 !important;
     }
 
-   
+
 
     /* Thay đổi hiển thị ngày đã đăng ký */
 
@@ -232,6 +232,7 @@
         cursor: not-allowed !important;
         text-decoration: none !important; /* Bỏ gạch ngang */
     }
+
         .weekend-day:hover::after, .past-day:hover::after, .registered-day:hover::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -298,42 +299,81 @@
             box-shadow: none;
         }
 
-    .btn-edit {
-        background-color: #3498db;
-        color: white;
-        padding: 6px 12px;
-        border: none;
-        border-radius: 6px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
+    td .btn-cancel, td .btn-cancel-disabled {
         display: flex;
-        align-items: center;
+        margin: 0 auto;
         justify-content: center;
-        gap: 5px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-        margin-bottom: 5px; /* Tạo khoảng cách với nút bên dưới */
+        align-items: center;
     }
 
-        .btn-edit:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.18);
+    /* Add these styles to your existing <style> block */
+
+    /* Tab styling */
+    .nav-tabs .nav-link {
+        color: #495057;
+        border: 1px solid transparent;
+        border-top-left-radius: 0.25rem;
+        border-top-right-radius: 0.25rem;
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+        .nav-tabs .nav-link:hover {
+            border-color: #e9ecef #e9ecef #dee2e6;
+            background-color: #f8f9fa;
         }
 
-        .btn-edit:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            background-color: #fff;
+            border-color: #dee2e6 #dee2e6 #fff;
+            border-bottom: 2px solid #0d6efd;
         }
 
-        .btn-edit i {
-            font-size: 14px;
-        }
+    /* Empty state message */
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
 
-    .action-buttons {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+    /* Disable previous/next buttons when appropriate */
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Tab icons */
+    .nav-tabs .nav-link i {
+        margin-right: 0.5rem;
+    }
+
+    /* Tab content transition */
+    .tab-content > .tab-pane {
+        transition: opacity 0.3s ease-in-out;
+    }
+
+    /* Badge counters for tabs */
+    .tab-badge {
+        background-color: #6c757d;
+        color: white;
+        border-radius: 50%;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+    }
+
+    .pending-badge {
+        background-color: #ffc107;
+    }
+
+    .approved-badge {
+        background-color: #28a745;
+    }
+
+    .rejected-badge {
+        background-color: #dc3545;
     }
 
 </style>
@@ -392,34 +432,93 @@
         </div>
     </div>
 </div>
-
+<!-- Replace the existing leave-history div with this code -->
 <div class="leave-history bg-white p-4 mt-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-history me-2"></i>Lịch sử đăng ký nghỉ phép</h5>
-    <div class="mb-3">
-        <label for="sortDropdown">Sắp xếp theo:</label>
-        <select id="sortDropdown" class="form-select">
-            <option value="dateDesc">Sắp xếp theo ngày gần nhất</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="approved">Đã duyệt</option>
-            <option value="rejected">Từ chối</option>
-        </select>
-    </div>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Loại nghỉ</th>
-                <th>Ngày nghỉ</th>
-                <th>Lý do</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-            </tr>
-        </thead>
-        <tbody id="leaveHistoryBody"></tbody>
-    </table>
-    <div class="pagination">
-        <button id="prevPage" class="btn btn-secondary">Previous</button>
-        <span id="pageInfo" class="mx-2"></span>
-        <button id="nextPage" class="btn btn-secondary">Next</button>
+
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-3" id="leaveHistoryTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                <i class="fas fa-clock me-2"></i>Đơn chờ duyệt
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">
+                <i class="fas fa-check-circle me-2"></i>Đơn đã duyệt
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
+                <i class="fas fa-times-circle me-2"></i>Đơn bị từ chối
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="leaveHistoryTabContent">
+        <!-- Pending Tab -->
+        <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Loại nghỉ</th>
+                        <th>Ngày nghỉ</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingLeaveBody"></tbody>
+            </table>
+            <div class="pagination" id="pendingPagination">
+                <button id="pendingPrevPage" class="btn btn-secondary">Previous</button>
+                <span id="pendingPageInfo" class="mx-2"></span>
+                <button id="pendingNextPage" class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+
+        <!-- Approved Tab -->
+        <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Loại nghỉ</th>
+                        <th>Ngày nghỉ</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="approvedLeaveBody"></tbody>
+            </table>
+            <div class="pagination" id="approvedPagination">
+                <button id="approvedPrevPage" class="btn btn-secondary">Previous</button>
+                <span id="approvedPageInfo" class="mx-2"></span>
+                <button id="approvedNextPage" class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+
+        <!-- Rejected Tab -->
+        <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Loại nghỉ</th>
+                        <th>Ngày nghỉ</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="rejectedLeaveBody"></tbody>
+            </table>
+            <div class="pagination" id="rejectedPagination">
+                <button id="rejectedPrevPage" class="btn btn-secondary">Previous</button>
+                <span id="rejectedPageInfo" class="mx-2"></span>
+                <button id="rejectedNextPage" class="btn btn-secondary">Next</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -467,30 +566,30 @@
         // Trong phần tạo styleElement, thay thế CSS cho .registered-day
         const styleElement = document.createElement('style');
         styleElement.textContent = `
-        .registered-day {
-            background-color: #a8f0b0 !important;
-            color: #28a745 !important;
-            border: 2px solid #28a745 !important;
-            position: relative;
-            cursor: not-allowed !important;
-            text-decoration: none !important;
-        }
+            .registered-day {
+                background-color: #a8f0b0 !important;
+                color: #28a745 !important;
+                border: 2px solid #28a745 !important;
+                position: relative;
+                cursor: not-allowed !important;
+                text-decoration: none !important;
+            }
 
-        .registered-day:hover::after {
-            content: attr(title);
-            position: absolute;
-            top: -35px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 14px;
-            white-space: nowrap;
-            z-index: 100;
-        }
-    `;
+            .registered-day:hover::after {
+                content: attr(title);
+                position: absolute;
+                top: -35px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                font-size: 14px;
+                white-space: nowrap;
+                z-index: 100;
+            }
+        `;
         document.head.appendChild(styleElement);
 
         // Lấy token từ localStorage
@@ -615,17 +714,76 @@
 
     //Hiển thị lịch sử đăng ký nghỉ phép
     document.addEventListener("DOMContentLoaded", async function () {
-        let leaveHistory = [];
-        let currentPage = 1;
-        const itemsPerPage = 5;
+        // Make sure Bootstrap JS is loaded for tabs functionality
+        if (typeof bootstrap === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+            script.onload = initializeTabs; // Initialize tabs once Bootstrap is loaded
+            document.head.appendChild(script);
+        } else {
+            initializeTabs(); // Initialize tabs if Bootstrap is already loaded
+        }
 
-        // Hàm lấy dữ liệu từ API (không cần truyền maNv)
+        // Initialize tab functionality
+        function initializeTabs() {
+            // Initialize Bootstrap tabs
+            const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabElements.forEach(tabElement => {
+                tabElement.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    // Remove active class from all tabs
+                    tabElements.forEach(tab => {
+                        tab.classList.remove('active');
+                        const tabPane = document.querySelector(tab.getAttribute('data-bs-target'));
+                        if (tabPane) {
+                            tabPane.classList.remove('show', 'active');
+                        }
+                    });
+
+                    // Add active class to current tab
+                    this.classList.add('active');
+                    const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+
+                    // Update the table for the active tab
+                    const tabId = this.getAttribute('data-bs-target').substring(1);
+                    renderTable(tabId);
+                });
+            });
+
+            // Activate the first tab by default
+            if (tabElements.length > 0) {
+                const firstTab = tabElements[0];
+                firstTab.classList.add('active');
+                const firstTabPane = document.querySelector(firstTab.getAttribute('data-bs-target'));
+                if (firstTabPane) {
+                    firstTabPane.classList.add('show', 'active');
+                }
+            }
+        }
+
+        let leaveHistory = [];
+        const tabData = {
+            pending: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
+            approved: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
+            rejected: { currentPage: 1, itemsPerPage: 5, filteredData: [] }
+        };
+
+        // Function to fetch leave history data
         async function fetchLeaveHistory() {
             try {
-                const response = await fetch('/api/Leave/GetLeaveHistory');
+                const response = await fetch('/api/Leave/GetLeaveHistory', {
+                    headers: {
+                        "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                    }
+                });
+
                 if (!response.ok) {
                     if (response.status === 401) {
-                        window.location.href = '/login'; // Redirect nếu chưa login
+                        window.location.href = '/login'; // Redirect if not logged in
                         return;
                     }
                     throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
@@ -634,65 +792,113 @@
                 const result = await response.json();
                 if (result?.success && Array.isArray(result.leaveHistory)) {
                     leaveHistory = result.leaveHistory;
-                    renderTable();
+
+                    // Filter data for each tab
+                    tabData.pending.filteredData = leaveHistory.filter(item => item.trangThai === "Chờ duyệt");
+                    tabData.approved.filteredData = leaveHistory.filter(item => item.trangThai === "Đã duyệt");
+                    tabData.rejected.filteredData = leaveHistory.filter(item => item.trangThai === "Từ chối");
+
+                    // Render all tabs
+                    renderTable('pending');
+                    renderTable('approved');
+                    renderTable('rejected');
+
+                    // Update tab badges if needed
+                    updateTabBadges();
                 } else {
-                    displayError("Không có dữ liệu nghỉ phép");
+                    displayError("Không có dữ liệu nghỉ phép", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
                 }
             } catch (error) {
                 console.error("Lỗi hệ thống:", error);
-                displayError("Lỗi kết nối server");
+                displayError("Lỗi kết nối server", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
             }
         }
 
-        // Giữ nguyên hàm renderTable và các hàm hỗ trợ
+        // Function to update tab badges with count
+        function updateTabBadges() {
+            // Add badges to tabs showing count
+            const pendingCount = tabData.pending.filteredData.length;
+            const approvedCount = tabData.approved.filteredData.length;
+            const rejectedCount = tabData.rejected.filteredData.length;
 
-        function renderTable() {
-            const leaveHistoryBody = document.getElementById("leaveHistoryBody");
-            if (!leaveHistoryBody) {
-                throw new Error("Không tìm thấy phần tử leaveHistoryBody trong DOM.");
+            // Create or update badge elements
+            updateBadge('pending-tab', pendingCount, 'pending-badge');
+            updateBadge('approved-tab', approvedCount, 'approved-badge');
+            updateBadge('rejected-tab', rejectedCount, 'rejected-badge');
+        }
+
+        // Helper function to update a single badge
+        function updateBadge(tabId, count, badgeClass) {
+            const tabElement = document.getElementById(tabId);
+            if (!tabElement) return;
+
+            // Remove existing badge if present
+            const existingBadge = tabElement.querySelector('.tab-badge');
+            if (existingBadge) {
+                existingBadge.remove();
             }
-            leaveHistoryBody.innerHTML = "";
 
-            const sortedData = sortData(leaveHistory);
-            const paginatedData = paginateData(sortedData, currentPage, itemsPerPage);
+            // Add new badge
+            const badge = document.createElement('span');
+            badge.className = `tab-badge ${badgeClass}`;
+            badge.textContent = count;
+            tabElement.appendChild(badge);
+        }
 
-            paginatedData.forEach(item => {
-                const row = document.createElement("tr");
+        // Function to render table data for a specific tab
+        function renderTable(tabId) {
+            const tableBodyId = `${tabId}LeaveBody`;
+            const tableBody = document.getElementById(tableBodyId);
+            if (!tableBody) {
+                console.error(`Không tìm thấy phần tử ${tableBodyId} trong DOM.`);
+                return;
+            }
+            tableBody.innerHTML = "";
 
-                // Kiểm tra trạng thái để quyết định hiển thị nút hủy
-                const canCancel = item.trangThai === "Chờ duyệt";
-                const cancelButton = canCancel ?
-                    `<button class="btn-cancel" data-id="${item.id}">
-                    <i class="fas fa-times-circle"></i>
-                    <span>Hủy đơn</span>
-                </button>` :
-                    '<span class="btn-cancel-disabled">Không khả dụng</span>';
+            const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
+            const paginatedData = paginateData(filteredData, currentPage, itemsPerPage);
 
-                row.innerHTML = `
-                <td>${item.tenLoai || "Không xác định"}</td>
-                <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                <td>${item.lyDo || "Không có lý do"}</td>
-                <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                <td>${cancelButton}</td>
-            `;
-                leaveHistoryBody.appendChild(row);
-            });
+            if (paginatedData.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center">Không có đơn nào trong danh sách này</td></tr>`;
+            } else {
+                paginatedData.forEach(item => {
+                    const row = document.createElement("tr");
 
-            // Thêm event listener cho các nút hủy
-            document.querySelectorAll('.btn-cancel').forEach(btn => {
+                    // Check status to determine if the cancel button should be displayed
+                    const canCancel = item.trangThai === "Chờ duyệt";
+                    const cancelButton = canCancel ?
+                        `<button class="btn-cancel" data-id="${item.id}">
+                                <i class="fas fa-times-circle"></i>
+                                <span>Hủy đơn</span>
+                            </button>` :
+                        '<span class="btn-cancel-disabled">Không khả dụng</span>';
+
+                    row.innerHTML = `
+                            <td>${item.tenLoai || "Không xác định"}</td>
+                            <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                            <td>${item.lyDo || "Không có lý do"}</td>
+                            <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                            <td>${cancelButton}</td>
+                        `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // Add event listeners for cancel buttons
+            document.querySelectorAll(`#${tableBodyId} .btn-cancel`).forEach(btn => {
                 btn.addEventListener('click', function () {
                     const leaveId = this.getAttribute('data-id');
                     cancelLeaveRequest(leaveId);
                 });
             });
 
-            updatePageInfo();
+            updatePageInfo(tabId);
         }
 
-        // Thêm hàm để xử lý hủy đơn
+        // Function to handle leave request cancellation
         async function cancelLeaveRequest(leaveId) {
             try {
-                // Hiển thị xác nhận trước khi hủy
+                // Show confirmation before cancellation
                 const result = await Swal.fire({
                     title: 'Xác nhận hủy đơn',
                     text: 'Bạn có chắc chắn muốn hủy đơn nghỉ phép này?',
@@ -705,7 +911,7 @@
                 });
 
                 if (result.isConfirmed) {
-                    // Gọi API để hủy đơn
+                    // Call API to cancel the request
                     const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
                         method: 'POST',
                         headers: {
@@ -723,7 +929,7 @@
                             'success'
                         );
 
-                        // Cập nhật lại danh sách
+                        // Update the list
                         fetchLeaveHistory();
                     } else {
                         throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
@@ -739,67 +945,40 @@
             }
         }
 
-        // Hàm để sắp xếp dữ liệu
-        function sortData(data) {
-            const sortBy = document.getElementById("sortDropdown").value;
-            switch (sortBy) {
-                case "dateDesc":
-                    return data.sort((a, b) => new Date(b.ngayNghi) - new Date(a.ngayNghi));
-                case "pending":
-                    return data.sort((a, b) => a.trangThai === "Chờ duyệt" ? -1 : 1);
-                case "approved":
-                    return data.sort((a, b) => a.trangThai === "Đã duyệt" ? -1 : 1);
-                case "rejected":
-                    return data.sort((a, b) => a.trangThai === "Từ chối" ? -1 : 1);
-                default:
-                    return data;
-            }
-        }
-
-        // Hàm để phân trang dữ liệu
+        // Function to paginate data
         function paginateData(data, page, itemsPerPage) {
             const startIndex = (page - 1) * itemsPerPage;
             return data.slice(startIndex, startIndex + itemsPerPage);
         }
 
-        // Hàm để cập nhật thông tin trang
-        function updatePageInfo() {
-            const totalPages = Math.ceil(leaveHistory.length / itemsPerPage);
-            document.getElementById("pageInfo").textContent = `Trang ${currentPage} / ${totalPages}`;
+        // Function to update page information
+        function updatePageInfo(tabId) {
+            const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
+            const pageInfoElement = document.getElementById(`${tabId}PageInfo`);
+            if (pageInfoElement) {
+                pageInfoElement.textContent = `Trang ${currentPage} / ${totalPages}`;
+            }
+
+            // Update button states
+            const prevButton = document.getElementById(`${tabId}PrevPage`);
+            const nextButton = document.getElementById(`${tabId}NextPage`);
+
+            if (prevButton) prevButton.disabled = currentPage <= 1;
+            if (nextButton) nextButton.disabled = currentPage >= totalPages;
         }
 
-        // Hàm để hiển thị lỗi
-        function displayError(message) {
-            const leaveHistoryBody = document.getElementById("leaveHistoryBody");
-            if (leaveHistoryBody) {
-                leaveHistoryBody.innerHTML = `<tr><td colspan='4' class='text-danger'>${message}</td></tr>`;
-            }
+        // Function to display error messages
+        function displayError(message, elementIds) {
+            elementIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.innerHTML = `<tr><td colspan='5' class='text-danger text-center'>${message}</td></tr>`;
+                }
+            });
         }
 
-        // Event listener cho dropdown sắp xếp
-        document.getElementById("sortDropdown").addEventListener("change", () => {
-            currentPage = 1;
-            renderTable();
-        });
-
-        // Event listener cho nút Previous
-        document.getElementById("prevPage").addEventListener("click", () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderTable();
-            }
-        });
-
-        // Event listener cho nút Next
-        document.getElementById("nextPage").addEventListener("click", () => {
-            const totalPages = Math.ceil(leaveHistory.length / itemsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderTable();
-            }
-        });
-
-        // Hàm để xác định lớp CSS dựa trên trạng thái
+        // Function to determine CSS class based on status
         function getStatusClass(status) {
             if (!status) return "";
             const normalizedStatus = status.trim().toLowerCase();
@@ -811,18 +990,42 @@
             }
         }
 
-        // Hàm để định dạng ngày
+        // Function to format date
         function formatDate(dateStr) {
             if (!dateStr) return "";
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return "Không xác định";
-            return date.toISOString().split("T")[0]; // Format thành YYYY-MM-DD
+            return date.toLocaleDateString('vi-VN'); // Format to Vietnamese date format
         }
 
-        // Khởi tạo
+        // Set up event listeners for pagination
+        ['pending', 'approved', 'rejected'].forEach(tabId => {
+            const prevButton = document.getElementById(`${tabId}PrevPage`);
+            const nextButton = document.getElementById(`${tabId}NextPage`);
+
+            if (prevButton) {
+                prevButton.addEventListener("click", () => {
+                    if (tabData[tabId].currentPage > 1) {
+                        tabData[tabId].currentPage--;
+                        renderTable(tabId);
+                    }
+                });
+            }
+
+            if (nextButton) {
+                nextButton.addEventListener("click", () => {
+                    const totalPages = Math.ceil(tabData[tabId].filteredData.length / tabData[tabId].itemsPerPage) || 1;
+                    if (tabData[tabId].currentPage < totalPages) {
+                        tabData[tabId].currentPage++;
+                        renderTable(tabId);
+                    }
+                });
+            }
+        });
+
+        // Initialize
         fetchLeaveHistory();
     });
-
 
     // lấy loại ngày nghỉ
     document.addEventListener("DOMContentLoaded", async function () {
@@ -857,7 +1060,10 @@
         }
     });
 
-    //Lấy SoDuPhep
+    // Biến global để lưu số ngày phép còn lại
+    let availableLeaveBalance = 0;
+
+    // Sửa đoạn fetch số ngày phép còn lại để lưu giá trị vào biến global
     document.addEventListener("DOMContentLoaded", function () {
         fetch('/api/Leave/SoNgayConLai')
             .then(response => {
@@ -868,10 +1074,16 @@
             })
             .then(data => {
                 if (data.success) {
+                    // Lưu giá trị vào biến global
+                    availableLeaveBalance = data.soNgayConLai;
+
                     const soNgayConLaiElement = document.querySelector('.leave-info-card strong');
                     if (soNgayConLaiElement) {
                         soNgayConLaiElement.textContent = `${data.soNgayConLai} ngày`;
                     }
+
+                    // Kiểm tra và cập nhật trạng thái nút đăng ký
+                    checkLeaveBalance();
                 } else {
                     console.error('Lỗi:', data.message);
                 }
@@ -880,6 +1092,43 @@
                 console.error('Lỗi:', error);
             });
     });
+
+    // Hàm kiểm tra số ngày phép khả dụng
+    function checkLeaveBalance() {
+        const submitButton = document.getElementById("submitButton");
+        const leaveForm = document.getElementById("leaveForm");
+        const leaveSection = document.getElementById("leaveSection");
+
+        if (availableLeaveBalance <= 0) {
+            // Vô hiệu hóa nút đăng ký
+            submitButton.disabled = true;
+            submitButton.classList.remove("btn-success");
+            submitButton.classList.add("btn-secondary");
+
+            // Thêm thông báo về số ngày phép đã hết
+            if (!document.getElementById("noLeaveMessage")) {
+                const alertMessage = document.createElement("div");
+                alertMessage.id = "noLeaveMessage";
+                alertMessage.className = "alert alert-warning mt-3";
+                alertMessage.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Thông báo:</strong> Số dư nghỉ phép của bạn đã hết. Không thể gửi yêu cầu nghỉ phép.
+                    `;
+                leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
+            }
+        } else {
+            // Đảm bảo nút đăng ký được kích hoạt
+            submitButton.disabled = false;
+            submitButton.classList.remove("btn-secondary");
+            submitButton.classList.add("btn-success");
+
+            // Xóa thông báo nếu tồn tại
+            const alertMessage = document.getElementById("noLeaveMessage");
+            if (alertMessage) {
+                alertMessage.remove();
+            }
+        }
+    }
 
 
 </script>

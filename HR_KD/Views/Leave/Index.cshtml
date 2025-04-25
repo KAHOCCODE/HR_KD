@@ -203,6 +203,138 @@
         .table tbody tr:hover {
             background-color: #f5f5f5; /* Đổi màu nền khi hover */
         }
+  
+    .weekend-day, .past-day {
+        position: relative;
+        cursor: not-allowed !important;
+    }
+
+       
+
+    .weekend-day {
+        text-decoration: line-through;
+        color: #ff7d7d !important;
+    }
+
+    .past-day {
+        color: #b2b2b2 !important;
+    }
+
+   
+
+    /* Thay đổi hiển thị ngày đã đăng ký */
+
+    .registered-day {
+        background-color: #a8f0b0 !important; /* Màu nền xanh lá nhạt */
+        color: #28a745 !important; /* Màu chữ xanh lá */
+        border: 2px solid #28a745 !important; /* Viền xanh lá */
+        position: relative;
+        cursor: not-allowed !important;
+        text-decoration: none !important; /* Bỏ gạch ngang */
+    }
+        .weekend-day:hover::after, .past-day:hover::after, .registered-day:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 100;
+        }
+
+    /* Làm rõ ngày được chọn */
+    .flatpickr-day.selected {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+        font-weight: bold;
+    }
+
+    .btn-cancel {
+        background-color: #ff4d4d;
+        color: white;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+        .btn-cancel:hover {
+            background-color: #ff3333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.18);
+        }
+
+        .btn-cancel:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+
+        .btn-cancel i {
+            font-size: 14px;
+        }
+
+    .btn-cancel-disabled {
+        background-color: #f0f0f0;
+        color: #aaa;
+        cursor: not-allowed;
+        border: 1px solid #ddd;
+        box-shadow: none;
+    }
+
+        .btn-cancel-disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+    .btn-edit {
+        background-color: #3498db;
+        color: white;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        margin-bottom: 5px; /* Tạo khoảng cách với nút bên dưới */
+    }
+
+        .btn-edit:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.18);
+        }
+
+        .btn-edit:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+
+        .btn-edit i {
+            font-size: 14px;
+        }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
 </style>
 
@@ -279,6 +411,7 @@
                 <th>Ngày nghỉ</th>
                 <th>Lý do</th>
                 <th>Trạng thái</th>
+                <th>Thao tác</th>
             </tr>
         </thead>
         <tbody id="leaveHistoryBody"></tbody>
@@ -288,7 +421,6 @@
         <span id="pageInfo" class="mx-2"></span>
         <button id="nextPage" class="btn btn-secondary">Next</button>
     </div>
-
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -299,7 +431,68 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    async function fetchAlreadyRegisteredDates() {
+        try {
+            const response = await fetch('/api/Leave/GetAlreadyRegisteredDates', {
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                return result.dates.map(dateStr => {
+                    const date = new Date(dateStr);
+                    return date.setHours(0, 0, 0, 0);
+                });
+            } else {
+                console.error("API error:", result.message);
+                return [];
+            }
+        } catch (error) {
+            console.error("Error fetching registered dates:", error);
+            return [];
+        }
+    }
+
+    // Thay thế đoạn khởi tạo Flatpickr trong sự kiện DOMContentLoaded
+    document.addEventListener("DOMContentLoaded", async function () {
+        // Lấy các ngày đã đăng ký trước khi khởi tạo datepicker
+        const registeredDates = await fetchAlreadyRegisteredDates();
+        // Thêm CSS cho ngày đã đăng ký
+        // Trong phần tạo styleElement, thay thế CSS cho .registered-day
+        const styleElement = document.createElement('style');
+        styleElement.textContent = `
+        .registered-day {
+            background-color: #a8f0b0 !important;
+            color: #28a745 !important;
+            border: 2px solid #28a745 !important;
+            position: relative;
+            cursor: not-allowed !important;
+            text-decoration: none !important;
+        }
+
+        .registered-day:hover::after {
+            content: attr(title);
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 100;
+        }
+    `;
+        document.head.appendChild(styleElement);
+
         // Lấy token từ localStorage
         const getAuthToken = () => localStorage.getItem('jwtToken');
 
@@ -310,16 +503,55 @@
             dateFormat: "Y-m-d",
             minDate: "today",
             locale: "vn",
+            disable: [
+                function (date) {
+                    // Vô hiệu hóa thứ Bảy (6) và Chủ nhật (0)
+                    const isWeekend = (date.getDay() === 0 || date.getDay() === 6);
+
+                    // Vô hiệu hóa ngày đã đăng ký
+                    const dateTime = date.setHours(0, 0, 0, 0);
+                    const isAlreadyRegistered = registeredDates.includes(dateTime);
+
+                    return isWeekend || isAlreadyRegistered;
+                }
+            ],
+            onDayCreate: function (dObj, dStr, fp, dayElem) {
+                const date = dayElem.dateObj;
+                const dateTime = date.setHours(0, 0, 0, 0);
+
+                // Thêm tooltip cho ngày cuối tuần
+                if (date.getDay() === 0 || date.getDay() === 6) {
+                    dayElem.title = "Không thể đăng ký nghỉ phép vào ngày cuối tuần";
+                    dayElem.classList.add("weekend-day");
+                }
+
+                // Thêm tooltip cho ngày trong quá khứ
+                if (date < new Date().setHours(0, 0, 0, 0)) {
+                    dayElem.title = "Không thể đăng ký nghỉ phép vào ngày trong quá khứ";
+                    dayElem.classList.add("past-day");
+                }
+
+                // Thêm tooltip và style cho ngày đã đăng ký
+                if (registeredDates.includes(dateTime)) {
+                    dayElem.title = "Bạn đã đăng ký nghỉ phép vào ngày này";
+                    dayElem.classList.add("registered-day");
+                }
+            },
             onClose: function (selectedDates) {
-                const validDates = selectedDates.filter(date => date >= today);
+                const validDates = selectedDates.filter(date => {
+                    const dateTime = date.setHours(0, 0, 0, 0);
+                    return date >= today && !registeredDates.includes(dateTime);
+                });
+
                 if (validDates.length !== selectedDates.length) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Lỗi chọn ngày',
-                        text: 'Không thể chọn ngày trong quá khứ!'
+                        text: 'Có ngày không hợp lệ trong lựa chọn của bạn!'
                     });
                     this.clear();
                 }
+
                 document.getElementById("selectedDates").textContent =
                     validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
             }
@@ -413,6 +645,7 @@
         }
 
         // Giữ nguyên hàm renderTable và các hàm hỗ trợ
+
         function renderTable() {
             const leaveHistoryBody = document.getElementById("leaveHistoryBody");
             if (!leaveHistoryBody) {
@@ -425,16 +658,85 @@
 
             paginatedData.forEach(item => {
                 const row = document.createElement("tr");
+
+                // Kiểm tra trạng thái để quyết định hiển thị nút hủy
+                const canCancel = item.trangThai === "Chờ duyệt";
+                const cancelButton = canCancel ?
+                    `<button class="btn-cancel" data-id="${item.id}">
+                    <i class="fas fa-times-circle"></i>
+                    <span>Hủy đơn</span>
+                </button>` :
+                    '<span class="btn-cancel-disabled">Không khả dụng</span>';
+
                 row.innerHTML = `
-                        <td>${item.tenLoai || "Không xác định"}</td>
-                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                        <td>${item.lyDo || "Không có lý do"}</td>
-                        <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                    `;
+                <td>${item.tenLoai || "Không xác định"}</td>
+                <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                <td>${item.lyDo || "Không có lý do"}</td>
+                <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                <td>${cancelButton}</td>
+            `;
                 leaveHistoryBody.appendChild(row);
             });
 
+            // Thêm event listener cho các nút hủy
+            document.querySelectorAll('.btn-cancel').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const leaveId = this.getAttribute('data-id');
+                    cancelLeaveRequest(leaveId);
+                });
+            });
+
             updatePageInfo();
+        }
+
+        // Thêm hàm để xử lý hủy đơn
+        async function cancelLeaveRequest(leaveId) {
+            try {
+                // Hiển thị xác nhận trước khi hủy
+                const result = await Swal.fire({
+                    title: 'Xác nhận hủy đơn',
+                    text: 'Bạn có chắc chắn muốn hủy đơn nghỉ phép này?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Có, hủy đơn!',
+                    cancelButtonText: 'Không, giữ lại'
+                });
+
+                if (result.isConfirmed) {
+                    // Gọi API để hủy đơn
+                    const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        Swal.fire(
+                            'Đã hủy!',
+                            'Đơn nghỉ phép đã được hủy thành công.',
+                            'success'
+                        );
+
+                        // Cập nhật lại danh sách
+                        fetchLeaveHistory();
+                    } else {
+                        throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi khi hủy đơn:', error);
+                Swal.fire(
+                    'Lỗi!',
+                    error.message || 'Có lỗi xảy ra khi hủy đơn nghỉ phép.',
+                    'error'
+                );
+            }
         }
 
         // Hàm để sắp xếp dữ liệu

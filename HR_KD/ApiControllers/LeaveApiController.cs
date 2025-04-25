@@ -99,6 +99,7 @@ namespace HR_KD.ApiControllers
                       l => l.MaLoaiNgayNghi,
                       (n, l) => new
                       {
+                          id = n.MaNgayNghi, // Sử dụng MaNgayNghi thay vì Id
                           n.MaLoaiNgayNghi,
                           TenLoai = l.TenLoai,
                           NgayNghi = n.NgayNghi1.ToString("yyyy-MM-dd"),
@@ -195,7 +196,77 @@ namespace HR_KD.ApiControllers
         }
 
 
+        [HttpGet]
+        [Route("GetAlreadyRegisteredDates")]
+        public async Task<IActionResult> GetAlreadyRegisteredDates()
+        {
+            try
+            {
+                // Lấy mã NV từ claims
+                var currentMaNv = GetMaNvFromClaims();
+                if (currentMaNv == null)
+                {
+                    return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+                }
 
+                // Lấy các ngày đã đăng ký nghỉ phép (chỉ lấy những ngày đang chờ duyệt hoặc đã duyệt)
+                var registeredDates = await _context.NgayNghis
+                    .Where(n => n.MaNv == currentMaNv.Value &&
+                          (n.TrangThai == "Chờ duyệt" || n.TrangThai == "Đã duyệt"))
+                    .Select(n => n.NgayNghi1.ToString("yyyy-MM-dd"))
+                    .ToListAsync();
+
+                return Ok(new { success = true, dates = registeredDates });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi Server: {ex}");
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
+
+
+
+        [HttpPost]
+        [Route("CancelLeave/{maNgayNghi}")]
+        public async Task<IActionResult> CancelLeave(int maNgayNghi)
+        {
+            // Lấy mã NV từ claims
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
+            try
+            {
+                // Tìm đơn nghỉ phép với maNgayNghi và mã nhân viên tương ứng
+                var leaveRequest = await _context.NgayNghis
+                    .FirstOrDefaultAsync(n => n.MaNgayNghi == maNgayNghi && n.MaNv == currentMaNv.Value);
+
+                if (leaveRequest == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy đơn nghỉ phép." });
+                }
+
+                // Kiểm tra xem có thể hủy không (chỉ hủy được đơn đang chờ duyệt)
+                if (leaveRequest.TrangThai != "Chờ duyệt")
+                {
+                    return BadRequest(new { success = false, message = "Chỉ có thể hủy đơn đang chờ duyệt." });
+                }
+
+                // Xóa đơn nghỉ phép
+                _context.NgayNghis.Remove(leaveRequest);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Hủy đơn nghỉ phép thành công." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi Server: {ex}");
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
         public class LeaveRequestDto
         {
             public string NgayNghi { get; set; }

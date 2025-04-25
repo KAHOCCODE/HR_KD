@@ -17,7 +17,7 @@ public partial class NgayNghi
 
     public int? MaLoaiNgayNghi { get; set; }
 
-    public DateTime NgayNgayLamDon { get; set; }
+    public DateTime NgayLamDon { get; set; }
 
     public int? NguoiDuyetId { get; set; }
 

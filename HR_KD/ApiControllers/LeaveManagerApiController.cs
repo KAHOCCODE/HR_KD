@@ -32,7 +32,7 @@ namespace HR_KD.ApiControllers
                     nn.LyDo,
                     nn.TrangThai,
                     SoNgayConLai = sdp != null ? sdp.SoNgayConLai : 0,
-                    NgayCapNhat = nn.NgayNgayLamDon.ToString("dd/MM/yyyy") 
+                    NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy") 
                 }).ToListAsync();
 
             return Ok(new { success = true, data });
@@ -76,7 +76,7 @@ namespace HR_KD.ApiControllers
 
             // Cập nhật trạng thái của ngày nghỉ
             ngayNghi.TrangThai = request.TrangThai;
-            ngayNghi.NgayNgayLamDon = DateTime.Now;
+            ngayNghi.NgayLamDon = DateTime.Now;
 
             _context.NgayNghis.Update(ngayNghi);
             await _context.SaveChangesAsync();
@@ -103,7 +103,7 @@ namespace HR_KD.ApiControllers
             // Đếm số đơn đã duyệt trong ngày hiện tại
             var approvedTodayCount = await _context.NgayNghis
       .CountAsync(nn => nn.TrangThai == "Đã duyệt" &&
-                        nn.NgayNgayLamDon.Date == today);
+                        nn.NgayLamDon.Date == today);
 
             // Đếm tổng số đơn trong tháng hiện tại
             var currentMonthCount = await _context.NgayNghis

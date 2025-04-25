@@ -45,7 +45,7 @@
     </table>
 </div>
 
-<div id="salarySection" class="dashboard-card bg-white p-4 mt-4">
+@* <div id="salarySection" class="dashboard-card bg-white p-4 mt-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-money-check-alt me-2"></i> Bảng Lương</h5>
 
     <table class="table mt-3">
@@ -63,7 +63,7 @@
         <tbody id="salaryTableBody"></tbody>
     </table>
 </div>
-
+ *@
 
 
 <div id="overtimeSection" class="dashboard-card bg-white p-4 mt-4">
@@ -352,29 +352,29 @@ function approveAttendance(maLichSuChamCong, trangThai) {
 }
 
 
-// Bảng lương
-function fetchSalaryRecords(maNv) {
-    fetch(`/api/AttendanceManager/GetEmployeeSalaries?maNv=${maNv}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) renderSalaryTable(data.records);
-        });
-}
+// // Bảng lương
+// function fetchSalaryRecords(maNv) {
+//     fetch(`/api/AttendanceManager/GetEmployeeSalaries?maNv=${maNv}`)
+//         .then(res => res.json())
+//         .then(data => {
+//             if (data.success) renderSalaryTable(data.records);
+//         });
+// }
 
-function renderSalaryTable(records) {
-    const body = document.getElementById("salaryTableBody");
-    body.innerHTML = records.map(r => `
-        <tr>
-            <td>${r.thangNam}</td>
-            <td>${r.luongTangCa.toLocaleString()}</td>
-            <td>${r.thueTNCN.toLocaleString()}</td>
-            <td>${r.tongLuong.toLocaleString()}</td>
-            <td>${r.thucNhan.toLocaleString()}</td>
-            <td>${r.trangThai}</td>
-            <td>${r.ghiChu || "-"}</td>
-        </tr>
-    `).join("");
-}
+// function renderSalaryTable(records) {
+//     const body = document.getElementById("salaryTableBody");
+//     body.innerHTML = records.map(r => `
+//         <tr>
+//             <td>${r.thangNam}</td>
+//             <td>${r.luongTangCa.toLocaleString()}</td>
+//             <td>${r.thueTNCN.toLocaleString()}</td>
+//             <td>${r.tongLuong.toLocaleString()}</td>
+//             <td>${r.thucNhan.toLocaleString()}</td>
+//             <td>${r.trangThai}</td>
+//             <td>${r.ghiChu || "-"}</td>
+//         </tr>
+//     `).join("");
+// }
 // lấy thông tin bảng tăng ca
     function fetchOvertimeRecords(maNv) {
         fetch(`/api/AttendanceManager/GetOvertimeRecords?maNv=${maNv}`)

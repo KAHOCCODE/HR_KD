@@ -3,7 +3,6 @@
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-@* <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"> *@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="~/css/attend.css">
 
@@ -12,8 +11,10 @@
 
     <div class="row mb-3">
         <div class="col-md-6">
-            <label class="form-label">Chọn ngày làm việc</label>
-            <input type="text" class="form-control date-range" id="attendanceDateRange" placeholder="Chọn ngày làm việc">
+            <div class="form-group">
+                <label for="attendanceDateRange" class="form-label">Chọn ngày làm việc</label>
+                <input type="text" class="form-control date-range" id="attendanceDateRange" placeholder="Chọn ngày làm việc">
+            </div>
         </div>
         <div class="col-md-6">
             <div id="attendanceCalendar"></div>
@@ -28,29 +29,36 @@
 
     <div class="row mt-3">
         <div class="col-md-6">
-            <label class="form-label">Giờ check-in</label>
-            <input type="time" class="form-control" id="checkInTime">
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Giờ check-out</label>
-            <div class="d-flex">
-                <input type="time" class="form-control me-2" id="checkOutTime">
-                <button class="btn btn-outline-secondary me-2" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 17h">8h</button>
-                <button class="btn btn-outline-secondary me-2" id="set8hPlus2Btn" title="Tự động điền giờ làm 8h + 2h tăng ca">8 + 2</button>
-                <button class="btn btn-outline-secondary" id="set8hPlus4Btn" title="Tự động điền giờ làm 8h + 4h tăng ca">8 + 4</button>
+            <div class="form-group">
+                <label for="checkInTime" class="form-label">Giờ check-in</label>
+                <input type="time" class="form-control" id="checkInTime">
             </div>
         </div>
-
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="checkOutTime" class="form-label">Giờ check-out</label>
+                <div class="d-flex">
+                    <input type="time" class="form-control me-2" id="checkOutTime">
+                    <button class="btn btn-outline-secondary me-2" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 17h">8h</button>
+                    <button class="btn btn-outline-secondary me-2" id="set8hPlus2Btn" title="Tự động điền giờ làm 8h + 2h tăng ca">8 + 2</button>
+                    <button class="btn btn-outline-secondary" id="set8hPlus4Btn" title="Tự động điền giờ làm 8h + 4h tăng ca">8 + 4</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row mt-3">
         <div class="col-md-6">
-            <label class="form-label">Giờ vào tăng ca (nếu có)</label>
-            <input type="time" class="form-control" id="checkInOTTime">
+            <div class="form-group">
+                <label for="checkInOTTime" class="form-label">Giờ vào tăng ca (nếu có)</label>
+                <input type="time" class="form-control" id="checkInOTTime">
+            </div>
         </div>
         <div class="col-md-6">
-            <label class="form-label">Giờ ra tăng ca (nếu có)</label>
-            <input type="time" class="form-control" id="checkOutOTTime">
+            <div class="form-group">
+                <label for="checkOutOTTime" class="form-label">Giờ ra tăng ca (nếu có)</label>
+                <input type="time" class="form-control" id="checkOutOTTime">
+            </div>
         </div>
     </div>
 
@@ -62,641 +70,603 @@
     <button class="btn btn-primary mt-3" id="submitAttendance">Chấm công</button>
 </div>
 
+<div class="mt-5">
+    <h2>Bảng Yêu cầu chấm công từ quản lý</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered" id="attendanceRequestsTable">
+            <thead class="thead-light">
+                <tr>
+                    <th>Ngày Làm Việc</th>
+                    <th>Giờ Vào Mới</th>
+                    <th>Giờ Ra Mới</th>
+                    <th>Tổng giờ</th>
+                    <th>Lý Do</th>
+                    <th>Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceTableBody2"></tbody>
+        </table>
+    </div>
+</div>
 
-<!-- Bảng Yêu Cầu Chấm Công -->
-<h2>Bảng Yêu cầu chấm công từ quản lý</h2>
-<table class="table mt-3" id="attendanceRequestsTable" ">
-    <thead>
-        <tr>
-            <th>Ngày Làm Việc</th>
-            <th>Giờ Vào Mới</th>
-            <th>Giờ Ra Mới</th>
-            <th>Tổng giờ</th>
-            <th>Lý Do</th>
-            <th>Hành Động</th>
-        </tr>
-    </thead>
-    <tbody id="attendanceTableBody2">
+<div class="mt-5">
+    <h2>Bảng chấm công đã duyệt</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered" id="attendanceTable">
+            <thead class="thead-light">
+                <tr>
+                    <th>Ngày làm việc</th>
+                    <th>Giờ vào</th>
+                    <th>Giờ ra</th>
+                    <th>Tổng giờ</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceTableBody"></tbody>
+        </table>
+    </div>
+</div>
 
-    </tbody>
-</table>
-
-<!-- Bảng Chấm Công -->
-<h2>Bảng chấm công đã duyệt</h2>
-<table class="table mt-3" id="attendanceTable" ">
-    <thead>
-        <tr>
-            <th>Ngày làm việc</th>
-            <th>Giờ vào</th>
-            <th>Giờ ra</th>
-            <th>Tổng giờ</th>
-            <th>Trạng thái</th>
-            <th>Ghi chú</th>
-        </tr>
-    </thead>
-    <tbody id="attendanceTableBody">
-        <!-- Dữ liệu chấm công sẽ được chèn vào đây -->
-    </tbody>
-</table>
-
-<!-- Bảng Lịch Sử Chấm Công -->
-<h2>Bảng lịch sử chấm công</h2>
-<table class="table mt-3" id="attendanceTableHistory">
-    <thead>
-        <tr>
-            <th>Ngày làm việc</th>
-            <th>Giờ vào</th>
-            <th>Giờ ra</th>
-            <th>Tổng giờ</th>
-            <th>Trạng thái</th>
-            <th>Ghi chú</th>
-        </tr>
-    </thead>
-    <tbody id="attendanceTableBodyHistory">
-        <!-- Dữ liệu lịch sử sẽ được chèn vào đây -->
-    </tbody>
-</table>
-
-
+<div class="mt-5">
+    <h2>Bảng lịch sử chấm công</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered" id="attendanceTableHistory">
+            <thead class="thead-light">
+                <tr>
+                    <th>Ngày làm việc</th>
+                    <th>Giờ vào</th>
+                    <th>Giờ ra</th>
+                    <th>Tổng giờ</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceTableBodyHistory"></tbody>
+        </table>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 <script>
+    const checkInTimeInput = document.getElementById("checkInTime");
+    const checkOutTimeInput = document.getElementById("checkOutTime");
+    const checkInOTTimeInput = document.getElementById("checkInOTTime");
+    const checkOutOTTimeInput = document.getElementById("checkOutOTTime");
+    const attendanceDateRangeInput = document.getElementById("attendanceDateRange");
+    const selectedWorkDaysListElement = document.getElementById("selectedWorkDaysList");
+    const attendanceNoteTextarea = document.getElementById("attendanceNote");
+    const attendanceRequestsTableBody = document.getElementById("attendanceTableBody2");
+    const attendanceTableBody = document.getElementById("attendanceTableBody");
+    const attendanceTableBodyHistory = document.getElementById("attendanceTableBodyHistory");
 
-document.getElementById("set8hBtn").addEventListener("click", function () {
-    document.getElementById("checkInTime").value = "08:00";
-    document.getElementById("checkOutTime").value = "17:00";
-    document.getElementById("checkInOTTime").value = "";
-    document.getElementById("checkOutOTTime").value = "";
-    updateTotalHours();
-});
+    let selectedWorkDays = [];
+    let calendar;
 
-document.getElementById("set8hPlus2Btn").addEventListener("click", function () {
-    document.getElementById("checkInTime").value = "08:00";
-    document.getElementById("checkOutTime").value = "17:00";
-    document.getElementById("checkInOTTime").value = "17:00";
-    document.getElementById("checkOutOTTime").value = "19:00";
-    updateTotalHours();
-});
+    // --- Date and Time Functions ---
 
-document.getElementById("set8hPlus4Btn").addEventListener("click", function () {
-    document.getElementById("checkInTime").value = "08:00";
-    document.getElementById("checkOutTime").value = "17:00";
-    document.getElementById("checkInOTTime").value = "17:00";
-    document.getElementById("checkOutOTTime").value = "21:00";
-    updateTotalHours();
-});
-let calendar;
+    function formatDate(date) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `<span class="math-inline">${day}/</span>${month}/${year}`; // Corrected line
+}
 
-document.addEventListener("DOMContentLoaded", function () {
-    let calendarEl = document.getElementById("attendanceCalendar");
-    calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        locale: "vi",
-        events: fetchCalendarEvents
-    });
-    calendar.render();
-});
+    // Calculate hours between two times
+    function calculateHours(startTime, endTime) {
+        if (!startTime || !endTime) return 0.00;
 
-// Sự kiện click nút reset
-document.getElementById("resetCalendarBtn").addEventListener("click", function () {
-    if (calendar) {
-        calendar.refetchEvents();
+        const start = new Date(`2000-01-01T${startTime}:00`);
+        const end = new Date(`2000-01-01T${endTime}:00`);
+        let hours = (end - start) / (1000 * 60 * 60);
+        return parseFloat(hours.toFixed(2));
     }
-});
 
+    // Calculate daily working hours (subtract lunch if applicable)
+    function calculateDailyHours(checkIn, checkOut) {
+        let hours = calculateHours(checkIn, checkOut);
+        if (hours >= 5) hours -= 1; // Subtract lunch break
+        return hours;
+    }
 
-let selectedWorkDays = new Set();
-let attendanceRecords = new Set(); // Chứa danh sách ngày đã chấm công
-// Cấu hình Flatpickr
-flatpickr("#attendanceDateRange", {
-    mode: "multiple",
-    dateFormat: "Y-m-d",
-    disable: [
-        function(date) {
-             let today = new Date();
-            today.setHours(0, 0, 0, 0);
-            return date < today || date.getDay() === 0; // Chặn ngày trong quá khứ và Chủ Nhật
+    // Calculate overtime hours
+    function calculateOvertimeHours(checkInOT, checkOutOT) {
+        return calculateHours(checkInOT, checkOutOT);
+    }
+
+    // --- DOM Manipulation ---
+
+    // Update the displayed list of selected work days
+    function updateSelectedWorkDaysList() {
+        selectedWorkDaysListElement.innerHTML = selectedWorkDays
+            .map(day => `<span class="badge bg-primary me-1">${formatDate(new Date(day))}</span>`)
+            .join("");
+    }
+
+    // Reset the attendance form
+    function resetAttendanceForm() {
+        attendanceDateRangeInput.value = "";
+        checkInTimeInput.value = "";
+        checkOutTimeInput.value = "";
+        checkInOTTimeInput.value = "";
+        checkOutOTTimeInput.value = "";
+        attendanceNoteTextarea.value = "";
+        selectedWorkDays = [];
+        updateSelectedWorkDaysList();
+    }
+
+    // --- Event Handlers ---
+
+    // Set time presets
+    document.getElementById("set8hBtn").addEventListener("click", () => {
+        checkInTimeInput.value = "08:00";
+        checkOutTimeInput.value = "17:00";
+        checkInOTTimeInput.value = "";
+        checkOutOTTimeInput.value = "";
+    });
+
+    document.getElementById("set8hPlus2Btn").addEventListener("click", () => {
+        checkInTimeInput.value = "08:00";
+        checkOutTimeInput.value = "17:00";
+        checkInOTTimeInput.value = "17:00";
+        checkOutOTTimeInput.value = "19:00";
+    });
+
+    document.getElementById("set8hPlus4Btn").addEventListener("click", () => {
+        checkInTimeInput.value = "08:00";
+        checkOutTimeInput.value = "17:00";
+        checkInOTTimeInput.value = "17:00";
+        checkOutOTTimeInput.value = "21:00";
+    });
+
+    // Handle date range selection
+    flatpickr("#attendanceDateRange", {
+        mode: "range",
+        dateFormat: "d/m/Y",
+        weekNumbers: true,
+        locale: {
+            firstDayOfWeek: 1 // Monday
+        },
+        disable: [date => date.getDay() === 0], // Disable Sundays
+        onClose: handleDateRangeClose
+    });
+
+    function handleDateRangeClose(selectedDates) {
+        selectedWorkDays = [];
+
+        if (selectedDates.length === 2) {
+            let currentDate = new Date(selectedDates[0]);
+            const endOfWeek = selectedDates[1];
+
+            while (currentDate <= endOfWeek) {
+                if (currentDate.getDay() >= 1 && currentDate.getDay() <= 6) {
+                    selectedWorkDays.push(currentDate.toISOString().split('T')[0]);
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            updateSelectedWorkDaysList();
+
+        } else if (selectedDates.length === 1) {
+            const selectedDate = selectedDates[0];
+            const dayOfWeek = selectedDate.getDay();
+
+            if (dayOfWeek !== 0) {
+                const startOfWeek = new Date(selectedDate);
+                startOfWeek.setDate(selectedDate.getDate() - dayOfWeek + 1);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+                let currentDate = new Date(startOfWeek);
+                while (currentDate <= endOfWeek) {
+                    if (currentDate.getDay() >= 1 && currentDate.getDay() <= 6) {
+                        selectedWorkDays.push(currentDate.toISOString().split('T')[0]);
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                updateSelectedWorkDaysList();
+                this.clear();
+            } else {
+                this.clear();
+                Swal.fire("Thông báo", "Không thể chọn Chủ Nhật.", "warning");
+            }
         }
-    ],
-    locale: {
-        firstDayOfWeek: 1 // Đặt Thứ Hai là ngày đầu tuần
-    },
-    onClose: function(selectedDates) {
-        selectedWorkDays = new Set(selectedDates.map(date => {
-            let localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-            return localDate.toISOString().split('T')[0];
+    }
+
+    // Submit attendance data
+    document.getElementById("submitAttendance").addEventListener("click", () => {
+        if (selectedWorkDays.length === 0) {
+            Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
+            return;
+        }
+
+        if (!checkInTimeInput.value || !checkOutTimeInput.value) {
+            Swal.fire("Lỗi!", "Vui lòng nhập cả giờ check-in và check-out.", "error");
+            return;
+        }
+
+        const attendanceData = selectedWorkDays.map(day => ({
+            NgayLamViec: day,
+            GioVao: checkInTimeInput.value || null,
+            GioRa: checkOutTimeInput.value || null,
+            TongGio: calculateDailyHours(checkInTimeInput.value, checkOutTimeInput.value),
+            TrangThai: "Chờ duyệt",
+            GhiChu: attendanceNoteTextarea.value.trim() || null
         }));
 
-        document.getElementById("selectedDates").innerHTML = [...selectedWorkDays].join("<br>");
-        updateTotalHours(); // Cập nhật tổng giờ làm
-    }
-});
+        const overtimeData = selectedWorkDays.map(day => ({
+            NgayTangCa: day,
+            GioVaoTangCa: checkInOTTimeInput.value || null,
+            GioRaTangCa: checkOutOTTimeInput.value || null,
+            SoGioTangCa: calculateOvertimeHours(checkInOTTimeInput.value, checkOutOTTimeInput.value),
+        })).filter(item => item.SoGioTangCa > 0);
 
+        submitAttendanceData(attendanceData, overtimeData);
+    });
 
+    // --- AJAX Functions ---
 
-// Xử lý gửi dữ liệu chấm công
-document.getElementById("submitAttendance").addEventListener("click", function () {
-    const checkIn = document.getElementById("checkInTime").value;
-    const checkOut = document.getElementById("checkOutTime").value;
-    const checkInOT = document.getElementById("checkInOTTime").value;
-    const checkOutOT = document.getElementById("checkOutOTTime").value;
-    const note = document.getElementById("attendanceNote").value.trim();
-
-    if (selectedWorkDays.size === 0) {
-        Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
-        return;
-    }
-
-    if (!checkIn || !checkOut) {
-        Swal.fire("Lỗi!", "Vui lòng nhập cả giờ check-in và check-out.", "error");
-        return;
-    }
-
-    let attendanceData = [...selectedWorkDays].map(day => ({
-        NgayLamViec: day,
-        GioVao: checkIn || null,
-        GioRa: checkOut || null,
-        TongGio: calculateDailyHours(checkIn, checkOut),
-        TrangThai: "Chờ duyệt",
-        GhiChu: note || null
-    }));
-
-    // Dữ liệu tăng ca (nếu có)
-    let overtimeData = [...selectedWorkDays].map(day => ({
-        NgayTangCa: day,
-        GioVaoTangCa: checkInOT || null,
-        GioRaTangCa: checkOutOT || null,
-        SoGioTangCa: calculateOvertimeHours(checkInOT, checkOutOT),
-    }));
-
-    console.log("Dữ liệu gửi đi:", JSON.stringify({ attendance: attendanceData, overtime: overtimeData }, null, 2));
-
-    fetch('/api/Attendance/SubmitAttendance', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            attendance: attendanceData,
-            overtime: overtimeData.filter(item => item.SoGioTangCa > 0)
-        })
-    })
-    .then(async response => {
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            Swal.fire("Thành công!", result.message || "Chấm công đã được ghi nhận.", "success").then(() => {
-                resetForm();
+    // Submit attendance data to the server
+    async function submitAttendanceData(attendanceData, overtimeData) {
+        try {
+            const response = await fetch('/api/Attendance/SubmitAttendance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ attendance: attendanceData, overtime: overtimeData })
             });
-        } else {
-            showApiError(result);
-        }
-    })
-    .catch(error => {
-        showApiError({ message: "Không thể kết nối đến server.", error: error.message });
-    });
-});
 
-function showApiError(result, fallbackMessage = "Có lỗi xảy ra khi chấm công.") {
-    let errorMessage = `<strong>${result.message || fallbackMessage}</strong>`;
+            const result = await response.json();
 
-    Swal.fire({
-        icon: 'error',
-        title: 'Lỗi!',
-        html: errorMessage,
-        customClass: {
-            popup: 'swal-wide'
-        }
-    });
-}
-function calculateOvertimeHours (checkInOT, checkOutOT) {
-	if (checkInOT && checkOutOT) {
-		const checkInOTTime = new Date(`2000-01-01T${checkInOT}:00`);
-		const checkOutOTTime = new Date(`2000-01-01T${checkOutOT}:00`);
-
-		if (checkOutOTTime > checkInOTTime) {
-			let hours = (checkOutOTTime - checkInOTTime) / (1000 * 60 * 60);
-			return parseFloat(hours.toFixed(2));
-		}
-	}
-	return 0.00;
-}
-function calculateDailyHours(checkIn, checkOut) {
-    if (checkIn && checkOut) {
-        const checkInTime = new Date(`2000-01-01T${checkIn}:00`);
-        const checkOutTime = new Date(`2000-01-01T${checkOut}:00`);
-
-        if (checkOutTime > checkInTime) {
-            let hours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
-
-            if (hours >= 5) {
-                hours -= 1;
+            if (response.ok && result.success) {
+                Swal.fire("Thành công!", result.message || "Chấm công đã được ghi nhận.", "success").then(resetAttendanceForm);
+            } else {
+                showApiError(result);
             }
-
-            return parseFloat(hours.toFixed(2));
+        } catch (error) {
+            showApiError({ message: "Không thể kết nối đến server.", error: error.message });
         }
     }
-    return 0.00;
-}
 
+    // Fetch attendance records
+    async function fetchAttendanceRecords() {
+        try {
+            const response = await fetch('/api/Attendance/GetAttendanceRecords');
+            const data = await response.json();
 
-
-// Hàm cập nhật tổng số giờ làm
-function updateTotalHours() {
-    let checkIn = document.getElementById("checkInTime").value;
-    let checkOut = document.getElementById("checkOutTime").value;
-
-    let totalHours = [...selectedWorkDays].reduce((sum, day) => {
-        return sum + calculateDailyHours(checkIn, checkOut);
-    }, 0);
-
-    document.getElementById("weeklyHours").value = totalHours.toFixed(2);
-}
-
-// Hàm reset form sau khi gửi thành công
-function resetForm() {
-    document.getElementById("attendanceDateRange").value = "";
-    document.getElementById("selectedDates").innerHTML = "";
-    document.getElementById("checkInTime").value = "";
-    document.getElementById("checkOutTime").value = "";
-    document.getElementById("checkInOTTime").value = "";
-    document.getElementById("checkOutOTTime").value = "";
-    document.getElementById("attendanceNote").value = "";
-    selectedWorkDays.clear();
-    updateTotalHours();
-    fetchAttendanceRecords();
-    fetchAttendanceRequestsRecords();
-    fetchAttendanceTableHistory();
-}
-
-// Lắng nghe thay đổi giờ check-in/check-out để cập nhật tổng giờ làm
-document.getElementById("checkInTime").addEventListener("change", updateTotalHours);
-document.getElementById("checkOutTime").addEventListener("change", updateTotalHours);
-
-function fetchAttendanceTableHistory() {
-    fetch('/api/Attendance/GetAttendanceHistoryRecords')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderAttendanceHistoryTable(data.records);
-            } else {
-                console.error("Lỗi lấy dữ liệu lịch sử chấm công.");
-            }
-        })
-        .catch(error => console.error("Lỗi kết nối API:", error));
-}
-
-// Hiển thị bảng lịch sử chấm công
-function renderAttendanceHistoryTable(records) {
-    let tableBody = document.getElementById("attendanceTableBodyHistory");
-    tableBody.innerHTML = ""; // Xóa dữ liệu cũ
-
-    records.forEach(record => {
-        let row = `
-            <tr>
-                <td>${record.ngay}</td>
-                <td>${record.gioVao || "-"}</td>
-                <td>${record.gioRa || "-"}</td>
-                <td>${record.tongGio}</td>
-                <td>${record.trangThai || "-"}</td>
-                <td>${record.ghiChu || "-"}</td>
-            </tr>`;
-        tableBody.innerHTML += row;
-    });
-}
-
-// Gọi API khi trang tải xong
-document.addEventListener("DOMContentLoaded", function() {
-    fetchAttendanceTableHistory();
-});
-
-
-// Gọi API để lấy danh sách yêu cầu chỉnh sửa chấm công
-function fetchAttendanceRequestsRecords() {
-    fetch('/api/Attendance/GetAttendanceRequests')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderAttendanceRequestsTable(data.requests);
-            } else {
-                console.error("Lỗi lấy dữ liệu yêu cầu chấm công.");
-            }
-        })
-        .catch(error => console.error("Lỗi kết nối API:", error));
-}
-
-// Hiển thị bảng yêu cầu chỉnh sửa chấm công và tính tổng giờ
-function renderAttendanceRequestsTable(requests) {
-    let tableBody = document.getElementById("attendanceTableBody2");
-    tableBody.innerHTML = "";
-
-    requests.forEach(request => { 
-        let gioVaoMoi = request.gioVaoMoi ?? '-';
-        let gioRaMoi = request.gioRaMoi ?? '-';
-        let dailyHours = calculateDailyHours(gioVaoMoi, gioRaMoi); // Calculate hours worked for each day
-        let row = `<tr>
-            <td>${request.ngayLamViec}</td>
-            <td>${gioVaoMoi}</td>
-            <td>${gioRaMoi}</td>
-            <td>${dailyHours.toFixed(2)} </td>
-            <td>${request.lyDo || "-"}</td>
-            <td>
-                <button class="btn btn-success" onclick="acceptRequest(${request.maYeuCau}, '${request.ngayLamViec}', '${gioVaoMoi}', '${gioRaMoi}')">Chấp nhận</button>
-               <button class="btn btn-danger" onclick="rejectRequest(event, ${request.maYeuCau})">Từ chối</button>
-
-            </td>
-        </tr>`;
-        tableBody.innerHTML += row;
-    });
-}
-
-// Gọi API để lấy danh sách chấm công
-function fetchAttendanceRecords() {
-    fetch('/api/Attendance/GetAttendanceRecords')
-        .then(response => response.json())
-        .then(data => {
             if (data.success) {
                 renderAttendanceTable(data.records);
             } else {
-                console.error("Lỗi lấy dữ liệu chấm công.");
+                console.error("Lỗi lấy dữ liệu chấm công:", data.message);
             }
-        })
-        .catch(error => console.error("Lỗi kết nối API:", error));
-}
-
-// Hiển thị bảng chấm công
-function renderAttendanceTable(records) {
-    let tableBody = document.getElementById("attendanceTableBody");
-    tableBody.innerHTML = "";
-
-    records.forEach(record => {
-        let row = `<tr>
-            <td>${record.ngayLamViec}</td>
-            <td>${record.gioVao || "-"}</td>
-            <td>${record.gioRa || "-"}</td>
-            <td>${record.tongGio}</td>
-            <td>${record.trangThai || "-"}</td>
-            <td>${record.ghiChu || "-"}</td>
-        </tr>`;
-        tableBody.innerHTML += row;
-    });
-}
-// Chấp nhận yêu cầu chấm công
-function acceptRequest(maYeuCau) {
-    // Lấy thông tin từ hàng trong bảng
-    const row = event.target.closest('tr');
-    const ngayLamViec = row.cells[0].textContent;
-    const gioVaoMoi = row.cells[1].textContent !== '-' ? row.cells[1].textContent : null;
-    const gioRaMoi = row.cells[2].textContent !== '-' ? row.cells[2].textContent : null;
-
-    const tongGio = calculateDailyHours(gioVaoMoi, gioRaMoi);
-
-    // Prepare the data to be sent to the API
-    const requestData = [{
-        NgayLamViec: ngayLamViec,
-        GioVao: gioVaoMoi,
-        GioRa: gioRaMoi,
-        TongGio: tongGio,
-        TrangThai: 'Đã duyệt',  // Set status to approved
-        GhiChu: 'Chấp nhận yêu cầu chấm công',
-        MaYeuCau: maYeuCau  // Add maYeuCau to the request data
-    }];
-
-    fetch('/api/Attendance/SubmitAttendance', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)  // Use requestData here
-    })
-    .then(async response => {
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            Swal.fire("Thành công!", result.message || "Chấm công đã được ghi nhận.", "success").then(() => {
-                resetForm();
-            });
-        } else {
-            // Trường hợp lỗi với response.ok false
-            showApiError(result);
+        } catch (error) {
+            console.error("Lỗi kết nối API:", error.message);
         }
-    })
-    .catch(error => {
-        // Lỗi không phải từ API, có thể lỗi mạng hoặc lỗi không thể kết nối server
-        showApiError({ message: "Không thể kết nối đến server.", error: error.message });
-    });
-
-    function showApiError(result, fallbackMessage = "Có lỗi xảy ra khi chấm công.") {
-        let errorMessage = `<strong>${result.message || fallbackMessage}</strong>`;
-
-        
-
-        // Hiển thị thông báo lỗi
-        Swal.fire({
-            icon: 'error',
-            title: 'Lỗi!',
-            html: errorMessage,
-            customClass: {
-                popup: 'swal-wide' // Thêm class nếu cần tùy chỉnh
-            }
-        });
     }
-}
 
+    // Fetch attendance request records
+    async function fetchAttendanceRequests() {
+        try {
+            const response = await fetch('/api/Attendance/GetAttendanceRequests');
+            const data = await response.json();
 
-
-
-
-
-// Hàm từ chối yêu cầu chấm công với lý do
-async function rejectRequest(event, maYeuCau) {
-    try {
-        const response = await fetch("/api/Leave/GetLeaveTypes");
-        const result = await response.json();
-
-        if (result && result.success && Array.isArray(result.leaveTypes)) {
-            let leaveTypeOptions = result.leaveTypes.map(
-                leaveType => `<option value="${leaveType.maLoaiNgayNghi}">${leaveType.tenLoai}</option>`
-            ).join("");
-
-            // Lấy hàng (`tr`) chứa nút bấm
-            const row = event.target.closest('tr');
-            if (!row) {
-                console.error("Không tìm thấy hàng chứa dữ liệu!");
-                return;
+            if (data.success) {
+                renderAttendanceRequestsTable(data.requests);
+            } else {
+                console.error("Lỗi lấy dữ liệu yêu cầu chấm công:", data.message);
             }
+        } catch (error) {
+            console.error("Lỗi kết nối API:", error.message);
+        }
+    }
 
-            const ngayLamViec = row.cells[0]?.textContent.trim() || ""; // Lấy ngày làm việc từ cột đầu tiên
+    // Fetch attendance history records
+    async function fetchAttendanceHistory() {
+        try {
+            const response = await fetch('/api/Attendance/GetAttendanceHistoryRecords');
+            const data = await response.json();
 
+            if (data.success) {
+                renderAttendanceHistoryTable(data.records);
+            } else {
+                console.error("Lỗi lấy dữ liệu lịch sử chấm công:", data.message);
+            }
+        } catch (error) {
+            console.error("Lỗi kết nối API:", error.message);
+        }
+    }
+
+    // Accept an attendance request
+    async function acceptAttendanceRequest(requestId, ngayLamViec, gioVaoMoi, gioRaMoi) {
+        try {
+            const tongGio = calculateDailyHours(gioVaoMoi, gioRaMoi);
+            const requestData = [{
+                NgayLamViec: ngayLamViec,
+                GioVao: gioVaoMoi,
+                GioRa: gioRaMoi,
+                TongGio: tongGio,
+                TrangThai: 'Đã duyệt',
+                GhiChu: 'Chấp nhận yêu cầu chấm công',
+                MaYeuCau: requestId
+            }];
+
+            const response = await fetch('/api/Attendance/SubmitAttendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                Swal.fire("Thành công!", result.message || "Chấm công đã được ghi nhận.", "success").then(() => {
+                    resetAttendanceForm();
+                    fetchAttendanceRecords();
+                    fetchAttendanceRequests();
+                    fetchAttendanceHistory();
+                });
+            } else {
+                showApiError(result);
+            }
+        } catch (error) {
+            showApiError({ message: "Không thể kết nối đến server.", error: error.message });
+        }
+    }
+
+    // Reject an attendance request
+    async function rejectAttendanceRequest(event, requestId) {
+        try {
+            const response = await fetch("/api/Leave/GetLeaveTypes");
+            const result = await response.json();
+
+            if (result && result.success && Array.isArray(result.leaveTypes)) {
+                const leaveTypeOptions = result.leaveTypes
+                    .map(leaveType => `<option value="${leaveType.maLoaiNgayNghi}">${leaveType.tenLoai}</option>`)
+                    .join("");
+
+                const row = event.target.closest('tr');
+                if (!row) {
+                    console.error("Không tìm thấy hàng chứa dữ liệu!");
+                    return;
+                }
+
+                const ngayLamViec = row.cells[0]?.textContent.trim() || "";
+
+                if (!ngayLamViec) {
+                    console.error("Không lấy được NgayLamViec!");
+                    Swal.fire("Lỗi!", "Không tìm thấy ngày làm việc.", "error");
+                    return;
+                }
+
+                const { value: rejectionData, isConfirmed } = await Swal.fire({
+                    title: "Xác nhận từ chối?",
+                    html: `
+                        <select id="leaveTypeSelect" class="swal2-select">
+                            <option value="">Chọn loại nghỉ</option>
+                            ${leaveTypeOptions}
+                        </select>
+                        <input type="text" id="rejectReason" class="swal2-input" placeholder="Nhập lý do từ chối (nếu có)">
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: "Từ chối",
+                    cancelButtonText: "Hủy",
+                    preConfirm: () => {
+                        const leaveType = document.getElementById("leaveTypeSelect").value;
+                        const reason = document.getElementById("rejectReason").value.trim();
+
+                        if (!leaveType) {
+                            Swal.showValidationMessage("Vui lòng chọn loại nghỉ!");
+                            return false;
+                        }
+
+                        return { leaveType, reason };
+                    }
+                });
+
+                if (isConfirmed) {
+                    await sendRejection(requestId, rejectionData.leaveType, rejectionData.reason, ngayLamViec);
+                }
+            } else {
+                console.error("Lỗi dữ liệu từ API:", result);
+                Swal.fire("Lỗi!", "Dữ liệu không hợp lệ.", "error");
+            }
+        } catch (error) {
+            console.error("Lỗi hệ thống:", error);
+            Swal.fire("Lỗi!", "Lỗi hệ thống. Vui lòng thử lại sau.", "error");
+        }
+    }
+
+    // Send the rejection request to the server
+    async function sendRejection(requestId, leaveType, reason, ngayLamViec) {
+        try {
             if (!ngayLamViec) {
-                console.error("Không lấy được NgayLamViec!");
+                console.error("Lỗi: Ngày làm việc không hợp lệ.");
                 Swal.fire("Lỗi!", "Không tìm thấy ngày làm việc.", "error");
                 return;
             }
 
-            Swal.fire({
-                title: "Xác nhận từ chối?",
-                html: `
-                    <select id="leaveTypeSelect" class="swal2-select">
-                        <option value="">Chọn loại nghỉ</option>
-                        ${leaveTypeOptions}
-                    </select>
-                    <input type="text" id="rejectReason" class="swal2-input" placeholder="Nhập lý do từ chối (nếu có)">
-                `,
-                showCancelButton: true,
-                confirmButtonText: "Từ chối",
-                cancelButtonText: "Hủy",
-                preConfirm: () => {
-                    const leaveType = document.getElementById("leaveTypeSelect").value;
-                    const reason = document.getElementById("rejectReason").value.trim();
+            const bodyData = {
+                MaYeuCau: requestId,
+                MaLoaiNgayNghi: leaveType,
+                LyDo: reason,
+                NgayLamViec: ngayLamViec
+            };
 
-                    if (!leaveType) {
-                        Swal.showValidationMessage("Vui lòng chọn loại nghỉ!");
-                        return false;
-                    }
-
-                    return { leaveType, reason };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    console.log("Mã yêu cầu:", maYeuCau);
-                    console.log("Loại nghỉ:", result.value.leaveType);
-                    console.log("Lý do từ chối:", result.value.reason);
-                    console.log("Ngày làm việc:", ngayLamViec);
-
-                    // Gửi dữ liệu từ chối lên server
-                    sendRejection(maYeuCau, result.value.leaveType, result.value.reason, ngayLamViec);
-                }
+            const response = await fetch("/api/Attendance/RejectAttendanceRequest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bodyData)
             });
-        } else {
-            console.error("Lỗi dữ liệu từ API:", result);
-            Swal.fire("Lỗi!", "Dữ liệu không hợp lệ.", "error");
+
+            if (!response.ok) {
+                throw new Error('Không thể từ chối yêu cầu.');
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                Swal.fire("Thành công!", "Yêu cầu đã bị từ chối.", "success");
+                fetchAttendanceRequests();
+            } else {
+                Swal.fire("Lỗi!", result.message || "Không thể từ chối yêu cầu.", "error");
+            }
+        } catch (error) {
+            console.error("Lỗi khi gửi từ chối:", error);
+            Swal.fire("Lỗi!", "Đã xảy ra lỗi khi gửi dữ liệu.", "error");
         }
-    } catch (error) {
-        console.error("Lỗi hệ thống:", error);
-        Swal.fire("Lỗi!", "Lỗi hệ thống. Vui lòng thử lại sau.", "error");
     }
-}
 
+    // --- Rendering Functions ---
 
-// Hàm gửi yêu cầu từ chối lên server
-async function sendRejection(maYeuCau, loaiNghi, lyDo, ngayLamViec) {
-    try {
-        if (!ngayLamViec) {
-            console.error("Lỗi: Ngày làm việc không hợp lệ.");
-            Swal.fire("Lỗi!", "Không tìm thấy ngày làm việc.", "error");
-            return;
-        }
+    // Render the attendance requests table
+    function renderAttendanceRequestsTable(requests) {
+        attendanceRequestsTableBody.innerHTML = "";
 
-        const bodyData = {
-            MaYeuCau: maYeuCau,
-            MaLoaiNgayNghi: loaiNghi,
-            LyDo: lyDo,
-            NgayLamViec: ngayLamViec
-        };
-
-        console.log("Dữ liệu gửi đi:", bodyData);
-
-        const response = await fetch("/api/Attendance/RejectAttendanceRequest", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(bodyData)
+        requests.forEach(request => {
+            const gioVaoMoi = request.gioVaoMoi ?? '-';
+            const gioRaMoi = request.gioRaMoi ?? '-';
+            const dailyHours = calculateDailyHours(gioVaoMoi, gioRaMoi);
+            const row = `
+                <tr>
+                    <td>${request.ngayLamViec}</td>
+                    <td>${gioVaoMoi}</td>
+                    <td>${gioRaMoi}</td>
+                    <td>${dailyHours.toFixed(2)}</td>
+                    <td>${request.lyDo || "-"}</td>
+                    <td>
+                        <button class="btn btn-success btn-sm" onclick="acceptAttendanceRequest(${request.maYeuCau}, '${request.ngayLamViec}', '${gioVaoMoi}', '${gioRaMoi}')">Chấp nhận</button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectAttendanceRequest(event, ${request.maYeuCau})">Từ chối</button>
+                    </td>
+                </tr>
+            `;
+            attendanceRequestsTableBody.innerHTML += row;
         });
-
-        if (!response.ok) {
-            throw new Error('Không thể từ chối yêu cầu.');
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-            Swal.fire("Thành công!", "Yêu cầu đã bị từ chối.", "success");
-            fetchAttendanceRequestsRecords(); // Refresh dữ liệu
-        } else {
-            Swal.fire("Lỗi!", result.message || "Không thể từ chối yêu cầu.", "error");
-        }
-    } catch (error) {
-        console.error("Lỗi khi gửi từ chối:", error);
-        Swal.fire("Lỗi!", "Đã xảy ra lỗi khi gửi dữ liệu.", "error");
     }
-}
 
+    // Render the attendance table
+    function renderAttendanceTable(records) {
+        attendanceTableBody.innerHTML = "";
+        records.forEach(record => {
+            const row = `
+                <tr>
+                    <td>${record.ngayLamViec}</td>
+                    <td>${record.gioVao || "-"}</td>
+                    <td>${record.gioRa || "-"}</td>
+                    <td>${record.tongGio}</td>
+                    <td>${record.trangThai || "-"}</td>
+                    <td>${record.ghiChu || "-"}</td>
+                </tr>
+            `;
+            attendanceTableBody.innerHTML += row;
+        });
+    }
 
-//
+    // Render the attendance history table
+    function renderAttendanceHistoryTable(records) {
+        attendanceTableBodyHistory.innerHTML = "";
+        records.forEach(record => {
+            const row = `
+                <tr>
+                    <td>${record.ngay}</td>
+                    <td>${record.gioVao || "-"}</td>
+                    <td>${record.gioRa || "-"}</td>
+                    <td>${record.tongGio}</td>
+                    <td>${record.trangThai || "-"}</td>
+                    <td>${record.ghiChu || "-"}</td>
+                </tr>
+            `;
+            attendanceTableBodyHistory.innerHTML += row;
+        });
+    }
 
+    // --- Calendar ---
 
-document.addEventListener("DOMContentLoaded", function() {
-    let calendarEl = document.getElementById("attendanceCalendar");
-    let calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        locale: "vi",
-        events: fetchCalendarEvents
+    // Initialize the FullCalendar
+    function initializeCalendar() {
+        const calendarEl = document.getElementById("attendanceCalendar");
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: "dayGridMonth",
+            locale: "vi",
+            events: fetchCalendarEvents
+        });
+        calendar.render();
+    }
+
+    // Fetch events for the FullCalendar
+    function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
+        Promise.all([
+            fetch('/api/Attendance/GetAttendanceRecords').then(res => res.json()),
+            fetch('/api/Leave/GetLeaveHistory').then(res => res.json()),
+            fetch('/api/Attendance/GetAttendanceHistoryRecords2').then(res => res.json())
+        ])
+        .then(([attendanceData, leaveData, pendingData]) => {
+            let events = [];
+
+            if (attendanceData.success) {
+                const greenEvents = attendanceData.records.map(record => ({
+                    title: "Đã duyệt",
+                    start: record.ngayLamViec,
+                    color: "green"
+                }));
+                events.push(...greenEvents);
+            }
+
+            if (leaveData.success) {
+                const yellowEvents = leaveData.leaveHistory.map(record => ({
+                    title: "Ngày nghỉ",
+                    start: record.ngayNghi,
+                    color: "Teal"
+                }));
+                events.push(...yellowEvents);
+            }
+
+            if (pendingData.success) {
+                const blueEvents = pendingData.records.map(record => ({
+                    title: "Chưa duyệt",
+                    start: record.ngay,
+                    color: "blue"
+                }));
+                events.push(...blueEvents);
+            }
+
+            successCallback(events);
+        })
+        .catch(error => {
+            failureCallback(error);
+        });
+    }
+
+    // Reset the calendar (refetch events)
+    document.getElementById("resetCalendarBtn").addEventListener("click", () => {
+        if (calendar) {
+            calendar.refetchEvents();
+        }
     });
-    calendar.render();
-});
 
-// Lấy dữ liệu lịch từ API hiện ra hộp lịch
-function fetchCalendarEvents(fetchInfo, successCallback, failureCallback) {
-    Promise.all([
-        fetch('/api/Attendance/GetAttendanceRecords').then(res => res.json()),
-        fetch('/api/Leave/GetLeaveHistory').then(res => res.json()),
-        fetch('/api/Attendance/GetAttendanceHistoryRecords2').then(res => res.json())
-    ])
-    .then(([attendanceData, leaveData, pendingData]) => {
-        let events = [];
+    // --- Error Handling ---
 
-        // Process attendance data - green events
-        if (attendanceData.success) {
-            const greenEvents = attendanceData.records.map(record => ({
-                title: "Đã duyệt",
-                start: record.ngayLamViec,
-                color: "green"
-            }));
-            events.push(...greenEvents);
-        }
+    // Display API errors using SweetAlert2
+    function showApiError(result, fallbackMessage = "Có lỗi xảy ra.") {
+        const errorMessage = `<strong>${result.message || fallbackMessage}</strong>`;
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            html: errorMessage,
+            customClass: { popup: 'swal-wide' }
+        });
+    }
 
-        // Process leave data - yellow events
-        if (leaveData.success) {
-            const yellowEvents = leaveData.leaveHistory.map(record => ({
-                title: "Ngày nghỉ", // Adjust title if needed
-                start: record.ngayNghi,
-                color: "Teal"
-            }));
-            events.push(...yellowEvents);
-        }
+    // --- Initialization ---
 
-        // Process pending attendance data - blue events
-        if (pendingData.success) {
-            const blueEvents = pendingData.records.map(record => ({
-                title: "Chưa duyệt",
-                start: record.ngay,
-                color: "blue"
-            }));
-            events.push(...blueEvents);
-        }
-
-        successCallback(events);
-    })
-    .catch(error => {
-        failureCallback(error);
+    document.addEventListener("DOMContentLoaded", () => {
+        initializeCalendar();
+        fetchAttendanceRecords();
+        fetchAttendanceRequests();
+        fetchAttendanceHistory();
     });
-}
-
-// Gọi API khi trang tải xong
-document.addEventListener("DOMContentLoaded", function() {
-    fetchAttendanceRecords();
-    fetchAttendanceRequestsRecords();
-});
-
 </script>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-@* <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"> *@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">

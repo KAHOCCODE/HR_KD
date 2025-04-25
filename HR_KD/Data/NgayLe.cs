@@ -13,5 +13,7 @@ public partial class NgayLe
 
     public int? SoNgayNghi { get; set; }
 
+    public string? TrangThai { get; set; }
+
     public string? MoTa { get; set; }
 }

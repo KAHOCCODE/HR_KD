@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HR_KD.DTOs;
+using Microsoft.AspNetCore.Mvc;
+using static AttendanceRequestManagerApiController;
 
 namespace HR_KD.Controllers
 {
@@ -7,6 +9,10 @@ namespace HR_KD.Controllers
         public IActionResult Index()
         {
             return View();
+        }
+        public IActionResult SendReminderEmails()
+        {
+            return View(new SendReminderEmailsDTO());
         }
     }
 }

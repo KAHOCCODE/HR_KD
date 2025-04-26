@@ -84,18 +84,18 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <label for="checkInTime" class="form-label fw-bold">Giờ Check-in</label>
-            <input type="time" class="form-control" id="checkInTime">
+            <input type="time" class="form-control" id="checkInTime" value="08:00">
         </div>
         <div class="col-md-6">
             <label for="checkOutTime" class="form-label fw-bold">Giờ Check-out</label>
-            <input type="time" class="form-control" id="checkOutTime">
+            <input type="time" class="form-control" id="checkOutTime" value="18:00">
         </div>
     </div>
 
     <!-- Weekly Hours and Note -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <label for="weeklyHours" class="form-label fw-bold">Tổng Số Giờ Làm Trong Tuần</label>
+            <label for="weeklyHours" class="form-label fw-bold">Tổng Số Giờ Làm</label>
             <input type="text" class="form-control" id="weeklyHours" readonly>
         </div>
         <div class="col-md-6">
@@ -171,6 +171,7 @@
                     initFlatpickrs();
                     initCalendar();
                     initEvents();
+                    updateTotalHours(); // Calculate initial hours based on default times
                 }
 
                 // Load dropdown options
@@ -321,12 +322,15 @@
                     sendReminderEmailsBtn.addEventListener("click", sendReminderEmails);
                 }
 
-                // Calculate daily working hours
+                // Calculate daily working hours (subtract 2-hour lunch break)
                 function calculateDailyHours(checkIn, checkOut) {
                     if (!checkIn || !checkOut) return 0;
                     const inTime = new Date(`2000-01-01T${checkIn}:00`);
                     const outTime = new Date(`2000-01-01T${checkOut}:00`);
-                    return outTime > inTime ? ((outTime - inTime) / 3600000).toFixed(2) : 0;
+                    if (outTime <= inTime) return 0;
+                    const totalHours = (outTime - inTime) / 3600000; // Convert milliseconds to hours
+                    const workingHours = totalHours - 2; // Subtract 2-hour lunch break
+                    return workingHours > 0 ? workingHours.toFixed(2) : 0;
                 }
 
                 // Update total weekly hours
@@ -342,11 +346,12 @@
                 function resetForm() {
                     attendanceDateRange._flatpickr.clear();
                     selectedDatesDiv.innerHTML = "";
-                    checkInTime.value = "";
-                    checkOutTime.value = "";
+                    checkInTime.value = "08:00"; // Reset to default
+                    checkOutTime.value = "18:00"; // Reset to default
                     attendanceNote.value = "";
                     weeklyHours.value = "";
                     selectedWorkDays.clear();
+                    updateTotalHours(); // Update hours after reset
                     if (employeeFilter.value) fetchAttendanceRecords(employeeFilter.value);
                 }
 

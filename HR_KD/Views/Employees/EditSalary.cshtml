@@ -1,4 +1,6 @@
-﻿@{
+﻿@model HR_KD.DTOs.ThongTinLuongNVDTO
+
+@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
@@ -9,16 +11,16 @@
 <div class="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-5xl mx-auto">
         <div class="bg-white shadow-lg rounded-xl overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-700 to-indigo-700 px-6 py-5">
+            <div class="bg-gradient-to-r from-yellow-500 to-yellow-700 px-6 py-5">
                 <h2 class="text-2xl font-semibold text-white text-center">
                     <i class="fas fa-money-check-alt mr-2"></i>
-                    Thiết Lập Lương Nhân Viên
+                    Chỉnh Sửa Lương Nhân Viên
                 </h2>
             </div>
 
             <div class="p-6 bg-gray-50 border-b border-gray-200">
                 <div class="progress h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div id="formProgress" class="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                    <div id="formProgress" class="h-full bg-yellow-500 transition-all duration-500 ease-in-out"
                          style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 <div class="flex justify-between mt-3 text-sm font-medium text-gray-600">
@@ -28,8 +30,9 @@
                 </div>
             </div>
 
-            <form id="setupSalaryForm" class="p-6 sm:p-8">
-                <input type="hidden" id="MaNv" value="@ViewBag.MaNv" />
+            <form id="editSalaryForm" class="p-6 sm:p-8">
+                <input type="hidden" id="MaLuongNV" name="MaLuongNV" value="@Model.MaLuongNV" />
+                <input type="hidden" id="MaNv" name="MaNv" value="@Model.MaNv" />
                 <input type="hidden" id="minimumWage" value="0" />
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -37,7 +40,7 @@
                     <div class="space-y-6">
                         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                             <h3 class="text-xl font-semibold text-gray-800 mb-4">
-                                <i class="fas fa-file-invoice-dollar mr-2 text-blue-600"></i>
+                                <i class="fas fa-file-invoice-dollar mr-2 text-yellow-600"></i>
                                 Thông tin cơ bản
                             </h3>
 
@@ -47,8 +50,8 @@
                                         Lương Cơ Bản <span class="text-red-500">*</span>
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="LuongCoBan"
-                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900"
+                                        <input type="number" step="0.01" id="LuongCoBan" name="LuongCoBan"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50 text-gray-900"
                                                placeholder="Nhập lương cơ bản" required />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
                                             VNĐ
@@ -64,8 +67,8 @@
                                         Thưởng Cố Định
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="ThuongCoDinh" value="0"
-                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                        <input type="number" step="0.01" id="ThuongCoDinh" name="ThuongCoDinh"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="Nhập thưởng cố định" />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
                                             VNĐ
@@ -78,8 +81,8 @@
                                     <label for="NgayApDung" class="block text-sm font-medium text-gray-700">
                                         Ngày Áp Dụng <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="NgayApDung"
-                                           class="flatpickr w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                    <input type="text" id="NgayApDung" name="NgayApDung"
+                                           class="flatpickr w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                            placeholder="Chọn ngày" required />
                                     <p class="mt-1 text-xs text-gray-500">Ngày bắt đầu áp dụng</p>
                                 </div>
@@ -91,7 +94,7 @@
                     <div class="space-y-6">
                         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                             <h3 class="text-xl font-semibold text-gray-800 mb-4">
-                                <i class="fas fa-shield-alt mr-2 text-blue-600"></i>
+                                <i class="fas fa-shield-alt mr-2 text-yellow-600"></i>
                                 Phụ cấp & Bảo hiểm
                             </h3>
 
@@ -101,8 +104,8 @@
                                         Phụ Cấp Cố Định
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="PhuCapCoDinh" value="0"
-                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                        <input type="number" step="0.01" id="PhuCapCoDinh" name="PhuCapCoDinh"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="Nhập phụ cấp cố định" />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
                                             VNĐ
@@ -114,20 +117,20 @@
                                 <div class="grid grid-cols-3 gap-4">
                                     <div>
                                         <label for="BHXH" class="block text-sm font-medium text-gray-700">BHXH</label>
-                                        <input type="number" step="0.01" id="BHXH" value="0"
-                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                        <input type="number" step="0.01" id="BHXH" name="BHXH"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="BHXH" readonly />
                                     </div>
                                     <div>
                                         <label for="BHYT" class="block text-sm font-medium text-gray-700">BHYT</label>
-                                        <input type="number" step="0.01" id="BHYT" value="0"
-                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                        <input type="number" step="0.01" id="BHYT" name="BHYT"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="BHYT" readonly />
                                     </div>
                                     <div>
                                         <label for="BHTN" class="block text-sm font-medium text-gray-700">BHTN</label>
-                                        <input type="number" step="0.01" id="BHTN" value="0"
-                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                        <input type="number" step="0.01" id="BHTN" name="BHTN"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="BHTN" readonly />
                                     </div>
                                 </div>
@@ -135,8 +138,8 @@
 
                                 <div>
                                     <label for="GhiChu" class="block text-sm font-medium text-gray-700">Ghi Chú</label>
-                                    <textarea id="GhiChu" rows="4"
-                                              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                    <textarea id="GhiChu" name="GhiChu" rows="4"
+                                              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                               placeholder="Thông tin bổ sung"></textarea>
                                 </div>
                             </div>
@@ -147,7 +150,7 @@
                 <!-- Summary Section -->
                 <div class="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">
-                        <i class="fas fa-calculator mr-2 text-blue-600"></i>
+                        <i class="fas fa-calculator mr-2 text-yellow-600"></i>
                         Tóm tắt lương
                     </h3>
                     <div class="border-t border-gray-200 pt-4">
@@ -162,7 +165,7 @@
                             </div>
                             <div class="flex justify-between col-span-2 pt-4 border-t">
                                 <span class="text-gray-600 font-semibold">Lương thực lãnh:</span>
-                                <span id="luongThucLanh" class="font-bold text-blue-700 text-lg">0 VNĐ</span>
+                                <span id="luongThucLanh" class="font-bold text-yellow-700 text-lg">0 VNĐ</span>
                             </div>
                         </div>
                     </div>
@@ -176,7 +179,7 @@
                         Quay Lại
                     </a>
                     <button type="submit"
-                            class="inline-flex items-center px-6 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium">
+                            class="inline-flex items-center px-6 py-2.5 rounded-lg bg-yellow-600 text-white hover:bg-yellow-700 transition-colors font-medium">
                         <i class="fas fa-save mr-2"></i>
                         Lưu Thông Tin
                     </button>
@@ -194,21 +197,11 @@
         $(document).ready(function () {
             let insuranceRates = { BHXH: 0, BHYT: 0, BHTN: 0 };
 
-            // Initialize Flatpickr
-            flatpickr("#NgayApDung", {
-                dateFormat: "Y-m-d",
-                altInput: true,
-                altFormat: "d/m/Y",
-                minDate: "today",
-                defaultDate: "today",
-                onReady: function(selectedDates, dateStr, instance) {
-                    $(instance.input).removeAttr("disabled").removeAttr("readonly");
-                    instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
-                },
-                onOpen: function(selectedDates, dateStr, instance) {
-                    instance.calendarContainer.style.zIndex = "9999";
-                }
-            });
+            // Utility to format today's date as YYYY-MM-DD
+            function getTodayDate() {
+                const today = new Date();
+                return today.toISOString().split("T")[0]; // e.g., "2025-04-26"
+            }
 
             // Currency formatter
             function formatCurrency(amount) {
@@ -217,88 +210,6 @@
                     currency: 'VND',
                     maximumFractionDigits: 0
                 }).format(amount);
-            }
-
-            // Fetch minimum wage and insurance rates
-            function loadInitialData() {
-                Swal.fire({
-                    title: "Đang tải...",
-                    text: "Vui lòng chờ trong giây lát",
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                // Fetch active region and minimum wage
-                $.ajax({
-                    url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
-                    method: "GET",
-                    success: function (data) {
-                        var activeRegion = data.find(v => v.isActive);
-                        if (activeRegion) {
-                            $.ajax({
-                                url: `/api/PayrollSettingApi/muc-luong-toi-thieu-vung/${activeRegion.vungLuong}`,
-                                method: "GET",
-                                success: function (wageData) {
-                                    $("#minimumWage").val(wageData.mucLuongToiThieuThang);
-                                    $("#minimumWageValue").text(wageData.mucLuongToiThieuThang.toLocaleString());
-                                    $("#LuongCoBan").attr("min", wageData.mucLuongToiThieuThang);
-                                    updateProgressBar();
-                                    updateSummary();
-                                },
-                                error: function () {
-                                    Swal.fire({
-                                        icon: "error",
-                                        title: "Lỗi",
-                                        text: "Không thể tải mức lương tối thiểu.",
-                                        confirmButtonColor: "#2563eb"
-                                    });
-                                }
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: "error",
-                                title: "Lỗi",
-                                text: "Không tìm thấy vùng lương đang hoạt động.",
-                                confirmButtonColor: "#2563eb"
-                            });
-                        }
-                    },
-                    error: function () {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Lỗi",
-                            text: "Không thể tải thông tin vùng lương.",
-                            confirmButtonColor: "#2563eb"
-                        });
-                    }
-                });
-
-                // Fetch insurance rates
-                $.ajax({
-                    url: "/api/PayrollSettingApi/thong-tin-bao-hiem",
-                    method: "GET",
-                    success: function (data) {
-                        data.forEach(item => {
-                            if (!item.ngayHetHieuLuc) {
-                                if (item.loaiBaoHiem === "BHXH") insuranceRates.BHXH = item.tyLeNguoiLaoDong;
-                                if (item.loaiBaoHiem === "BHYT") insuranceRates.BHYT = item.tyLeNguoiLaoDong;
-                                if (item.loaiBaoHiem === "BHTN") insuranceRates.BHTN = item.tyLeNguoiLaoDong;
-                            }
-                        });
-                        updateInsuranceFields();
-                        Swal.close();
-                    },
-                    error: function () {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Lỗi",
-                            text: "Không thể tải tỷ lệ bảo hiểm.",
-                            confirmButtonColor: "#2563eb"
-                        });
-                    }
-                });
             }
 
             // Update insurance fields based on LuongCoBan
@@ -348,23 +259,201 @@
                 $("#luongThucLanh").text(formatCurrency(luongThucLanh));
             }
 
+            // Fetch minimum wage and insurance rates
+            function loadInitialData() {
+                // Fetch active region and minimum wage
+                $.ajax({
+                    url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
+                    method: "GET",
+                    success: function (data) {
+                        var activeRegion = data.find(v => v.isActive);
+                        if (activeRegion) {
+                            $.ajax({
+                                url: `/api/PayrollSettingApi/muc-luong-toi-thieu-vung/${activeRegion.vungLuong}`,
+                                method: "GET",
+                                success: function (wageData) {
+                                    $("#minimumWage").val(wageData.mucLuongToiThieuThang);
+                                    $("#minimumWageValue").text(wageData.mucLuongToiThieuThang.toLocaleString());
+                                    $("#LuongCoBan").attr("min", wageData.mucLuongToiThieuThang);
+                                    updateProgressBar();
+                                    updateSummary();
+                                },
+                                error: function () {
+                                    Swal.fire({
+                                        icon: "error",
+                                        title: "Lỗi",
+                                        text: "Không thể tải mức lương tối thiểu.",
+                                        confirmButtonColor: "#ca8a04"
+                                    });
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Lỗi",
+                                text: "Không tìm thấy vùng lương đang hoạt động.",
+                                confirmButtonColor: "#ca8a04"
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi",
+                            text: "Không thể tải thông tin vùng lương.",
+                            confirmButtonColor: "#ca8a04"
+                        });
+                    }
+                });
+
+                // Fetch insurance rates
+                $.ajax({
+                    url: "/api/PayrollSettingApi/thong-tin-bao-hiem",
+                    method: "GET",
+                    success: function (data) {
+                        data.forEach(item => {
+                            if (!item.ngayHetHieuLuc) {
+                                if (item.loaiBaoHiem === "BHXH") insuranceRates.BHXH = item.tyLeNguoiLaoDong;
+                                if (item.loaiBaoHiem === "BHYT") insuranceRates.BHYT = item.tyLeNguoiLaoDong;
+                                if (item.loaiBaoHiem === "BHTN") insuranceRates.BHTN = item.tyLeNguoiLaoDong;
+                            }
+                        });
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi",
+                            text: "Không thể tải tỷ lệ bảo hiểm.",
+                            confirmButtonColor: "#ca8a04"
+                        });
+                    }
+                });
+            }
+
+            // Fetch salary details and initialize form
+            let maNv = $("#MaNv").val();
+            if (maNv) {
+                Swal.fire({
+                    title: "Đang tải...",
+                    text: "Vui lòng chờ trong giây lát",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: "/api/SalaryApi/" + maNv,
+                    method: "GET",
+                    success: function (data) {
+                        // Populate form fields with fetched data
+                        $("#LuongCoBan").val(data.luongCoBan || 0);
+                        $("#PhuCapCoDinh").val(data.phuCapCoDinh || 0);
+                        $("#ThuongCoDinh").val(data.thuongCoDinh || 0);
+                        $("#GhiChu").val(data.ghiChu || "");
+
+                        // Handle insurance fields (will be recalculated)
+                        $("#BHXH").val(0);
+                        $("#BHYT").val(0);
+                        $("#BHTN").val(0);
+
+                        // Set date, default to today if invalid
+                        let defaultDate = getTodayDate();
+                        if (data.ngayApDung && !isNaN(new Date(data.ngayApDung).getTime())) {
+                            defaultDate = data.ngayApDung.split("T")[0];
+                        }
+
+                        // Set input value explicitly
+                        $("#NgayApDung").val(defaultDate);
+
+                        // Initialize Flatpickr
+                        flatpickr("#NgayApDung", {
+                            dateFormat: "Y-m-d",
+                            altInput: true,
+                            altFormat: "d/m/Y",
+                            minDate: "today",
+                            defaultDate: defaultDate,
+                            onReady: function(selectedDates, dateStr, instance) {
+                                $(instance.input).removeAttr("disabled").removeAttr("readonly");
+                                instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
+                                // Force set the input value to ensure display
+                                instance.setDate(defaultDate, true);
+                            },
+                            onOpen: function(selectedDates, dateStr, instance) {
+                                instance.calendarContainer.style.zIndex = "9999";
+                            }
+                        });
+
+                        // Update insurance fields and summary after loading rates
+                        loadInitialData();
+                        setTimeout(() => {
+                            updateInsuranceFields();
+                            updateProgressBar();
+                            updateSummary();
+                            Swal.close();
+                        }, 500); // Delay to ensure rates are loaded
+                    },
+                    error: function (xhr) {
+                        // Initialize Flatpickr with today's date on error
+                        flatpickr("#NgayApDung", {
+                            dateFormat: "Y-m-d",
+                            altInput: true,
+                            altFormat: "d/m/Y",
+                            minDate: "today",
+                            defaultDate: getTodayDate(),
+                            onReady: function(selectedDates, dateStr, instance) {
+                                $(instance.input).removeAttr("disabled").removeAttr("readonly");
+                                instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
+                                instance.setDate(getTodayDate(), true);
+                            },
+                            onOpen: function(selectedDates, dateStr, instance) {
+                                instance.calendarContainer.style.zIndex = "9999";
+                            }
+                        });
+                        loadInitialData();
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi",
+                            text: xhr.responseText || "Không thể tải thông tin lương.",
+                            confirmButtonColor: "#ca8a04"
+                        });
+                    }
+                });
+            } else {
+                // Initialize with today’s date if no MaNv
+                flatpickr("#NgayApDung", {
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    minDate: "today",
+                    defaultDate: getTodayDate(),
+                    onReady: function(selectedDates, dateStr, instance) {
+                        $(instance.input).removeAttr("disabled").removeAttr("readonly");
+                        instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
+                        instance.setDate(getTodayDate(), true);
+                    },
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        instance.calendarContainer.style.zIndex = "9999";
+                    }
+                });
+                $("#NgayApDung").val(getTodayDate());
+                loadInitialData();
+            }
+
             // Form input handlers
-            $("#LuongCoBan").on("change keyup", function() {
+            $("#LuongCoBan").on("input change keyup", function() {
                 updateInsuranceFields();
                 updateProgressBar();
                 updateSummary();
             });
 
-            $("input:not(#LuongCoBan), textarea").on("change keyup", function() {
+            $("input:not(#LuongCoBan), textarea").on("input change keyup", function() {
                 updateProgressBar();
                 updateSummary();
             });
 
-            // Load initial data
-            loadInitialData();
-
             // Form submission
-            $("#setupSalaryForm").submit(function (e) {
+            $("#editSalaryForm").submit(function (e) {
                 e.preventDefault();
 
                 // Progress bar animation
@@ -385,7 +474,7 @@
                             icon: "warning",
                             title: "Thiếu thông tin",
                             text: `Vui lòng nhập ${field.name}!`,
-                            confirmButtonColor: "#2563eb"
+                            confirmButtonColor: "#ca8a04"
                         });
                         return;
                     }
@@ -399,7 +488,7 @@
                         icon: "warning",
                         title: "Lương không hợp lệ",
                         text: `Lương cơ bản phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
-                        confirmButtonColor: "#2563eb"
+                        confirmButtonColor: "#ca8a04"
                     });
                     return;
                 }
@@ -413,7 +502,7 @@
                             icon: "warning",
                             title: "Dữ liệu không hợp lệ",
                             text: `Giá trị ${field} không được âm!`,
-                            confirmButtonColor: "#2563eb"
+                            confirmButtonColor: "#ca8a04"
                         });
                         return;
                     }
@@ -421,6 +510,7 @@
 
                 // Prepare data
                 let salaryData = {
+                    MaLuongNV: parseInt($("#MaLuongNV").val()),
                     MaNv: parseInt($("#MaNv").val()),
                     LuongCoBan: parseFloat($("#LuongCoBan").val()),
                     PhuCapCoDinh: parseFloat($("#PhuCapCoDinh").val()) || 0,
@@ -442,18 +532,18 @@
                     }
                 });
 
-                // API call
+                // API call to update salary
                 $.ajax({
-                    url: "/api/SalaryApi/setup",
-                    type: "POST",
+                    url: "/api/SalaryApi/edit/" + salaryData.MaLuongNV,
+                    method: "PUT",
                     contentType: "application/json",
                     data: JSON.stringify(salaryData),
                     success: function () {
                         Swal.fire({
                             icon: "success",
                             title: "Thành công!",
-                            text: "Thông tin lương đã được thiết lập!",
-                            confirmButtonColor: "#2563eb",
+                            text: "Thông tin lương đã được cập nhật!",
+                            confirmButtonColor: "#ca8a04",
                             timer: 2000,
                             timerProgressBar: true
                         }).then(() => {
@@ -466,7 +556,7 @@
                             icon: "error",
                             title: "Lỗi!",
                             text: errorMessage,
-                            confirmButtonColor: "#2563eb"
+                            confirmButtonColor: "#ca8a04"
                         });
                     }
                 });

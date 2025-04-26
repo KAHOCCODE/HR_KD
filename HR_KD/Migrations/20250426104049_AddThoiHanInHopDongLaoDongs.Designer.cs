@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250426104049_AddThoiHanInHopDongLaoDongs")]
+    partial class AddThoiHanInHopDongLaoDongs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,9 +355,6 @@ namespace HR_KD.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaLoaiHopDong"));
 
-                    b.Property<int?>("GiaHanToiDa")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -369,9 +369,6 @@ namespace HR_KD.Migrations
 
                     b.Property<int?>("ThoiHanMacDinh")
                         .HasColumnType("int");
-
-                    b.Property<double?>("TiLeLuong")
-                        .HasColumnType("float");
 
                     b.HasKey("MaLoaiHopDong");
 
@@ -1141,10 +1138,6 @@ namespace HR_KD.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LyDoNghiViec")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.Property<int>("MaLoaiHopDong")
                         .HasColumnType("int");
 
@@ -1155,13 +1148,8 @@ namespace HR_KD.Migrations
                         .HasColumnType("date");
 
                     b.Property<DateOnly?>("NgayKetThuc")
+                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("date");
-
-                    b.Property<DateOnly?>("NgayNghiViec")
-                        .HasColumnType("date");
-
-                    b.Property<int?>("SoLanGiaHan")
-                        .HasColumnType("int");
 
                     b.Property<int?>("ThoiHan")
                         .HasColumnType("int");

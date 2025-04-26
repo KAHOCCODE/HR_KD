@@ -55,6 +55,236 @@ namespace HR_KD.ApiControllers
         }
         #endregion
 
+        #region Lấy danh sách hợp đồng nhân viên
+        [HttpGet("GetEmployeeContracts")]
+        public IActionResult GetEmployeeContracts()
+        {
+            var contracts = _context.NhanViens
+                .GroupJoin(_context.HopDongLaoDongs,
+                    nv => nv.MaNv,
+                    hd => hd.MaNv,
+                    (nv, hd) => new { NhanVien = nv, HopDong = hd })
+                .SelectMany(
+                    x => x.HopDong.DefaultIfEmpty(),
+                    (nv, hd) => new
+                    {
+                        MaNv = nv.NhanVien.MaNv,
+                        HoTen = nv.NhanVien.HoTen,
+                        MaHopDong = hd != null ? hd.MaHopDong : (int?)null,
+                        MaLoaiHopDong = hd != null ? hd.MaLoaiHopDong : (int?)null,
+                        TenLoaiHopDong = hd != null && hd.LoaiHopDong != null ? hd.LoaiHopDong.TenLoaiHopDong : null,
+                        ThoiHan = hd != null ? hd.ThoiHan : null,
+                        NgayBatDau = hd != null ? hd.NgayBatDau : null,
+                        NgayKetThuc = hd != null ? hd.NgayKetThuc : null,
+                        GhiChu = hd != null ? hd.GhiChu : null,
+                        SoLanGiaHan = hd != null ? hd.SoLanGiaHan : null,
+                        GiaHanToiDa = hd != null && hd.LoaiHopDong != null ? hd.LoaiHopDong.GiaHanToiDa : null
+                    })
+                .ToList();
+            return Ok(contracts);
+        }
+        #endregion
+
+        #region Lấy hợp đồng của một nhân viên
+        [HttpGet("GetEmployeeContract/{maNv}")]
+        public IActionResult GetEmployeeContract(int maNv)
+        {
+            var contract = _context.HopDongLaoDongs
+                .Where(hd => hd.MaNv == maNv && hd.IsActive)
+                .Select(hd => new
+                {
+                    hd.MaHopDong,
+                    hd.MaLoaiHopDong,
+                    hd.ThoiHan,
+                    hd.NgayBatDau,
+                    hd.NgayKetThuc,
+                    hd.GhiChu,
+                    hd.SoLanGiaHan
+                })
+                .FirstOrDefault();
+
+            if (contract == null)
+            {
+                return Ok(new { });
+            }
+
+            return Ok(contract);
+        }
+        #endregion
+
+        #region Thêm hoặc cập nhật hợp đồng
+        [HttpPost("SaveContract")]
+        public IActionResult SaveContract([FromForm] ContractDTO contractDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(new { message = string.Join(" | ", errors) });
+            }
+
+            using var transaction = _context.Database.BeginTransaction();
+            try
+            {
+                if (!_context.NhanViens.Any(nv => nv.MaNv == contractDto.MaNv))
+                {
+                    return BadRequest(new { message = "Nhân viên không tồn tại." });
+                }
+
+                var loaiHopDong = _context.LoaiHopDongs
+                    .FirstOrDefault(l => l.MaLoaiHopDong == contractDto.MaLoaiHopDong);
+                if (loaiHopDong == null)
+                {
+                    return BadRequest(new { message = "Loại hợp đồng không tồn tại." });
+                }
+
+                if (loaiHopDong.ThoiHanMacDinh.HasValue && contractDto.ThoiHan.HasValue)
+                {
+                    if (contractDto.ThoiHan.Value > loaiHopDong.ThoiHanMacDinh.Value)
+                    {
+                        return BadRequest(new { message = $"Thời hạn hợp đồng không được vượt quá {loaiHopDong.ThoiHanMacDinh.Value} tháng." });
+                    }
+                }
+                else if (!loaiHopDong.ThoiHanMacDinh.HasValue && contractDto.ThoiHan.HasValue)
+                {
+                    return BadRequest(new { message = "Loại hợp đồng này không cho phép nhập thời hạn." });
+                }
+
+                DateOnly? ngayKetThuc = contractDto.NgayKetThuc.HasValue
+                    ? DateOnly.FromDateTime(contractDto.NgayKetThuc.Value)
+                    : (contractDto.ThoiHan.HasValue && contractDto.ThoiHan > 0
+                        ? DateOnly.FromDateTime(contractDto.NgayBatDau.AddMonths(contractDto.ThoiHan.Value))
+                        : null);
+
+                if (contractDto.MaHopDong.HasValue)
+                {
+                    var existingContract = _context.HopDongLaoDongs
+                        .FirstOrDefault(hd => hd.MaHopDong == contractDto.MaHopDong && hd.MaNv == contractDto.MaNv);
+
+                    if (existingContract == null)
+                    {
+                        return NotFound(new { message = "Hợp đồng không tồn tại." });
+                    }
+
+                    existingContract.MaLoaiHopDong = contractDto.MaLoaiHopDong;
+                    existingContract.ThoiHan = contractDto.ThoiHan;
+                    existingContract.NgayBatDau = DateOnly.FromDateTime(contractDto.NgayBatDau);
+                    existingContract.NgayKetThuc = ngayKetThuc;
+                    existingContract.GhiChu = contractDto.GhiChu;
+                    existingContract.IsActive = true;
+
+                    _context.HopDongLaoDongs.Update(existingContract);
+                }
+                else
+                {
+                    var newContract = new HopDongLaoDong
+                    {
+                        MaNv = contractDto.MaNv,
+                        MaLoaiHopDong = contractDto.MaLoaiHopDong,
+                        ThoiHan = contractDto.ThoiHan,
+                        NgayBatDau = DateOnly.FromDateTime(contractDto.NgayBatDau),
+                        NgayKetThuc = ngayKetThuc,
+                        GhiChu = contractDto.GhiChu,
+                        SoLanGiaHan = 0,
+                        IsActive = true
+                    };
+
+                    _context.HopDongLaoDongs.Add(newContract);
+                }
+
+                _context.SaveChanges();
+                transaction.Commit();
+
+                return Ok(new { message = "Hợp đồng đã được lưu thành công." });
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, "Lỗi khi lưu hợp đồng.");
+                return StatusCode(500, new { message = "Lỗi server. Xem log để biết chi tiết.", error = ex.Message });
+            }
+        }
+        #endregion
+
+        #region Gia hạn hợp đồng
+        [HttpPost("ExtendContract")]
+        public IActionResult ExtendContract([FromBody] ExtendContractDTO extendDto)
+        {
+            using var transaction = _context.Database.BeginTransaction();
+            try
+            {
+                var contract = _context.HopDongLaoDongs
+                    .Include(hd => hd.LoaiHopDong)
+                    .FirstOrDefault(hd => hd.MaHopDong == int.Parse(extendDto.MaHopDong) && hd.MaNv == int.Parse(extendDto.MaNv));
+
+                if (contract == null)
+                {
+                    return NotFound(new { message = "Hợp đồng không tồn tại." });
+                }
+
+                if (!contract.IsActive)
+                {
+                    return BadRequest(new { message = "Hợp đồng không còn hiệu lực." });
+                }
+
+                if (!contract.NgayKetThuc.HasValue)
+                {
+                    return BadRequest(new { message = "Hợp đồng không có ngày kết thúc để gia hạn." });
+                }
+
+                var currentDate = DateOnly.FromDateTime(DateTime.Today);
+                if (contract.NgayKetThuc < currentDate)
+                {
+                    return BadRequest(new { message = "Hợp đồng đã hết hạn, không thể gia hạn." });
+                }
+
+                var soLanGiaHan = contract.SoLanGiaHan ?? 0;
+                var giaHanToiDa = contract.LoaiHopDong.GiaHanToiDa;
+
+                if (extendDto.ConvertToUnlimited)
+                {
+                    var loaiHopDongKhongThoiHan = _context.LoaiHopDongs
+                        .FirstOrDefault(l => l.MaLoaiHopDong == 2);
+                    if (loaiHopDongKhongThoiHan == null)
+                    {
+                        return BadRequest(new { message = "Loại hợp đồng không xác định thời hạn không tồn tại." });
+                    }
+
+                    contract.MaLoaiHopDong = 2;
+                    contract.ThoiHan = null;
+                    contract.NgayKetThuc = null;
+                    contract.SoLanGiaHan = soLanGiaHan;
+                    contract.GhiChu = (contract.GhiChu ?? "") + $"\nChuyển sang hợp đồng không xác định thời hạn vào {currentDate}.";
+                }
+                else
+                {
+                    if (giaHanToiDa.HasValue && soLanGiaHan >= giaHanToiDa.Value)
+                    {
+                        return BadRequest(new { message = "Hợp đồng đã đạt số lần gia hạn tối đa." });
+                    }
+
+                    contract.ThoiHan = 12;
+                    contract.NgayKetThuc = contract.NgayKetThuc.Value.AddMonths(12);
+                    contract.SoLanGiaHan = soLanGiaHan + 1;
+                    contract.GhiChu = (contract.GhiChu ?? "") + $"\nGia hạn hợp đồng lần {contract.SoLanGiaHan} vào {currentDate}.";
+                }
+
+                _context.HopDongLaoDongs.Update(contract);
+                _context.SaveChanges();
+                transaction.Commit();
+
+                return Ok(new { message = extendDto.ConvertToUnlimited ? "Chuyển sang hợp đồng không xác định thời hạn thành công." : "Gia hạn hợp đồng thành công." });
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, "Lỗi khi gia hạn hợp đồng.");
+                return StatusCode(500, new { message = "Lỗi server. Xem log để biết chi tiết.", error = ex.Message });
+            }
+        }
+        #endregion
+
         #region Thêm nhân viên 
         [HttpPost("CreateEmployee")]
         public IActionResult CreateEmployee([FromForm] CreateEmployeeDTO employeeDto)
@@ -70,13 +300,11 @@ namespace HR_KD.ApiControllers
             using var transaction = _context.Database.BeginTransaction();
             try
             {
-                // ✅ Kiểm tra số điện thoại đã tồn tại chưa
                 if (_context.TaiKhoans.Any(t => t.Username == employeeDto.Sdt))
                 {
                     return Conflict(new { message = "Số điện thoại đã được sử dụng." });
                 }
 
-                // ✅ Kiểm tra phòng ban & chức vụ hợp lệ
                 if (!_context.PhongBans.Any(p => p.MaPhongBan == employeeDto.MaPhongBan))
                 {
                     return BadRequest(new { message = "Phòng ban không tồn tại." });
@@ -87,7 +315,6 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Chức vụ không tồn tại." });
                 }
 
-                // ✅ Tạo nhân viên mới
                 var employee = new NhanVien
                 {
                     HoTen = employeeDto.HoTen,
@@ -119,7 +346,6 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không có quyền hạn hợp lệ để gán cho nhân viên mới." });
                 }
 
-                // ✅ Tạo tài khoản
                 string username = _usernameGen.GenerateUsername(string.IsNullOrEmpty(employeeDto.HoTen) ? "user" : employeeDto.HoTen, maNvMoi);
                 string defaultPassword = "123456";
                 string randomkey = PasswordHelper.GenerateRandomKey();
@@ -127,7 +353,7 @@ namespace HR_KD.ApiControllers
 
                 var taiKhoan = new TaiKhoan
                 {
-                    Username =username,
+                    Username = username,
                     PasswordHash = hashedPassword,
                     PasswordSalt = randomkey,
                     MaNv = maNvMoi
@@ -135,18 +361,16 @@ namespace HR_KD.ApiControllers
                 _context.TaiKhoans.Add(taiKhoan);
                 _context.SaveChanges();
 
-                // ✅ Gán quyền hạn cho tài khoản
                 foreach (var role in validRoles)
                 {
                     _context.TaiKhoanQuyenHans.Add(new TaiKhoanQuyenHan
                     {
-                        Username = taiKhoan.Username, 
+                        Username = taiKhoan.Username,
                         MaQuyenHan = role
                     });
                 }
                 _context.SaveChanges();
 
-                // ✅ Xử lý ảnh đại diện
                 if (employeeDto.AvatarUrl != null)
                 {
                     try
@@ -174,7 +398,6 @@ namespace HR_KD.ApiControllers
                     }
                 }
 
-                // ✅ Gửi email thông báo
                 try
                 {
                     string subject = "Thông tin tài khoản nhân viên";
@@ -223,14 +446,13 @@ namespace HR_KD.ApiControllers
                                     </tr>
                                     <tr>
                                         <td style='background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
-                                            &copy; 2025 Công ty ABC | <a href='https://yourcompanydomain.com' style='color:#004080;'>Trang chủ</a>
+                                            © 2025 Công ty ABC | <a href='https://yourcompanydomain.com' style='color:#004080;'>Trang chủ</a>
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
                     </table>";
-
 
                     _emailService.SendEmail(employeeDto.Email, subject, body);
                 }
@@ -241,7 +463,6 @@ namespace HR_KD.ApiControllers
 
                 transaction.Commit();
 
-                // Tạo DTO để trả về
                 var responseDto = new
                 {
                     MaNv = employee.MaNv,
@@ -268,7 +489,12 @@ namespace HR_KD.ApiControllers
             }
         }
         #endregion
+    }
 
-
+    public class ExtendContractDTO
+    {
+        public string MaHopDong { get; set; }
+        public string MaNv { get; set; }
+        public bool ConvertToUnlimited { get; set; }
     }
 }

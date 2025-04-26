@@ -15,13 +15,16 @@ namespace HR_KD.Controllers
             _context = context;
         }
 
-        //[Authorize(Roles = "EMPLOYEE")]
+        #region Danh sách nhân viên
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public IActionResult Index()
         {
             return View();
         }
-        //[Authorize(Roles = "EMPLOYEE_MANAGER")]
-        // Trong NhanVienController.cs
+        #endregion
+
+        #region Thêm nhân viên
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
         public async Task<IActionResult> Create(NhanVien nhanVien, ThongTinLuongNVDTO salaryDTO)
         {
             if (ModelState.IsValid)
@@ -48,7 +51,9 @@ namespace HR_KD.Controllers
             }
             return View(nhanVien);
         }
-        #region SetUpSalary
+        #endregion
+
+        #region Thiết lập lương
         public async Task<IActionResult> SetupSalary(int maNv)
         {
             var nhanVien = await _context.NhanViens.FindAsync(maNv);
@@ -60,7 +65,7 @@ namespace HR_KD.Controllers
             // Kiểm tra xem nhân viên đã có lương chưa
             var existingSalary = await _context.ThongTinLuongNVs
                 .Where(s => s.MaNv == maNv)
-                .OrderByDescending(s => s.NgayApDng)
+                .OrderByDescending(s => s.NgayApDung)
                 .FirstOrDefaultAsync();
 
             if (existingSalary != null)
@@ -73,7 +78,46 @@ namespace HR_KD.Controllers
         }
         #endregion
 
-        #region phân quyền 
+        #region Quản lý hợp đồng
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public IActionResult EmployeeContracts()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "EMPLOYEE_MANAGER")]
+        public async Task<IActionResult> SetupContracts(int maNv)
+        {
+            var nhanVien = await _context.NhanViens.FindAsync(maNv);
+            if (nhanVien == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.MaNv = maNv;
+            return View();
+        }
+        #endregion
+
+        #region Chỉnh sửa lương
+        public IActionResult EditSalary(int maLuongNV, int maNv)
+        {
+            // Pass the data to the view via ViewData or a model
+            ViewData["MaLuongNV"] = maLuongNV;
+            ViewData["MaNv"] = maNv;
+
+            // Alternatively, you can create a DTO or ViewModel to pass to the view
+            var model = new ThongTinLuongNVDTO
+            {
+                MaLuongNV = maLuongNV,
+                MaNv = maNv
+            };
+
+            return View(model);
+        }
+        #endregion
+
+        #region Phân quyền
         [Authorize(Policy = "CanManageSubordinates")]
         public IActionResult Roles()
         {
@@ -85,7 +129,7 @@ namespace HR_KD.Controllers
 
             var currentNv = currentUser.MaNvNavigation;
 
-            // ✅ Tìm cấp dưới: cùng phòng ban, chức vụ thấp hơn
+            // Tìm cấp dưới: cùng phòng ban, chức vụ thấp hơn
             var capDuoi = _context.TaiKhoans
                 .Include(t => t.MaNvNavigation).ThenInclude(nv => nv.MaChucVuNavigation)
                 .Include(t => t.TaiKhoanQuyenHans).ThenInclude(r => r.QuyenHan)
@@ -100,6 +144,7 @@ namespace HR_KD.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "CanManageSubordinates")]
         public JsonResult UpdateRoles([FromBody] AssignRoleDto dto)
         {
             var user = _context.TaiKhoans.Include(t => t.MaNvNavigation)
@@ -130,7 +175,6 @@ namespace HR_KD.Controllers
             _context.SaveChanges();
             return Json(new { success = true });
         }
-
         #endregion
     }
 }

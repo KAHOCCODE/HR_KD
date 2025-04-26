@@ -28,7 +28,7 @@ public partial class NhanVien
     public DateOnly? NgayVaoLam { get; set; }
 
     public string? AvatarUrl { get; set; }
-
+    public virtual ICollection<HopDongLaoDong> HopDongLaoDongs { get; set; } = new List<HopDongLaoDong>();
     public virtual ICollection<BangLuong> BangLuongs { get; set; } = new List<BangLuong>();
 
     public virtual ICollection<ChamCong> ChamCongs { get; set; } = new List<ChamCong>();

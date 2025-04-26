@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250426143138_AddNghiViecLaoDong")]
+    partial class AddNghiViecLaoDong
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1160,11 +1163,12 @@ namespace HR_KD.Migrations
                     b.Property<DateOnly?>("NgayNghiViec")
                         .HasColumnType("date");
 
-                    b.Property<int?>("SoLanGiaHan")
-                        .HasColumnType("int");
-
                     b.Property<int?>("ThoiHan")
                         .HasColumnType("int");
+
+                    b.Property<string>("TrangThaiHopDong")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("MaHopDong");
 

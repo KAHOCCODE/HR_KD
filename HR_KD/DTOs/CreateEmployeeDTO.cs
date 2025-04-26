@@ -16,7 +16,7 @@ namespace HR_KD.DTOs
         [Required(ErrorMessage = "Giới tính không được để trống")]
         public bool GioiTinh { get; set; }
 
-        public string? DiaChi { get; set; } // Không bắt buộc theo DTO
+        public string? DiaChi { get; set; }
 
         [Required(ErrorMessage = "Số điện thoại không được để trống")]
         [RegularExpression(@"^(\+84|0)[1-9]\d{8,9}$", ErrorMessage = "Số điện thoại không hợp lệ")]
@@ -26,7 +26,7 @@ namespace HR_KD.DTOs
         [EmailAddress(ErrorMessage = "Địa chỉ email không hợp lệ")]
         public string Email { get; set; } = string.Empty;
 
-        public string? TrinhDoHocVan { get; set; } // Không bắt buộc theo DTO
+        public string? TrinhDoHocVan { get; set; }
 
         [Required(ErrorMessage = "Phòng ban không được để trống")]
         public int MaPhongBan { get; set; }
@@ -39,8 +39,8 @@ namespace HR_KD.DTOs
         public DateTime NgayVaoLam { get; set; }
 
         [AllowedExtensions(new string[] { ".jpg", ".png", ".jpeg" })]
-        [MaxFileSize(5 * 1024 * 1024)] // Giới hạn 5MB
-        public IFormFile? AvatarUrl { get; set; } // Ảnh đại diện, không bắt buộc
+        [MaxFileSize(5 * 1024 * 1024)]
+        public IFormFile? AvatarUrl { get; set; }
     }
 
     public class AllowedExtensionsAttribute : ValidationAttribute

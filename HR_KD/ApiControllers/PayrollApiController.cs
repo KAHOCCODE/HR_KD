@@ -22,60 +22,6 @@ namespace HR_KD.ApiControllers
             _logger = logger;
         }
 
-        [HttpGet("GetPayroll")]
-        public async Task<IActionResult> GetPayroll(int employeeId, string monthYear)
-        {
-            try
-            {
-                if (!DateTime.TryParseExact(monthYear, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out DateTime selectedMonth))
-                {
-                    return BadRequest(new { message = "Định dạng tháng không hợp lệ." });
-                }
-
-                // Kiểm tra thông tin lương nhân viên
-                var salaryInfo = await _context.ThongTinLuongNVs
-                    .Where(t => t.MaNv == employeeId && t.NgayApDng <= DateTime.Now)
-                    .OrderByDescending(t => t.NgayApDng)
-                    .FirstOrDefaultAsync();
-
-                if (salaryInfo == null)
-                {
-                    return Ok(new { status = "Thông tin lương nhân viên chưa được cập nhật" });
-                }
-
-                // Lấy bảng lương
-                var payroll = await _context.BangLuongs
-                    .Where(b => b.MaNv == employeeId &&
-                                b.ThangNam.Year == selectedMonth.Year &&
-                                b.ThangNam.Month == selectedMonth.Month)
-                    .Select(b => new
-                    {
-                        b.TongLuong,
-                        b.ThucNhan,
-                        TongTienThue = b.TongLuong - b.ThucNhan
-                    })
-                    .FirstOrDefaultAsync();
-
-                if (payroll == null)
-                {
-                    return Ok(new { status = "Thông tin lương nhân viên chưa được cập nhật" });
-                }
-
-                return Ok(new
-                {
-                    status = "Đã có bảng lương",
-                    payroll.TongLuong,
-                    payroll.ThucNhan,
-                    payroll.TongTienThue
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi lấy thông tin bảng lương.");
-                return StatusCode(500, new { message = "Lỗi server.", error = ex.Message });
-            }
-        }
-
         [HttpPost("GeneratePayroll")]
         public async Task<IActionResult> GeneratePayroll([FromBody] GeneratePayrollRequest request)
         {
@@ -130,8 +76,8 @@ namespace HR_KD.ApiControllers
                 }
 
                 var salaryInfo = await _context.ThongTinLuongNVs
-                    .Where(t => t.MaNv == employeeId && t.NgayApDng <= DateTime.Now)
-                    .OrderByDescending(t => t.NgayApDng)
+                    .Where(t => t.MaNv == employeeId && t.NgayApDung <= DateTime.Now)
+                    .OrderByDescending(t => t.NgayApDung)
                     .FirstOrDefaultAsync();
 
                 if (salaryInfo == null)
@@ -228,8 +174,8 @@ namespace HR_KD.ApiControllers
 
                 // Lấy thông tin lương từ ThongTinLuongNVs
                 var salaryInfo = await _context.ThongTinLuongNVs
-                    .Where(t => t.MaNv == employeeId && t.NgayApDng <= DateTime.Now)
-                    .OrderByDescending(t => t.NgayApDng)
+                    .Where(t => t.MaNv == employeeId && t.NgayApDung <= DateTime.Now)
+                    .OrderByDescending(t => t.NgayApDung)
                     .FirstOrDefaultAsync();
 
                 if (salaryInfo == null)

@@ -1,4 +1,7 @@
-@using HR_KD.Helpers
+@using HR_KD.Data
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@inject HrDbContext DbContext
 
 <!DOCTYPE html>
 <html lang="en">
@@ -6,7 +9,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
-
     <title>Hr_3k1d</title>
     <link rel="stylesheet" type="text/css" href="~/assets/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="~/assets/css/font-awesome.min.css">
@@ -15,7 +17,7 @@
 
 <body>
     <div class="main-wrapper">
-        <!-- Header-->
+        <!-- Header -->
         <div class="header">
             <div class="header-left">
                 <a href="~/Home/Index" class="logo">
@@ -100,18 +102,39 @@
                 <li class="nav-item dropdown d-none d-sm-block">
                     <a href="javascript:void(0);" id="open_msg_box" class="hasnotifications nav-link"><i class="fa fa-comment-o"></i> <span class="badge badge-pill bg-danger float-right">8</span></a>
                 </li>
-                @using Microsoft.AspNetCore.Http
-                @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
 
                 @{
-                    var hoTen = HttpContextAccessor.HttpContext?.Session.GetString("HoTen"); // Lấy HoTen từ Session
-                    var isLoggedIn = !string.IsNullOrEmpty(hoTen);
+                    // Check authentication status
+                    var isLoggedIn = User.Identity.IsAuthenticated;
+                    string hoTen = null;
+
+                    if (isLoggedIn)
+                    {
+                        // Try to get HoTen from session
+                        hoTen = HttpContextAccessor.HttpContext?.Session.GetString("HoTen");
+
+                        if (string.IsNullOrEmpty(hoTen))
+                        {
+                            // Fetch HoTen from database if not in session
+                            var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+                            if (!string.IsNullOrEmpty(maNv) && int.TryParse(maNv, out var maNvInt))
+                            {
+                                var nhanVien = DbContext.NhanViens.FirstOrDefault(nv => nv.MaNv == maNvInt);
+                                if (nhanVien != null)
+                                {
+                                    hoTen = nhanVien.HoTen;
+                                    // Cache HoTen in session
+                                    HttpContextAccessor.HttpContext?.Session.SetString("HoTen", hoTen);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 <li class="nav-item dropdown has-arrow">
-                    @if (isLoggedIn)
+                    @if (isLoggedIn && !string.IsNullOrEmpty(hoTen))
                     {
-                        <!-- Nếu đã đăng nhập -->
+                        <!-- Display logged-in user -->
                         <a href="#" class="dropdown-toggle nav-link user-link" data-toggle="dropdown">
                             <span class="user-img">
                                 <img class="rounded-circle" src="~/assets/img/user.jpg" width="40" alt="User">
@@ -128,7 +151,7 @@
                     }
                     else
                     {
-                        <!-- Nếu chưa đăng nhập -->
+                        <!-- Show login link -->
                         <a href="/Account/Login" class="nav-link">Đăng nhập</a>
                     }
                 </li>
@@ -136,10 +159,17 @@
             <div class="dropdown mobile-user-menu float-right">
                 <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
                 <div class="dropdown-menu dropdown-menu-right">
-                    <a class="dropdown-item" href="profile.html">My Profile</a>
-                    <a class="dropdown-item" href="edit-profile.html">Edit Profile</a>
-                    <a class="dropdown-item" href="settings.html">Settings</a>
-                    <a class="dropdown-item" href="login.html">Logout</a>
+                    @if (isLoggedIn && !string.IsNullOrEmpty(hoTen))
+                    {
+                        <a class="dropdown-item" href="profile.html">My Profile</a>
+                        <a class="dropdown-item" href="edit-profile.html">Edit Profile</a>
+                        <a class="dropdown-item" href="settings.html">Settings</a>
+                        <a class="dropdown-item" href="/Account/Logout">Logout</a>
+                    }
+                    else
+                    {
+                        <a class="dropdown-item" href="/Account/Login">Đăng nhập</a>
+                    }
                 </div>
             </div>
         </div>
@@ -154,7 +184,7 @@
                             <a href="~/Home/Index"><i class="fa fa-dashboard"></i> <span>Dashboard</span></a>
                         </li>
 
-                        @if (User.HasAnyRole("LINE_MANAGER", "EMPLOYEE_MANAGER"))
+                        @if (User.IsInRole("LINE_MANAGER") || User.IsInRole("EMPLOYEE_MANAGER"))
                         {
                             <li class="submenu">
                                 <a href="#"><i class="fa fa-users"></i> <span>Nhân viên</span> <span class="menu-arrow"></span></a>
@@ -163,7 +193,7 @@
                                     <li><a href="~/Employees/Create"><i class="fa fa-user-plus"></i> Thêm nhân viên</a></li>
                                     <li><a href="~/Employees/Roles"><i class="fa fa-key"></i> Cấp quyền nhân viên</a></li>
                                     <li><a href="~/Employees/Profiles"><i class="fa fa-id-card"></i> Quản lý hồ sơ</a></li>
-                                    <li><a href="~/Employees/Contracts"><i class="fa fa-file-text"></i> Quản lý hợp đồng</a></li>
+                                    <li><a href="~/Employees/EmployeeContracts"><i class="fa fa-file-text"></i> Quản lý hợp đồng</a></li>
                                     <li><a href="~/Employees/Rewards"><i class="fa fa-trophy"></i> Khen thưởng & Kỷ luật</a></li>
                                     <li><a href="~/Employees/Transfers"><i class="fa fa-exchange"></i> Thuyên chuyển công tác</a></li>
                                     <li><a href="~/Employees/Resignations"><i class="fa fa-sign-out"></i> Nghỉ việc</a></li>
@@ -202,7 +232,7 @@
 
                         <li>
                             <a href="~/Leave/Index">
-                                <i class="fa fa-bed"></i> <!-- Icon giường (nghỉ ngơi) -->
+                                <i class="fa fa-bed"></i>
                                 <span>Nghỉ Phép</span>
                             </a>
                         </li>
@@ -226,10 +256,9 @@
 
                         <li>
                             @{
-                                // Kiểm tra vai trò của người dùng
-                                string daoTaoUrl = User.IsInRole("EMPLOYEE") ? Url.Action("ViewTraining", "DaoTao") :
-                                                  User.IsInRole("EMPLOYEE_MANAGER") ? Url.Action("Index", "DaoTao") :
-                                                  "/Account/Login"; // Nếu không có vai trò, chuyển đến trang đăng nhập
+                                string? daoTaoUrl = User.IsInRole("EMPLOYEE") ? Url.Action("ViewTraining", "DaoTao") :
+                                User.IsInRole("EMPLOYEE_MANAGER") ? Url.Action("Index", "DaoTao") :
+                                "/Account/Login";
                             }
                             <a href="@daoTaoUrl"><i class="fa fa-graduation-cap"></i> <span>Đào tạo</span></a>
                         </li>
@@ -243,8 +272,13 @@
                             </ul>
                         </li>
 
-                        <li>
-                            <a href="~/Settings"><i class="fa fa-cog"></i> <span>Cài đặt</span></a>
+                        <li class="submenu">
+                            <a href="#"><i class="fa fa-cog"></i> <span>Cài Đặt</span> <span class="menu-arrow"></span></a>
+                            <ul style="display: none;">
+                                <li><a href="~/PayrollSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình lương</a></li>
+                                <li><a href="~/Setting1"><i class="fa fa-cog"></i> Cài đặt 1</a></li>
+                                <li><a href="~/Setting1"><i class="fa fa-cog"></i> Cài đặt 2</a></li>
+                            </ul>
                         </li>
 
                         <li>
@@ -278,7 +312,7 @@
                                             <span class="avatar">R</span>
                                         </div>
                                         <div class="list-body">
-                                            <span class="message-author">Richard Miles </span>
+                                            <span class="message-author">Richard Miles</span>
                                             <span class="message-time">12:28 AM</span>
                                             <div class="clearfix"></div>
                                             <span class="message-content">Lorem ipsum dolor sit amet, consectetur adipiscing</span>

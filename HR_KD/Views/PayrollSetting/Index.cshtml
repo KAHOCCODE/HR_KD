@@ -1,0 +1,1305 @@
+﻿@{  
+   Layout = "~/Views/Shared/_ThemeLayout.cshtml";  
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Settings - Index</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+        }
+
+            .tab button {
+                background-color: inherit;
+                float: left;
+                border: none;
+                outline: none;
+                cursor: pointer;
+                padding: 14px 16px;
+                transition: 0.3s;
+            }
+
+                .tab button:hover {
+                    background-color: #ddd;
+                }
+
+                .tab button.active {
+                    background-color: #ccc;
+                }
+
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .dropdown-container {
+            margin-bottom: 10px;
+        }
+
+        .info-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .active-button {
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            color: white;
+        }
+
+            .active-button.active {
+                background-color: #28a745;
+            }
+
+            .active-button.inactive {
+                background-color: #dc3545;
+            }
+
+        .change-region-button, .create-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+            .change-region-button:hover, .create-button:hover {
+                background-color: #0056b3;
+            }
+
+        .active-regions-container {
+            margin-bottom: 20px;
+        }
+
+        .edit-button, .delete-button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            margin-right: 5px;
+        }
+
+        .edit-button {
+            background-color: #ffc107;
+        }
+
+            .edit-button:hover {
+                background-color: #e0a800;
+            }
+
+        .delete-button {
+            background-color: #dc3545;
+        }
+
+            .delete-button:hover {
+                background-color: #c82333;
+            }
+
+            .edit-button.disabled, .delete-button.disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 5px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+            .close:hover,
+            .close:focus {
+                color: black;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+        .modal form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+            .modal form label {
+                font-weight: bold;
+            }
+
+            .modal form input,
+            .modal form select,
+            .modal form textarea {
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+
+                .modal form input[readonly] {
+                    background-color: #f0f0f0;
+                    cursor: not-allowed;
+                }
+
+            .modal form button {
+                padding: 10px;
+                background-color: #28a745;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+
+                .modal form button:hover {
+                    background-color: #218838;
+                }
+
+        .insurance-section {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+            .insurance-section h4 {
+                margin-top: 0;
+            }
+    </style>
+</head>
+<body>
+    <h2>Settings Management</h2>
+
+    <!-- Tab links -->
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'MucLuongToiThieuVung')">Mức Lương Tối Thiểu Vùng</button>
+        <button class="tablinks" onclick="openTab(event, 'VungLuongTheoDiaPhuong')">Vùng Lương Theo Địa Phương</button>
+        <button class="tablinks" onclick="openTab(event, 'MucLuongCoSo')">Mức Lương Cơ Sở</button>
+        <button class="tablinks" onclick="openTab(event, 'ThongTinBaoHiem')">Thông Tin Bảo Hiểm</button>
+        <button class="tablinks" onclick="openTab(event, 'CauHinhLuongThue')">Cấu Hình Lương Thuế</button>
+    </div>
+
+    <!-- Tab content -->
+    <div id="MucLuongToiThieuVung" class="tabcontent">
+        <h3>Mức Lương Tối Thiểu Vùng</h3>
+        <table id="mucLuongToiThieuVungTable">
+            <thead>
+                <tr>
+                    <th>Vùng Lương</th>
+                    <th>Mức Lương Tối Thiểu Tháng</th>
+                    <th>Mức Lương Tối Thiểu Giờ</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="VungLuongTheoDiaPhuong" class="tabcontent">
+        <h3>Vùng Lương Theo Địa Phương</h3>
+        <div class="active-regions-container">
+            <h4>Khu vực đã kích hoạt</h4>
+            <table id="activeRegionsTable">
+                <thead>
+                    <tr>
+                        <th>Tỉnh/Thành</th>
+                        <th>Quận/Huyện</th>
+                        <th>Vùng Lương</th>
+                        <th>Ghi Chú</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <button class="change-region-button" onclick="toggleRegionSelection()">Thay Đổi Vùng Lương</button>
+        <div id="regionSelection" style="display: none;">
+            <div class="dropdown-container">
+                <label for="tinhThanh">Tỉnh/Thành:</label>
+                <select id="tinhThanh" onchange="loadQuanHuyen()">
+                    <option value="">Chọn Tỉnh/Thành</option>
+                </select>
+            </div>
+            <div class="dropdown-container">
+                <label for="quanHuyen">Quận/Huyện:</label>
+                <select id="quanHuyen" onchange="loadVungLuongInfo()" disabled>
+                    <option value="">Chọn Quận/Huyện</option>
+                </select>
+            </div>
+            <div id="vungLuongInfo" class="info-container" style="display: none;">
+                <p><strong>Vùng Lương:</strong> <span id="vungLuong"></span></p>
+                <p><strong>Ghi Chú:</strong> <span id="ghiChu"></span></p>
+                <p><strong>Hoạt Động:</strong> <button id="activeButton" class="active-button"></button></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="MucLuongCoSo" class="tabcontent">
+        <h3>Mức Lương Cơ Sở</h3>
+        <button class="create-button" onclick="openCreateMucLuongCoSoModal()">Tạo Mới</button>
+        <table id="mucLuongCoSoTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Lương Cơ Sở</th>
+                    <th>Ngày Hiệu Lực</th>
+                    <th>Ngày Hết Hiệu Lực</th>
+                    <th>Ghi Chú</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="ThongTinBaoHiem" class="tabcontent">
+        <h3>Thông Tin Bảo Hiểm</h3>
+        <button class="create-button" onclick="openCreateThongTinBaoHiemModal()">Tạo Mới</button>
+        <table id="thongTinBaoHiemTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Loại Bảo Hiểm</th>
+                    <th>Tỷ Lệ Người Lao Động (%)</th>
+                    <th>Tỷ Lệ Nhà Tuyển Dụng (%)</th>
+                    <th>Địa Phương</th>
+                    <th>Mức Lương Cơ Sở</th>
+                    <th>Ngày Hiệu Lực</th>
+                    <th>Ngày Hết Hiệu Lực</th>
+                    <th>Ghi Chú</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="CauHinhLuongThue" class="tabcontent">
+        <h3>Cấu Hình Lương Thuế</h3>
+        <button class="create-button" onclick="openCreateCauHinhLuongThueModal()">Tạo Mới</button>
+        <table id="cauHinhLuongThueTable">
+            <thead>
+                <tr>
+                    <th>Mã Cấu Hình</th>
+                    <th>Mức Lương Từ</th>
+                    <th>Mức Lương Đến</th>
+                    <th>Giá Trị</th>
+                    <th>Mô Tả</th>
+                    <th>Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Create Modals -->
+    <div id="createMucLuongCoSoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createMucLuongCoSoModal')">×</span>
+            <h2>Tạo Mới Mức Lương Cơ Sở</h2>
+            <form id="createMucLuongCoSoForm">
+                <label for="createLuongCoSo">Lương Cơ Sở:</label>
+                <input type="number" id="createLuongCoSo" name="luongCoSo" required>
+                <label for="createNgayHieuLucCoSo">Ngày Hiệu Lực:</label>
+                <input type="date" id="createNgayHieuLucCoSo" name="ngayHieuLuc" required>
+                <label for="createNgayHetHieuLucCoSo">Ngày Hết Hiệu Lực:</label>
+                <input type="date" id="createNgayHetHieuLucCoSo" name="ngayHetHieuLuc">
+                <label for="createGhiChuCoSo">Ghi Chú:</label>
+                <textarea id="createGhiChuCoSo" name="ghiChu"></textarea>
+                <button type="submit">Tạo</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="createThongTinBaoHiemModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createThongTinBaoHiemModal')">×</span>
+            <h2>Tạo Mới Thông Tin Bảo Hiểm</h2>
+            <form id="createThongTinBaoHiemForm">
+                <div class="insurance-section">
+                    <h4>BHXH</h4>
+                    <label for="createTyLeNguoiLaoDongBHXH">Tỷ Lệ Người Lao Động (%):</label>
+                    <input type="number" step="0.01" id="createTyLeNguoiLaoDongBHXH" name="tyLeNguoiLaoDongBHXH" required>
+                    <label for="createTyLeNhaTuyenDungBHXH">Tỷ Lệ Nhà Tuyển Dụng (%):</label>
+                    <input type="number" step="0.01" id="createTyLeNhaTuyenDungBHXH" name="tyLeNhaTuyenDungBHXH" required>
+                </div>
+                <div class="insurance-section">
+                    <h4>BHYT</h4>
+                    <label for="createTyLeNguoiLaoDongBHYT">Tỷ Lệ Người Lao Động (%):</label>
+                    <input type="number" step="0.01" id="createTyLeNguoiLaoDongBHYT" name="tyLeNguoiLaoDongBHYT" required>
+                    <label for="createTyLeNhaTuyenDungBHYT">Tỷ Lệ Nhà Tuyển Dụng (%):</label>
+                    <input type="number" step="0.01" id="createTyLeNhaTuyenDungBHYT" name="tyLeNhaTuyenDungBHYT" required>
+                </div>
+                <div class="insurance-section">
+                    <h4>BHTN</h4>
+                    <label for="createTyLeNguoiLaoDongBHTN">Tỷ Lệ Người Lao Động (%):</label>
+                    <input type="number" step="0.01" id="createTyLeNguoiLaoDongBHTN" name="tyLeNguoiLaoDongBHTN" required>
+                    <label for="createTyLeNhaTuyenDungBHTN">Tỷ Lệ Nhà Tuyển Dụng (%):</label>
+                    <input type="number" step="0.01" id="createTyLeNhaTuyenDungBHTN" name="tyLeNhaTuyenDungBHTN" required>
+                </div>
+                <label for="createVungLuongTheoDiaPhuong">Vùng Lương Theo Địa Phương:</label>
+                <input type="text" id="createVungLuongTheoDiaPhuong" readonly>
+                <input type="hidden" id="createVungLuongTheoDiaPhuongId" name="vungLuongTheoDiaPhuongId">
+                <label for="createMucLuongCoSo">Mức Lương Cơ Sở:</label>
+                <input type="text" id="createMucLuongCoSo" readonly>
+                <input type="hidden" id="createMucLuongCoSoId" name="mucLuongCoSoId">
+                <label for="createNgayHieuLucBH">Ngày Hiệu Lực:</label>
+                <input type="date" id="createNgayHieuLucBH" name="ngayHieuLuc" required>
+                <label for="createNgayHetHieuLucBH">Ngày Hết Hiệu Lực:</label>
+                <input type="date" id="createNgayHetHieuLucBH" name="ngayHetHieuLuc">
+                <label for="createGhiChuBH">Ghi Chú:</label>
+                <textarea id="createGhiChuBH" name="ghiChu"></textarea>
+                <button type="submit">Tạo</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="createCauHinhLuongThueModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createCauHinhLuongThueModal')">×</span>
+            <h2>Tạo Mới Cấu Hình Lương Thuế</h2>
+            <form id="createCauHinhLuongThueForm">
+                <label for="createMucLuongTu">Mức Lương Từ:</label>
+                <input type="number" step="0.01" id="createMucLuongTu" name="mucLuongTu" required>
+                <label for="createMucLuongDen">Mức Lương Đến:</label>
+                <input type="number" step="0.01" id="createMucLuongDen" name="mucLuongDen">
+                <label for="createGiaTri">Giá Trị:</label>
+                <input type="number" step="0.01" id="createGiaTri" name="giaTri" required>
+                <label for="createMoTa">Mô Tả:</label>
+                <textarea id="createMoTa" name="moTa"></textarea>
+                <button type="submit">Tạo</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modals -->
+    <div id="editMucLuongToiThieuVungModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editMucLuongToiThieuVungModal')">×</span>
+            <h2>Chỉnh Sửa Mức Lương Tối Thiểu Vùng</h2>
+            <form id="editMucLuongToiThieuVungForm">
+                <input type="hidden" id="editMucLuongToiThieuVungId" name="vungLuong">
+                <label for="editMucLuongToiThieuThang">Mức Lương Tối Thiểu Tháng:</label>
+                <input type="number" id="editMucLuongToiThieuThang" name="mucLuongToiThieuThang" required>
+                <label for="editMucLuongToiThieuGio">Mức Lương Tối Thiểu Giờ:</label>
+                <input type="number" id="editMucLuongToiThieuGio" name="mucLuongToiThieuGio" required>
+                <button type="submit">Lưu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editVungLuongTheoDiaPhuongModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editVungLuongTheoDiaPhuongModal')">×</span>
+            <h2>Chỉnh Sửa Vùng Lương Theo Địa Phương</h2>
+            <form id="editVungLuongTheoDiaPhuongForm">
+                <input type="hidden" id="editVungLuongTheoDiaPhuongId" name="id">
+                <label for="editTinhThanh">Tỉnh/Thành:</label>
+                <input type="text" id="editTinhThanh" name="tinhThanh" required>
+                <label for="editQuanHuyen">Quận/Huyện:</label>
+                <input type="text" id="editQuanHuyen" name="quanHuyen" required>
+                <label for="editVungLuong">Vùng Lương:</label>
+                <select id="editVungLuong" name="vungLuong" required>
+                    <option value="1">Vùng I</option>
+                    <option value="2">Vùng II</option>
+                    <option value="3">Vùng III</option>
+                    <option value="4">Vùng IV</option>
+                </select>
+                <label for="editGhiChuVung">Ghi Chú:</label>
+                <textarea id="editGhiChuVung" name="ghiChu"></textarea>
+                <button type="submit">Lưu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editMucLuongCoSoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editMucLuongCoSoModal')">×</span>
+            <h2>Chỉnh Sửa Mức Lương Cơ Sở</h2>
+            <form id="editMucLuongCoSoForm">
+                <input type="hidden" id="editMucLuongCoSoId" name="id">
+                <label for="editLuongCoSo">Lương Cơ Sở:</label>
+                <input type="number" id="editLuongCoSo" name="luongCoSo" required>
+                <label for="editNgayHieuLucCoSo">Ngày Hiệu Lực:</label>
+                <input type="date" id="editNgayHieuLucCoSo" name="ngayHieuLuc" required>
+                <label for="editNgayHetHieuLucCoSo">Ngày Hết Hiệu Lực:</label>
+                <input type="date" id="editNgayHetHieuLucCoSo" name="ngayHetHieuLuc">
+                <label for="editGhiChuCoSo">Ghi Chú:</label>
+                <textarea id="editGhiChuCoSo" name="ghiChu"></textarea>
+                <button type="submit">Lưu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editThongTinBaoHiemModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editThongTinBaoHiemModal')">×</span>
+            <h2>Chỉnh Sửa Thông Tin Bảo Hiểm</h2>
+            <form id="editThongTinBaoHiemForm">
+                <input type="hidden" id="editThongTinBaoHiemId" name="id">
+                <label for="editLoaiBaoHiem">Loại Bảo Hiểm:</label>
+                <select id="editLoaiBaoHiem" name="loaiBaoHiem" required>
+                    <option value="BHXH">BHXH</option>
+                    <option value="BHYT">BHYT</option>
+                    <option value="BHTN">BHTN</option>
+                </select>
+                <label for="editTyLeNguoiLaoDong">Tỷ Lệ Người Lao Động (%):</label>
+                <input type="number" step="0.01" id="editTyLeNguoiLaoDong" name="tyLeNguoiLaoDong" required>
+                <label for="editTyLeNhaTuyenDung">Tỷ Lệ Nhà Tuyển Dụng (%):</label>
+                <input type="number" step="0.01" id="editTyLeNhaTuyenDung" name="tyLeNhaTuyenDung" required>
+                <label for="editVungLuongTheoDiaPhuongId">Vùng Lương Theo Địa Phương:</label>
+                <select id="editVungLuongTheoDiaPhuongId" name="vungLuongTheoDiaPhuongId" required></select>
+                <label for="editMucLuongCoSoId">Mức Lương Cơ Sở:</label>
+                <select id="editMucLuongCoSoId" name="mucLuongCoSoId" required></select>
+                <label for="editNgayHieuLucBH">Ngày Hiệu Lực:</label>
+                <input type="date" id="editNgayHieuLucBH" name="ngayHieuLuc" required>
+                <label for="editNgayHetHieuLucBH">Ngày Hết Hiệu Lực:</label>
+                <input type="date" id="editNgayHetHieuLucBH" name="ngayHetHieuLuc">
+                <label for="editGhiChuBH">Ghi Chú:</label>
+                <textarea id="editGhiChuBH" name="ghiChu"></textarea>
+                <button type="submit">Lưu</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editCauHinhLuongThueModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editCauHinhLuongThueModal')">×</span>
+            <h2>Chỉnh Sửa Cấu Hình Lương Thuế</h2>
+            <form id="editCauHinhLuongThueForm">
+                <input type="hidden" id="editMaCauHinh" name="maCauHinh">
+                <label for="editMucLuongTu">Mức Lương Từ:</label>
+                <input type="number" step="0.01" id="editMucLuongTu" name="mucLuongTu" required>
+                <label for="editMucLuongDen">Mức Lương Đến:</label>
+                <input type="number" step="0.01" id="editMucLuongDen" name="mucLuongDen">
+                <label for="editGiaTri">Giá Trị:</label>
+                <input type="number" step="0.01" id="editGiaTri" name="giaTri" required>
+                <label for="editMoTa">Mô Tả:</label>
+                <textarea id="editMoTa" name="moTa"></textarea>
+                <button type="submit">Lưu</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentVungLuongId = null;
+
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+            loadData(tabName);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = "none";
+        }
+
+        function loadData(tabName) {
+            var apiUrl = "";
+            var tableId = "";
+            var html = "";
+
+            switch (tabName) {
+                case "MucLuongToiThieuVung":
+                    apiUrl = "/api/PayrollSettingApi/muc-luong-toi-thieu-vung";
+                    tableId = "#mucLuongToiThieuVungTable tbody";
+                    $.ajax({
+                        url: apiUrl,
+                        method: "GET",
+                        success: function (data) {
+                            $(tableId).empty();
+                            data.forEach(item => {
+                                html += `<tr>
+                                    <td>${item.vungLuong}</td>
+                                    <td>${item.mucLuongToiThieuThang.toLocaleString()}</td>
+                                    <td>${item.mucLuongToiThieuGio.toLocaleString()}</td>
+                                    <td><button class="edit-button" onclick="openEditMucLuongToiThieuVungModal(${item.vungLuong})">Sửa</button></td>
+                                </tr>`;
+                            });
+                            $(tableId).html(html);
+                        },
+                        error: function (error) {
+                            console.error("Error loading data for " + tabName, error);
+                            $(tableId).html("<tr><td colspan='4'>Error loading data</td></tr>");
+                        }
+                    });
+                    break;
+                case "VungLuongTheoDiaPhuong":
+                    loadActiveRegions();
+                    loadTinhThanhs();
+                    break;
+                case "MucLuongCoSo":
+                    apiUrl = "/api/PayrollSettingApi/muc-luong-co-so";
+                    tableId = "#mucLuongCoSoTable tbody";
+                    $.ajax({
+                        url: apiUrl,
+                        method: "GET",
+                        success: function (data) {
+                            $(tableId).empty();
+                            var latestRecord = data
+                                .filter(item => !item.ngayHetHieuLuc)
+                                .sort((a, b) => new Date(b.ngayHieuLuc) - new Date(a.ngayHieuLuc))[0];
+                            data.forEach(item => {
+                                var isEditable = latestRecord && item.id === latestRecord.id;
+                                html += `<tr>
+                                    <td>${item.id}</td>
+                                    <td>${item.luongCoSo.toLocaleString()}</td>
+                                    <td>${new Date(item.ngayHieuLuc).toLocaleDateString()}</td>
+                                    <td>${item.ngayHetHieuLuc ? new Date(item.ngayHetHieuLuc).toLocaleDateString() : ''}</td>
+                                    <td>${item.ghiChu || ''}</td>
+                                    <td>
+                                        <button class="edit-button ${isEditable ? '' : 'disabled'}"
+                                                ${isEditable ? '' : 'disabled'}
+                                                onclick="${isEditable ? `openEditMucLuongCoSoModal(${item.id})` : ''}">
+                                            Sửa
+                                        </button>
+                                    </td>
+                                </tr>`;
+                            });
+                            $(tableId).html(html);
+                        },
+                        error: function (error) {
+                            console.error("Error loading data for " + tabName, error);
+                            $(tableId).html("<tr><td colspan='6'>Error loading data</td></tr>");
+                        }
+                    });
+                    break;
+                case "ThongTinBaoHiem":
+                    apiUrl = "/api/PayrollSettingApi/thong-tin-bao-hiem";
+                    tableId = "#thongTinBaoHiemTable tbody";
+                    $.ajax({
+                        url: apiUrl,
+                        method: "GET",
+                        success: function (data) {
+                            $(tableId).empty();
+                            var latestRecords = {};
+                            ['BHXH', 'BHYT', 'BHTN'].forEach(type => {
+                                var latest = data
+                                    .filter(item => item.loaiBaoHiem === type && !item.ngayHetHieuLuc)
+                                    .sort((a, b) => new Date(b.ngayHieuLuc) - new Date(a.ngayHieuLuc))[0];
+                                if (latest) {
+                                    latestRecords[type] = latest;
+                                }
+                            });
+                            data.forEach(item => {
+                                var isEditable = latestRecords[item.loaiBaoHiem] && item.id === latestRecords[item.loaiBaoHiem].id;
+                                html += `<tr>
+                                    <td>${item.id}</td>
+                                    <td>${item.loaiBaoHiem}</td>
+                                    <td>${item.tyLeNguoiLaoDong}</td>
+                                    <td>${item.tyLeNhaTuyenDung}</td>
+                                    <td>${item.vungLuongTheoDiaPhuong ? item.vungLuongTheoDiaPhuong.tinhThanh + ' - ' + item.vungLuongTheoDiaPhuong.quanHuyen : ''}</td>
+                                    <td>${item.mucLuongCoSo ? item.mucLuongCoSo.luongCoSo.toLocaleString() : ''}</td>
+                                    <td>${new Date(item.ngayHieuLuc).toLocaleDateString()}</td>
+                                    <td>${item.ngayHetHieuLuc ? new Date(item.ngayHetHieuLuc).toLocaleDateString() : ''}</td>
+                                    <td>${item.ghiChu || ''}</td>
+                                    <td>
+                                        <button class="edit-button ${isEditable ? '' : 'disabled'}"
+                                                ${isEditable ? '' : 'disabled'}
+                                                onclick="${isEditable ? `openEditThongTinBaoHiemModal(${item.id})` : ''}">
+                                            Sửa
+                                        </button>
+                                    </td>
+                                </tr>`;
+                            });
+                            $(tableId).html(html);
+                        },
+                        error: function (error) {
+                            console.error("Error loading data for " + tabName, error);
+                            $(tableId).html("<tr><td colspan='10'>Error loading data</td></tr>");
+                        }
+                    });
+                    break;
+                case "CauHinhLuongThue":
+                    apiUrl = "/api/PayrollSettingApi/cau-hinh-luong-thue";
+                    tableId = "#cauHinhLuongThueTable tbody";
+                    $.ajax({
+                        url: apiUrl,
+                        method: "GET",
+                        success: function (data) {
+                            $(tableId).empty();
+                            data.forEach(item => {
+                                html += `<tr>
+                                    <td>${item.maCauHinh}</td>
+                                    <td>${item.mucLuongTu ? item.mucLuongTu.toLocaleString() : ''}</td>
+                                    <td>${item.mucLuongDen ? item.mucLuongDen.toLocaleString() : ''}</td>
+                                    <td>${item.giaTri.toLocaleString()}</td>
+                                    <td>${item.moTa || ''}</td>
+                                    <td>
+                                        <button class="edit-button" onclick="openEditCauHinhLuongThueModal(${item.maCauHinh})">Sửa</button>
+                                        <button class="delete-button" onclick="deleteCauHinhLuongThue(${item.maCauHinh})">Xóa</button>
+                                    </td>
+                                </tr>`;
+                            });
+                            $(tableId).html(html);
+                        },
+                        error: function (error) {
+                            console.error("Error loading data for " + tabName, error);
+                            $(tableId).html("<tr><td colspan='6'>Error loading data</td></tr>");
+                        }
+                    });
+                    break;
+            }
+        }
+
+        function loadActiveRegions() {
+            $.ajax({
+                url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
+                method: "GET",
+                success: function (data) {
+                    var tableBody = $("#activeRegionsTable tbody");
+                    tableBody.empty();
+                    var activeRegions = data.filter(item => item.isActive);
+                    if (activeRegions.length === 0) {
+                        tableBody.html("<tr><td colspan='5'>Chưa có khu vực nào được kích hoạt.</td></tr>");
+                    } else {
+                        activeRegions.forEach(item => {
+                            tableBody.append(`
+                                <tr>
+                                    <td>${item.tinhThanh}</td>
+                                    <td>${item.quanHuyen}</td>
+                                    <td>${item.vungLuong}</td>
+                                    <td>${item.ghiChu || ''}</td>
+                                    <td><button class="edit-button" onclick="openEditVungLuongTheoDiaPhuongModal(${item.id})">Sửa</button></td>
+                                </tr>
+                            `);
+                        });
+                    }
+                },
+                error: function (error) {
+                    console.error("Error loading active regions", error);
+                    $("#activeRegionsTable tbody").html("<tr><td colspan='5'>Lỗi khi tải danh sách khu vực đã kích hoạt.</td></tr>");
+                }
+            });
+        }
+
+        function toggleRegionSelection() {
+            var regionSelection = $("#regionSelection");
+            if (regionSelection.is(":visible")) {
+                regionSelection.hide();
+            } else {
+                regionSelection.show();
+            }
+        }
+
+        function loadTinhThanhs() {
+            $.ajax({
+                url: "/api/PayrollSettingApi/tinh-thanh",
+                method: "GET",
+                success: function (data) {
+                    var tinhThanhSelect = $("#tinhThanh");
+                    tinhThanhSelect.empty();
+                    tinhThanhSelect.append('<option value="">Chọn Tỉnh/Thành</option>');
+                    data.forEach(tinhThanh => {
+                        tinhThanhSelect.append(`<option value="${tinhThanh}">${tinhThanh}</option>`);
+                    });
+                },
+                error: function (error) {
+                    console.error("Error loading TinhThanhs", error);
+                }
+            });
+        }
+
+        function loadQuanHuyen() {
+            var tinhThanh = $("#tinhThanh").val();
+            var quanHuyenSelect = $("#quanHuyen");
+            quanHuyenSelect.empty();
+            quanHuyenSelect.append('<option value="">Chọn Quận/Huyện</option>');
+            quanHuyenSelect.prop("disabled", true);
+            $("#vungLuongInfo").hide();
+
+            if (tinhThanh) {
+                $.ajax({
+                    url: `/api/PayrollSettingApi/quan-huyen?tinhThanh=${encodeURIComponent(tinhThanh)}`,
+                    method: "GET",
+                    success: function (data) {
+                        data.forEach(quanHuyen => {
+                            quanHuyenSelect.append(`<option value="${quanHuyen}">${quanHuyen}</option>`);
+                        });
+                        quanHuyenSelect.prop("disabled", false);
+                    },
+                    error: function (error) {
+                        console.error("Error loading QuanHuyens", error);
+                    }
+                });
+            }
+        }
+
+        function loadVungLuongInfo() {
+            var tinhThanh = $("#tinhThanh").val();
+            var quanHuyen = $("#quanHuyen").val();
+            if (tinhThanh && quanHuyen) {
+                $.ajax({
+                    url: `/api/PayrollSettingApi/vung-luong-theo-dia-phuong/by-location?tinhThanh=${encodeURIComponent(tinhThanh)}&quanHuyen=${encodeURIComponent(quanHuyen)}`,
+                    method: "GET",
+                    success: function (data) {
+                        currentVungLuongId = data.id;
+                        $("#vungLuong").text(data.vungLuong);
+                        $("#ghiChu").text(data.ghiChu || '');
+                        var activeButton = $("#activeButton");
+                        activeButton.removeClass("active inactive");
+                        if (data.isActive) {
+                            activeButton.addClass("active").text("Đã kích hoạt");
+                        } else {
+                            activeButton.addClass("inactive").text("Chưa kích hoạt");
+                        }
+                        activeButton.off("click").on("click", function () {
+                            toggleActiveStatus(data.id, data.isActive);
+                        });
+                        $("#vungLuongInfo").show();
+                    },
+                    error: function (error) {
+                        console.error("Error loading VungLuong info", error);
+                        $("#vungLuongInfo").hide();
+                    }
+                });
+            } else {
+                $("#vungLuongInfo").hide();
+            }
+        }
+
+        function toggleActiveStatus(id, currentStatus) {
+            var newStatus = !currentStatus;
+            var actionText = newStatus ? "kích hoạt" : "hủy kích hoạt";
+
+            Swal.fire({
+                title: `Bạn có chắc muốn ${actionText} không?`,
+                text: "Hành động này sẽ thay đổi trạng thái hoạt động!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Có, thực hiện!",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/api/PayrollSettingApi/vung-luong-theo-dia-phuong/${id}`,
+                        method: "PUT",
+                        contentType: "application/json",
+                        data: JSON.stringify({
+                            id: id,
+                            isActive: newStatus
+                        }),
+                        success: function () {
+                            Swal.fire("Thành công!", `Trạng thái đã được ${actionText}!`, "success");
+                            var activeButton = $("#activeButton");
+                            activeButton.removeClass("active inactive");
+                            if (newStatus) {
+                                activeButton.addClass("active").text("Đã kích hoạt");
+                            } else {
+                                activeButton.addClass("inactive").text("Chưa kích hoạt");
+                            }
+                            activeButton.off("click").on("click", function () {
+                                toggleActiveStatus(id, newStatus);
+                            });
+                            loadActiveRegions();
+                            if (newStatus) {
+                                $("#regionSelection").hide();
+                            }
+                        },
+                        error: function (error) {
+                            console.error("Error updating IsActive:", error);
+                            Swal.fire("Lỗi!", `Không thể cập nhật trạng thái: ${error.responseText || 'Lỗi không xác định'}.`, "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        function openCreateMucLuongCoSoModal() {
+            $("#createMucLuongCoSoForm")[0].reset();
+            $("#createMucLuongCoSoModal").show();
+        }
+
+        $("#createMucLuongCoSoForm").submit(function (e) {
+            e.preventDefault();
+            var data = {
+                luongCoSo: parseFloat($("#createLuongCoSo").val()),
+                ngayHieuLuc: $("#createNgayHieuLucCoSo").val(),
+                ngayHetHieuLuc: $("#createNgayHetHieuLucCoSo").val() || null,
+                ghiChu: $("#createGhiChuCoSo").val()
+            };
+            $.ajax({
+                url: "/api/PayrollSettingApi/muc-luong-co-so",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Tạo mới thành công!", "success");
+                    closeModal('createMucLuongCoSoModal');
+                    loadData('MucLuongCoSo');
+                },
+                error: function (error) {
+                    console.error("Error creating MucLuongCoSo:", error);
+                    Swal.fire("Lỗi!", "Không thể tạo mới dữ liệu.", "error");
+                }
+            });
+        });
+
+        function openCreateThongTinBaoHiemModal() {
+            $("#createThongTinBaoHiemForm")[0].reset();
+
+            $.ajax({
+                url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
+                method: "GET",
+                success: function (data) {
+                    var activeVung = data.find(item => item.isActive);
+                    if (activeVung) {
+                        $("#createVungLuongTheoDiaPhuong").val(`${activeVung.tinhThanh} - ${activeVung.quanHuyen}`);
+                        $("#createVungLuongTheoDiaPhuongId").val(activeVung.id);
+                    } else {
+                        $("#createVungLuongTheoDiaPhuong").val("Không có vùng lương đang hoạt động");
+                        $("#createVungLuongTheoDiaPhuongId").val("");
+                    }
+                },
+                error: function (error) {
+                    console.error("Error loading VungLuongTheoDiaPhuong:", error);
+                    $("#createVungLuongTheoDiaPhuong").val("Lỗi khi tải dữ liệu");
+                    $("#createVungLuongTheoDiaPhuongId").val("");
+                }
+            });
+
+            $.ajax({
+                url: "/api/PayrollSettingApi/muc-luong-co-so",
+                method: "GET",
+                success: function (data) {
+                    var latestCoSo = data
+                        .filter(item => !item.ngayHetHieuLuc)
+                        .sort((a, b) => new Date(b.ngayHieuLuc) - new Date(a.ngayHieuLuc))[0];
+                    if (latestCoSo) {
+                        $("#createMucLuongCoSo").val(latestCoSo.luongCoSo.toLocaleString());
+                        $("#createMucLuongCoSoId").val(latestCoSo.id);
+                    } else {
+                        $("#createMucLuongCoSo").val("Không có mức lương cơ sở hiện hành");
+                        $("#createMucLuongCoSoId").val("");
+                    }
+                },
+                error: function (error) {
+                    console.error("Error loading MucLuongCoSo:", error);
+                    $("#createMucLuongCoSo").val("Lỗi khi tải dữ liệu");
+                    $("#createMucLuongCoSoId").val("");
+                }
+            });
+
+            $("#createThongTinBaoHiemModal").show();
+        }
+
+        $("#createThongTinBaoHiemForm").submit(function (e) {
+            e.preventDefault();
+            var vungLuongId = $("#createVungLuongTheoDiaPhuongId").val();
+            var mucLuongCoSoId = $("#createMucLuongCoSoId").val();
+
+            if (!vungLuongId || !mucLuongCoSoId) {
+                Swal.fire("Lỗi!", "Vui lòng đảm bảo có Vùng Lương Theo Địa Phương đang hoạt động và Mức Lương Cơ Sở hiện hành.", "error");
+                return;
+            }
+
+            var data = {
+                tyLeNguoiLaoDongBHXH: parseFloat($("#createTyLeNguoiLaoDongBHXH").val()),
+                tyLeNhaTuyenDungBHXH: parseFloat($("#createTyLeNhaTuyenDungBHXH").val()),
+                tyLeNguoiLaoDongBHYT: parseFloat($("#createTyLeNguoiLaoDongBHYT").val()),
+                tyLeNhaTuyenDungBHYT: parseFloat($("#createTyLeNhaTuyenDungBHYT").val()),
+                tyLeNguoiLaoDongBHTN: parseFloat($("#createTyLeNguoiLaoDongBHTN").val()),
+                tyLeNhaTuyenDungBHTN: parseFloat($("#createTyLeNhaTuyenDungBHTN").val()),
+                vungLuongTheoDiaPhuongId: parseInt(vungLuongId),
+                mucLuongCoSoId: parseInt(mucLuongCoSoId),
+                ngayHieuLuc: $("#createNgayHieuLucBH").val(),
+                ngayHetHieuLuc: $("#createNgayHetHieuLucBH").val() || null,
+                ghiChu: $("#createGhiChuBH").val()
+            };
+            $.ajax({
+                url: "/api/PayrollSettingApi/thong-tin-bao-hiem",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Tạo mới thành công!", "success");
+                    closeModal('createThongTinBaoHiemModal');
+                    loadData('ThongTinBaoHiem');
+                },
+                error: function (error) {
+                    console.error("Error creating ThongTinBaoHiem:", error);
+                    Swal.fire("Lỗi!", "Không thể tạo mới dữ liệu.", "error");
+                }
+            });
+        });
+
+        function openCreateCauHinhLuongThueModal() {
+            $("#createCauHinhLuongThueForm")[0].reset();
+            $("#createCauHinhLuongThueModal").show();
+        }
+
+        $("#createCauHinhLuongThueForm").submit(function (e) {
+            e.preventDefault();
+            var data = {
+                mucLuongTu: parseFloat($("#createMucLuongTu").val()) || null,
+                mucLuongDen: parseFloat($("#createMucLuongDen").val()) || null,
+                giaTri: parseFloat($("#createGiaTri").val()),
+                moTa: $("#createMoTa").val()
+            };
+            $.ajax({
+                url: "/api/PayrollSettingApi/cau-hinh-luong-thue",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Tạo mới thành công!", "success");
+                    closeModal('createCauHinhLuongThueModal');
+                    loadData('CauHinhLuongThue');
+                },
+                error: function (error) {
+                    console.error("Error creating CauHinhLuongThue:", error);
+                    Swal.fire("Lỗi!", "Không thể tạo mới dữ liệu.", "error");
+                }
+            });
+        });
+
+        function openEditMucLuongToiThieuVungModal(id) {
+            $.ajax({
+                url: `/api/PayrollSettingApi/muc-luong-toi-thieu-vung/${id}`,
+                method: "GET",
+                success: function (data) {
+                    $("#editMucLuongToiThieuVungId").val(data.vungLuong);
+                    $("#editMucLuongToiThieuThang").val(data.mucLuongToiThieuThang);
+                    $("#editMucLuongToiThieuGio").val(data.mucLuongToiThieuGio);
+                    $("#editMucLuongToiThieuVungModal").show();
+                },
+                error: function (error) {
+                    console.error("Error fetching MucLuongToiThieuVung:", error);
+                    Swal.fire("Lỗi!", "Không thể tải dữ liệu.", "error");
+                }
+            });
+        }
+
+        $("#editMucLuongToiThieuVungForm").submit(function (e) {
+            e.preventDefault();
+            var data = {
+                vungLuong: parseInt($("#editMucLuongToiThieuVungId").val()),
+                mucLuongToiThieuThang: parseFloat($("#editMucLuongToiThieuThang").val()),
+                mucLuongToiThieuGio: parseFloat($("#editMucLuongToiThieuGio").val())
+            };
+            $.ajax({
+                url: `/api/PayrollSettingApi/muc-luong-toi-thieu-vung/${data.vungLuong}`,
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Cập nhật thành công!", "success");
+                    closeModal('editMucLuongToiThieuVungModal');
+                    loadData('MucLuongToiThieuVung');
+                },
+                error: function (error) {
+                    console.error("Error updating MucLuongToiThieuVung:", error);
+                    Swal.fire("Lỗi!", "Không thể cập nhật dữ liệu.", "error");
+                }
+            });
+        });
+
+        function openEditVungLuongTheoDiaPhuongModal(id) {
+            $.ajax({
+                url: `/api/PayrollSettingApi/vung-luong-theo-dia-phuong/${id}`,
+                method: "GET",
+                success: function (data) {
+                    $("#editVungLuongTheoDiaPhuongId").val(data.id);
+                    $("#editTinhThanh").val(data.tinhThanh);
+                    $("#editQuanHuyen").val(data.quanHuyen);
+                    $("#editVungLuong").val(data.vungLuong);
+                    $("#editGhiChuVung").val(data.ghiChu || '');
+                    $("#editVungLuongTheoDiaPhuongModal").show();
+                },
+                error: function (error) {
+                    console.error("Error fetching VungLuongTheoDiaPhuong:", error);
+                    Swal.fire("Lỗi!", "Không thể tải dữ liệu.", "error");
+                }
+            });
+        }
+
+        $("#editVungLuongTheoDiaPhuongForm").submit(function (e) {
+            e.preventDefault();
+            var data = {
+                id: parseInt($("#editVungLuongTheoDiaPhuongId").val()),
+                tinhThanh: $("#editTinhThanh").val(),
+                quanHuyen: $("#editQuanHuyen").val(),
+                vungLuong: parseInt($("#editVungLuong").val()),
+                ghiChu: $("#editGhiChuVung").val(),
+                isActive: true
+            };
+            $.ajax({
+                url: `/api/PayrollSettingApi/vung-luong-theo-dia-phuong/${data.id}`,
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Cập nhật thành công!", "success");
+                    closeModal('editVungLuongTheoDiaPhuongModal');
+                    loadActiveRegions();
+                },
+                error: function (error) {
+                    console.error("Error updating VungLuongTheoDiaPhuong:", error);
+                    Swal.fire("Lỗi!", "Không thể cập nhật dữ liệu.", "error");
+                }
+            });
+        });
+
+        function openEditMucLuongCoSoModal(id) {
+            $.ajax({
+                url: `/api/PayrollSettingApi/muc-luong-co-so/${id}`,
+                method: "GET",
+                success: function (data) {
+                    $("#editMucLuongCoSoId").val(data.id);
+                    $("#editLuongCoSo").val(data.luongCoSo);
+                    $("#editNgayHieuLucCoSo").val(new Date(data.ngayHieuLuc).toISOString().split('T')[0]);
+                    $("#editNgayHetHieuLucCoSo").val(data.ngayHetHieuLuc ? new Date(data.ngayHetHieuLuc).toISOString().split('T')[0] : '');
+                    $("#editGhiChuCoSo").val(data.ghiChu || '');
+                    $("#editMucLuongCoSoModal").show();
+                },
+                error: function (error) {
+                    console.error("Error fetching MucLuongCoSo:", error);
+                    Swal.fire("Lỗi!", "Không thể tải dữ liệu.", "error");
+                }
+            });
+        }
+
+        $("#editMucLuongCoSoForm").submit(function (e) {
+            e.preventDefault();
+            var data = {
+                id: parseInt($("#editMucLuongCoSoId").val()),
+                luongCoSo: parseFloat($("#editLuongCoSo").val()),
+                ngayHieuLuc: $("#editNgayHieuLucCoSo").val(),
+                ngayHetHieuLuc: $("#editNgayHetHieuLucCoSo").val() || null,
+                ghiChu: $("#editGhiChuCoSo").val()
+            };
+            $.ajax({
+                url: `/api/PayrollSettingApi/muc-luong-co-so/${data.id}`,
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Cập nhật thành công!", "success");
+                    closeModal('editMucLuongCoSoModal');
+                    loadData('MucLuongCoSo');
+                },
+                error: function (error) {
+                    console.error("Error updating MucLuongCoSo:", error);
+                    Swal.fire("Lỗi!", "Không thể cập nhật dữ liệu.", "error");
+                }
+            });
+        });
+
+        function openEditThongTinBaoHiemModal(id) {
+            $.ajax({
+                url: `/api/PayrollSettingApi/thong-tin-bao-hiem/${id}`,
+                method: "GET",
+                success: function (data) {
+                    $("#editThongTinBaoHiemId").val(data.id);
+                    $("#editLoaiBaoHiem").val(data.loaiBaoHiem);
+                    $("#editTyLeNguoiLaoDong").val(data.tyLeNguoiLaoDong);
+                    $("#editTyLeNhaTuyenDung").val(data.tyLeNhaTuyenDung);
+                    $("#editNgayHieuLucBH").val(new Date(data.ngayHieuLuc).toISOString().split('T')[0]);
+                    $("#editNgayHetHieuLucBH").val(data.ngayHetHieuLuc ? new Date(data.ngayHetHieuLuc).toISOString().split('T')[0] : '');
+                    $("#editGhiChuBH").val(data.ghiChu || '');
+
+                    var vungLuongSelect = $("#editVungLuongTheoDiaPhuongId");
+                    vungLuongSelect.empty();
+                    $.ajax({
+                        url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
+                        method: "GET",
+                        success: function (vungData) {
+                            vungData.forEach(vung => {
+                                vungLuongSelect.append(`<option value="${vung.id}" ${vung.id === data.vungLuongTheoDiaPhuongId ? 'selected' : ''}>
+                                    ${vung.tinhThanh} - ${vung.quanHuyen}
+                                </option>`);
+                            });
+                        }
+                    });
+
+                    var mucLuongCoSoSelect = $("#editMucLuongCoSoId");
+                    mucLuongCoSoSelect.empty();
+                    $.ajax({
+                        url: "/api/PayrollSettingApi/muc-luong-co-so",
+                        method: "GET",
+                        success: function (coSoData) {
+                            coSoData.forEach(coSo => {
+                                mucLuongCoSoSelect.append(`<option value="${coSo.id}" ${coSo.id === data.mucLuongCoSoId ? 'selected' : ''}>
+                                    ${coSo.luongCoSo.toLocaleString()}
+                                </option>`);
+                            });
+                        }
+                    });
+
+                    $("#editThongTinBaoHiemModal").show();
+                },
+                error: function (error) {
+                    console.error("Error fetching ThongTinBaoHiem:", error);
+                    Swal.fire("Lỗi!", "Không thể tải dữ liệu.", "error");
+                }
+            });
+        }
+
+        $("#editThongTinBaoHiemForm").submit(function (e) {
+            e.preventDefault();
+            var data = {
+                id: parseInt($("#editThongTinBaoHiemId").val()),
+                loaiBaoHiem: $("#editLoaiBaoHiem").val(),
+                tyLeNguoiLaoDong: parseFloat($("#editTyLeNguoiLaoDong").val()),
+                tyLeNhaTuyenDung: parseFloat($("#editTyLeNhaTuyenDung").val()),
+                vungLuongTheoDiaPhuongId: parseInt($("#editVungLuongTheoDiaPhuongId").val()),
+                mucLuongCoSoId: parseInt($("#editMucLuongCoSoId").val()),
+                ngayHieuLuc: $("#editNgayHieuLucBH").val(),
+                ngayHetHieuLuc: $("#editNgayHetHieuLucBH").val() || null,
+                ghiChu: $("#editGhiChuBH").val()
+            };
+            $.ajax({
+                url: `/api/PayrollSettingApi/thong-tin-bao-hiem/${data.id}`,
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Cập nhật thành công!", "success");
+                    closeModal('editThongTinBaoHiemModal');
+                    loadData('ThongTinBaoHiem');
+                },
+                error: function (error) {
+                    console.error("Error updating ThongTinBaoHiem:", error);
+                    Swal.fire("Lỗi!", "Không thể cập nhật dữ liệu.", "error");
+                }
+            });
+        });
+
+        function openEditCauHinhLuongThueModal(id) {
+            $.ajax({
+                url: `/api/PayrollSettingApi/cau-hinh-luong-thue/${id}`,
+                method: "GET",
+                success: function (data) {
+                    $("#editMaCauHinh").val(data.maCauHinh);
+                    $("#editMucLuongTu").val(data.mucLuongTu || '');
+                    $("#editMucLuongDen").val(data.mucLuongDen || '');
+                    $("#editGiaTri").val(data.giaTri);
+                    $("#editMoTa").val(data.moTa || '');
+                    $("#editCauHinhLuongThueModal").show();
+                },
+                error: function (error) {
+                    console.error("Error fetching CauHinhLuongThue:", error);
+                    Swal.fire("Lỗi!", "Không thể tải dữ liệu.", "error");
+                }
+            });
+        }
+
+        $("#editCauHinhLuongThueForm").submit(function (e) {
+            e.preventDefault();
+            var data = {
+                maCauHinh: parseInt($("#editMaCauHinh").val()),
+                mucLuongTu: parseFloat($("#editMucLuongTu").val()) || null,
+                mucLuongDen: parseFloat($("#editMucLuongDen").val()) || null,
+                giaTri: parseFloat($("#editGiaTri").val()),
+                moTa: $("#editMoTa").val()
+            };
+            $.ajax({
+                url: `/api/PayrollPayrollSettingApi/cau-hinh-luong-thue/${data.maCauHinh}`,
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire("Thành công!", "Cập nhật thành công!", "success");
+                    closeModal('editCauHinhLuongThueModal');
+                    loadData('CauHinhLuongThue');
+                },
+                error: function (error) {
+                    console.error("Error updating CauHinhLuongThue:", error);
+                    Swal.fire("Lỗi!", "Không thể cập nhật dữ liệu.", "error");
+                }
+            });
+        });
+
+        function deleteCauHinhLuongThue(id) {
+            Swal.fire({
+                title: "Bạn có chắc muốn xóa không?",
+                text: "Hành động này không thể hoàn tác!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Có, xóa!",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/api/PayrollSettingApi/cau-hinh-luong-thue/${id}`,
+                        method: "DELETE",
+                        success: function () {
+                            Swal.fire("Thành công!", "Đã xóa thành công!", "success");
+                            loadData('CauHinhLuongThue');
+                        },
+                        error: function (error) {
+                            console.error("Error deleting CauHinhLuongThue:", error);
+                            Swal.fire("Lỗi!", "Không thể xóa dữ liệu.", "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        // Initialize the first tab
+        document.getElementsByClassName("tablinks")[0].click();
+    </script>
+</body>
+</html>

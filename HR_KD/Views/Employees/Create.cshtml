@@ -20,9 +20,9 @@
                     <h2 class="mb-0 fw-bold">Thêm Nhân Viên Mới</h2>
                 </div>
             </div>
-            
+
             <div class="progress" style="height: 4px;">
-                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" 
+                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;"
                      id="formProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
 
@@ -288,8 +288,6 @@
         </div>
     </div>
 
- 
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.0/sweetalert2.all.min.js"></script>
@@ -321,7 +319,7 @@
                 if (firstInvalid) {
                     firstInvalid.focus();
                     firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
+
                     // Add attention animation
                     firstInvalid.classList.add('attention');
                     setTimeout(() => {
@@ -335,10 +333,10 @@
                 const requiredFields = $('#createEmployeeForm [required]');
                 const filledFields = requiredFields.filter((i, field) => $(field).val() !== '');
                 const progressPercentage = (filledFields.length / requiredFields.length) * 100;
-                
+
                 $('#formProgress').css('width', progressPercentage + '%');
                 $('#formProgress').attr('aria-valuenow', progressPercentage);
-                
+
                 // Change color based on progress
                 if (progressPercentage < 33) {
                     $('#formProgress').removeClass('bg-warning bg-success').addClass('bg-danger');
@@ -427,13 +425,13 @@
                 let tinhThanh = $("#TinhThanh option:selected").data("name") || "";
 
                 let diaChiDayDu = [soNhaDuong, phuongXa, quanHuyen, tinhThanh]
-                    .filter(part => part) // Loại bỏ phần rỗng
+                    .filter(part => part)
                     .join(", ");
 
                 $("#DiaChiDayDu").val(diaChiDayDu);
             }
 
-            // Gửi form 
+            // Gửi form
             function submitForm(e) {
                 e.preventDefault();
 

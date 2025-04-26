@@ -1,0 +1,402 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+<link rel="stylesheet" href="~/css/employee.css">
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Quản Lý Hợp Đồng Nhân Viên</h3>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Thông báo lỗi -->
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fa fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <!-- Bộ lọc & Tìm kiếm -->
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fa fa-search text-muted"></i>
+                                </span>
+                                <input type="text" id="searchInput" class="form-control" placeholder="Tìm theo tên nhân viên...">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <select id="filterLoaiHopDong" class="form-select">
+                                <option value="">Tất cả Loại Hợp Đồng</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Danh Sách Hợp Đồng -->
+                    <div class="table-responsive">
+                        <table id="contractTable" class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tên Nhân Viên</th>
+                                    <th>Loại Hợp Đồng</th>
+                                    <th>Thời Hạn (tháng)</th>
+                                    <th>Ngày Bắt Đầu</th>
+                                    <th>Ngày Kết Thúc</th>
+                                    <th>Ghi Chú</th>
+                                    <th>Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dữ liệu sẽ được tải từ API -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Phân trang -->
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center" id="pagination">
+                            <!-- Phân trang sẽ được tạo động -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Link Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+
+<!-- Link SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        loadContracts();
+        loadFilters();
+        const itemsPerPage = 10;
+        let currentPage = 1;
+        let allContractsData = [];
+
+        // Sự kiện lọc
+        document.getElementById("filterLoaiHopDong").addEventListener("change", applyFilters);
+        document.getElementById("searchInput").addEventListener("input", applyFilters);
+
+        function loadFilters() {
+            fetch('/api/LoaiHopDongApi')
+                .then(response => {
+                    if (!response.ok) throw new Error(`Lỗi khi tải danh sách loại hợp đồng! Mã trạng thái: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    let filterLoaiHopDong = document.getElementById("filterLoaiHopDong");
+                    data.forEach(lhd => {
+                        let option = new Option(lhd.tenLoaiHopDong, lhd.maLoaiHopDong);
+                        filterLoaiHopDong.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading LoaiHopDong:', error);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi",
+                        text: "Không thể tải danh sách loại hợp đồng. Vui lòng kiểm tra lại."
+                    });
+                });
+        }
+
+        function loadContracts() {
+            Swal.fire({
+                title: 'Đang tải...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch('/api/EmployeesApi/GetEmployeeContracts')
+                .then(response => {
+                    if (!response.ok) throw new Error(`Lỗi khi tải danh sách hợp đồng! Mã trạng thái: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    Swal.close();
+                    allContractsData = data;
+                    window.allContracts = data;
+                    renderContracts(data, currentPage, itemsPerPage);
+                })
+                .catch(error => {
+                    console.error('Error loading Contracts:', error);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi",
+                        text: "Không thể tải danh sách hợp đồng. Vui lòng kiểm tra lại."
+                    });
+                });
+        }
+
+        function applyFilters() {
+            let loaiHopDongFilter = document.getElementById("filterLoaiHopDong").value;
+            let searchKeyword = document.getElementById("searchInput").value.toLowerCase();
+
+            let filteredData = window.allContracts.filter(emp => {
+                let matchesLoaiHopDong = loaiHopDongFilter ? emp.maLoaiHopDong == loaiHopDongFilter : true;
+                let matchesSearch = emp.hoTen.toLowerCase().includes(searchKeyword);
+                return matchesLoaiHopDong && matchesSearch;
+            });
+
+            currentPage = 1;
+            renderContracts(filteredData, currentPage, itemsPerPage);
+        }
+
+        function renderContracts(data, page, itemsPerPage) {
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+            const displayedData = data.slice(startIndex, endIndex);
+            const currentDate = new Date();
+
+            let tableContent = "";
+            if (displayedData.length === 0) {
+                tableContent = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fa fa-search fa-2x mb-3"></i>
+                                <p>Không tìm thấy hợp đồng nào phù hợp với điều kiện tìm kiếm</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                displayedData.forEach(emp => {
+                    let actions = '';
+                    if (emp.maHopDong) {
+                        actions += `
+                            <button class="btn btn-sm btn-outline-primary btn-edit-contract" data-manv="${emp.maNv}">
+                                <i class="fa fa-edit me-1"></i> Sửa
+                            </button>
+                        `;
+                        // Kiểm tra điều kiện hiển thị nút Gia hạn
+                        if (emp.giaHanToiDa && emp.ngayKetThuc) {
+                            const ngayKetThuc = new Date(emp.ngayKetThuc);
+                            const daysUntilEnd = Math.ceil((ngayKetThuc - currentDate) / (1000 * 60 * 60 * 24));
+                            if (daysUntilEnd <= 30 && daysUntilEnd >= 0) {
+                                actions += `
+                                    <button class="btn btn-sm btn-outline-warning btn-extend-contract"
+                                            data-mahopdong="${emp.maHopDong}"
+                                            data-manv="${emp.maNv}"
+                                            data-solangiahan="${emp.soLanGiaHan || 0}"
+                                            data-giahantoimax="${emp.giaHanToiDa}">
+                                        <i class="fa fa-clock-rotate-left me-1"></i> Gia hạn
+                                    </button>
+                                `;
+                            }
+                        }
+                    } else {
+                        actions = `
+                            <button class="btn btn-sm btn-outline-success btn-add-contract" data-manv="${emp.maNv}">
+                                <i class="fa fa-plus me-1"></i> Thêm Hợp Đồng
+                            </button>
+                        `;
+                    }
+
+                    tableContent += `
+                        <tr>
+                            <td>${emp.hoTen}</td>
+                            <td>${emp.tenLoaiHopDong || '<span class="text-muted">Chưa có hợp đồng</span>'}</td>
+                            <td>${emp.thoiHan || '-'}</td>
+                            <td>${emp.ngayBatDau ? new Date(emp.ngayBatDau).toLocaleDateString('vi-VN') : '-'}</td>
+                            <td>${emp.ngayKetThuc ? new Date(emp.ngayKetThuc).toLocaleDateString('vi-VN') : '-'}</td>
+                            <td>${emp.ghiChu || '-'}</td>
+                            <td>${actions}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.querySelector("#contractTable tbody").innerHTML = tableContent;
+            renderPagination(data.length, page, itemsPerPage);
+
+            // Sự kiện nút thêm hợp đồng
+            document.querySelectorAll(".btn-add-contract").forEach(button => {
+                button.addEventListener("click", function () {
+                    let maNv = this.getAttribute("data-manv");
+                    Swal.fire({
+                        title: 'Thêm hợp đồng',
+                        text: 'Bạn sẽ được chuyển đến trang thiết lập hợp đồng. Tiếp tục?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Tiếp tục',
+                        cancelButtonText: 'Hủy'
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            window.location.href = `/Employees/SetupContracts?maNv=${maNv}`;
+                        }
+                    });
+                });
+            });
+
+            // Sự kiện nút sửa hợp đồng
+            document.querySelectorAll(".btn-edit-contract").forEach(button => {
+                button.addEventListener("click", function () {
+                    let maNv = this.getAttribute("data-manv");
+                    Swal.fire({
+                        title: 'Sửa hợp đồng',
+                        text: 'Bạn sẽ được chuyển đến trang chỉnh sửa hợp đồng. Tiếp tục?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Tiếp tục',
+                        cancelButtonText: 'Hủy'
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            window.location.href = `/Employees/SetupContracts?maNv=${maNv}`;
+                        }
+                    });
+                });
+            });
+
+            // Sự kiện nút gia hạn hợp đồng
+            document.querySelectorAll(".btn-extend-contract").forEach(button => {
+                button.addEventListener("click", function () {
+                    const maHopDong = this.getAttribute("data-mahopdong");
+                    const maNv = this.getAttribute("data-manv");
+                    const soLanGiaHan = parseInt(this.getAttribute("data-solangiahan"));
+                    const giaHanToiDa = parseInt(this.getAttribute("data-giahantoimax"));
+
+                    if (soLanGiaHan >= giaHanToiDa) {
+                        Swal.fire({
+                            title: 'Hết lần gia hạn',
+                            text: 'Hợp đồng này đã đạt số lần gia hạn tối đa. Bạn có muốn chuyển sang hợp đồng không xác định thời hạn không?',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Chuyển đổi',
+                            cancelButtonText: 'Hủy'
+                        }).then(result => {
+                            if (result.isConfirmed) {
+                                extendContract(maHopDong, maNv, true);
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Gia hạn hợp đồng',
+                            text: `Bạn có muốn gia hạn hợp đồng này thêm 12 tháng? (Lần gia hạn: ${soLanGiaHan + 1}/${giaHanToiDa})`,
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonText: 'Gia hạn',
+                            cancelButtonText: 'Hủy'
+                        }).then(result => {
+                            if (result.isConfirmed) {
+                                extendContract(maHopDong, maNv, false);
+                            }
+                        });
+                    }
+                });
+            });
+
+            function extendContract(maHopDong, maNv, convertToUnlimited) {
+                Swal.fire({
+                    title: 'Đang xử lý...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                fetch('/api/EmployeesApi/ExtendContract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ maHopDong, maNv, convertToUnlimited })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`Lỗi khi gia hạn hợp đồng! Mã trạng thái: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        loadContracts(); // Tải lại danh sách hợp đồng
+                    });
+                })
+                .catch(error => {
+                    console.error('Error extending contract:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Không thể gia hạn hợp đồng. Vui lòng kiểm tra lại.'
+                    });
+                });
+            }
+        }
+
+        function renderPagination(totalItems, currentPage, itemsPerPage) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            let paginationHTML = '';
+
+            if (totalPages <= 1) {
+                document.getElementById("pagination").innerHTML = '';
+                return;
+            }
+
+            paginationHTML += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
+                        <span aria-hidden="true">«</span>
+                    </a>
+                </li>
+            `;
+
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            if (startPage > 1) {
+                paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+                if (startPage > 2) paginationHTML += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                    </li>
+                `;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) paginationHTML += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+                paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</li>`;
+            }
+
+            paginationHTML += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
+                        <span aria-hidden="true">»</span>
+                    </a>
+                </li>
+            `;
+
+            document.getElementById("pagination").innerHTML = paginationHTML;
+
+            document.querySelectorAll("#pagination .page-link").forEach(link => {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    const pageNumber = parseInt(this.getAttribute("data-page"));
+                    if (!isNaN(pageNumber)) {
+                        currentPage = pageNumber;
+                        renderContracts(window.filteredContracts || window.allContracts, currentPage, itemsPerPage);
+                    }
+                });
+            });
+        }
+    });
+</script>

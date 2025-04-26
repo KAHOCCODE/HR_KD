@@ -10,7 +10,7 @@
         public decimal BHXH { get; set; }
         public decimal BHYT { get; set; }
         public decimal BHTN { get; set; }
-        public DateTime NgayApDng { get; set; }
+        public DateTime NgayApDung { get; set; }
         public string? GhiChu { get; set; }
     }
 }

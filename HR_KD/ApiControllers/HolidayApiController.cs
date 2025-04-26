@@ -26,7 +26,6 @@ namespace HR_KD.ApiControllers
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
 
-            // Kiểm tra xem ngày lễ đã tồn tại chưa
             var existingHoliday = _context.NgayLes
                 .FirstOrDefault(h => h.NgayLe1 == DateOnly.FromDateTime(holidayDto.NgayLe1));
 
@@ -35,11 +34,10 @@ namespace HR_KD.ApiControllers
                 return BadRequest(new { success = false, message = "Ngày lễ này đã tồn tại trong hệ thống." });
             }
 
-            // Thêm ngày lễ vào bảng NgayLe
             var holiday = new NgayLe
             {
                 TenNgayLe = holidayDto.TenNgayLe,
-                NgayLe1 = DateOnly.FromDateTime(holidayDto.NgayLe1), // Chuyển đổi từ DateTime sang DateOnly
+                NgayLe1 = DateOnly.FromDateTime(holidayDto.NgayLe1),
                 SoNgayNghi = holidayDto.SoNgayNghi,
                 MoTa = holidayDto.MoTa,
                 TrangThai = "Chờ duyệt"
@@ -50,7 +48,6 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, message = "Ngày lễ đã được thêm !" });
         }
-
 
         [HttpGet("GetAll")]
         public IActionResult GetAllHolidays()
@@ -64,34 +61,27 @@ namespace HR_KD.ApiControllers
         {
             try
             {
-                // Tìm ngày lễ theo ID
                 var holiday = _context.NgayLes.Find(id);
                 if (holiday == null)
                 {
                     return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
                 }
 
-                // Lưu lại ngày lễ để xóa chấm công
                 var holidayDate = holiday.NgayLe1;
 
-                // Tìm tất cả các bản ghi chấm công có ngày trùng với ngày lễ
                 var attendanceRecords = _context.ChamCongs
                     .Where(c => c.NgayLamViec == holidayDate)
                     .ToList();
 
-                // Đếm số lượng bản ghi chấm công sẽ bị xóa
                 int attendanceCount = attendanceRecords.Count;
 
-                // Xóa tất cả các bản ghi chấm công liên quan
                 if (attendanceRecords.Any())
                 {
                     _context.ChamCongs.RemoveRange(attendanceRecords);
                 }
 
-                // Xóa ngày lễ
                 _context.NgayLes.Remove(holiday);
 
-                // Lưu các thay đổi
                 _context.SaveChanges();
 
                 return Ok(new
@@ -138,13 +128,140 @@ namespace HR_KD.ApiControllers
         }
 
         [HttpGet("GetByYear/{year}")]
-        public IActionResult GetHolidaysByYear(int year)
+        public IActionResult GetHolidaysByYear(int? year) // Change int to int?
         {
-            var holidays = _context.NgayLes
-                .Where(h => h.NgayLe1.Year == year)
-                .ToList();
+            IQueryable<NgayLe> holidays = _context.NgayLes;
 
-            return Ok(holidays);
+            if (year.HasValue)
+            {
+                holidays = holidays.Where(h => h.NgayLe1.Year == year.Value);
+            }
+
+            return Ok(holidays.ToList());
+        }
+
+        [HttpPost("Cancel/{id}")] // Hoặc [HttpPatch]
+        public IActionResult CancelHoliday(int id)
+        {
+            try
+            {
+                var holiday = _context.NgayLes.Find(id);
+                if (holiday == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
+                }
+
+                var holidayDate = holiday.NgayLe1;
+
+                var attendanceRecords = _context.ChamCongs
+                    .Where(c => c.NgayLamViec == holidayDate)
+                    .ToList();
+
+                if (attendanceRecords.Any())
+                {
+                    _context.ChamCongs.RemoveRange(attendanceRecords);
+                }
+
+                holiday.TrangThai = "Chờ duyệt";
+                _context.SaveChanges();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Đã hủy ngày lễ, trạng thái chuyển về 'Chờ duyệt' và tất cả chấm công liên quan đã bị xóa."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Đã xảy ra lỗi khi hủy ngày lễ.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("Approve/{id}")]
+        public IActionResult ApproveHoliday(int id)
+        {
+            try
+            {
+                var holiday = _context.NgayLes.Find(id);
+                if (holiday == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
+                }
+
+                holiday.TrangThai = "Đã duyệt";
+                _context.SaveChanges();
+
+                // Gửi thông báo (ví dụ: email, push notification) ở đây nếu cần
+
+                return Ok(new { success = true, message = "Ngày lễ đã được duyệt." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi duyệt ngày lễ.", error = ex.Message });
+            }
+        }
+
+        [HttpPost("Reject/{id}")]
+        public IActionResult RejectHoliday(int id)
+        {
+            try
+            {
+                var holiday = _context.NgayLes.Find(id);
+                if (holiday == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
+                }
+
+                holiday.TrangThai = "Đã từ chối";
+                _context.SaveChanges();
+
+                return Ok(new { success = true, message = "Ngày lễ đã bị từ chối." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi từ chối ngày lễ.", error = ex.Message });
+            }
+        }
+
+        [HttpGet("years")]
+        public IActionResult GetHolidayYears()
+        {
+            var years = _context.NgayLes.Select(h => h.NgayLe1.Year).Distinct().OrderByDescending(y => y).ToList();
+            return Ok(years);
+        }
+
+        [HttpPost("Approve/year/{year}")]
+        public IActionResult ApproveAllHolidaysInYear(int year)
+        {
+            try
+            {
+                var holidaysToApprove = _context.NgayLes
+                    .Where(h => h.NgayLe1.Year == year && h.TrangThai == "Chờ duyệt")
+                    .ToList();
+
+                if (holidaysToApprove.Count == 0)
+                {
+                    return NotFound("Không có ngày lễ nào để duyệt trong năm này.");
+                }
+
+                foreach (var holiday in holidaysToApprove)
+                {
+                    holiday.TrangThai = "Đã duyệt";
+                }
+
+                _context.SaveChanges();
+
+                return Ok($"Đã duyệt {holidaysToApprove.Count} ngày lễ trong năm {year}.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi duyệt ngày lễ.", error = ex.Message });
+            }
         }
     }
 }

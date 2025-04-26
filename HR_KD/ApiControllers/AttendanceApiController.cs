@@ -26,6 +26,17 @@ namespace HR_KD.ApiControllers
             return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
         }
 
+        // Helper method to get week range (Monday to Sunday)
+        private (DateOnly start, DateOnly end) GetWeekRange(DateOnly date)
+        {
+            DateTime dateTime = date.ToDateTime(TimeOnly.MinValue);
+            int dayOfWeek = (int)dateTime.DayOfWeek;
+            int daysToMonday = dayOfWeek == 0 ? 6 : dayOfWeek - 1;
+            DateOnly start = date.AddDays(-daysToMonday);
+            DateOnly end = start.AddDays(6);
+            return (start, end);
+        }
+
         [HttpPost]
         [Route("SubmitAttendance")]
         public async Task<IActionResult> SubmitAttendance(AttendanceDataDTO data)
@@ -43,6 +54,7 @@ namespace HR_KD.ApiControllers
 
             try
             {
+                // Validate weekly hours and overtime for attendance
                 if (data.attendance != null && data.attendance.Any())
                 {
                     foreach (var entry in data.attendance)
@@ -52,17 +64,28 @@ namespace HR_KD.ApiControllers
                             return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
                         }
 
+                        // Check if already attended
                         bool daChamCong = await _context.LichSuChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.Ngay == ngayLamViec);
                         if (daChamCong)
                         {
                             return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
                         }
 
-                        // Kiểm tra ngày nghỉ của nhân viên
+                        // Check if on leave
                         bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
                         if (daNghi)
                         {
-                            return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave", stackTrace = "NgayNghi check failed." });
+                            return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave" });
+                        }
+
+                        // Check weekly working hours (max 48 hours)
+                        var (start, end) = GetWeekRange(ngayLamViec);
+                        var weeklyHours = await _context.LichSuChamCongs
+                            .Where(c => c.MaNv == maNv.Value && c.Ngay >= start && c.Ngay <= end)
+                            .SumAsync(c => c.TongGio ?? 0);
+                        if (weeklyHours >= 48)
+                        {
+                            return BadRequest(new { success = false, message = $"Đã đủ 48 giờ làm việc trong tuần bắt đầu từ {start}, không thể chấm công thêm." });
                         }
 
                         var chamCong = new LichSuChamCong
@@ -78,10 +101,9 @@ namespace HR_KD.ApiControllers
                         _context.LichSuChamCongs.Add(chamCong);
                     }
                     await _context.SaveChangesAsync();
-
                 }
 
-
+                // Validate weekly overtime hours
                 if (data.overtime != null && data.overtime.Any())
                 {
                     foreach (var entry in data.overtime)
@@ -91,19 +113,28 @@ namespace HR_KD.ApiControllers
                             return BadRequest(new { success = false, message = $"Ngày tăng ca không hợp lệ: {entry.NgayTangCa}" });
                         }
 
+                        // Check weekly overtime hours (max 12 hours)
+                        var (start, end) = GetWeekRange(ngayTangCa);
+                        var weeklyOvertimeHours = await _context.TangCas
+                            .Where(c => c.MaNv == maNv.Value && c.NgayTangCa >= start && c.NgayTangCa <= end)
+                            .SumAsync(c => c.SoGioTangCa);
+                        if (weeklyOvertimeHours >= 12)
+                        {
+                            return BadRequest(new { success = false, message = $"Đã đủ 12 giờ tăng ca trong tuần bắt đầu từ {start}, không thể tăng ca thêm." });
+                        }
+
                         var tangCa = new TangCa
                         {
                             MaNv = maNv.Value,
                             NgayTangCa = ngayTangCa,
                             SoGioTangCa = entry.SoGioTangCa,
-                            TyLeTangCa = 1, // Ví dụ: Tỷ lệ tăng ca mặc định là 1. Bạn có thể lấy từ cấu hình hoặc input khác.
-                            TrangThai = "Chờ duyệt" // Hoặc trạng thái phù hợp
+                            TyLeTangCa = 1, // Default overtime rate
+                            TrangThai = "Chờ duyệt"
                         };
                         _context.TangCas.Add(tangCa);
                     }
                     await _context.SaveChangesAsync();
                 }
-
 
                 return Ok(new { success = true, message = "Chấm công thành công." });
             }
@@ -119,8 +150,37 @@ namespace HR_KD.ApiControllers
             }
         }
 
+        // New API to get overtime records
+        [HttpGet]
+        [Route("GetOvertimeRecords")]
+        public async Task<IActionResult> GetOvertimeRecords(string? ngayTangCa = null)
+        {
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
+            }
 
-        // API Lấy dữ liệu chấm công
+            var query = _context.TangCas.Where(c => c.MaNv == maNv.Value);
+
+            if (!string.IsNullOrEmpty(ngayTangCa) && DateOnly.TryParse(ngayTangCa, out DateOnly ngay))
+            {
+                query = query.Where(c => c.NgayTangCa == ngay);
+            }
+
+            var records = await query
+                .Select(c => new
+                {
+                    c.NgayTangCa,
+                    c.SoGioTangCa,
+                    c.TrangThai
+                })
+                .ToListAsync();
+
+            return Ok(new { success = true, records });
+        }
+
+        // Existing APIs (unchanged except for minor adjustments)
         [HttpGet]
         [Route("GetAttendanceRecords")]
         public async Task<IActionResult> GetAttendanceRecords(string? ngayLamViec = null)
@@ -131,7 +191,7 @@ namespace HR_KD.ApiControllers
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
 
-            var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Đã duyệt"); // Lọc trạng thái "Đã duyệt"
+            var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Đã duyệt");
 
             if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
             {
@@ -152,7 +212,6 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, records });
         }
-        // API Lấy lịch sử chấm công
 
         [HttpGet]
         [Route("GetAttendanceHistoryRecords")]
@@ -164,7 +223,7 @@ namespace HR_KD.ApiControllers
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
 
-            var query = _context.LichSuChamCongs.Where(c => c.MaNv == maNv.Value ); // Lọc trạng thái "Đã duyệt"
+            var query = _context.LichSuChamCongs.Where(c => c.MaNv == maNv.Value);
 
             if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
             {
@@ -185,8 +244,6 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, records });
         }
-        //api lấy dữ liệu lịch sử chấm công chưa duyệt
-        // API Lấy lịch sử chấm công
 
         [HttpGet]
         [Route("GetAttendanceHistoryRecords2")]
@@ -197,7 +254,7 @@ namespace HR_KD.ApiControllers
             {
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
-            // Lọc trạng thái "chờ duyệt"
+
             var query = _context.LichSuChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Chờ duyệt");
 
             if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
@@ -219,11 +276,10 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, records });
         }
-        // API Lấy yêu cầu chấm công
+
         [HttpGet("GetAttendanceRequests")]
         public async Task<IActionResult> GetAttendanceRequests(string? ngayLamViec = null)
         {
-            // Lấy mã nhân viên từ claims của người dùng đăng nhập
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
             {
@@ -251,8 +307,9 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, requests });
         }
+
         [HttpPost("AcceptAttendanceRequest")]
-        public async Task<IActionResult> AcceptAttendanceRequest( AcceptAttendanceRequestDTO request)
+        public async Task<IActionResult> AcceptAttendanceRequest(AcceptAttendanceRequestDTO request)
         {
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
@@ -292,18 +349,15 @@ namespace HR_KD.ApiControllers
                         _context.ChamCongs.Add(chamCong);
                     }
 
-                    // Cập nhật giờ vào/ra từ yêu cầu
                     chamCong.GioVao = yeuCau.GioVaoMoi ?? chamCong.GioVao;
                     chamCong.GioRa = yeuCau.GioRaMoi ?? chamCong.GioRa;
 
-                    // Tính toán tổng giờ tự động
                     if (chamCong.GioVao.HasValue && chamCong.GioRa.HasValue)
                     {
                         chamCong.TongGio = (decimal)(chamCong.GioRa.Value - chamCong.GioVao.Value).TotalHours;
                     }
                 }
 
-                // Xóa yêu cầu sau khi xử lý thành công [3][9]
                 _context.YeuCauSuaChamCongs.Remove(yeuCau);
                 await _context.SaveChangesAsync();
 
@@ -328,24 +382,21 @@ namespace HR_KD.ApiControllers
         [HttpGet("GetStatusForMonth")]
         public async Task<IActionResult> GetStatusForMonth(int maNV, string? monthYear = null)
         {
-            // Default to current month if monthYear is not provided
             DateTime selectedMonth = string.IsNullOrEmpty(monthYear)
                 ? DateTime.Now
                 : DateTime.TryParseExact(monthYear, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out DateTime parsedMonth)
                     ? parsedMonth
                     : DateTime.Now;
 
-            // Query ChamCong with DateOnly comparison
             var records = await _context.ChamCongs
                 .Where(c => c.MaNv == maNV &&
                             c.NgayLamViec.Year == selectedMonth.Year &&
                             c.NgayLamViec.Month == selectedMonth.Month &&
-                            c.TrangThai.Trim() == "Đã duyệt") // Chỉ lấy bản ghi "Đã duyệt" để đồng bộ với GeneratePayroll
+                            c.TrangThai.Trim() == "Đã duyệt")
                 .ToListAsync();
 
             if (!records.Any())
             {
-                // Check if there are any records in LichSuChamCong as a fallback
                 var historyRecords = await _context.LichSuChamCongs
                     .Where(c => c.MaNv == maNV &&
                                 c.Ngay.Year == selectedMonth.Year &&
@@ -374,7 +425,6 @@ namespace HR_KD.ApiControllers
         {
             try
             {
-                // Tìm yêu cầu chấm công trong database
                 var requestRecord = await _context.YeuCauSuaChamCongs
                     .FirstOrDefaultAsync(a => a.MaYeuCau == request.MaYeuCau);
 
@@ -383,28 +433,24 @@ namespace HR_KD.ApiControllers
                     return NotFound(new { success = false, message = "Không tìm thấy yêu cầu chấm công." });
                 }
 
-                // Kiểm tra giá trị NgayLamViec hợp lệ
                 if (request.NgayLamViec == default(DateOnly) || request.NgayLamViec == DateOnly.MinValue)
                 {
                     return BadRequest(new { success = false, message = "Ngày làm việc không hợp lệ." });
                 }
 
-                // Tạo bản ghi NgayNghi
                 var ngayNghi = new NgayNghi
                 {
                     MaNv = requestRecord.MaNv,
-                    NgayNghi1 = request.NgayLamViec, // Đảm bảo NgayLamViec được lưu chính xác
+                    NgayNghi1 = request.NgayLamViec,
                     LyDo = !string.IsNullOrEmpty(request.LyDo) ? request.LyDo : "Không có lý do cụ thể",
                     MaLoaiNgayNghi = request.MaLoaiNgayNghi,
                     TrangThai = "Từ chối",
                     NgayLamDon = DateTime.Now
                 };
 
-                // Thêm vào database
                 _context.NgayNghis.Add(ngayNghi);
-                await _context.SaveChangesAsync(); // Lưu ngay nghỉ trước khi xóa yêu cầu
+                await _context.SaveChangesAsync();
 
-                // Xóa yêu cầu chấm công sau khi đã lưu thành công vào bảng NgayNghi
                 _context.YeuCauSuaChamCongs.Remove(requestRecord);
                 await _context.SaveChangesAsync();
 

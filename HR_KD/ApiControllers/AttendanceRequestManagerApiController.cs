@@ -89,8 +89,9 @@ public class AttendanceRequestManagerApiController : ControllerBase
     }
    
     // 🔹 Gửi email nhắc nhở chấm công
-    [HttpPost("SendReminderEmails")]
-    public async Task<IActionResult> SendReminderEmails( SendReminderEmailsDTO request)
+
+[HttpPost("SendReminderEmails")]
+public async Task<IActionResult> SendReminderEmails(SendReminderEmailsDTO request)
     {
         if (string.IsNullOrEmpty(request.StartDate) || !DateOnly.TryParse(request.StartDate, out var startDate))
         {
@@ -164,13 +165,114 @@ public class AttendanceRequestManagerApiController : ControllerBase
                 var mailMessage = new MailMessage
                 {
                     From = new MailAddress(senderEmail),
-                    Subject = $"Nhắc nhở chấm công tuần từ {startDate:dd/MM/yyyy} đến {endDate:dd/MM/yyyy}",
-                    Body = $@"Kính gửi {employee.HoTen},
-
-                    Đây là email nhắc nhở bạn vui lòng thực hiện chấm công cho các ngày làm việc trong tuần từ {startDate:dd/MM/yyyy} đến {endDate:dd/MM/yyyy}.
-
-                    Trân trọng,",
-                    IsBodyHtml = false // Set to true if you want to send HTML email
+                    Subject = $"Nhắc Nhở Chấm Công Tuần Từ {startDate:dd/MM/yyyy} Đến {endDate:dd/MM/yyyy}",
+                    Body = $@"<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }}
+        .header {{
+            background: #007bff;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 24px;
+        }}
+        .content {{
+            padding: 20px;
+        }}
+        .content p {{
+            margin: 10px 0;
+        }}
+        .date-range {{
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+            color: #007bff;
+        }}
+        .footer {{
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #eee;
+            margin-top: 20px;
+        }}
+        .button {{
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px 0;
+            background: #007bff;
+            color: #fff !important;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }}
+        .button:hover {{
+            background: #0056b3;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .container {{
+                margin: 10px;
+                padding: 10px;
+            }}
+            .header h1 {{
+                font-size: 20px;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Nhắc Nhở Chấm Công</h1>
+        </div>
+        <div class='content'>
+            <p>Kính gửi {employee.HoTen},</p>
+            <p>Chúng tôi xin nhắc nhở bạn vui lòng thực hiện chấm công cho tuần làm việc từ:</p>
+            <div class='date-range'>
+                {startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy}
+            </div>
+            <p>Vui lòng truy cập hệ thống chấm công để cập nhật thông tin đúng hạn.</p>
+            <p style='text-align: center;'>
+                <a href='https://your-attendance-system-url.com' class='button'>Truy Cập Hệ Thống</a>
+            </p>
+            <p>Nếu bạn cần hỗ trợ, vui lòng liên hệ bộ phận nhân sự.</p>
+            <p>Trân trọng,</p>
+            <p>Bộ Phận Nhân Sự</p>
+        </div>
+        <div class='footer'>
+            <p>© {DateTime.Now.Year} Công Ty Của Bạn. Mọi quyền được bảo lưu.</p>
+            <p>Email này được gửi tự động, vui lòng không trả lời trực tiếp.</p>
+        </div>
+    </div>
+</body>
+</html>",
+                    IsBodyHtml = true
                 };
                 mailMessage.To.Add(employee.Email);
 
@@ -198,6 +300,7 @@ public class AttendanceRequestManagerApiController : ControllerBase
             });
         }
     }
+
 
     // 🔹 API Chấm công
     [HttpPost("SubmitAttendanceRequest")]

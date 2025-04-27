@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace HR_KD.ApiControllers
@@ -24,16 +25,27 @@ namespace HR_KD.ApiControllers
             var maNvClaim = User.FindFirst("MaNV")?.Value;
             return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
         }
-
         [HttpPost]
         [Route("SubmitLeave")]
-        public async Task<IActionResult> SubmitLeave([FromBody] List<LeaveRequestDto> leaveRequests)
+        public async Task<IActionResult> SubmitLeave([FromForm] string leaveRequestsJson, [FromForm] List<IFormFile> files)
         {
             // Lấy mã NV từ claims
             var currentMaNv = GetMaNvFromClaims();
             if (currentMaNv == null)
             {
                 return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
+            // Chuyển đổi JSON string thành List<LeaveRequestDto>
+            List<LeaveRequestDto> leaveRequests;
+            try
+            {
+                leaveRequests = JsonSerializer.Deserialize<List<LeaveRequestDto>>(leaveRequestsJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch (Exception)
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
 
             if (leaveRequests == null || !leaveRequests.Any())
@@ -43,6 +55,45 @@ namespace HR_KD.ApiControllers
 
             try
             {
+                // Xử lý file đính kèm
+                string fileAttachments = string.Empty;
+                if (files != null && files.Count > 0)
+                {
+                    var fileNames = new List<string>();
+
+                    string uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                    Directory.CreateDirectory(uploadPath); // Đảm bảo thư mục uploads tồn tại
+
+                    foreach (var file in files)
+                    {
+                        if (file.Length > 0)
+                        {
+                            string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+                            string extension = Path.GetExtension(file.FileName);
+                            string sanitizedFileName = originalFileName + extension;
+                            string filePath = Path.Combine(uploadPath, sanitizedFileName);
+
+                            int count = 1;
+                            while (System.IO.File.Exists(filePath))
+                            {
+                                sanitizedFileName = $"{originalFileName}({count}){extension}";
+                                filePath = Path.Combine(uploadPath, sanitizedFileName);
+                                count++;
+                            }
+
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            fileNames.Add(sanitizedFileName);
+                        }
+                    }
+
+                    // Nối các tên file bằng dấu gạch ngang
+                    fileAttachments = string.Join("-", fileNames);
+                }
+
                 foreach (var request in leaveRequests)
                 {
                     // Validate dữ liệu
@@ -50,7 +101,6 @@ namespace HR_KD.ApiControllers
                     {
                         return BadRequest(new { success = false, message = $"Ngày nghỉ không hợp lệ: {request.NgayNghi}" });
                     }
-
                     if (request.MaLoaiNgayNghi == null || request.MaLoaiNgayNghi <= 0)
                     {
                         return BadRequest(new { success = false, message = "Mã loại ngày nghỉ không hợp lệ." });
@@ -63,13 +113,13 @@ namespace HR_KD.ApiControllers
                         NgayNghi1 = DateOnly.FromDateTime(ngayNghi),
                         LyDo = request.LyDo ?? "Không có lý do",
                         TrangThai = "Chờ duyệt",
-                        MaLoaiNgayNghi = request.MaLoaiNgayNghi.Value
+                        MaLoaiNgayNghi = request.MaLoaiNgayNghi.Value,
+                        FileDinhKem = fileAttachments // Thêm file đính kèm
                     };
-
                     _context.NgayNghis.Add(leave);
                 }
-
                 await _context.SaveChangesAsync();
+
                 return Ok(new { success = true, message = "Đăng ký nghỉ phép thành công." });
             }
             catch (Exception ex)
@@ -78,7 +128,6 @@ namespace HR_KD.ApiControllers
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
         }
-
 
 
         [HttpGet]

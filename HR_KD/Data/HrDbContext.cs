@@ -29,6 +29,8 @@ public partial class HrDbContext : DbContext
 
     public virtual DbSet<DaoTao> DaoTaos { get; set; }
 
+    public virtual DbSet<HopDongLaoDong> HopDongLaoDongs { get; set; }
+
     public virtual DbSet<LichSuChamCong> LichSuChamCongs { get; set; }
 
     public virtual DbSet<LichSuDaoTao> LichSuDaoTaos { get; set; }
@@ -56,22 +58,28 @@ public partial class HrDbContext : DbContext
     public virtual DbSet<TaiKhoanNganHang> TaiKhoanNganHangs { get; set; }
 
     public virtual DbSet<TaiKhoanQuyenHan> TaiKhoanQuyenHans { get; set; }
+    public virtual DbSet<MucLuongToiThieuVung> MucLuongToiThieuVungs { get; set; }
 
     public virtual DbSet<TangCa> TangCas { get; set; }
 
     public virtual DbSet<ThongBao> ThongBaos { get; set; }
 
     public virtual DbSet<ThongTinLuongNV> ThongTinLuongNVs { get; set; }
+    public virtual DbSet<MucLuongCoSo> MucLuongCoSos { get; set; }
+    public virtual DbSet<ThongTinBaoHiem> ThongTinBaoHiems { get; set; }
+    public virtual DbSet<LoaiHopDong> LoaiHopDongs { get; set; }
 
     public virtual DbSet<TieuChiDanhGiaFullTime> TieuChiDanhGiaFullTimes { get; set; }
+    public virtual DbSet<VungLuongTheoDiaPhuong> VungLuongTheoDiaPhuongs { get; set; }
 
     public virtual DbSet<TieuChiDanhGiaPartTime> TieuChiDanhGiaPartTimes { get; set; }
 
     public virtual DbSet<YeuCauSuaChamCong> YeuCauSuaChamCongs { get; set; }
+    
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Data Source=DESKTOP-3TRF427\\HOANGKA;Initial Catalog=QuanLyNhanSu;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
+//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+//        => optionsBuilder.UseSqlServer("Data Source=DESKTOP-3TRF427\\HOANGKA;Initial Catalog=QuanLyNhanSu;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

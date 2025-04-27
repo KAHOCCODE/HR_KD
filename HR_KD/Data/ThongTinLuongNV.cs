@@ -25,7 +25,7 @@ namespace HR_KD.Data
 
         public decimal BHTN { get; set; } = 0;
 
-        public DateTime NgayApDng { get; set; } = DateTime.Now;
+        public DateTime NgayApDung { get; set; } = DateTime.Now;
 
         public string? GhiChu { get; set; }
 

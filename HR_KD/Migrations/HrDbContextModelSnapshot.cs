@@ -344,6 +344,40 @@ namespace HR_KD.Migrations
                     b.ToTable("LichSuDaoTao", (string)null);
                 });
 
+            modelBuilder.Entity("HR_KD.Data.LoaiHopDong", b =>
+                {
+                    b.Property<int>("MaLoaiHopDong")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaLoaiHopDong"));
+
+                    b.Property<int?>("GiaHanToiDa")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TenLoaiHopDong")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("ThoiHanMacDinh")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("TiLeLuong")
+                        .HasColumnType("float");
+
+                    b.HasKey("MaLoaiHopDong");
+
+                    b.ToTable("LoaiHopDongs");
+                });
+
             modelBuilder.Entity("HR_KD.Data.LoaiNgayNghi", b =>
                 {
                     b.Property<int>("MaLoaiNgayNghi")
@@ -400,6 +434,52 @@ namespace HR_KD.Migrations
                         .HasName("PK__LoginHis__C9F84E0D1A2B3F4D");
 
                     b.ToTable("LoginHistory", (string)null);
+                });
+
+            modelBuilder.Entity("HR_KD.Data.MucLuongCoSo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("LuongCoSo")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<DateTime?>("NgayHetHieuLuc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayHieuLuc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MucLuongCoSos");
+                });
+
+            modelBuilder.Entity("HR_KD.Data.MucLuongToiThieuVung", b =>
+                {
+                    b.Property<int>("VungLuong")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VungLuong"));
+
+                    b.Property<decimal>("MucLuongToiThieuGio")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<decimal>("MucLuongToiThieuThang")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.HasKey("VungLuong");
+
+                    b.ToTable("MucLuongToiThieuVungs");
                 });
 
             modelBuilder.Entity("HR_KD.Data.NgayLe", b =>
@@ -821,6 +901,51 @@ namespace HR_KD.Migrations
                     b.ToTable("ThongBao", (string)null);
                 });
 
+            modelBuilder.Entity("HR_KD.Data.ThongTinBaoHiem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("LoaiBaoHiem")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("MucLuongCoSoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("NgayHetHieuLuc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayHieuLuc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TyLeNguoiLaoDong")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("TyLeNhaTuyenDung")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("VungLuongTheoDiaPhuongId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MucLuongCoSoId");
+
+                    b.HasIndex("VungLuongTheoDiaPhuongId");
+
+                    b.ToTable("ThongTinBaoHiems");
+                });
+
             modelBuilder.Entity("HR_KD.Data.ThongTinLuongNV", b =>
                 {
                     b.Property<int>("MaLuongNV")
@@ -847,7 +972,7 @@ namespace HR_KD.Migrations
                     b.Property<int>("MaNv")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("NgayApDng")
+                    b.Property<DateTime>("NgayApDung")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal?>("PhuCapCoDinh")
@@ -922,6 +1047,41 @@ namespace HR_KD.Migrations
                     b.ToTable("TieuChiDanhGiaPartTime", (string)null);
                 });
 
+            modelBuilder.Entity("HR_KD.Data.VungLuongTheoDiaPhuong", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GhiChu")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("QuanHuyen")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TinhThanh")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("VungLuong")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VungLuong");
+
+                    b.ToTable("VungLuongTheoDiaPhuongs");
+                });
+
             modelBuilder.Entity("HR_KD.Data.YeuCauSuaChamCong", b =>
                 {
                     b.Property<int>("MaYeuCau")
@@ -964,6 +1124,55 @@ namespace HR_KD.Migrations
                     b.HasIndex("MaNv");
 
                     b.ToTable("YeuCauSuaChamCong", (string)null);
+                });
+
+            modelBuilder.Entity("HopDongLaoDong", b =>
+                {
+                    b.Property<int>("MaHopDong")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaHopDong"));
+
+                    b.Property<string>("GhiChu")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LyDoNghiViec")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("MaLoaiHopDong")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaNv")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("NgayBatDau")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("NgayKetThuc")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("NgayNghiViec")
+                        .HasColumnType("date");
+
+                    b.Property<int?>("SoLanGiaHan")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ThoiHan")
+                        .HasColumnType("int");
+
+                    b.HasKey("MaHopDong");
+
+                    b.HasIndex("MaLoaiHopDong");
+
+                    b.HasIndex("MaNv");
+
+                    b.ToTable("HopDongLaoDongs");
                 });
 
             modelBuilder.Entity("HR_KD.Data.BangLuong", b =>
@@ -1174,6 +1383,25 @@ namespace HR_KD.Migrations
                     b.Navigation("MaNvNavigation");
                 });
 
+            modelBuilder.Entity("HR_KD.Data.ThongTinBaoHiem", b =>
+                {
+                    b.HasOne("HR_KD.Data.MucLuongCoSo", "MucLuongCoSo")
+                        .WithMany()
+                        .HasForeignKey("MucLuongCoSoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HR_KD.Data.VungLuongTheoDiaPhuong", "VungLuongTheoDiaPhuong")
+                        .WithMany()
+                        .HasForeignKey("VungLuongTheoDiaPhuongId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MucLuongCoSo");
+
+                    b.Navigation("VungLuongTheoDiaPhuong");
+                });
+
             modelBuilder.Entity("HR_KD.Data.ThongTinLuongNV", b =>
                 {
                     b.HasOne("HR_KD.Data.NhanVien", "NhanVien")
@@ -1196,6 +1424,17 @@ namespace HR_KD.Migrations
                     b.Navigation("MaDanhGiaNavigation");
                 });
 
+            modelBuilder.Entity("HR_KD.Data.VungLuongTheoDiaPhuong", b =>
+                {
+                    b.HasOne("HR_KD.Data.MucLuongToiThieuVung", "MucLuongVung")
+                        .WithMany()
+                        .HasForeignKey("VungLuong")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MucLuongVung");
+                });
+
             modelBuilder.Entity("HR_KD.Data.YeuCauSuaChamCong", b =>
                 {
                     b.HasOne("HR_KD.Data.NhanVien", "MaNvNavigation")
@@ -1205,6 +1444,25 @@ namespace HR_KD.Migrations
                         .HasConstraintName("FK__YeuCauSuaC__MaNV__76969D2E");
 
                     b.Navigation("MaNvNavigation");
+                });
+
+            modelBuilder.Entity("HopDongLaoDong", b =>
+                {
+                    b.HasOne("HR_KD.Data.LoaiHopDong", "LoaiHopDong")
+                        .WithMany()
+                        .HasForeignKey("MaLoaiHopDong")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HR_KD.Data.NhanVien", "NhanVien")
+                        .WithMany("HopDongLaoDongs")
+                        .HasForeignKey("MaNv")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LoaiHopDong");
+
+                    b.Navigation("NhanVien");
                 });
 
             modelBuilder.Entity("HR_KD.Data.ChucVu", b =>
@@ -1236,6 +1494,8 @@ namespace HR_KD.Migrations
                     b.Navigation("ChamCongs");
 
                     b.Navigation("DanhGiaNhanViens");
+
+                    b.Navigation("HopDongLaoDongs");
 
                     b.Navigation("LichSuChamCongs");
 

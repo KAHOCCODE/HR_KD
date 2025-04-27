@@ -1,203 +1,190 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
-<link rel="stylesheet" href="~/css/salary.css">
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card border-0 shadow-xl rounded-4 overflow-hidden">
-                <div class="card-header bg-gradient-primary text-white p-4 border-0">
-                    <h2 class="h3 fw-bold mb-0 text-center">
-                        <i class="fas fa-money-check-alt me-2"></i>
-                        Thiết Lập Lương Cho Nhân Viên
-                    </h2>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-700 px-6 py-5">
+                <h2 class="text-2xl font-semibold text-white text-center">
+                    <i class="fas fa-money-check-alt mr-2"></i>
+                    Thiết Lập Lương Nhân Viên
+                </h2>
+            </div>
+
+            <div class="p-6 bg-gray-50 border-b border-gray-200">
+                <div class="progress h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="formProgress" class="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                         style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
-                
-                <div class="card-body p-0">
-                    <div class="p-4 bg-light border-bottom">
-                        <div class="d-flex align-items-center">
-                            <div class="progress-tracker flex-grow-1">
-                                <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" 
-                                         id="formProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                <div class="flex justify-between mt-3 text-sm font-medium text-gray-600">
+                    <span>Thông tin cơ bản</span>
+                    <span>Phụ cấp & BH</span>
+                    <span>Hoàn tất</span>
+                </div>
+            </div>
+
+            <form id="setupSalaryForm" class="p-6 sm:p-8">
+                <input type="hidden" id="MaNv" value="@ViewBag.MaNv" />
+                <input type="hidden" id="minimumWage" value="0" />
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-file-invoice-dollar mr-2 text-blue-600"></i>
+                                Thông tin cơ bản
+                            </h3>
+
+                            <div class="space-y-5">
+                                <div>
+                                    <label for="LuongCoBan" class="block text-sm font-medium text-gray-700">
+                                        Lương Cơ Bản <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="mt-1 relative">
+                                        <input type="number" step="0.01" id="LuongCoBan"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900"
+                                               placeholder="Nhập lương cơ bản" required />
+                                        <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
+                                            VNĐ
+                                        </span>
+                                    </div>
+                                    <p id="minimumWageText" class="mt-1 text-xs text-gray-500">
+                                        Lương cơ bản trước thuế (Tối thiểu: <span id="minimumWageValue">0</span> VNĐ)
+                                    </p>
                                 </div>
-                                <div class="d-flex justify-content-between mt-1">
-                                    <small class="text-muted">Thông tin cơ bản</small>
-                                    <small class="text-muted">Phụ cấp & BHXH</small>
-                                    <small class="text-muted">Hoàn tất</small>
+
+                                <div>
+                                    <label for="ThuongCoDinh" class="block text-sm font-medium text-gray-700">
+                                        Thưởng Cố Định
+                                    </label>
+                                    <div class="mt-1 relative">
+                                        <input type="number" step="0.01" id="ThuongCoDinh" value="0"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                               placeholder="Nhập thưởng cố định" />
+                                        <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
+                                            VNĐ
+                                        </span>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">Thưởng cố định hàng tháng</p>
+                                </div>
+
+                                <div>
+                                    <label for="NgayApDung" class="block text-sm font-medium text-gray-700">
+                                        Ngày Áp Dụng <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="NgayApDung"
+                                           class="flatpickr w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                           placeholder="Chọn ngày" required />
+                                    <p class="mt-1 text-xs text-gray-500">Ngày bắt đầu áp dụng</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <form id="setupSalaryForm" class="p-4 p-lg-5">
-                        <input type="hidden" id="MaNv" value="@ViewBag.MaNv" />
-                        
-                        <div class="row g-4">
-                            <!-- Cột trái -->
-                            <div class="col-lg-6">
-                                <!-- Thông tin cơ bản -->
-                                <div class="card bg-light-subtle border-0 rounded-4 mb-4">
-                                    <div class="card-body p-4">
-                                        <h4 class="fw-semibold mb-3 text-primary">
-                                            <i class="fas fa-file-invoice-dollar me-2"></i>Thông tin cơ bản
-                                        </h4>
-                                        
-                                        <!-- Lương Cơ Bản -->
-                                        <div class="form-floating mb-4">
-                                            <input type="number" step="0.01" class="form-control form-control-lg border-0 bg-white" 
-                                                   id="LuongCoBan" placeholder="Nhập lương cơ bản" required />
-                                            <label for="LuongCoBan">
-                                                <i class="fas fa-hand-holding-usd text-primary me-1"></i>
-                                                Lương Cơ Bản <span class="text-danger">*</span>
-                                            </label>
-                                            <div class="form-text mt-1">Lương cơ bản trước thuế và các khoản khấu trừ</div>
-                                        </div>
 
-                                        <!-- Thưởng Cố Định -->
-                                        <div class="form-floating mb-4">
-                                            <input type="number" step="0.01" class="form-control form-control-lg border-0 bg-white" 
-                                                   id="ThuongCoDinh" value="0" placeholder="Nhập thưởng cố định" />
-                                            <label for="ThuongCoDinh">
-                                                <i class="fas fa-award text-primary me-1"></i>
-                                                Thưởng Cố Định
-                                            </label>
-                                            <div class="form-text mt-1">Khoản thưởng cố định hàng tháng</div>
-                                        </div>
-                                        
-                                        <!-- Ngày Áp Dụng -->
-                                        <div class="form-floating mb-0">
-                                            <input type="text" class="form-control form-control-lg border-0 bg-white flatpickr" 
-                                                   id="NgayApDung" placeholder="Chọn ngày áp dụng" required />
-                                            <label for="NgayApDung">
-                                                <i class="fas fa-calendar-alt text-primary me-1"></i>
-                                                Ngày Áp Dụng <span class="text-danger">*</span>
-                                            </label>
-                                            <div class="form-text mt-1">Ngày bắt đầu áp dụng mức lương mới</div>
-                                        </div>
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-shield-alt mr-2 text-blue-600"></i>
+                                Phụ cấp & Bảo hiểm
+                            </h3>
+
+                            <div class="space-y-5">
+                                <div>
+                                    <label for="PhuCapCoDinh" class="block text-sm font-medium text-gray-700">
+                                        Phụ Cấp Cố Định
+                                    </label>
+                                    <div class="mt-1 relative">
+                                        <input type="number" step="0.01" id="PhuCapCoDinh" value="0"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                               placeholder="Nhập phụ cấp cố định" />
+                                        <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
+                                            VNĐ
+                                        </span>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">Phụ cấp cố định hàng tháng</p>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label for="BHXH" class="block text-sm font-medium text-gray-700">BHXH</label>
+                                        <input type="number" step="0.01" id="BHXH" value="0"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                               placeholder="BHXH" readonly />
+                                    </div>
+                                    <div>
+                                        <label for="BHYT" class="block text-sm font-medium text-gray-700">BHYT</label>
+                                        <input type="number" step="0.01" id="BHYT" value="0"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                               placeholder="BHYT" readonly />
+                                    </div>
+                                    <div>
+                                        <label for="BHTN" class="block text-sm font-medium text-gray-700">BHTN</label>
+                                        <input type="number" step="0.01" id="BHTN" value="0"
+                                               class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                               placeholder="BHTN" readonly />
                                     </div>
                                 </div>
-                            </div>
+                                <p class="text-xs text-gray-500">Bảo hiểm xã hội, y tế, thất nghiệp (tự động tính)</p>
 
-                            <!-- Cột phải -->
-                            <div class="col-lg-6">
-                                <!-- Phụ cấp và bảo hiểm -->
-                                <div class="card bg-light-subtle border-0 rounded-4 mb-4">
-                                    <div class="card-body p-4">
-                                        <h4 class="fw-semibold mb-3 text-primary">
-                                            <i class="fas fa-shield-alt me-2"></i>Phụ cấp & Bảo hiểm
-                                        </h4>
-                                        
-                                        <!-- Phụ Cấp Cố Định -->
-                                        <div class="form-floating mb-4">
-                                            <input type="number" step="0.01" class="form-control form-control-lg border-0 bg-white" 
-                                                   id="PhuCapCoDinh" value="0" placeholder="Nhập phụ cấp cố định" />
-                                            <label for="PhuCapCoDinh">
-                                                <i class="fas fa-plus-circle text-primary me-1"></i>
-                                                Phụ Cấp Cố Định
-                                            </label>
-                                            <div class="form-text mt-1">Khoản phụ cấp cố định hàng tháng</div>
-                                        </div>
-
-                                        <!-- BHXH, BHYT, BHTN -->
-                                        <div class="row gx-3 mb-4">
-                                            <div class="col-md-4">
-                                                <div class="form-floating">
-                                                    <input type="number" step="0.01" class="form-control form-control-lg border-0 bg-white" 
-                                                           id="BHXH" value="0" placeholder="BHXH" />
-                                                    <label for="BHXH">
-                                                        <i class="fas fa-heartbeat text-primary me-1"></i>
-                                                        BHXH
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-floating">
-                                                    <input type="number" step="0.01" class="form-control form-control-lg border-0 bg-white" 
-                                                           id="BHYT" value="0" placeholder="BHYT" />
-                                                    <label for="BHYT">
-                                                        <i class="fas fa-hospital text-primary me-1"></i>
-                                                        BHYT
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-floating">
-                                                    <input type="number" step="0.01" class="form-control form-control-lg border-0 bg-white" 
-                                                           id="BHTN" value="0" placeholder="BHTN" />
-                                                    <label for="BHTN">
-                                                        <i class="fas fa-briefcase text-primary me-1"></i>
-                                                        BHTN
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-12 mt-1">
-                                                <div class="form-text">Các khoản bảo hiểm xã hội, y tế và thất nghiệp</div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Ghi Chú -->
-                                        <div class="form-floating mb-0">
-                                            <textarea class="form-control form-control-lg border-0 bg-white" style="height: 100px" 
-                                                      id="GhiChu" placeholder="Nhập ghi chú"></textarea>
-                                            <label for="GhiChu">
-                                                <i class="fas fa-sticky-note text-primary me-1"></i>
-                                                Ghi Chú
-                                            </label>
-                                            <div class="form-text mt-1">Thông tin bổ sung về mức lương</div>
-                                        </div>
-                                    </div>
+                                <div>
+                                    <label for="GhiChu" class="block text-sm font-medium text-gray-700">Ghi Chú</label>
+                                    <textarea id="GhiChu" rows="4"
+                                              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                              placeholder="Thông tin bổ sung"></textarea>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Bảng tóm tắt -->
-                        <div class="card bg-light-subtle border-0 rounded-4 mb-4">
-                            <div class="card-body p-4">
-                                <h4 class="fw-semibold mb-3 text-primary">
-                                    <i class="fas fa-calculator me-2"></i>Tóm tắt thông tin lương
-                                </h4>
-                                <div class="table-responsive">
-                                    <table class="table table-borderless mb-0">
-                                        <tbody>
-                                            <tr>
-                                                <td class="ps-0 fw-medium">Tổng thu nhập:</td>
-                                                <td class="text-end pe-0 fw-bold fs-5 text-success" id="tongThuNhap">0 VNĐ</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="ps-0 fw-medium">Tổng khấu trừ:</td>
-                                                <td class="text-end pe-0 fw-bold text-danger" id="tongKhauTru">0 VNĐ</td>
-                                            </tr>
-                                            <tr class="border-top">
-                                                <td class="ps-0 fw-medium">Ước tính lương thực lãnh:</td>
-                                                <td class="text-end pe-0 fw-bold fs-4 text-primary" id="luongThucLanh">0 VNĐ</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Nút Submit -->
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="/Employees/Index" class="btn btn-light btn-lg px-4">
-                                <i class="fas fa-arrow-left me-2"></i>Quay Lại
-                            </a>
-                            <button type="submit" class="btn btn-primary btn-lg px-5 py-3">
-                                <i class="fas fa-save me-2"></i>Lưu Thông Tin Lương
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Summary Section -->
+                <div class="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-calculator mr-2 text-blue-600"></i>
+                        Tóm tắt lương
+                    </h3>
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 font-medium">Tổng thu nhập:</span>
+                                <span id="tongThuNhap" class="font-semibold text-green-600">0 VNĐ</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 font-medium">Tổng khấu trừ:</span>
+                                <span id="tongKhauTru" class="font-semibold text-red-600">0 VNĐ</span>
+                            </div>
+                            <div class="flex justify-between col-span-2 pt-4 border-t">
+                                <span class="text-gray-600 font-semibold">Lương thực lãnh:</span>
+                                <span id="luongThucLanh" class="font-bold text-blue-700 text-lg">0 VNĐ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="mt-8 flex justify-between">
+                    <a href="/Employees/Index"
+                       class="inline-flex items-center px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors font-medium">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Quay Lại
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center px-6 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium">
+                        <i class="fas fa-save mr-2"></i>
+                        Lưu Thông Tin
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -205,63 +192,145 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         $(document).ready(function () {
-            // Khởi tạo Flatpickr cho Ngày Áp Dụng
+            let insuranceRates = { BHXH: 0, BHYT: 0, BHTN: 0 };
+
+            // Initialize Flatpickr
             flatpickr("#NgayApDung", {
                 dateFormat: "Y-m-d",
                 altInput: true,
                 altFormat: "d/m/Y",
                 minDate: "today",
                 defaultDate: "today",
-                appendTo: document.getElementById("NgayApDung").parentNode,
                 onReady: function(selectedDates, dateStr, instance) {
-                    $(instance.input).removeAttr("disabled");
-                    $(instance.input).removeAttr("readonly");
+                    $(instance.input).removeAttr("disabled").removeAttr("readonly");
                     instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
-                    instance.altInput.classList.add("flatpickr-input-custom");
                 },
                 onOpen: function(selectedDates, dateStr, instance) {
                     instance.calendarContainer.style.zIndex = "9999";
                 }
             });
 
-            // Hàm định dạng tiền tệ
+            // Currency formatter
             function formatCurrency(amount) {
-                return new Intl.NumberFormat('vi-VN', { 
-                    style: 'currency', 
+                return new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
                     currency: 'VND',
-                    maximumFractionDigits: 0 
+                    maximumFractionDigits: 0
                 }).format(amount);
             }
 
-            // Cập nhật thanh tiến trình
+            // Fetch minimum wage and insurance rates
+            function loadInitialData() {
+                Swal.fire({
+                    title: "Đang tải...",
+                    text: "Vui lòng chờ trong giây lát",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Fetch active region and minimum wage
+                $.ajax({
+                    url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
+                    method: "GET",
+                    success: function (data) {
+                        var activeRegion = data.find(v => v.isActive);
+                        if (activeRegion) {
+                            $.ajax({
+                                url: `/api/PayrollSettingApi/muc-luong-toi-thieu-vung/${activeRegion.vungLuong}`,
+                                method: "GET",
+                                success: function (wageData) {
+                                    $("#minimumWage").val(wageData.mucLuongToiThieuThang);
+                                    $("#minimumWageValue").text(wageData.mucLuongToiThieuThang.toLocaleString());
+                                    $("#LuongCoBan").attr("min", wageData.mucLuongToiThieuThang);
+                                    updateProgressBar();
+                                    updateSummary();
+                                },
+                                error: function () {
+                                    Swal.fire({
+                                        icon: "error",
+                                        title: "Lỗi",
+                                        text: "Không thể tải mức lương tối thiểu.",
+                                        confirmButtonColor: "#2563eb"
+                                    });
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Lỗi",
+                                text: "Không tìm thấy vùng lương đang hoạt động.",
+                                confirmButtonColor: "#2563eb"
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi",
+                            text: "Không thể tải thông tin vùng lương.",
+                            confirmButtonColor: "#2563eb"
+                        });
+                    }
+                });
+
+                // Fetch insurance rates
+                $.ajax({
+                    url: "/api/PayrollSettingApi/thong-tin-bao-hiem",
+                    method: "GET",
+                    success: function (data) {
+                        data.forEach(item => {
+                            if (!item.ngayHetHieuLuc) {
+                                if (item.loaiBaoHiem === "BHXH") insuranceRates.BHXH = item.tyLeNguoiLaoDong;
+                                if (item.loaiBaoHiem === "BHYT") insuranceRates.BHYT = item.tyLeNguoiLaoDong;
+                                if (item.loaiBaoHiem === "BHTN") insuranceRates.BHTN = item.tyLeNguoiLaoDong;
+                            }
+                        });
+                        updateInsuranceFields();
+                        Swal.close();
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi",
+                            text: "Không thể tải tỷ lệ bảo hiểm.",
+                            confirmButtonColor: "#2563eb"
+                        });
+                    }
+                });
+            }
+
+            // Update insurance fields based on LuongCoBan
+            function updateInsuranceFields() {
+                let luongCoBan = parseFloat($("#LuongCoBan").val()) || 0;
+                $("#BHXH").val((luongCoBan * (insuranceRates.BHXH / 100)).toFixed(2));
+                $("#BHYT").val((luongCoBan * (insuranceRates.BHYT / 100)).toFixed(2));
+                $("#BHTN").val((luongCoBan * (insuranceRates.BHTN / 100)).toFixed(2));
+                updateSummary();
+            }
+
+            // Update progress bar
             function updateProgressBar() {
                 let requiredFields = ["LuongCoBan", "NgayApDung"];
                 let filledCount = 0;
-                
-                for (let field of requiredFields) {
-                    if ($("#" + field).val()) {
-                        filledCount++;
-                    }
-                }
-                
-                // Thêm điểm cho các trường tùy chọn đã điền
-                let optionalFields = ["PhuCapCoDinh", "ThuongCoDinh", "BHXH", "BHYT", "BHTN", "GhiChu"];
-                for (let field of optionalFields) {
+
+                requiredFields.forEach(field => {
+                    if ($("#" + field).val()) filledCount++;
+                });
+
+                let optionalFields = ["PhuCapCoDinh", "ThuongCoDinh", "GhiChu"];
+                optionalFields.forEach(field => {
                     if ($("#" + field).val() && $("#" + field).val() !== "0") {
                         filledCount += 0.5;
                     }
-                }
-                
+                });
+
                 let progressPercent = Math.min(100, Math.round((filledCount / (requiredFields.length + 2)) * 100));
                 $("#formProgress").css("width", progressPercent + "%").attr("aria-valuenow", progressPercent);
-                
-                // Thêm animation nếu tiến độ thay đổi
-                if (progressPercent > 0) {
-                    $("#formProgress").css("transition", "width 0.5s ease-in-out");
-                }
             }
 
-            // Cập nhật bảng tóm tắt
+            // Update summary
             function updateSummary() {
                 let luongCoBan = parseFloat($("#LuongCoBan").val()) || 0;
                 let phuCapCoDinh = parseFloat($("#PhuCapCoDinh").val()) || 0;
@@ -269,37 +338,42 @@
                 let bhxh = parseFloat($("#BHXH").val()) || 0;
                 let bhyt = parseFloat($("#BHYT").val()) || 0;
                 let bhtn = parseFloat($("#BHTN").val()) || 0;
-                
+
                 let tongThuNhap = luongCoBan + phuCapCoDinh + thuongCoDinh;
                 let tongKhauTru = bhxh + bhyt + bhtn;
                 let luongThucLanh = tongThuNhap - tongKhauTru;
-                
+
                 $("#tongThuNhap").text(formatCurrency(tongThuNhap));
                 $("#tongKhauTru").text(formatCurrency(tongKhauTru));
                 $("#luongThucLanh").text(formatCurrency(luongThucLanh));
             }
 
-            // Cập nhật khi có thay đổi trong form
-            $("input, textarea").on("change keyup", function() {
+            // Form input handlers
+            $("#LuongCoBan").on("change keyup", function() {
+                updateInsuranceFields();
                 updateProgressBar();
                 updateSummary();
             });
 
-            // Khởi tạo ban đầu
-            updateProgressBar();
-            updateSummary();
+            $("input:not(#LuongCoBan), textarea").on("change keyup", function() {
+                updateProgressBar();
+                updateSummary();
+            });
 
-            // Xử lý submit form
+            // Load initial data
+            loadInitialData();
+
+            // Form submission
             $("#setupSalaryForm").submit(function (e) {
                 e.preventDefault();
 
-                // Animation khi submit
+                // Progress bar animation
                 $("#formProgress").css({
                     "width": "100%",
                     "transition": "width 0.8s ease-in-out"
                 });
 
-                // Kiểm tra các trường bắt buộc
+                // Validate required fields
                 let requiredFields = [
                     { id: "LuongCoBan", name: "Lương Cơ Bản" },
                     { id: "NgayApDung", name: "Ngày Áp Dụng" }
@@ -311,15 +385,27 @@
                             icon: "warning",
                             title: "Thiếu thông tin",
                             text: `Vui lòng nhập ${field.name}!`,
-                            confirmButtonText: "Đã hiểu",
                             confirmButtonColor: "#2563eb"
                         });
                         return;
                     }
                 }
 
-                // Kiểm tra giá trị không âm
-                let salaryFields = ["LuongCoBan", "PhuCapCoDinh", "ThuongCoDinh", "BHXH", "BHYT", "BHTN"];
+                // Validate minimum wage
+                let luongCoBan = parseFloat($("#LuongCoBan").val());
+                let minimumWage = parseFloat($("#minimumWage").val());
+                if (luongCoBan < minimumWage) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Lương không hợp lệ",
+                        text: `Lương cơ bản phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
+                        confirmButtonColor: "#2563eb"
+                    });
+                    return;
+                }
+
+                // Validate negative values
+                let salaryFields = ["LuongCoBan", "PhuCapCoDinh", "ThuongCoDinh"];
                 for (let field of salaryFields) {
                     let value = parseFloat($("#" + field).val());
                     if (value < 0) {
@@ -327,14 +413,13 @@
                             icon: "warning",
                             title: "Dữ liệu không hợp lệ",
                             text: `Giá trị ${field} không được âm!`,
-                            confirmButtonText: "Đã hiểu",
                             confirmButtonColor: "#2563eb"
                         });
                         return;
                     }
                 }
 
-                // Tạo dữ liệu lương
+                // Prepare data
                 let salaryData = {
                     MaNv: parseInt($("#MaNv").val()),
                     LuongCoBan: parseFloat($("#LuongCoBan").val()),
@@ -347,17 +432,17 @@
                     GhiChu: $("#GhiChu").val()
                 };
 
-                // Hiển thị loading
+                // Show loading
                 Swal.fire({
                     title: "Đang xử lý...",
-                    html: "Vui lòng chờ trong giây lát",
+                    text: "Vui lòng chờ trong giây lát",
                     allowOutsideClick: false,
                     didOpen: () => {
                         Swal.showLoading();
                     }
                 });
 
-                // Gửi dữ liệu qua API
+                // API call
                 $.ajax({
                     url: "/api/SalaryApi/setup",
                     type: "POST",
@@ -367,28 +452,20 @@
                         Swal.fire({
                             icon: "success",
                             title: "Thành công!",
-                            text: "Thông tin lương đã được thiết lập thành công!",
-                            confirmButtonText: "Hoàn tất",
+                            text: "Thông tin lương đã được thiết lập!",
                             confirmButtonColor: "#2563eb",
                             timer: 2000,
-                            timerProgressBar: true,
-                            showConfirmButton: false
+                            timerProgressBar: true
                         }).then(() => {
                             window.location.href = "/Employees/Index";
                         });
                     },
                     error: function (xhr) {
-                        let errorMessage = "Lỗi không xác định!";
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseText) {
-                            errorMessage = xhr.responseText;
-                        }
+                        let errorMessage = xhr.responseJSON?.message || xhr.responseText || "Lỗi không xác định!";
                         Swal.fire({
                             icon: "error",
                             title: "Lỗi!",
                             text: errorMessage,
-                            confirmButtonText: "Thử lại",
                             confirmButtonColor: "#2563eb"
                         });
                     }

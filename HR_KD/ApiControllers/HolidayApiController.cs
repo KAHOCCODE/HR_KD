@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
-
+using System.Net.Mail;
+using System.Net;
+using System.Text;
 namespace HR_KD.ApiControllers
 {
     [Route("api/Holidays")]
@@ -12,11 +14,14 @@ namespace HR_KD.ApiControllers
     public class HolidayApiController : ControllerBase
     {
         private readonly HrDbContext _context;
+        private readonly IConfiguration _configuration; // Inject configuration for email settings
 
-        public HolidayApiController(HrDbContext context)
+        public HolidayApiController(HrDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
+
 
         [HttpPost("Add")]
         public IActionResult AddHoliday(HolidayDTO holidayDto)
@@ -26,7 +31,6 @@ namespace HR_KD.ApiControllers
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
 
-            // Kiểm tra xem ngày lễ đã tồn tại chưa
             var existingHoliday = _context.NgayLes
                 .FirstOrDefault(h => h.NgayLe1 == DateOnly.FromDateTime(holidayDto.NgayLe1));
 
@@ -35,40 +39,19 @@ namespace HR_KD.ApiControllers
                 return BadRequest(new { success = false, message = "Ngày lễ này đã tồn tại trong hệ thống." });
             }
 
-            // Thêm ngày lễ vào bảng NgayLe
             var holiday = new NgayLe
             {
                 TenNgayLe = holidayDto.TenNgayLe,
-                NgayLe1 = DateOnly.FromDateTime(holidayDto.NgayLe1), // Chuyển đổi từ DateTime sang DateOnly
+                NgayLe1 = DateOnly.FromDateTime(holidayDto.NgayLe1),
                 SoNgayNghi = holidayDto.SoNgayNghi,
-                MoTa = holidayDto.MoTa
+                MoTa = holidayDto.MoTa,
+                TrangThai = "Chờ duyệt"
             };
 
             _context.NgayLes.Add(holiday);
             _context.SaveChanges();
 
-            // Lấy danh sách tất cả nhân viên để cập nhật chấm công
-            var allEmployees = _context.NhanViens.ToList();
-
-            foreach (var employee in allEmployees)
-            {
-                var attendance = new ChamCong
-                {
-                    MaNv = employee.MaNv,
-                    NgayLamViec = holiday.NgayLe1,
-                    GioVao = new TimeOnly(8, 0, 0), // 08:00 AM
-                    GioRa = new TimeOnly(17, 0, 0), // 17:00 PM
-                    TongGio = 8.0m, // 8 tiếng làm việc
-                    TrangThai = "Đã duyệt",
-                    GhiChu = $"Ngày lễ: {holiday.TenNgayLe}"
-                };
-
-                _context.ChamCongs.Add(attendance);
-            }
-
-            _context.SaveChanges();
-
-            return Ok(new { success = true, message = "Ngày lễ đã được thêm và chấm công cho nhân viên!" });
+            return Ok(new { success = true, message = "Ngày lễ đã được thêm !" });
         }
 
         [HttpGet("GetAll")]
@@ -83,34 +66,27 @@ namespace HR_KD.ApiControllers
         {
             try
             {
-                // Tìm ngày lễ theo ID
                 var holiday = _context.NgayLes.Find(id);
                 if (holiday == null)
                 {
                     return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
                 }
 
-                // Lưu lại ngày lễ để xóa chấm công
                 var holidayDate = holiday.NgayLe1;
 
-                // Tìm tất cả các bản ghi chấm công có ngày trùng với ngày lễ
                 var attendanceRecords = _context.ChamCongs
                     .Where(c => c.NgayLamViec == holidayDate)
                     .ToList();
 
-                // Đếm số lượng bản ghi chấm công sẽ bị xóa
                 int attendanceCount = attendanceRecords.Count;
 
-                // Xóa tất cả các bản ghi chấm công liên quan
                 if (attendanceRecords.Any())
                 {
                     _context.ChamCongs.RemoveRange(attendanceRecords);
                 }
 
-                // Xóa ngày lễ
                 _context.NgayLes.Remove(holiday);
 
-                // Lưu các thay đổi
                 _context.SaveChanges();
 
                 return Ok(new
@@ -157,13 +133,302 @@ namespace HR_KD.ApiControllers
         }
 
         [HttpGet("GetByYear/{year}")]
-        public IActionResult GetHolidaysByYear(int year)
+        public IActionResult GetHolidaysByYear(int? year) // Change int to int?
         {
-            var holidays = _context.NgayLes
-                .Where(h => h.NgayLe1.Year == year)
-                .ToList();
+            IQueryable<NgayLe> holidays = _context.NgayLes;
 
-            return Ok(holidays);
+            if (year.HasValue)
+            {
+                holidays = holidays.Where(h => h.NgayLe1.Year == year.Value);
+            }
+
+            return Ok(holidays.ToList());
         }
+
+        [HttpPost("Cancel/{id}")] // Hoặc [HttpPatch]
+        public IActionResult CancelHoliday(int id)
+        {
+            try
+            {
+                var holiday = _context.NgayLes.Find(id);
+                if (holiday == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
+                }
+
+                var holidayDate = holiday.NgayLe1;
+
+                var attendanceRecords = _context.ChamCongs
+                    .Where(c => c.NgayLamViec == holidayDate)
+                    .ToList();
+
+                if (attendanceRecords.Any())
+                {
+                    _context.ChamCongs.RemoveRange(attendanceRecords);
+                }
+
+                holiday.TrangThai = "Chờ duyệt";
+                _context.SaveChanges();
+
+                // Gửi email thông báo hủy ngày lễ
+                SendHolidayCancellationEmail(holiday);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Đã hủy ngày lễ, trạng thái chuyển về 'Chờ duyệt' và tất cả chấm công liên quan đã bị xóa.",
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Đã xảy ra lỗi khi hủy ngày lễ.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("Approve/{id}")]
+        public IActionResult ApproveHoliday(int id)
+        {
+            try
+            {
+                var holiday = _context.NgayLes.Find(id);
+                if (holiday == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
+                }
+
+                holiday.TrangThai = "Đã duyệt";
+                _context.SaveChanges();
+
+                // Gửi thông báo (ví dụ: email, push notification) ở đây nếu cần
+                SendHolidayApprovalEmail(holiday); // Gửi email thông báo duyệt ngày lễ
+
+                return Ok(new { success = true, message = "Ngày lễ đã được duyệt." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi duyệt ngày lễ.", error = ex.Message });
+            }
+        }
+
+        [HttpPost("Reject/{id}")]
+        public IActionResult RejectHoliday(int id)
+        {
+            try
+            {
+                var holiday = _context.NgayLes.Find(id);
+                if (holiday == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy ngày lễ." });
+                }
+
+                holiday.TrangThai = "Đã từ chối";
+                _context.SaveChanges();
+
+                return Ok(new { success = true, message = "Ngày lễ đã bị từ chối." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi khi từ chối ngày lễ.", error = ex.Message });
+            }
+        }
+
+        [HttpGet("years")]
+        public IActionResult GetHolidayYears()
+        {
+            var years = _context.NgayLes.Select(h => h.NgayLe1.Year).Distinct().OrderByDescending(y => y).ToList();
+            return Ok(years);
+        }
+
+        [HttpPost("Approve/year/{year}")]
+        public IActionResult ApproveAllHolidaysInYear(int year)
+        {
+            try
+            {
+                var holidaysToApprove = _context.NgayLes
+                    .Where(h => h.NgayLe1.Year == year && h.TrangThai == "Chờ duyệt")
+                    .ToList();
+
+                if (holidaysToApprove.Count == 0)
+                {
+                    return NotFound("Không có ngày lễ nào để duyệt trong năm này.");
+                }
+
+                foreach (var holiday in holidaysToApprove)
+                {
+                    holiday.TrangThai = "Đã duyệt";
+                }
+
+                _context.SaveChanges();
+                SendHolidayApprovalEmailForYear(holidaysToApprove, year);
+                return Ok($"Đã duyệt {holidaysToApprove.Count} ngày lễ trong năm {year}.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi duyệt ngày lễ.", error = ex.Message });
+            }
+        }
+        private void SendHolidayCancellationEmail(NgayLe holiday)
+        {
+            try
+            {
+                // Lấy thông tin cấu hình email từ appsettings.json
+                var smtpServer = _configuration["EmailSettings:SmtpServer"];
+                var smtpPort = int.Parse(_configuration["EmailSettings:Port"]); // Đã sửa ở đây
+                var smtpUsername = _configuration["EmailSettings:SenderEmail"]; // Đã sửa ở đây
+                var smtpPassword = _configuration["EmailSettings:SenderPassword"];
+                var fromEmail = _configuration["EmailSettings:SenderEmail"];   // Đã sửa ở đây
+
+                // Lấy danh sách email của tất cả nhân viên
+                var employeeEmails = _context.NhanViens
+                    .Where(nv => !string.IsNullOrEmpty(nv.Email))
+                    .Select(nv => nv.Email)
+                    .ToList();
+
+                if (!employeeEmails.Any())
+                {
+                    // Không có email nhân viên, không gửi email
+                    return;
+                }
+
+                using (var client = new SmtpClient(smtpServer, smtpPort))
+                {
+                    client.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
+                    client.EnableSsl = true;
+
+                    using (var mailMessage = new MailMessage())
+                    {
+                        mailMessage.From = new MailAddress(fromEmail);
+                        foreach (var toEmail in employeeEmails)
+                        {
+                            mailMessage.To.Add(toEmail);
+                        }
+                        mailMessage.Subject = $"Thông báo: Hủy ngày lễ '{holiday.TenNgayLe}'";
+                        mailMessage.Body = $"Kính gửi Quý nhân viên,\n\nChúng tôi xin thông báo rằng ngày lễ '{holiday.TenNgayLe}' vào ngày {holiday.NgayLe1.ToString("dd/MM/yyyy")} đã bị hủy.\n\nTrân trọng,\nBan Quản Lý";
+                        mailMessage.IsBodyHtml = false;
+
+                        client.Send(mailMessage);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi gửi email (quan trọng để theo dõi nếu có vấn đề)
+                Console.WriteLine($"Lỗi khi gửi email hủy ngày lễ: {ex.Message}");
+                // Không ném lại exception để không ảnh hưởng đến quá trình hủy ngày lễ chính
+            }
+        }
+        private void SendHolidayApprovalEmail(NgayLe holiday)
+        {
+            try
+            {
+                // Lấy thông tin cấu hình email từ appsettings.json
+                var smtpServer = _configuration["EmailSettings:SmtpServer"];
+                var smtpPort = int.Parse(_configuration["EmailSettings:Port"]);
+                var smtpUsername = _configuration["EmailSettings:SenderEmail"];
+                var smtpPassword = _configuration["EmailSettings:SenderPassword"];
+                var fromEmail = _configuration["EmailSettings:SenderEmail"];
+
+                // Lấy danh sách email của tất cả nhân viên
+                var employeeEmails = _context.NhanViens
+                    .Where(nv => !string.IsNullOrEmpty(nv.Email))
+                    .Select(nv => nv.Email)
+                    .ToList();
+
+                if (!employeeEmails.Any())
+                {
+                    // Không có email nhân viên, không gửi email
+                    return;
+                }
+
+                using (var client = new SmtpClient(smtpServer, smtpPort))
+                {
+                    client.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
+                    client.EnableSsl = true;
+
+                    using (var mailMessage = new MailMessage())
+                    {
+                        mailMessage.From = new MailAddress(fromEmail);
+                        foreach (var toEmail in employeeEmails)
+                        {
+                            mailMessage.To.Add(toEmail);
+                        }
+                        mailMessage.Subject = $"Thông báo: Duyệt ngày lễ '{holiday.TenNgayLe}'"; // Chủ đề email
+                        mailMessage.Body = $"Kính gửi Quý nhân viên,\n\nChúng tôi xin thông báo rằng ngày lễ '{holiday.TenNgayLe}' vào ngày {holiday.NgayLe1.ToString("dd/MM/yyyy")} đã được duyệt.\n\nTrân trọng,\nBan Quản Lý"; // Nội dung email
+                        mailMessage.IsBodyHtml = false;
+
+                        client.Send(mailMessage);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi gửi email
+                Console.WriteLine($"Lỗi khi gửi email duyệt ngày lễ: {ex.Message}");
+            }
+        }
+        private void SendHolidayApprovalEmailForYear(List<NgayLe> holidays, int year)
+        {
+            try
+            {
+                // Lấy thông tin cấu hình email từ appsettings.json
+                var smtpServer = _configuration["EmailSettings:SmtpServer"];
+                var smtpPort = int.Parse(_configuration["EmailSettings:Port"]);
+                var smtpUsername = _configuration["EmailSettings:SenderEmail"];
+                var smtpPassword = _configuration["EmailSettings:SenderPassword"];
+                var fromEmail = _configuration["EmailSettings:SenderEmail"];
+
+                // Lấy danh sách email của tất cả nhân viên
+                var employeeEmails = _context.NhanViens
+                    .Where(nv => !string.IsNullOrEmpty(nv.Email))
+                    .Select(nv => nv.Email)
+                    .ToList();
+
+                if (!employeeEmails.Any())
+                {
+                    // Không có email nhân viên, không gửi email
+                    return;
+                }
+
+                using (var client = new SmtpClient(smtpServer, smtpPort))
+                {
+                    client.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
+                    client.EnableSsl = true;
+
+                    using (var mailMessage = new MailMessage())
+                    {
+                        mailMessage.From = new MailAddress(fromEmail);
+                        foreach (var toEmail in employeeEmails)
+                        {
+                            mailMessage.To.Add(toEmail);
+                        }
+                        mailMessage.Subject = $"Thông báo: Duyệt các ngày lễ năm {year}"; // Chủ đề email
+                        StringBuilder body = new StringBuilder();
+                        body.AppendLine($"Kính gửi Quý nhân viên,\n\nChúng tôi xin thông báo rằng các ngày lễ trong năm {year} đã được duyệt:");
+
+                        foreach (var holiday in holidays)
+                        {
+                            body.AppendLine($"- {holiday.TenNgayLe} vào ngày {holiday.NgayLe1.ToString("dd/MM/yyyy")}");
+                        }
+
+                        body.AppendLine("\n\nTrân trọng,\nBan Quản Lý");
+                        mailMessage.Body = body.ToString();
+                        mailMessage.IsBodyHtml = false;
+
+                        client.Send(mailMessage);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi gửi email
+                Console.WriteLine($"Lỗi khi gửi email duyệt ngày lễ: {ex.Message}");
+            }
+        }
+
     }
 }

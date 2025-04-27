@@ -66,7 +66,6 @@
                                             <h6 class="text-primary fw-bold mb-0">Tổng nhân viên</h6>
                                             <h3 class="mt-2 mb-0" id="totalEmployees">0</h3>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -109,7 +108,6 @@
                                             <h6 class="text-warning fw-bold mb-0">Phòng ban</h6>
                                             <h3 class="mt-2 mb-0" id="departmentCount">0</h3>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -130,7 +128,7 @@
                                     <th>Email</th>
                                     <th>Phòng Ban</th>
                                     <th>Chức Vụ</th>
-                                    <th>Lương</th>                              
+                                    <th>Lương</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -151,7 +149,6 @@
     </div>
 </div>
 
-
 <!-- Modal Thông Tin Lương -->
 <div class="modal fade" id="salaryModal" tabindex="-1" aria-labelledby="salaryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -171,6 +168,7 @@
                 <div id="salaryDetails">
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-body">
+                            PN:25-12-2024
                             <h6 class="fw-bold text-primary mb-3"><i class="fa fa-file-invoice-dollar me-2"></i>Lương & Phụ Cấp</h6>
                             <div class="row mb-2">
                                 <div class="col-7">Lương Cơ Bản:</div>
@@ -210,7 +208,7 @@
                             <h6 class="fw-bold text-primary mb-3"><i class="fa fa-info-circle me-2"></i>Thông Tin Khác</h6>
                             <div class="row mb-2">
                                 <div class="col-7">Ngày Áp Dụng:</div>
-                                <div class="col-5 text-end" id="modalNgayApDng"></div>
+                                <div class="col-5 text-end" id="modalNgayApDung"></div>
                             </div>
                             <div class="row">
                                 <div class="col-12">Ghi Chú:</div>
@@ -236,6 +234,9 @@
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-success btn-add-salary" style="display: none;">
                     <i class="fa fa-plus me-1"></i> Thêm Thông Tin Lương
+                </button>
+                <button type="button" class="btn btn-primary btn-edit-salary" style="display: none;">
+                    <i class="fa fa-edit me-1"></i> Chỉnh Sửa Lương
                 </button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     <i class="fa fa-times me-1"></i> Đóng
@@ -285,13 +286,6 @@
         document.getElementById("filterPhongBan").addEventListener("change", applyFilters);
         document.getElementById("filterChucVu").addEventListener("change", applyFilters);
         document.getElementById("searchInput").addEventListener("input", applyFilters);
-
-        // Thêm sự kiện cho nút xem lương từ modal thông tin nhân viên
-        document.getElementById("btnViewSalary").addEventListener("click", function () {
-            let maNv = document.getElementById("modalMaNv").textContent;
-            fetchSalaryDetails(maNv);
-        });
-
 
         // Sự kiện xuất báo cáo
         document.getElementById("exportExcel").addEventListener("click", function () {
@@ -459,7 +453,6 @@
             renderEmployees(filteredData, currentPage, itemsPerPage);
         }
 
-
         function renderEmployees(data, page, itemsPerPage) {
             // Tính toán các item hiển thị cho trang hiện tại
             const startIndex = (page - 1) * itemsPerPage;
@@ -481,7 +474,6 @@
                         </tr>
                     `;
             } else {
-
                 displayedData.forEach(employee => {
                     const genderBadge = (employee.gioiTinh === "Nam")
                         ? '<span class="badge bg-primary bg-opacity-10 text-primary">Nam</span>'
@@ -509,20 +501,8 @@
                         <i class="fa fa-money-bill me-1"></i> Xem lương
                     </button>
                 </td>
-                <!-- Xóa cột này -->
-                <!-- <td class="text-center">
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-primary btn-view-details" data-manv="${employee.maNv}">
-                            <i class="fa fa-info-circle"></i>
-                        </button>
-                        <button class="btn btn-sm btn-warning">
-                            <i class="fa fa-edit"></i>
-                        </button>
-                    </div>
-                </td> -->
             </tr>`;
                 });
-
             }
 
             document.querySelector("#employeeTable tbody").innerHTML = tableContent;
@@ -539,8 +519,6 @@
                 });
             });
 
-        
-
             // Thêm sự kiện khi nhấp vào hàng trong bảng
             document.querySelectorAll("#employeeTable tbody tr").forEach(row => {
                 row.addEventListener("click", function () {
@@ -551,7 +529,6 @@
                 });
             });
         }
-
 
         function renderPagination(totalItems, currentPage, itemsPerPage) {
             const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -567,7 +544,7 @@
             paginationHTML += `
                             <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
                                 <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
+                                    <span aria-hidden="true">«</span>
                                 </a>
                             </li>
                         `;
@@ -610,7 +587,7 @@
             paginationHTML += `
                             <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
                                 <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
+                                    <span aria-hidden="true">»</span>
                                 </a>
                             </li>
                         `;
@@ -697,10 +674,15 @@
                     // Đóng loading
                     Swal.close();
 
+                    // Lưu MaLuongNV vào modal
+                    document.getElementById("salaryModal").setAttribute("data-maLuongNV", data.maLuongNV);
+                    document.getElementById("salaryModal").setAttribute("data-maNv", maNv);
+
                     // Hiển thị thông tin lương
                     document.getElementById("salaryDetails").style.display = "block";
                     document.getElementById("noSalaryMessage").style.display = "none";
                     document.querySelector(".btn-add-salary").style.display = "none";
+                    document.querySelector(".btn-edit-salary").style.display = "inline-block";
 
                     // Format các giá trị tiền tệ
                     document.getElementById("modalLuongCoBan").textContent = formatCurrency(data.luongCoBan);
@@ -709,7 +691,7 @@
                     document.getElementById("modalBHXH").textContent = formatCurrency(data.bhxh);
                     document.getElementById("modalBHYT").textContent = formatCurrency(data.bhyt);
                     document.getElementById("modalBHTN").textContent = formatCurrency(data.bhtn);
-                    document.getElementById("modalNgayApDng").textContent = new Date(data.ngayApDng).toLocaleDateString('vi-VN');
+                    document.getElementById("modalNgayApDung").textContent = new Date(data.ngayApDung).toLocaleDateString('vi-VN');
                     document.getElementById("modalGhiChu").textContent = data.ghiChu || "Không có ghi chú";
 
                     // Hiển thị modal
@@ -724,10 +706,12 @@
                     // Hiển thị thông báo không có lương và tùy chọn thêm lương
                     document.getElementById("salaryDetails").style.display = "none";
                     document.getElementById("noSalaryMessage").style.display = "block";
-                    document.querySelector(".btn-add-salary").style.display = "block";
+                    document.querySelector(".btn-add-salary").style.display = "inline-block";
+                    document.querySelector(".btn-edit-salary").style.display = "none";
 
                     // Lưu MaNv để dùng cho thêm lương
                     document.getElementById("salaryModal").setAttribute("data-maNv", maNv);
+                    document.getElementById("salaryModal").removeAttribute("data-maLuongNV");
 
                     // Hiển thị modal
                     new bootstrap.Modal(document.getElementById("salaryModal")).show();
@@ -757,6 +741,24 @@
             });
         });
 
+        // Sự kiện cho nút "Chỉnh Sửa Lương"
+        document.querySelector(".btn-edit-salary").addEventListener("click", function () {
+            let maLuongNV = document.getElementById("salaryModal").getAttribute("data-maLuongNV");
+            let maNv = document.getElementById("salaryModal").getAttribute("data-maNv");
+
+            Swal.fire({
+                title: 'Chỉnh sửa lương',
+                text: 'Bạn sẽ được chuyển đến trang chỉnh sửa lương cho nhân viên này. Tiếp tục?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Tiếp tục',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `/Employees/EditSalary?maLuongNV=${maLuongNV}&maNv=${maNv}`;
+                }
+            });
+        });
 
         // Thêm animation cho các phần tử khi trang được tải
         setTimeout(function () {
@@ -770,4 +772,3 @@
         }, 300);
     });
 </script>
-

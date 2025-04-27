@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="~/css/attend.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
 
 <div id="attendanceSection" class="dashboard-card bg-white p-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-fingerprint me-2"></i> Chấm công</h5>
@@ -39,8 +40,10 @@
                 <label for="checkOutTime" class="form-label">Giờ check-out</label>
                 <div class="d-flex">
                     <input type="time" class="form-control me-2" id="checkOutTime">
-                    <button class="btn btn-outline-secondary me-2" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 17h">8h</button>
+                    <button class="btn btn-outline-secondary me-2" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 18h">8h</button>
+                    <button class="btn btn-outline-secondary me-2" id="set8hPlus1Btn" title="Tự động điền giờ làm 8h + 1h tăng ca">8 + 1</button>
                     <button class="btn btn-outline-secondary me-2" id="set8hPlus2Btn" title="Tự động điền giờ làm 8h + 2h tăng ca">8 + 2</button>
+                    <button class="btn btn-outline-secondary me-2" id="set8hPlus3Btn" title="Tự động điền giờ làm 8h + 3h tăng ca">8 + 3</button>
                     <button class="btn btn-outline-secondary" id="set8hPlus4Btn" title="Tự động điền giờ làm 8h + 4h tăng ca">8 + 4</button>
                 </div>
             </div>
@@ -62,6 +65,11 @@
         </div>
     </div>
 
+    <div class="mt-3">
+        <h6>Tổng thời gian làm việc:</h6>
+        <span id="totalWorkingHours" class="badge bg-info">0.00 giờ</span>
+    </div>
+
     <div class="mb-3">
         <label for="attendanceNote" class="form-label">Ghi chú</label>
         <textarea class="form-control" id="attendanceNote" rows="3"></textarea>
@@ -80,6 +88,7 @@
                     <th>Giờ Vào Mới</th>
                     <th>Giờ Ra Mới</th>
                     <th>Tổng giờ</th>
+                    <th>Tổng thời gian làm việc</th>
                     <th>Lý Do</th>
                     <th>Hành Động</th>
                 </tr>
@@ -99,6 +108,7 @@
                     <th>Giờ vào</th>
                     <th>Giờ ra</th>
                     <th>Tổng giờ</th>
+                    <th>Tổng thời gian làm việc</th>
                     <th>Trạng thái</th>
                     <th>Ghi chú</th>
                 </tr>
@@ -118,6 +128,7 @@
                     <th>Giờ vào</th>
                     <th>Giờ ra</th>
                     <th>Tổng giờ</th>
+                    <th>Tổng thời gian làm việc</th>
                     <th>Trạng thái</th>
                     <th>Ghi chú</th>
                 </tr>
@@ -138,6 +149,7 @@
     const attendanceDateRangeInput = document.getElementById("attendanceDateRange");
     const selectedWorkDaysListElement = document.getElementById("selectedWorkDaysList");
     const attendanceNoteTextarea = document.getElementById("attendanceNote");
+    const totalWorkingHoursElement = document.getElementById("totalWorkingHours");
     const attendanceRequestsTableBody = document.getElementById("attendanceTableBody2");
     const attendanceTableBody = document.getElementById("attendanceTableBody");
     const attendanceTableBodyHistory = document.getElementById("attendanceTableBodyHistory");
@@ -148,26 +160,33 @@
     // --- Date and Time Functions ---
 
     function formatDate(date) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `<span class="math-inline">${day}/</span>${month}/${year}`; // Corrected line
-}
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    // Format date to YYYY-MM-DD in local timezone
+    function formatDateToYMD(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
     // Calculate hours between two times
     function calculateHours(startTime, endTime) {
         if (!startTime || !endTime) return 0.00;
-
         const start = new Date(`2000-01-01T${startTime}:00`);
         const end = new Date(`2000-01-01T${endTime}:00`);
         let hours = (end - start) / (1000 * 60 * 60);
         return parseFloat(hours.toFixed(2));
     }
 
-    // Calculate daily working hours (subtract lunch if applicable)
+    // Calculate daily working hours (subtract 2-hour lunch if applicable)
     function calculateDailyHours(checkIn, checkOut) {
         let hours = calculateHours(checkIn, checkOut);
-        if (hours >= 5) hours -= 1; // Subtract lunch break
+        if (hours >= 10) hours -= 2; // Subtract 2-hour lunch break for shifts 8:00–18:00 or longer
         return hours;
     }
 
@@ -176,13 +195,202 @@
         return calculateHours(checkInOT, checkOutOT);
     }
 
+    // Calculate total working hours for one day (official + overtime)
+    function calculateTotalWorkingHours() {
+        const officialHours = calculateDailyHours(checkInTimeInput.value, checkOutTimeInput.value);
+        const overtimeHours = calculateOvertimeHours(checkInOTTimeInput.value, checkOutOTTimeInput.value);
+        return officialHours + overtimeHours;
+    }
+
+    // Update total working hours display for all selected days
+    function updateTotalWorkingHoursDisplay() {
+        const dailyTotalHours = calculateTotalWorkingHours();
+        const totalHours = dailyTotalHours * selectedWorkDays.length;
+        totalWorkingHoursElement.textContent = `${totalHours.toFixed(2)} giờ`;
+    }
+
+    // --- Validation Functions ---
+
+    // Validate daily working hours
+    function validateDailyHours(officialWorkingHoursInDay, overtimeHoursInDay) {
+        const workingHoursInDay = officialWorkingHoursInDay + overtimeHoursInDay;
+        if (workingHoursInDay > 12) {
+            throw Error("Quá số giờ làm tối đa 1 ngày");
+        }
+        if (officialWorkingHoursInDay > 8) {
+            throw Error("Vượt giờ làm chính thức trong ngày");
+        }
+        if (overtimeHoursInDay > 4) {
+            throw Error("Quá số giờ tăng ca tối đa 1 ngày");
+        }
+    }
+
+    // Get the start and end of the week for a given date
+    function getWeekRange(date) {
+        console.log("Input date to getWeekRange:", date); // Debug log
+        const inputDate = new Date(date);
+        if (isNaN(inputDate)) {
+            throw new Error("Ngày không hợp lệ");
+        }
+        const dayOfWeek = inputDate.getDay();
+        const offsetToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const start = new Date(inputDate);
+        start.setDate(inputDate.getDate() + offsetToMonday); // Set to Monday
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6); // Set to Sunday
+        console.log("Week range:", { start, end }); // Debug log
+        return { start, end };
+    }
+
+    // Get the start and end of the month for a given date
+    function getMonthRange(date) {
+        const start = new Date(date.getFullYear(), date.getMonth(), 1);
+        const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        return { start, end };
+    }
+
+    // Check weekly hours and overtime restrictions
+    async function restrictAttendanceAndOvertime(selectedDate, officialHours, overtimeHours) {
+        try {
+            console.log("Checking restrictions for date:", selectedDate); // Debug log
+            const selectedDateObj = new Date(selectedDate);
+            const { start, end } = getWeekRange(selectedDateObj);
+
+            // Fetch attendance history for the week
+            const attendanceResponse = await fetch('/api/Attendance/GetAttendanceHistoryRecords');
+            const attendanceData = await attendanceResponse.json();
+            if (!attendanceData.success) {
+                throw new Error("Không thể lấy dữ liệu lịch sử chấm công.");
+            }
+
+            // Fetch overtime records for the week
+            const overtimeResponse = await fetch('/api/Attendance/GetOvertimeRecords');
+            const overtimeData = await overtimeResponse.json();
+            if (!overtimeData.success) {
+                throw new Error("Không thể lấy dữ liệu tăng ca.");
+            }
+
+            let totalWorkingHoursInWeek = 0;
+            let totalOvertimeHoursInWeek = 0;
+
+            // Sum attendance hours for the week
+            attendanceData.records.forEach(record => {
+                const recordDate = new Date(record.Ngay);
+                if (recordDate >= start && recordDate <= end) {
+                    totalWorkingHoursInWeek += record.TongGio || 0;
+                }
+            });
+
+            // Sum overtime hours for the week
+            overtimeData.records.forEach(record => {
+                const recordDate = new Date(record.NgayTangCa);
+                if (recordDate >= start && recordDate <= end) {
+                    totalOvertimeHoursInWeek += record.SoGioTangCa || 0;
+                }
+            });
+
+            // Check if adding new attendance hours exceeds 48 hours
+            if (officialHours > 0 && totalWorkingHoursInWeek >= 48) {
+                throw new Error("Đã đủ 48 giờ làm việc trong tuần, không thể chấm công thêm.");
+            }
+
+            // Check if adding new overtime hours exceeds 12 hours
+            if (overtimeHours > 0 && totalOvertimeHoursInWeek >= 12) {
+                throw new Error("Đã đủ 12 giờ tăng ca trong tuần, không thể tăng ca thêm.");
+            }
+
+            return true; // Allow submission if checks pass
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Fetch and validate weekly hours
+    async function validateWeeklyHours(newAttendanceData, officialHours, overtimeHours) {
+        try {
+            const response = await fetch('/api/Attendance/GetAttendanceRecords');
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error("Không thể lấy dữ liệu chấm công.");
+            }
+
+            // Group selected days by week
+            const weeks = {};
+            newAttendanceData.forEach(entry => {
+                const entryDate = new Date(entry.NgayLamViec);
+                const { start } = getWeekRange(entryDate);
+                const weekKey = start.toISOString().split('T')[0];
+                if (!weeks[weekKey]) {
+                    weeks[weekKey] = { days: [], totalWorkingHoursInWeek: 0 };
+                }
+                weeks[weekKey].days.push(entry);
+                weeks[weekKey].totalWorkingHoursInWeek += officialHours + overtimeHours;
+            });
+
+            // Add existing records to weekly totals
+            data.records.forEach(record => {
+                const recordDate = new Date(record.ngayLamViec);
+                const { start } = getWeekRange(recordDate);
+                const weekKey = start.toISOString().split('T')[0];
+                if (weeks[weekKey]) {
+                    weeks[weekKey].totalWorkingHoursInWeek += (record.tongGio || 0) + (record.soGioTangCa || 0);
+                }
+            });
+
+            // Check each week for the 60-hour limit
+            for (const weekKey in weeks) {
+                if (weeks[weekKey].totalWorkingHoursInWeek > 60) {
+                    throw Error("Quá tổng số giờ làm việc trong tuần");
+                }
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Fetch and validate monthly overtime hours
+    async function validateMonthlyOvertimeHours(newOvertimeData) {
+        if (newOvertimeData.length === 0) return;
+        try {
+            const response = await fetch('/api/Attendance/GetOvertimeRecords');
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error("Không thể lấy dữ liệu tăng ca.");
+            }
+
+            for (const entry of newOvertimeData) {
+                const entryDate = new Date(entry.NgayTangCa);
+                const { start, end } = getMonthRange(entryDate);
+                let totalOvertimeHoursInMonth = entry.SoGioTangCa;
+
+                // Sum existing overtime records for the month
+                data.records.forEach(record => {
+                    const recordDate = new Date(record.NgayTangCa);
+                    if (recordDate >= start && recordDate <= end) {
+                        totalOvertimeHoursInMonth += record.SoGioTangCa || 0;
+                    }
+                });
+
+                if (totalOvertimeHoursInMonth > 48) {
+                    throw Error("Quá tổng số giờ tăng ca trong tháng");
+                }
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
     // --- DOM Manipulation ---
 
     // Update the displayed list of selected work days
     function updateSelectedWorkDaysList() {
         selectedWorkDaysListElement.innerHTML = selectedWorkDays
-            .map(day => `<span class="badge bg-primary me-1">${formatDate(new Date(day))}</span>`)
+            .map(day => {
+                const date = new Date(day);
+                return `<span class="badge bg-primary me-1">${formatDate(date)}</span>`;
+            })
             .join("");
+        updateTotalWorkingHoursDisplay();
     }
 
     // Reset the attendance form
@@ -195,6 +403,7 @@
         attendanceNoteTextarea.value = "";
         selectedWorkDays = [];
         updateSelectedWorkDaysList();
+        updateTotalWorkingHoursDisplay();
     }
 
     // --- Event Handlers ---
@@ -202,23 +411,47 @@
     // Set time presets
     document.getElementById("set8hBtn").addEventListener("click", () => {
         checkInTimeInput.value = "08:00";
-        checkOutTimeInput.value = "17:00";
+        checkOutTimeInput.value = "18:00";
         checkInOTTimeInput.value = "";
         checkOutOTTimeInput.value = "";
+        updateTotalWorkingHoursDisplay();
+    });
+
+    document.getElementById("set8hPlus1Btn").addEventListener("click", () => {
+        checkInTimeInput.value = "08:00";
+        checkOutTimeInput.value = "18:00";
+        checkInOTTimeInput.value = "18:00";
+        checkOutOTTimeInput.value = "19:00";
+        updateTotalWorkingHoursDisplay();
     });
 
     document.getElementById("set8hPlus2Btn").addEventListener("click", () => {
         checkInTimeInput.value = "08:00";
-        checkOutTimeInput.value = "17:00";
-        checkInOTTimeInput.value = "17:00";
-        checkOutOTTimeInput.value = "19:00";
+        checkOutTimeInput.value = "18:00";
+        checkInOTTimeInput.value = "18:00";
+        checkOutOTTimeInput.value = "20:00";
+        updateTotalWorkingHoursDisplay();
+    });
+
+    document.getElementById("set8hPlus3Btn").addEventListener("click", () => {
+        checkInTimeInput.value = "08:00";
+        checkOutTimeInput.value = "18:00";
+        checkInOTTimeInput.value = "18:00";
+        checkOutOTTimeInput.value = "21:00";
+        updateTotalWorkingHoursDisplay();
     });
 
     document.getElementById("set8hPlus4Btn").addEventListener("click", () => {
         checkInTimeInput.value = "08:00";
-        checkOutTimeInput.value = "17:00";
-        checkInOTTimeInput.value = "17:00";
-        checkOutOTTimeInput.value = "21:00";
+        checkOutTimeInput.value = "18:00";
+        checkInOTTimeInput.value = "18:00";
+        checkOutOTTimeInput.value = "22:00";
+        updateTotalWorkingHoursDisplay();
+    });
+
+    // Update total working hours on time input changes
+    [checkInTimeInput, checkOutTimeInput, checkInOTTimeInput, checkOutOTTimeInput].forEach(input => {
+        input.addEventListener("change", updateTotalWorkingHoursDisplay);
     });
 
     // Handle date range selection
@@ -234,16 +467,18 @@
     });
 
     function handleDateRangeClose(selectedDates) {
+        console.log("Selected dates from Flatpickr:", selectedDates); // Debug log
         selectedWorkDays = [];
 
         if (selectedDates.length === 2) {
             let currentDate = new Date(selectedDates[0]);
-            const endOfWeek = selectedDates[1];
+            const endDate = new Date(selectedDates[1]);
 
-            while (currentDate <= endOfWeek) {
+            while (currentDate <= endDate) {
                 if (currentDate.getDay() >= 1 && currentDate.getDay() <= 6) {
-                    selectedWorkDays.push(currentDate.toISOString().split('T')[0]);
+                    selectedWorkDays.push(formatDateToYMD(currentDate));
                 }
+                // Increment date in local timezone
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             updateSelectedWorkDaysList();
@@ -261,7 +496,7 @@
                 let currentDate = new Date(startOfWeek);
                 while (currentDate <= endOfWeek) {
                     if (currentDate.getDay() >= 1 && currentDate.getDay() <= 6) {
-                        selectedWorkDays.push(currentDate.toISOString().split('T')[0]);
+                        selectedWorkDays.push(formatDateToYMD(currentDate));
                     }
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
@@ -274,35 +509,53 @@
         }
     }
 
-    // Submit attendance data
-    document.getElementById("submitAttendance").addEventListener("click", () => {
-        if (selectedWorkDays.length === 0) {
-            Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
-            return;
+    // Submit attendance data with validations
+    document.getElementById("submitAttendance").addEventListener("click", async () => {
+        try {
+            if (selectedWorkDays.length === 0) {
+                Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
+                return;
+            }
+
+            if (!checkInTimeInput.value || !checkOutTimeInput.value) {
+                Swal.fire("Lỗi!", "Vui lòng nhập cả giờ check-in và check-out.", "error");
+                return;
+            }
+
+            const officialWorkingHoursInDay = calculateDailyHours(checkInTimeInput.value, checkOutTimeInput.value);
+            const overtimeHoursInDay = calculateOvertimeHours(checkInOTTimeInput.value, checkOutOTTimeInput.value);
+
+            // Validate daily constraints
+            validateDailyHours(officialWorkingHoursInDay, overtimeHoursInDay);
+
+            // Check weekly attendance and overtime restrictions
+            await restrictAttendanceAndOvertime(selectedWorkDays[0], officialWorkingHoursInDay, overtimeHoursInDay);
+
+            const attendanceData = selectedWorkDays.map(day => ({
+                NgayLamViec: day,
+                GioVao: checkInTimeInput.value || null,
+                GioRa: checkOutTimeInput.value || null,
+                TongGio: officialWorkingHoursInDay,
+                TrangThai: "Chờ duyệt",
+                GhiChu: attendanceNoteTextarea.value.trim() || null
+            }));
+
+            const overtimeData = selectedWorkDays.map(day => ({
+                NgayTangCa: day,
+                GioVaoTangCa: checkInOTTimeInput.value || null,
+                GioRaTangCa: checkOutOTTimeInput.value || null,
+                SoGioTangCa: overtimeHoursInDay,
+            })).filter(item => item.SoGioTangCa > 0);
+
+            // Validate weekly and monthly constraints
+            await validateWeeklyHours(attendanceData, officialWorkingHoursInDay, overtimeHoursInDay);
+            await validateMonthlyOvertimeHours(overtimeData);
+
+            // Submit data if all validations pass
+            await submitAttendanceData(attendanceData, overtimeData);
+        } catch (error) {
+            Swal.fire("Lỗi!", error.message, "error");
         }
-
-        if (!checkInTimeInput.value || !checkOutTimeInput.value) {
-            Swal.fire("Lỗi!", "Vui lòng nhập cả giờ check-in và check-out.", "error");
-            return;
-        }
-
-        const attendanceData = selectedWorkDays.map(day => ({
-            NgayLamViec: day,
-            GioVao: checkInTimeInput.value || null,
-            GioRa: checkOutTimeInput.value || null,
-            TongGio: calculateDailyHours(checkInTimeInput.value, checkOutTimeInput.value),
-            TrangThai: "Chờ duyệt",
-            GhiChu: attendanceNoteTextarea.value.trim() || null
-        }));
-
-        const overtimeData = selectedWorkDays.map(day => ({
-            NgayTangCa: day,
-            GioVaoTangCa: checkInOTTimeInput.value || null,
-            GioRaTangCa: checkOutOTTimeInput.value || null,
-            SoGioTangCa: calculateOvertimeHours(checkInOTTimeInput.value, checkOutOTTimeInput.value),
-        })).filter(item => item.SoGioTangCa > 0);
-
-        submitAttendanceData(attendanceData, overtimeData);
     });
 
     // --- AJAX Functions ---
@@ -527,12 +780,14 @@
             const gioVaoMoi = request.gioVaoMoi ?? '-';
             const gioRaMoi = request.gioRaMoi ?? '-';
             const dailyHours = calculateDailyHours(gioVaoMoi, gioRaMoi);
+            const totalWorkingHours = dailyHours + (request.soGioTangCa || 0);
             const row = `
                 <tr>
                     <td>${request.ngayLamViec}</td>
                     <td>${gioVaoMoi}</td>
                     <td>${gioRaMoi}</td>
                     <td>${dailyHours.toFixed(2)}</td>
+                    <td>${totalWorkingHours.toFixed(2)}</td>
                     <td>${request.lyDo || "-"}</td>
                     <td>
                         <button class="btn btn-success btn-sm" onclick="acceptAttendanceRequest(${request.maYeuCau}, '${request.ngayLamViec}', '${gioVaoMoi}', '${gioRaMoi}')">Chấp nhận</button>
@@ -548,12 +803,14 @@
     function renderAttendanceTable(records) {
         attendanceTableBody.innerHTML = "";
         records.forEach(record => {
+            const totalWorkingHours = (record.tongGio || 0) + (record.soGioTangCa || 0);
             const row = `
                 <tr>
                     <td>${record.ngayLamViec}</td>
                     <td>${record.gioVao || "-"}</td>
                     <td>${record.gioRa || "-"}</td>
-                    <td>${record.tongGio}</td>
+                    <td>${record.tongGio || 0}</td>
+                    <td>${totalWorkingHours.toFixed(2)}</td>
                     <td>${record.trangThai || "-"}</td>
                     <td>${record.ghiChu || "-"}</td>
                 </tr>
@@ -566,12 +823,14 @@
     function renderAttendanceHistoryTable(records) {
         attendanceTableBodyHistory.innerHTML = "";
         records.forEach(record => {
+            const totalWorkingHours = (record.tongGio || 0) + (record.soGioTangCa || 0);
             const row = `
                 <tr>
                     <td>${record.ngay}</td>
                     <td>${record.gioVao || "-"}</td>
                     <td>${record.gioRa || "-"}</td>
-                    <td>${record.tongGio}</td>
+                    <td>${record.tongGio || 0}</td>
+                    <td>${totalWorkingHours.toFixed(2)}</td>
                     <td>${record.trangThai || "-"}</td>
                     <td>${record.ghiChu || "-"}</td>
                 </tr>
@@ -664,6 +923,7 @@
         fetchAttendanceRecords();
         fetchAttendanceRequests();
         fetchAttendanceHistory();
+        updateTotalWorkingHoursDisplay(); // Initialize total working hours display
     });
 </script>
 

@@ -1,0 +1,249 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thiết Lập Hợp Đồng</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/createemploy.css">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="card shadow border-0 overflow-hidden">
+            <div class="card-header bg-primary text-white p-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-file-contract fa-2x me-3"></i>
+                    <h2 class="mb-0 fw-bold">Thiết Lập Hợp Đồng</h2>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form id="contractForm" class="needs-validation" novalidate>
+                    <input type="hidden" id="MaNv" value="@ViewBag.MaNv" />
+                    <input type="hidden" id="MaHopDong" />
+
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0 text-primary">
+                                <i class="fas fa-file-contract me-2"></i>Thông Tin Hợp Đồng
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <!-- Loại hợp đồng -->
+                                <div class="col-md-6">
+                                    <label for="MaLoaiHopDong" class="form-label">
+                                        <i class="fas fa-file-alt me-1 text-muted"></i>Loại Hợp Đồng <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-select-lg" id="MaLoaiHopDong" required>
+                                        <option value="">-- Chọn loại hợp đồng --</option>
+                                    </select>
+                                    <div class="invalid-feedback">Vui lòng chọn loại hợp đồng</div>
+                                </div>
+
+                                <!-- Thời hạn hợp đồng -->
+                                <div class="col-md-6" id="ThoiHanContainer">
+                                    <label for="ThoiHan" class="form-label">
+                                        <i class="fas fa-clock me-1 text-muted"></i>Thời Hạn (tháng)
+                                    </label>
+                                    <input type="number" class="form-control form-control-lg" id="ThoiHan" min="0" />
+                                    <div class="invalid-feedback">Thời hạn phải nhỏ hơn hoặc bằng thời hạn mặc định</div>
+                                </div>
+
+                                <!-- Ngày bắt đầu -->
+                                <div class="col-md-6">
+                                    <label for="NgayBatDau" class="form-label">
+                                        <i class="fas fa-calendar-check me-1 text-muted"></i>Ngày Bắt Đầu <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control form-control-lg" id="NgayBatDau" required />
+                                    <div class="invalid-feedback">Vui lòng chọn ngày bắt đầu</div>
+                                </div>
+
+                                <!-- Ngày kết thúc (chỉ đọc) -->
+                                <div class="col-md-6">
+                                    <label for="NgayKetThuc" class="form-label">
+                                        <i class="fas fa-calendar-times me-1 text-muted"></i>Ngày Kết Thúc
+                                    </label>
+                                    <input type="date" class="form-control form-control-lg" id="NgayKetThuc" readonly />
+                                </div>
+
+                                <!-- Ghi chú -->
+                                <div class="col-12">
+                                    <label for="GhiChu" class="form-label">
+                                        <i class="fas fa-comment me-1 text-muted"></i>Ghi Chú
+                                    </label>
+                                    <textarea class="form-control" id="GhiChu" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nút Submit -->
+                    <div class="text-center mt-4">
+                        <button type="button" class="btn btn-light btn-lg me-2" onclick="window.history.back()">
+                            <i class="fas fa-times me-2"></i>Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save me-2"></i>Lưu Hợp Đồng
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.0/sweetalert2.all.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Load danh sách loại hợp đồng
+            $.get("/api/LoaiHopDongApi", function (data) {
+                let dropdown = $("#MaLoaiHopDong");
+                dropdown.html('<option value="">-- Chọn loại hợp đồng --</option>');
+                data.forEach(item => {
+                    dropdown.append(`<option value="${item.maLoaiHopDong}" data-thoihan="${item.thoiHanMacDinh || ''}">${item.tenLoaiHopDong}</option>`);
+                });
+            });
+
+            // Xử lý khi chọn loại hợp đồng
+            $("#MaLoaiHopDong").change(function () {
+                let thoiHanMacDinh = $(this).find(':selected').data('thoihan');
+                let thoiHanInput = $("#ThoiHan");
+                let thoiHanContainer = $("#ThoiHanContainer");
+
+                if (thoiHanMacDinh) {
+                    // Hiển thị input ThoiHan và giới hạn giá trị
+                    thoiHanContainer.show();
+                    thoiHanInput.val(thoiHanMacDinh);
+                    thoiHanInput.attr('max', thoiHanMacDinh);
+                    thoiHanInput.attr('data-thoihan-mac-dinh', thoiHanMacDinh);
+                } else {
+                    // Ẩn input ThoiHan
+                    thoiHanContainer.hide();
+                    thoiHanInput.val('');
+                    thoiHanInput.removeAttr('max');
+                    thoiHanInput.removeAttr('data-thoihan-mac-dinh');
+                }
+                updateNgayKetThuc();
+            });
+
+            // Cập nhật ngày kết thúc khi thay đổi ngày bắt đầu hoặc thời hạn
+            $("#NgayBatDau, #ThoiHan").on("change input", updateNgayKetThuc);
+
+            function updateNgayKetThuc() {
+                let ngayBatDau = $("#NgayBatDau").val();
+                let thoiHan = parseInt($("#ThoiHan").val()) || 0;
+
+                if (ngayBatDau && thoiHan > 0) {
+                    let startDate = new Date(ngayBatDau);
+                    let endDate = new Date(startDate.setMonth(startDate.getMonth() + thoiHan));
+                    $("#NgayKetThuc").val(endDate.toISOString().split('T')[0]);
+                } else {
+                    $("#NgayKetThuc").val('');
+                }
+            }
+
+            // Load thông tin hợp đồng hiện tại (nếu có)
+            let maNv = $("#MaNv").val();
+            if (maNv) {
+                $.get(`/api/EmployeesApi/GetEmployeeContract/${maNv}`, function (data) {
+                    if (data && data.maHopDong) {
+                        $("#MaHopDong").val(data.maHopDong);
+                        $("#MaLoaiHopDong").val(data.maLoaiHopDong).trigger('change'); // Trigger change để cập nhật ThoiHan
+                        $("#ThoiHan").val(data.thoiHan);
+                        $("#NgayBatDau").val(data.ngayBatDau ? new Date(data.ngayBatDau).toISOString().split('T')[0] : '');
+                        $("#NgayKetThuc").val(data.ngayKetThuc ? new Date(data.ngayKetThuc).toISOString().split('T')[0] : '');
+                        $("#GhiChu").val(data.ghiChu);
+                    }
+                });
+            }
+
+            // Kiểm tra thời hạn hợp đồng trước khi gửi
+            $("#contractForm").on("submit", function (e) {
+                let thoiHan = parseInt($("#ThoiHan").val()) || 0;
+                let thoiHanMacDinh = parseInt($("#ThoiHan").attr('data-thoihan-mac-dinh')) || 0;
+
+                if (thoiHanMacDinh && thoiHan > thoiHanMacDinh) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi!",
+                        text: `Thời hạn hợp đồng không được vượt quá ${thoiHanMacDinh} tháng.`
+                    });
+                    return;
+                }
+
+                if (!this.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    highlightFirstError();
+                } else {
+                    submitForm(e);
+                }
+                this.classList.add('was-validated');
+            });
+
+            function highlightFirstError() {
+                const firstInvalid = document.querySelector('.form-control:invalid, .form-select:invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.classList.add('attention');
+                    setTimeout(() => firstInvalid.classList.remove('attention'), 1000);
+                }
+            }
+
+            function submitForm(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Đang xử lý...',
+                    html: 'Vui lòng chờ trong giây lát',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                let formData = new FormData();
+                formData.append("MaNv", $("#MaNv").val());
+                formData.append("MaHopDong", $("#MaHopDong").val());
+                formData.append("MaLoaiHopDong", $("#MaLoaiHopDong").val());
+                formData.append("ThoiHan", $("#ThoiHan").val());
+                formData.append("NgayBatDau", $("#NgayBatDau").val());
+                formData.append("NgayKetThuc", $("#NgayKetThuc").val());
+                formData.append("GhiChu", $("#GhiChu").val());
+
+                $.ajax({
+                    url: "/api/EmployeesApi/SaveContract",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function () {
+                        Swal.fire({
+                            icon: "success",
+                            title: "Thành công!",
+                            text: "Hợp đồng đã được lưu thành công!",
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = "/Employees/EmployeeContracts";
+                        });
+                    },
+                    error: function (xhr) {
+                        let errorMessage = xhr.responseJSON?.message || xhr.responseText || "Lỗi không xác định!";
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi!",
+                            text: errorMessage
+                        });
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

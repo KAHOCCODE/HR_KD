@@ -2,16 +2,22 @@
 using HR_KD.Data;
 using System.Linq;
 using HR_KD.DTOs;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+using Microsoft.Extensions.Configuration;
 
 [Route("api/AttendanceManager")]
 [ApiController]
 public class AttendanceManagerController : ControllerBase
 {
     private readonly HrDbContext _context;
+    private readonly IConfiguration _configuration; // Add this
 
-    public AttendanceManagerController(HrDbContext context)
+    public AttendanceManagerController(HrDbContext context, IConfiguration configuration) // Update constructor
     {
         _context = context;
+        _configuration = configuration;
     }
 
     // 🔹 Lấy danh sách phòng ban
@@ -118,13 +124,48 @@ public class AttendanceManagerController : ControllerBase
         };
 
         _context.ChamCongs.Add(chamCong);
-
+        var employee = _context.NhanViens.Find(chamCong.MaNv);
+        if (employee != null)
+        {
+            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, request.TrangThai);
+        }
         // Gọi hàm cập nhật trạng thái lịch sử
         CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Đã duyệt");
 
         _context.SaveChanges();
 
         return Ok(new { success = true, message = "Duyệt chấm công thành công." });
+    }
+    private void SendApprovalEmail(string recipientEmail, string employeeName, DateOnly ngay, string trangThai)
+    {
+        var emailSettings = _configuration.GetSection("EmailSettings");
+        var senderEmail = emailSettings["SenderEmail"];
+        var senderPassword = emailSettings["SenderPassword"];
+        var smtpServer = emailSettings["SmtpServer"];
+        var port = int.Parse(emailSettings["Port"]);
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("HR Department", senderEmail));
+        message.To.Add(new MailboxAddress(employeeName, recipientEmail));
+        message.Subject = "Thông báo kết quả duyệt";
+
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = $"<p>Kính gửi {employeeName},</p>" +
+                         $"<p>Thông tin ngày {ngay.ToString("dd/MM/yyyy")} của bạn đã được duyệt.</p>" +  // Or your preferred format
+                         $"<p>Trạng thái: <b>{trangThai}</b></p>" +
+                         $"<p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>" +
+                         $"<p>Trân trọng,</p>" +
+                         $"<p>Phòng Nhân sự</p>";
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using (var client = new SmtpClient())
+        {
+            client.Connect(smtpServer, port, SecureSocketOptions.StartTls);
+            client.Authenticate(senderEmail, senderPassword);
+            client.Send(message);
+            client.Disconnect(true);
+        }
     }
     private void CapNhatTrangThaiLichSuChamCong(int maLichSuChamCong, string trangThai)
     {
@@ -136,73 +177,73 @@ public class AttendanceManagerController : ControllerBase
     }
 
 
-    [HttpPost("ApproveAttendanceAndUpdateSalary")]
-public IActionResult ApproveAttendanceAndUpdateSalary(ApproveAttendanceRequestDTO request)
-{
-    var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == request.MaChamCong);
-    if (chamCong == null)
-    {
-        return BadRequest(new { success = false, message = "Không tìm thấy chấm công." });
-    }
+//    [HttpPost("ApproveAttendanceAndUpdateSalary")]
+//public IActionResult ApproveAttendanceAndUpdateSalary(ApproveAttendanceRequestDTO request)
+//{
+//    var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == request.MaChamCong);
+//    if (chamCong == null)
+//    {
+//        return BadRequest(new { success = false, message = "Không tìm thấy chấm công." });
+//    }
 
-    // Cập nhật trạng thái chấm công
-    chamCong.TrangThai = request.TrangThai;
+//    // Cập nhật trạng thái chấm công
+//    chamCong.TrangThai = request.TrangThai;
 
-    if (request.TrangThai == "Đã duyệt")
-    {
-        // Kiểm tra dữ liệu cần thiết
-        if (chamCong.TongGio == null || chamCong.NgayLamViec == null)
-        {
-            return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
-        }
+//    if (request.TrangThai == "Đã duyệt")
+//    {
+//        // Kiểm tra dữ liệu cần thiết
+//        if (chamCong.TongGio == null || chamCong.NgayLamViec == null)
+//        {
+//            return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
+//        }
 
-        const decimal BASE_SALARY_PER_HOUR = 100000m;
-        decimal totalHours = (decimal)(chamCong.TongGio > 8 ? 8 : chamCong.TongGio);
-        decimal overtimeHours = (decimal)(chamCong.TongGio > 8 ? chamCong.TongGio - 8 : 0);
+//        const decimal BASE_SALARY_PER_HOUR = 100000m;
+//        decimal totalHours = (decimal)(chamCong.TongGio > 8 ? 8 : chamCong.TongGio);
+//        decimal overtimeHours = (decimal)(chamCong.TongGio > 8 ? chamCong.TongGio - 8 : 0);
 
-        decimal baseSalary = totalHours * BASE_SALARY_PER_HOUR;
-        decimal overtimeSalary = 0;
+//        decimal baseSalary = totalHours * BASE_SALARY_PER_HOUR;
+//        decimal overtimeSalary = 0;
 
-        if (overtimeHours > 0)
-        {
-            overtimeSalary = overtimeHours * BASE_SALARY_PER_HOUR * 2;
-        }
+//        if (overtimeHours > 0)
+//        {
+//            overtimeSalary = overtimeHours * BASE_SALARY_PER_HOUR * 2;
+//        }
 
-        decimal grossSalary = baseSalary + overtimeSalary;
-        decimal tax = grossSalary * 0.1m;
-        decimal netSalary = grossSalary - tax;
+//        decimal grossSalary = baseSalary + overtimeSalary;
+//        decimal tax = grossSalary * 0.1m;
+//        decimal netSalary = grossSalary - tax;
 
-        // Thêm bản ghi bảng lương
-        var salaryRecord = new BangLuong
-        {
-            MaNv = chamCong.MaNv,
+//        // Thêm bản ghi bảng lương
+//        var salaryRecord = new BangLuong
+//        {
+//            MaNv = chamCong.MaNv,
             
-            ThangNam = chamCong.NgayLamViec,
-            PhuCapThem = 0,
-            LuongThem = 0,
-            LuongTangCa = overtimeSalary,
-            ThueTNCN = tax,
-            TongLuong = grossSalary,
-            ThucNhan = netSalary,
-            TrangThai = "Chưa thanh toán",
-            GhiChu = "Tự động tạo từ duyệt chấm công"
-        };
+//            ThangNam = chamCong.NgayLamViec,
+//            PhuCapThem = 0,
+//            LuongThem = 0,
+//            LuongTangCa = overtimeSalary,
+//            ThueTNCN = tax,
+//            TongLuong = grossSalary,
+//            ThucNhan = netSalary,
+//            TrangThai = "Chưa thanh toán",
+//            GhiChu = "Tự động tạo từ duyệt chấm công"
+//        };
 
-        _context.BangLuongs.Add(salaryRecord);
-    }
+//        _context.BangLuongs.Add(salaryRecord);
+//    }
 
-    _context.SaveChanges();
+//    _context.SaveChanges();
 
-    return Ok(new
-    {
-        success = true,
-        message = "Cập nhật trạng thái và bảng lương thành công.",
-        data = new
-        {
-            chamCong.MaChamCong
-        }
-    });
-}
+//    return Ok(new
+//    {
+//        success = true,
+//        message = "Cập nhật trạng thái và bảng lương thành công.",
+//        data = new
+//        {
+//            chamCong.MaChamCong
+//        }
+//    });
+//}
 
 
 

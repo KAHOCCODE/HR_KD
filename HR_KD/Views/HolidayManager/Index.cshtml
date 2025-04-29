@@ -5,7 +5,7 @@
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-@if (!User.IsInRole("Director"))
+@if (!User.IsInRole("DIRECTOR"))
 {
     <div class="alert alert-danger mt-4">
         <h4 class="alert-heading">Truy cập bị từ chối!</h4>

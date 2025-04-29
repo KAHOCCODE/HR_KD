@@ -222,11 +222,16 @@
                                 <!-- Accessible to all users -->
                                 
                                 <!-- Restricted to EMPLOYEE_MANAGER role -->
-                                @* @if (User.IsInRole("EMPLOYEE_MANAGER"))
-                                { *@
+                                 @if (User.IsInRole("EMPLOYEE_MANAGER"))
+                                { 
                                     <li><a href="~/Holiday/Index"><i class="fa fa-calendar"></i> Tạo ngày lễ</a></li>
-                                 <li><a href="~/HolidayManager/Index"><i class="fa fa-file-text"></i> Duyệt ngày lễ</a></li>
-                                @* } *@
+
+                                 } 
+                                @if (User.IsInRole("DIRECTOR"))
+                                { 
+                                        
+                                     <li><a href="~/HolidayManager/Index"><i class="fa fa-file-text"></i> Duyệt ngày lễ</a></li>
+                                } 
                             </ul>
                         </li>
 

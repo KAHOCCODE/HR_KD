@@ -402,6 +402,12 @@
                 <textarea class="form-control" name="leaveReason" rows="3" placeholder="Nhập lý do..."></textarea>
             </div>
             <div class="col-12">
+                <label class="form-label">File đính kèm</label>
+                <input type="file" id="fileAttachments" class="form-control" name="files" multiple>
+                <div class="small text-muted mt-1">Có thể tải lên một hoặc nhiều file</div>
+                <div id="selectedFiles" class="mt-2"></div>
+            </div>
+            <div class="col-12">
                 <button type="submit" id="submitButton" class="btn btn-success">
                     <i class="fas fa-paper-plane me-2"></i>Gửi yêu cầu
                 </button>
@@ -656,38 +662,47 @@
             }
         });
 
+        let selectedFilesArray = []; // Mảng lưu trữ file đã chọn
+
         // Xử lý submit form
         document.getElementById("leaveForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-
             const formData = {
                 leaveType: document.querySelector("[name='leaveType']").value,
                 leaveReason: document.querySelector("[name='leaveReason']").value,
-                selectedDates: datePicker.selectedDates.map(d => d.toLocaleDateString('sv-SE')) // Sửa lỗi múi giờ
+                selectedDates: datePicker.selectedDates.map(d => d.toLocaleDateString('sv-SE'))
             };
 
-            // Validate dữ liệu
             if (!formData.selectedDates.length) {
                 Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 ngày nghỉ!', 'error');
                 return;
             }
 
             try {
+                const submitFormData = new FormData();
+
+                const leaveRequestsData = formData.selectedDates.map(date => ({
+                    NgayNghi: date,
+                    LyDo: formData.leaveReason,
+                    MaLoaiNgayNghi: parseInt(formData.leaveType)
+                }));
+
+                submitFormData.append('leaveRequestsJson', JSON.stringify(leaveRequestsData));
+
+                // Gửi tất cả file đã chọn (bao gồm file trước đó + file mới)
+                selectedFilesArray.forEach(file => {
+                    submitFormData.append('files', file);
+                });
+
                 const response = await fetch("/api/Leave/SubmitLeave", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
                         "Authorization": `Bearer ${getAuthToken()}`
                     },
-                    body: JSON.stringify(formData.selectedDates.map(date => ({
-                        NgayNghi: date,
-                        LyDo: formData.leaveReason,
-                        MaLoaiNgayNghi: parseInt(formData.leaveType)
-                    })))
+                    body: submitFormData
                 });
 
                 const result = await response.json();
-
                 if (!response.ok) throw new Error(result.message || 'Lỗi API');
 
                 await Swal.fire({
@@ -700,7 +715,8 @@
                 datePicker.clear();
                 document.getElementById("leaveForm").reset();
                 document.getElementById("selectedDates").textContent = '';
-
+                document.getElementById("selectedFiles").innerHTML = '';
+                selectedFilesArray = []; // Reset mảng file
             } catch (error) {
                 console.error('Submit error:', error);
                 Swal.fire({
@@ -710,6 +726,62 @@
                 });
             }
         });
+
+        // Hiển thị danh sách file đã chọn và cập nhật mảng selectedFilesArray
+        document.getElementById('fileAttachments')?.addEventListener('change', function (e) {
+            const newFiles = Array.from(this.files);
+
+            // Thêm file mới vào mảng selectedFilesArray
+            selectedFilesArray = selectedFilesArray.concat(newFiles);
+
+            // Cập nhật giao diện hiển thị danh sách file
+            updateSelectedFilesUI();
+        });
+
+        // Hàm cập nhật giao diện danh sách file
+        function updateSelectedFilesUI() {
+            const fileList = document.getElementById('selectedFiles');
+            fileList.innerHTML = '';
+
+            if (selectedFilesArray.length > 0) {
+                const fileCount = document.createElement('div');
+                fileCount.className = 'mb-2';
+                fileCount.innerHTML = `<strong>Đã chọn ${selectedFilesArray.length} file:</strong>`;
+                fileList.appendChild(fileCount);
+
+                const list = document.createElement('ul');
+                list.className = 'list-group';
+
+                selectedFilesArray.forEach(file => {
+                    const item = document.createElement('li');
+                    item.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+                    const fileInfo = document.createElement('div');
+                    fileInfo.innerHTML = `
+                    <i class="fas fa-file me-2"></i>
+                    ${file.name}
+                    <span class="badge bg-secondary rounded-pill">${formatFileSize(file.size)}</span>
+                `;
+
+                    item.appendChild(fileInfo);
+                    list.appendChild(item);
+                });
+
+                fileList.appendChild(list);
+            }
+        }
+
+        // Hàm format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
     });
 
     //Hiển thị lịch sử đăng ký nghỉ phép

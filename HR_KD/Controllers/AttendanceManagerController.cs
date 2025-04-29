@@ -8,6 +8,10 @@ namespace HR_KD.Controllers
         {
             return View();
         }
+        public IActionResult Derector()
+        {
+            return View();
+        }
     }
 
 }

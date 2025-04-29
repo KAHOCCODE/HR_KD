@@ -119,16 +119,16 @@ public class AttendanceManagerController : ControllerBase
             GioVao = lichSu.GioVao,
             GioRa = lichSu.GioRa,
             TongGio = lichSu.TongGio,
-            TrangThai = "Đã duyệt",
+            TrangThai = "Đã duyệt lận 1",
             GhiChu = lichSu.GhiChu
         };
 
         _context.ChamCongs.Add(chamCong);
-        var employee = _context.NhanViens.Find(chamCong.MaNv);
-        if (employee != null)
-        {
-            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, request.TrangThai);
-        }
+        //var employee = _context.NhanViens.Find(chamCong.MaNv);
+        //if (employee != null)
+        //{
+        //    SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, request.TrangThai);
+        //}
         // Gọi hàm cập nhật trạng thái lịch sử
         CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Đã duyệt");
 
@@ -177,95 +177,8 @@ public class AttendanceManagerController : ControllerBase
     }
 
 
-//    [HttpPost("ApproveAttendanceAndUpdateSalary")]
-//public IActionResult ApproveAttendanceAndUpdateSalary(ApproveAttendanceRequestDTO request)
-//{
-//    var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == request.MaChamCong);
-//    if (chamCong == null)
-//    {
-//        return BadRequest(new { success = false, message = "Không tìm thấy chấm công." });
-//    }
-
-//    // Cập nhật trạng thái chấm công
-//    chamCong.TrangThai = request.TrangThai;
-
-//    if (request.TrangThai == "Đã duyệt")
-//    {
-//        // Kiểm tra dữ liệu cần thiết
-//        if (chamCong.TongGio == null || chamCong.NgayLamViec == null)
-//        {
-//            return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
-//        }
-
-//        const decimal BASE_SALARY_PER_HOUR = 100000m;
-//        decimal totalHours = (decimal)(chamCong.TongGio > 8 ? 8 : chamCong.TongGio);
-//        decimal overtimeHours = (decimal)(chamCong.TongGio > 8 ? chamCong.TongGio - 8 : 0);
-
-//        decimal baseSalary = totalHours * BASE_SALARY_PER_HOUR;
-//        decimal overtimeSalary = 0;
-
-//        if (overtimeHours > 0)
-//        {
-//            overtimeSalary = overtimeHours * BASE_SALARY_PER_HOUR * 2;
-//        }
-
-//        decimal grossSalary = baseSalary + overtimeSalary;
-//        decimal tax = grossSalary * 0.1m;
-//        decimal netSalary = grossSalary - tax;
-
-//        // Thêm bản ghi bảng lương
-//        var salaryRecord = new BangLuong
-//        {
-//            MaNv = chamCong.MaNv,
-            
-//            ThangNam = chamCong.NgayLamViec,
-//            PhuCapThem = 0,
-//            LuongThem = 0,
-//            LuongTangCa = overtimeSalary,
-//            ThueTNCN = tax,
-//            TongLuong = grossSalary,
-//            ThucNhan = netSalary,
-//            TrangThai = "Chưa thanh toán",
-//            GhiChu = "Tự động tạo từ duyệt chấm công"
-//        };
-
-//        _context.BangLuongs.Add(salaryRecord);
-//    }
-
-//    _context.SaveChanges();
-
-//    return Ok(new
-//    {
-//        success = true,
-//        message = "Cập nhật trạng thái và bảng lương thành công.",
-//        data = new
-//        {
-//            chamCong.MaChamCong
-//        }
-//    });
-//}
 
 
-
-    [HttpGet("GetEmployeeSalaries")]
-    public IActionResult GetEmployeeSalaries(int maNv)
-    {
-        var salaries = _context.BangLuongs
-            .Where(bl => bl.MaNv == maNv)
-            .Select(bl => new
-            {
-                bl.ThangNam,
-                bl.LuongTangCa,
-                bl.ThueTNCN,
-                bl.TongLuong,
-                bl.ThucNhan,
-                bl.TrangThai,
-                bl.GhiChu
-            })
-            .ToList();
-
-        return Ok(new { success = true, records = salaries });
-    }
     // lấy danh sách tăng ca của nhân viên
     [HttpGet("GetOvertimeRecords")]
     public IActionResult GetOvertimeRecords(int maNv)
@@ -317,6 +230,78 @@ public class AttendanceManagerController : ControllerBase
             GioVao = null,
             GioRa = null,
             TongGio = tangCa.SoGioTangCa,
+            TrangThai = "Đã duyệt lận 1",
+            GhiChu = "Tăng ca"
+        };
+
+        _context.ChamCongs.Add(chamCong);
+
+        // Gọi hàm cập nhật trạng thái lịch sử
+        CapNhatTrangThaiTangCa(request.MaChamCong, "Đã duyệt lận 1");
+
+        _context.SaveChanges();
+
+        return Ok(new { success = true, message = "Duyệt yêu cầu tăng ca thành công." });
+    }
+    private void CapNhatTrangThaiTangCa(int maTangCa, string trangThai)
+    {
+        var tangCa = _context.TangCas.FirstOrDefault(tc => tc.MaTangCa == maTangCa);
+        if (tangCa != null)
+        {
+            tangCa.TrangThai = trangThai;
+        }
+    }
+    //API gửi view directior
+    [HttpGet("GetOvertimeRecordsDerector")]
+    public IActionResult GetOvertimeRecordsDerector(int maNv)
+    {
+        var overtimeRecords = _context.TangCas
+            .Where(tc => tc.MaNv == maNv && (tc.TrangThai == null || tc.TrangThai == "Đã duyệt lận 1"))
+            .Select(tc => new
+            {
+                tc.MaTangCa,
+                tc.NgayTangCa,
+                tc.SoGioTangCa,
+                tc.TyLeTangCa,
+                TrangThai = tc.TrangThai ?? "Đã duyệt lận 1"
+            })
+            .ToList();
+
+        return Ok(new { success = true, records = overtimeRecords });
+    }
+    // duyệt hoặc từ chối tăng ca
+    [HttpPost("ApproveOvertimeDerector")]
+    public IActionResult ApproveOvertimeDerector(ApproveAttendanceRequestDTO request)
+    {
+        // Tìm bản ghi trong bảng TangCa
+        var tangCa = _context.TangCas.FirstOrDefault(tc => tc.MaTangCa == request.MaChamCong);
+        if (tangCa == null)
+        {
+            return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu tăng ca." });
+        }
+
+        // Nếu từ chối thì chỉ cập nhật trạng thái
+        if (request.TrangThai == "Từ chối")
+        {
+            CapNhatTrangThaiTangCa(request.MaChamCong, "Từ chối");
+            _context.SaveChanges();
+            return Ok(new { success = true, message = "Đã từ chối yêu cầu tăng ca." });
+        }
+
+        // Nếu duyệt thì chuyển sang bảng ChamCong
+        var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == tangCa.MaNv && cc.NgayLamViec == tangCa.NgayTangCa);
+        if (daTonTai)
+        {
+            return BadRequest(new { success = false, message = "Chấm công đã tồn tại trong bảng chính." });
+        }
+
+        var chamCong = new ChamCong
+        {
+            MaNv = tangCa.MaNv,
+            NgayLamViec = tangCa.NgayTangCa,
+            GioVao = null,
+            GioRa = null,
+            TongGio = tangCa.SoGioTangCa,
             TrangThai = "Đã duyệt",
             GhiChu = "Tăng ca"
         };
@@ -330,13 +315,76 @@ public class AttendanceManagerController : ControllerBase
 
         return Ok(new { success = true, message = "Duyệt yêu cầu tăng ca thành công." });
     }
-    private void CapNhatTrangThaiTangCa(int maTangCa, string trangThai)
+    // 🔹 Lấy danh sách chấm công của nhân viên
+    [HttpGet("GetAttendanceManagerRecordsDerector")]
+    public IActionResult GetAttendanceRecordsDerector(int maNv)
     {
-        var tangCa = _context.TangCas.FirstOrDefault(tc => tc.MaTangCa == maTangCa);
-        if (tangCa != null)
+        var records = _context.ChamCongs
+            .Where(cc => cc.MaNv == maNv && (cc.TrangThai == null || cc.TrangThai == "Đã duyệt lận 1"))
+            .Select(cc => new
+            {
+                cc.MaChamCong,
+                cc.NgayLamViec,
+                cc.GioVao,
+                cc.GioRa,
+                cc.TongGio,
+                TrangThai = cc.TrangThai ?? "Đã duyệt lận 1",
+                cc.GhiChu
+            })
+            .ToList();
+
+        return Ok(new { success = true, records });
+    }
+
+    // 🔹 Duyệt hoặc từ chối chấm công
+    [HttpPost("ApproveAttendanceManagerDerector")]
+    public IActionResult ApproveAttendanceDerector(ApproveAttendanceRequestDTO request)
+    {
+        // Tìm bản ghi trong lịch sử chấm công
+        var lichSu = _context.LichSuChamCongs.FirstOrDefault(cc => cc.MaLichSuChamCong == request.MaChamCong);
+        if (lichSu == null)
         {
-            tangCa.TrangThai = trangThai;
+            return BadRequest(new { success = false, message = "Không tìm thấy lịch sử chấm công." });
         }
+
+        // Nếu từ chối thì chỉ cập nhật trạng thái
+        if (request.TrangThai == "Từ chối")
+        {
+            CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Từ chối");
+            _context.SaveChanges();
+            return Ok(new { success = true, message = "Đã từ chối chấm công." });
+        }
+
+        // Nếu duyệt thì chuyển sang bảng ChamCong
+        var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == lichSu.MaNv && cc.NgayLamViec == lichSu.Ngay);
+        if (daTonTai)
+        {
+            return BadRequest(new { success = false, message = "Chấm công đã tồn tại trong bảng chính." });
+        }
+
+        var chamCong = new ChamCong
+        {
+            MaNv = lichSu.MaNv,
+            NgayLamViec = lichSu.Ngay,
+            GioVao = lichSu.GioVao,
+            GioRa = lichSu.GioRa,
+            TongGio = lichSu.TongGio,
+            TrangThai = "Đã duyệt",
+            GhiChu = lichSu.GhiChu
+        };
+
+        _context.ChamCongs.Add(chamCong);
+        var employee = _context.NhanViens.Find(chamCong.MaNv);
+        if (employee != null)
+        {
+            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, request.TrangThai);
+        }
+        // Gọi hàm cập nhật trạng thái lịch sử
+        CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Đã duyệt");
+
+        _context.SaveChanges();
+
+        return Ok(new { success = true, message = "Duyệt chấm công thành công." });
     }
 }
 

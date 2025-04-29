@@ -8,7 +8,7 @@ namespace HR_KD.Controllers
         {
             return View();
         }
-        public IActionResult Derector()
+        public IActionResult Director()
         {
             return View();
         }

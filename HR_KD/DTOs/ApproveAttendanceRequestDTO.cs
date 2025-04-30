@@ -7,6 +7,7 @@ namespace HR_KD.DTOs
     {
         public int MaChamCong { get; set; }       // Chính là MaLichSuChamCong
         public string TrangThai { get; set; } = ""; // "Đã duyệt" hoặc "Từ chối"
+        public string? GhiChu { get; set; } = ""; // Ghi chú cho việc duyệt hoặc từ chối
 
     }
 }

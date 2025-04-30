@@ -97,15 +97,20 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy lịch sử chấm công." });
         }
 
-        // Nếu từ chối thì chỉ cập nhật trạng thái
+        // Nếu từ chối thì chỉ cập nhật trạng thái và ghi chú
         if (request.TrangThai == "Từ chối")
         {
-            CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Từ chối");
+            // Cập nhật trạng thái và ghi chú
+            lichSu.TrangThai = "Từ chối";
+            lichSu.GhiChu = request.GhiChu ?? "Không có ghi chú"; // Lưu ghi chú, nếu null thì gán "Không có ghi chú"
+            
+            // Gửi email thông báo
             var employee = _context.NhanViens.Find(lichSu.MaNv);
             if (employee != null)
             {
-                SendRejectionEmail(employee.Email, employee.HoTen, lichSu.Ngay, request.TrangThai, "chấm công");
+                SendRejectionEmail(employee.Email, employee.HoTen, lichSu.Ngay, request.TrangThai, "chấm công", lichSu.GhiChu);
             }
+            
             _context.SaveChanges();
             return Ok(new { success = true, message = "Đã từ chối chấm công." });
         }
@@ -129,14 +134,8 @@ public class AttendanceManagerController : ControllerBase
         };
 
         _context.ChamCongs.Add(chamCong);
-        //var employee = _context.NhanViens.Find(chamCong.MaNv);
-        //if (employee != null)
-        //{
-        //    SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, request.TrangThai);
-        //}
         // Gọi hàm cập nhật trạng thái lịch sử
-        CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Đã duyệt");
-
+        lichSu.TrangThai = "Đã duyệt";
         _context.SaveChanges();
 
         return Ok(new { success = true, message = "Duyệt chấm công thành công." });
@@ -189,7 +188,7 @@ public class AttendanceManagerController : ControllerBase
         }
     }
 
-    private void SendRejectionEmail(string recipientEmail, string employeeName, DateOnly ngay, string trangThai, string loaiYeuCau)
+    private void SendRejectionEmail(string recipientEmail, string employeeName, DateOnly ngay, string trangThai, string loaiYeuCau, string ghiChu)
     {
         var emailSettings = _configuration.GetSection("EmailSettings");
         var senderEmail = emailSettings["SenderEmail"];
@@ -206,6 +205,7 @@ public class AttendanceManagerController : ControllerBase
         bodyBuilder.HtmlBody = $"<p>Kính gửi {employeeName},</p>" +
                          $"<p>Yêu cầu {loaiYeuCau} của bạn vào ngày {ngay.ToString("dd/MM/yyyy")} đã bị từ chối.</p>" +
                          $"<p>Trạng thái: <b>{trangThai}</b></p>" +
+                         $"<p>Lý do từ chối: <b>{ghiChu}</b></p>" +
                          $"<p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>" +
                          $"<p>Trân trọng,</p>" +
                          $"<p>Phòng Nhân sự</p>";
@@ -250,15 +250,20 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu tăng ca." });
         }
 
-        // Nếu từ chối thì chỉ cập nhật trạng thái
+        // Nếu từ chối thì cập nhật trạng thái và ghi chú
         if (request.TrangThai == "Từ chối")
         {
-            CapNhatTrangThaiTangCa(request.MaChamCong, "Từ chối");
+            // Cập nhật trạng thái và ghi chú
+            tangCa.TrangThai = "Từ chối";
+            tangCa.GhiChu = request.GhiChu ?? "Không có ghi chú"; // Lưu ghi chú, nếu null thì gán "Không có ghi chú"
+            
+            // Gửi email thông báo
             var employee = _context.NhanViens.Find(tangCa.MaNv);
             if (employee != null)
             {
-                SendRejectionEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, request.TrangThai, "tăng ca");
+                SendRejectionEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, request.TrangThai, "tăng ca", tangCa.GhiChu);
             }
+            
             _context.SaveChanges();
             return Ok(new { success = true, message = "Đã từ chối yêu cầu tăng ca." });
         }
@@ -284,8 +289,7 @@ public class AttendanceManagerController : ControllerBase
         _context.ChamCongs.Add(chamCong);
 
         // Gọi hàm cập nhật trạng thái lịch sử
-        CapNhatTrangThaiTangCa(request.MaChamCong, "Đã duyệt lận 1");
-
+        tangCa.TrangThai = "Đã duyệt lận 1";
         _context.SaveChanges();
 
         return Ok(new { success = true, message = "Duyệt yêu cầu tăng ca thành công." });
@@ -326,28 +330,25 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu tăng ca." });
         }
 
-        // Cập nhật trạng thái (Duyệt hoặc Từ chối)
-        CapNhatTrangThaiTangCa(request.MaChamCong, request.TrangThai);
+        // Cập nhật trạng thái và ghi chú
+        tangCa.TrangThai = request.TrangThai;
+        tangCa.GhiChu = request.TrangThai == "Từ chối" ? (request.GhiChu ?? "Không có ghi chú") : null;
 
-        _context.SaveChanges();
-        // Gửi email nếu là duyệt
-        if (request.TrangThai == "Đã duyệt")
+        // Gửi email thông báo
+        var employee = _context.NhanViens.Find(tangCa.MaNv);
+        if (employee != null)
         {
-            var employee = _context.NhanViens.Find(tangCa.MaNv);
-            if (employee != null)
+            if (request.TrangThai == "Từ chối")
+            {
+                SendRejectionEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, request.TrangThai, "tăng ca", tangCa.GhiChu);
+            }
+            else if (request.TrangThai == "Đã duyệt")
             {
                 SendApprovalEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, request.TrangThai);
             }
         }
-        // Gửi email nếu là từ chối
-        if (request.TrangThai == "Từ chối")
-        {
-            var employee = _context.NhanViens.Find(tangCa.MaNv);
-            if (employee != null)
-            {
-                SendRejectionEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, request.TrangThai, "tăng ca");
-            }
-        }
+
+        _context.SaveChanges();
         return Ok(new { success = true, message = $"{request.TrangThai} yêu cầu tăng ca thành công." });
     }
 
@@ -397,13 +398,14 @@ public class AttendanceManagerController : ControllerBase
         else if (request.TrangThai == "Từ chối")
         {
             // ✅ Cập nhật trạng thái
-            CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Từ chối");
+            CapNhatTrangThaiChamCong(request.MaChamCong, "Từ chối");
+            lichSu.GhiChu = request.GhiChu; // Cập nhật ghi chú
 
             // ✅ Gửi email
             var employee = _context.NhanViens.Find(lichSu.MaNv);
             if (employee != null)
             {
-                SendRejectionEmail(employee.Email, employee.HoTen, lichSu.NgayLamViec, "Từ chối", "chấm công");
+                SendRejectionEmail(employee.Email, employee.HoTen, lichSu.NgayLamViec, "Từ chối", "chấm công", lichSu.GhiChu);
             }
         }
 

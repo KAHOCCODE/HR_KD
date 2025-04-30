@@ -62,6 +62,50 @@
     </table>
 </div>
 
+<!-- Modal for rejection comment -->
+<div class="modal fade" id="rejectionModal" tabindex="-1" aria-labelledby="rejectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectionModalLabel">Nhập lý do từ chối</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="rejectionComment" class="form-label">Ghi chú:</label>
+                    <textarea class="form-control" id="rejectionComment" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitRejection()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for overtime rejection comment -->
+<div class="modal fade" id="overtimeRejectionModal" tabindex="-1" aria-labelledby="overtimeRejectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="overtimeRejectionModalLabel">Nhập lý do từ chối tăng ca</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="overtimeRejectionComment" class="form-label">Ghi chú:</label>
+                    <textarea class="form-control" id="overtimeRejectionComment" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitOvertimeRejection()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     loadDepartments();
@@ -161,11 +205,36 @@ function getStatusClass(status) {
     return status === "Đã duyệt" ? "text-success" : status === "Từ chối" ? "text-danger" : "text-warning";
 }
 
+let currentRejectionId = null;
+
 function approveAttendance(maChamCong, trangThai) {
+    if (trangThai === "Từ chối") {
+        currentRejectionId = maChamCong;
+        $('#rejectionModal').modal('show');
+    } else {
+        submitApproval(maChamCong, trangThai, "");
+    }
+}
+
+function submitRejection() {
+    const comment = document.getElementById('rejectionComment').value;
+    if (currentRejectionId) {
+        submitApproval(currentRejectionId, "Từ chối", comment);
+        $('#rejectionModal').modal('hide');
+        document.getElementById('rejectionComment').value = '';
+        currentRejectionId = null;
+    }
+}
+
+function submitApproval(maChamCong, trangThai, ghiChu) {
     fetch("/api/AttendanceManager/ApproveAttendanceManagerDerector", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maChamCong: maChamCong, trangThai: trangThai })
+        body: JSON.stringify({ 
+            maChamCong: maChamCong, 
+            trangThai: trangThai,
+            ghiChu: ghiChu
+        })
     })
     .then(res => res.json())
     .then(data => {
@@ -204,11 +273,36 @@ function renderOvertimeTable(records) {
     `).join("");
 }
 
+let currentOvertimeRejectionId = null;
+
 function approveOvertime(maTangCa, trangThai) {
+    if (trangThai === "Từ chối") {
+        currentOvertimeRejectionId = maTangCa;
+        $('#overtimeRejectionModal').modal('show');
+    } else {
+        submitOvertimeApproval(maTangCa, trangThai, "");
+    }
+}
+
+function submitOvertimeRejection() {
+    const comment = document.getElementById('overtimeRejectionComment').value;
+    if (currentOvertimeRejectionId) {
+        submitOvertimeApproval(currentOvertimeRejectionId, "Từ chối", comment);
+        $('#overtimeRejectionModal').modal('hide');
+        document.getElementById('overtimeRejectionComment').value = '';
+        currentOvertimeRejectionId = null;
+    }
+}
+
+function submitOvertimeApproval(maTangCa, trangThai, ghiChu) {
     fetch("/api/AttendanceManager/ApproveOvertimeDerector", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maChamCong: maTangCa, trangThai: trangThai })
+        body: JSON.stringify({ 
+            maChamCong: maTangCa, 
+            trangThai: trangThai,
+            ghiChu: ghiChu
+        })
     })
     .then(res => res.json())
     .then(data => {
@@ -223,21 +317,8 @@ function approveOvertime(maTangCa, trangThai) {
 }
 
 function cancelOvertime(maTangCa) {
-    fetch("/api/AttendanceManager/ApproveOvertimeDerector", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maChamCong: maTangCa, trangThai: "Từ chối" })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        if (data.success) {
-            const selected = document.getElementById("employeeFilter").value;
-            if (selected) {
-                fetchOvertimeRecords(selected);
-            }
-        }
-    });
+    currentOvertimeRejectionId = maTangCa;
+    $('#overtimeRejectionModal').modal('show');
 }
 </script>
 

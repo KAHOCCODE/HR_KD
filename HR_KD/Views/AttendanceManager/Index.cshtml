@@ -83,9 +83,49 @@
     </table>
 </div>
 
+<!-- Modal for rejection comment -->
+<div class="modal fade" id="rejectionModal" tabindex="-1" aria-labelledby="rejectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectionModalLabel">Nhập lý do từ chối</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="rejectionComment" class="form-label">Ghi chú:</label>
+                    <textarea class="form-control" id="rejectionComment" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitRejection()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-
-
+<!-- Modal for overtime rejection comment -->
+<div class="modal fade" id="overtimeRejectionModal" tabindex="-1" aria-labelledby="overtimeRejectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="overtimeRejectionModalLabel">Nhập lý do từ chối tăng ca</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="overtimeRejectionComment" class="form-label">Ghi chú:</label>
+                    <textarea class="form-control" id="overtimeRejectionComment" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitOvertimeRejection()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     
@@ -311,12 +351,37 @@ function getStatusClass(status) {
     return status === "Đã duyệt" ? "text-success" : status === "Từ chối" ? "text-danger" : "text-warning";
 }
 
+let currentRejectionId = null;
+
 function approveAttendance(maLichSuChamCong, trangThai) {
+    if (trangThai === "Từ chối") {
+        currentRejectionId = maLichSuChamCong;
+        $('#rejectionModal').modal('show');
+    } else {
+        submitApproval(maLichSuChamCong, trangThai, "");
+    }
+}
+
+function submitRejection() {
+    const comment = document.getElementById('rejectionComment').value;
+    if (currentRejectionId) {
+        submitApproval(currentRejectionId, "Từ chối", comment);
+        $('#rejectionModal').modal('hide');
+        document.getElementById('rejectionComment').value = '';
+        currentRejectionId = null;
+    }
+}
+
+function submitApproval(maLichSuChamCong, trangThai, ghiChu) {
     // Bước 1: Gọi API duyệt chấm công trước
     fetch("/api/AttendanceManager/ApproveAttendanceManager", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maChamCong: maLichSuChamCong, trangThai: trangThai })
+        body: JSON.stringify({ 
+            maChamCong: maLichSuChamCong, 
+            trangThai: trangThai,
+            ghiChu: ghiChu
+        })
     })
     .then(res => res.json())
     .then(data => {
@@ -329,7 +394,11 @@ function approveAttendance(maLichSuChamCong, trangThai) {
                 fetch("/api/AttendanceManager/ApproveAttendanceAndUpdateSalary", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ maChamCong: maLichSuChamCong, trangThai: trangThai })
+                    body: JSON.stringify({ 
+                        maChamCong: maLichSuChamCong, 
+                        trangThai: trangThai,
+                        ghiChu: ghiChu
+                    })
                 })
                 .then(res => res.json())
                 .then(salaryData => {
@@ -400,17 +469,40 @@ function approveAttendance(maLichSuChamCong, trangThai) {
         `).join("");
     }
 
+let currentOvertimeRejectionId = null;
+
 function approveOvertime(maTangCa, trangThai) {
-    // Gọi API duyệt/từ chối tăng ca
+    if (trangThai === "Từ chối") {
+        currentOvertimeRejectionId = maTangCa;
+        $('#overtimeRejectionModal').modal('show');
+    } else {
+        submitOvertimeApproval(maTangCa, trangThai, "");
+    }
+}
+
+function submitOvertimeRejection() {
+    const comment = document.getElementById('overtimeRejectionComment').value;
+    if (currentOvertimeRejectionId) {
+        submitOvertimeApproval(currentOvertimeRejectionId, "Từ chối", comment);
+        $('#overtimeRejectionModal').modal('hide');
+        document.getElementById('overtimeRejectionComment').value = '';
+        currentOvertimeRejectionId = null;
+    }
+}
+
+function submitOvertimeApproval(maTangCa, trangThai, ghiChu) {
     fetch("/api/AttendanceManager/ApproveOvertime", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maChamCong: maTangCa, trangThai: trangThai }) // Sử dụng maChamCong theo backend
+        body: JSON.stringify({ 
+            maChamCong: maTangCa, 
+            trangThai: trangThai,
+            ghiChu: ghiChu
+        })
     })
     .then(res => res.json())
     .then(data => {
         alert(data.message);
-
         if (data.success) {
             const selected = document.getElementById("employeeFilter").value;
             if (selected) {
@@ -421,23 +513,8 @@ function approveOvertime(maTangCa, trangThai) {
 }
 
 function cancelOvertime(maTangCa) {
-    // Gọi API duyệt/từ chối tăng ca với trạng thái "Từ chối"
-    fetch("/api/AttendanceManager/ApproveOvertime", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maChamCong: maTangCa, trangThai: "Từ chối" }) // Sử dụng maChamCong theo backend
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-
-        if (data.success) {
-            const selected = document.getElementById("employeeFilter").value;
-            if (selected) {
-                fetchOvertimeRecords(selected);
-            }
-        }
-    });
+    currentOvertimeRejectionId = maTangCa;
+    $('#overtimeRejectionModal').modal('show');
 }
 
 </script>

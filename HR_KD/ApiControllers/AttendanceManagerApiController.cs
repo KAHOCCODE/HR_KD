@@ -180,6 +180,14 @@ public class AttendanceManagerController : ControllerBase
             lichSu.TrangThai = trangThai;
         }
     }
+    private void CapNhatTrangThaiChamCong(int maChamCong, string trangThai)
+    {
+        var lichSu = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == maChamCong);
+        if (lichSu != null)
+        {
+            lichSu.TrangThai = trangThai;
+        }
+    }
 
     private void SendRejectionEmail(string recipientEmail, string employeeName, DateOnly ngay, string trangThai, string loaiYeuCau)
     {
@@ -374,31 +382,35 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy lịch sử chấm công." });
         }
 
-        // Cập nhật trạng thái (Duyệt hoặc Từ chối)
-        CapNhatTrangThaiLichSuChamCong(request.MaChamCong, request.TrangThai);
-
-        // Gửi email nếu là duyệt
         if (request.TrangThai == "Đã duyệt")
         {
+            // ✅ Cập nhật trạng thái
+            CapNhatTrangThaiChamCong(request.MaChamCong, "Đã duyệt");
+
+            // ✅ Gửi email
             var employee = _context.NhanViens.Find(lichSu.MaNv);
             if (employee != null)
             {
-                SendApprovalEmail(employee.Email, employee.HoTen, lichSu.NgayLamViec, request.TrangThai);
+                SendApprovalEmail(employee.Email, employee.HoTen, lichSu.NgayLamViec, "Đã duyệt");
             }
         }
-        // Gửi email nếu là từ chối
-        if (request.TrangThai == "Từ chối")
+        else if (request.TrangThai == "Từ chối")
         {
+            // ✅ Cập nhật trạng thái
+            CapNhatTrangThaiLichSuChamCong(request.MaChamCong, "Từ chối");
+
+            // ✅ Gửi email
             var employee = _context.NhanViens.Find(lichSu.MaNv);
             if (employee != null)
             {
-                SendRejectionEmail(employee.Email, employee.HoTen, lichSu.NgayLamViec, request.TrangThai, "chấm công");
+                SendRejectionEmail(employee.Email, employee.HoTen, lichSu.NgayLamViec, "Từ chối", "chấm công");
             }
         }
 
         _context.SaveChanges();
         return Ok(new { success = true, message = $"{request.TrangThai} chấm công thành công." });
     }
+
 
 }
 

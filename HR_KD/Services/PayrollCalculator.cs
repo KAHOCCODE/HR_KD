@@ -23,7 +23,6 @@ public class PayrollCalculator
             TrangThai = "Đã tạo - Chưa thanh toán"
         };
 
-        // 1. Lấy thông tin hợp đồng và tỷ lệ lương từ LoaiHopDong
         var contract = await _context.HopDongLaoDongs
             .Include(hd => hd.LoaiHopDong)
             .FirstOrDefaultAsync(hd => hd.MaNv == employeeId && hd.IsActive);
@@ -35,15 +34,52 @@ public class PayrollCalculator
 
         decimal tiLeLuong = (decimal)(contract.LoaiHopDong.TiLeLuong ?? 1.0);
 
-        // 2. Tính tổng giờ làm việc
-        decimal totalHours = 27 * 8; // Sửa cứng tạm thời: 27 ngày công * 8 giờ/ngày = 216 giờ
+        int standardWorkingDays = 30;
+        int actualWorkingDays = attendanceRecords.Count;
+        decimal totalHours = attendanceRecords.Sum(a => a.TongGio ?? 0);
 
-        // 3. Tính lương cơ bản theo giờ (giả định 160 giờ/tháng) và áp dụng tỷ lệ lương ngay từ đầu
-        decimal adjustedSalary = salaryInfo.LuongCoBan * tiLeLuong;
-        decimal hourlyRate = adjustedSalary / 160;
-        decimal baseSalary = totalHours * hourlyRate;
+        var holidays = await _context.NgayLes
+            .Where(h => h.NgayLe1.Year == monthYear.Year &&
+                        h.NgayLe1.Month == monthYear.Month &&
+                        (h.TrangThai == null || h.TrangThai != "Đã hủy"))
+            .ToListAsync();
 
-        // 4. Tính lương tăng ca (bỏ điều kiện trạng thái "Đã duyệt lần 1")
+        var approvedLeaves = await _context.NgayNghis
+            .Include(n => n.MaLoaiNgayNghiNavigation)
+            .Where(n => n.MaNv == employeeId &&
+                        n.NgayNghi1.Year == monthYear.Year &&
+                        n.NgayNghi1.Month == monthYear.Month &&
+                        n.TrangThai == "Đã duyệt")
+            .ToListAsync();
+
+        var attendanceDates = attendanceRecords.Select(a => a.NgayLamViec).ToHashSet();
+
+        int daysInMonth = DateTime.DaysInMonth(monthYear.Year, monthYear.Month);
+        for (int day = 1; day <= daysInMonth; day++)
+        {
+            var currentDate = new DateOnly(monthYear.Year, monthYear.Month, day);
+            if (attendanceDates.Contains(currentDate))
+                continue;
+
+            bool isHoliday = holidays.Any(h =>
+            {
+                var holidayStart = h.NgayLe1;
+                var holidayEnd = h.NgayLe1.AddDays((h.SoNgayNghi ?? 1) - 1);
+                return currentDate >= holidayStart && currentDate <= holidayEnd;
+            });
+
+            bool isApprovedLeave = approvedLeaves.Any(l => l.NgayNghi1 == currentDate);
+
+            if (isHoliday || isApprovedLeave)
+            {
+                totalHours += 8;
+                actualWorkingDays++;
+            }
+        }
+
+        decimal baseSalary = salaryInfo.LuongCoBan * ((decimal)actualWorkingDays / standardWorkingDays) * tiLeLuong;
+
+        decimal hourlyRate = (salaryInfo.LuongCoBan * tiLeLuong) / 160;
         var overtimeRecords = await _context.TangCas
             .Where(t => t.MaNv == employeeId &&
                         t.NgayTangCa.Year == monthYear.Year &&
@@ -51,18 +87,25 @@ public class PayrollCalculator
             .ToListAsync();
         decimal overtimeSalary = overtimeRecords.Sum(t => (decimal)t.SoGioTangCa * hourlyRate * t.TyLeTangCa);
 
-        // 5. Tính tổng lương trước khấu trừ
         decimal grossSalary = baseSalary +
                              (salaryInfo.PhuCapCoDinh ?? 0) +
                              (salaryInfo.ThuongCoDinh ?? 0) +
                              overtimeSalary;
 
-        // 6. Tính các khoản khấu trừ bảo hiểm
         decimal bhxh = salaryInfo.BHXH;
         decimal bhyt = salaryInfo.BHYT;
         decimal bhtn = salaryInfo.BHTN;
 
-        // 7. Lấy thông tin giảm trừ gia cảnh
+        decimal totalInsurance = bhxh + bhyt + bhtn;
+        if (totalInsurance > grossSalary)
+        {
+            decimal ratio = grossSalary / totalInsurance;
+            bhxh *= ratio;
+            bhyt *= ratio;
+            bhtn *= ratio;
+            totalInsurance = grossSalary;
+        }
+
         var giamTruGiaCanh = await _context.GiamTruGiaCanhs
             .Where(g => g.NgayHieuLuc <= monthYear && (g.NgayHetHieuLuc == null || g.NgayHetHieuLuc >= monthYear))
             .FirstOrDefaultAsync();
@@ -72,7 +115,6 @@ public class PayrollCalculator
             throw new Exception("Không tìm thấy thông tin giảm trừ gia cảnh hợp lệ.");
         }
 
-        // 8. Lấy số lượng người phụ thuộc từ NhanVien
         var employee = await _context.NhanViens
             .FirstOrDefaultAsync(nv => nv.MaNv == employeeId);
 
@@ -85,21 +127,21 @@ public class PayrollCalculator
         decimal mucGiamTruNguoiPhuThuoc = giamTruGiaCanh.MucGiamTruNguoiPhuThuoc;
         int soNguoiPhuThuoc = employee.SoNguoiPhuThuoc;
 
-        // 9. Tính thu nhập chịu thuế
         decimal giamTruTongCong = mucGiamTruBanThan + (soNguoiPhuThuoc * mucGiamTruNguoiPhuThuoc);
         decimal taxableIncome = grossSalary - bhxh - bhyt - bhtn - giamTruTongCong;
 
-        // 10. Tính thuế TNCN (dùng bảng lũy tiến)
         decimal personalIncomeTax = 0;
         if (taxableIncome > 0)
         {
-            personalIncomeTax = CalculatePersonalIncomeTax(taxableIncome);
+            personalIncomeTax = await CalculatePersonalIncomeTax(taxableIncome);
         }
 
-        // 11. Tính lương thực nhận
         decimal netSalary = grossSalary - bhxh - bhyt - bhtn - personalIncomeTax;
+        if (netSalary < 0)
+        {
+            netSalary = 0;
+        }
 
-        // 12. Gán giá trị cho bảng lương
         payroll.TongLuong = grossSalary;
         payroll.LuongTangCa = overtimeSalary;
         payroll.PhuCapThem = 0;
@@ -110,25 +152,38 @@ public class PayrollCalculator
         return payroll;
     }
 
-    private decimal CalculatePersonalIncomeTax(decimal taxableIncome)
+    private async Task<decimal> CalculatePersonalIncomeTax(decimal taxableIncome)
     {
         if (taxableIncome <= 0) return 0;
 
+        var taxBrackets = await _context.CauHinhLuongThues
+            .OrderBy(t => t.MucLuongTu ?? 0)
+            .ToListAsync();
+
+        if (!taxBrackets.Any())
+        {
+            throw new Exception("Không tìm thấy cấu hình thuế TNCN trong bảng CauHinhLuongThue.");
+        }
+
         decimal tax = 0;
-        if (taxableIncome <= 5_000_000)
-            tax = taxableIncome * 0.05m;
-        else if (taxableIncome <= 10_000_000)
-            tax = 5_000_000 * 0.05m + (taxableIncome - 5_000_000) * 0.10m;
-        else if (taxableIncome <= 18_000_000)
-            tax = 5_000_000 * 0.05m + 5_000_000 * 0.10m + (taxableIncome - 10_000_000) * 0.15m;
-        else if (taxableIncome <= 32_000_000)
-            tax = 5_000_000 * 0.05m + 5_000_000 * 0.10m + 8_000_000 * 0.15m + (taxableIncome - 18_000_000) * 0.20m;
-        else if (taxableIncome <= 52_000_000)
-            tax = 5_000_000 * 0.05m + 5_000_000 * 0.10m + 8_000_000 * 0.15m + 14_000_000 * 0.20m + (taxableIncome - 32_000_000) * 0.25m;
-        else if (taxableIncome <= 80_000_000)
-            tax = 5_000_000 * 0.05m + 5_000_000 * 0.10m + 8_000_000 * 0.15m + 14_000_000 * 0.20m + 20_000_000 * 0.25m + (taxableIncome - 52_000_000) * 0.30m;
-        else
-            tax = 5_000_000 * 0.05m + 5_000_000 * 0.10m + 8_000_000 * 0.15m + 14_000_000 * 0.20m + 20_000_000 * 0.25m + 28_000_000 * 0.30m + (taxableIncome - 80_000_000) * 0.35m;
+        decimal remainingIncome = taxableIncome;
+
+        foreach (var bracket in taxBrackets)
+        {
+            decimal from = bracket.MucLuongTu ?? 0;
+            decimal to = bracket.MucLuongDen ?? decimal.MaxValue;
+            decimal rate = bracket.GiaTri / 100;
+
+            if (remainingIncome <= 0)
+                break;
+
+            decimal taxableInBracket = Math.Min(remainingIncome, to - from);
+            if (taxableInBracket <= 0)
+                continue;
+
+            tax += taxableInBracket * rate;
+            remainingIncome -= taxableInBracket;
+        }
 
         return tax;
     }

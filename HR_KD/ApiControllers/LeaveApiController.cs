@@ -111,10 +111,12 @@ namespace HR_KD.ApiControllers
                     {
                         MaNv = currentMaNv.Value, // Sử dụng mã NV từ claims
                         NgayNghi1 = DateOnly.FromDateTime(ngayNghi),
+                        NgayLamDon =DateTime.Now,
                         LyDo = request.LyDo ?? "Không có lý do",
                         TrangThai = "Chờ duyệt",
                         MaLoaiNgayNghi = request.MaLoaiNgayNghi.Value,
                         FileDinhKem = fileAttachments // Thêm file đính kèm
+                   
                     };
                     _context.NgayNghis.Add(leave);
                 }
@@ -146,20 +148,30 @@ namespace HR_KD.ApiControllers
                 .Join(_context.LoaiNgayNghis,
                       n => n.MaLoaiNgayNghi,
                       l => l.MaLoaiNgayNghi,
-                      (n, l) => new
-                      {
-                          id = n.MaNgayNghi, // Sử dụng MaNgayNghi thay vì Id
-                          n.MaLoaiNgayNghi,
-                          TenLoai = l.TenLoai,
-                          NgayNghi = n.NgayNghi1.ToString("yyyy-MM-dd"),
-                          n.LyDo,
-                          n.TrangThai
-                      })
+                      (n, l) => new { n, l })
+                .GroupJoin(_context.NhanViens,
+                           nl => nl.n.NguoiDuyetId,
+                           nv => nv.MaNv,
+                           (nl, nvGroup) => new { nl.n, nl.l, nvGroup })
+                .SelectMany(nl => nl.nvGroup.DefaultIfEmpty(),
+                            (nl, nv) => new
+                            {
+                                id = nl.n.MaNgayNghi, // Sử dụng MaNgayNghi thay vì Id
+                                MaLoaiNgayNghi = nl.n.MaLoaiNgayNghi,
+                                TenLoai = nl.l.TenLoai,
+                                NgayNghi = nl.n.NgayNghi1.ToString("yyyy-MM-dd"),
+                                LyDo = nl.n.LyDo,
+                                TrangThai = nl.n.TrangThai,
+                                FileDinhKem = nl.n.FileDinhKem,
+                                NgayDuyet = nl.n.NgayDuyet,
+                                GhiChu = nl.n.GhiChu,
+                                NguoiDuyetId = nl.n.NguoiDuyetId,
+                                NguoiDuyetHoTen = nv != null ? nv.HoTen : "Chưa có" // Lấy họ tên, mặc định "Chưa có" nếu null
+                            })
                 .ToListAsync();
 
             return Ok(new { success = true, leaveHistory });
         }
-
 
 
         // APi loại nghỉ phép
@@ -291,8 +303,7 @@ namespace HR_KD.ApiControllers
         }
 
 
-
-        [HttpPost]
+        [HttpDelete]
         [Route("CancelLeave/{maNgayNghi}")]
         public async Task<IActionResult> CancelLeave(int maNgayNghi)
         {

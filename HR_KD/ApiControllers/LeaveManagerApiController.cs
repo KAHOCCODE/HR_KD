@@ -12,62 +12,130 @@ namespace HR_KD.ApiControllers
         {
             _context = context;
         }
+
+        private int? GetMaNvFromClaims()
+        {
+            var maNvClaim = User.FindFirst("MaNV")?.Value;
+            return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
+        }
         [HttpGet]
         [Route("LeaveManager/GetAll")]
         public async Task<IActionResult> GetAllLeaveRequests()
         {
-            var data = await (
-                from nn in _context.NgayNghis
-                join nv in _context.NhanViens on nn.MaNv equals nv.MaNv
-                join sdp in _context.SoDuPheps
-                    on new { nn.MaNv, Nam = nn.NgayNghi1.Year } equals new { sdp.MaNv, sdp.Nam } into sdpJoin
-                from sdp in sdpJoin.DefaultIfEmpty()
-                orderby nn.NgayNghi1 descending
-                select new
-                {
-                    nn.MaNgayNghi,
-                    nv.MaNv,
-                    nv.HoTen,
-                    NgayNghi = nn.NgayNghi1.ToString("dd/MM/yyyy"),
-                    nn.LyDo,
-                    nn.TrangThai,
-                    SoNgayConLai = sdp != null ? sdp.SoNgayConLai : 0,
-                    NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy") 
-                }).ToListAsync();
+            try
+            {
+                var data = await (
+                    from nn in _context.NgayNghis
+                    join nv in _context.NhanViens on nn.MaNv equals nv.MaNv
+                    join sdp in _context.SoDuPheps
+                        on new { nn.MaNv, Nam = nn.NgayNghi1.Year } equals new { sdp.MaNv, sdp.Nam } into sdpJoin
+                    from sdp in sdpJoin.DefaultIfEmpty()
+                    orderby nn.NgayNghi1 descending
+                    select new
+                    {
+                        nn.MaNgayNghi,
+                        nv.MaNv,
+                        nv.HoTen,
+                        NgayNghi = nn.NgayNghi1.ToString("dd/MM/yyyy"),
+                        nn.LyDo,
+                        nn.TrangThai,
+                        nn.FileDinhKem,
+                        SoNgayConLai = sdp != null ? sdp.SoNgayConLai : 0,
+                        NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy")
+                    }).ToListAsync();
 
-            return Ok(new { success = true, data });
+                // Xử lý thông tin file đính kèm
+                var processedData = data.Select(item => new
+                {
+                    item.MaNgayNghi,
+                    item.MaNv,
+                    item.HoTen,
+                    item.NgayNghi,
+                    item.LyDo,
+                    item.TrangThai,
+                    item.SoNgayConLai,
+                    item.NgayCapNhat,
+                    // Xử lý danh sách file đính kèm
+                    FileDinhKem = ProcessAttachmentFiles(item.FileDinhKem)
+                }).ToList();
+
+                return Ok(new { success = true, data = processedData });
+            }
+            catch (Exception ex)
+            {
+                // Xử lý lỗi
+                return StatusCode(500, new { success = false, message = "Lỗi khi lấy dữ liệu nghỉ phép.", error = ex.Message });
+            }
+        }
+
+        // Hàm xử lý thông tin file đính kèm
+        private List<object> ProcessAttachmentFiles(string fileNames)
+        {
+            var result = new List<object>();
+
+            if (string.IsNullOrEmpty(fileNames))
+                return result;
+
+            // Tách các tên file được phân cách bằng dấu gạch ngang
+            var files = fileNames.Split('-');
+
+            foreach (var fileName in files)
+            {
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    result.Add(new
+                    {
+                        FileName = fileName,
+                        FilePath = $"/uploads/{fileName}" // Đường dẫn tương đối đến file
+                    });
+                }
+            }
+
+            return result;
         }
         [HttpPost]
         [Route("LeaveManager/UpdateStatus")]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusRequest request)
         {
+            // Lấy mã NV từ claims
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
             // Tìm ngày nghỉ theo mã
             var ngayNghi = await _context.NgayNghis.FindAsync(request.MaNgayNghi);
             if (ngayNghi == null)
             {
                 return NotFound(new { success = false, message = "Không tìm thấy bản ghi ngày nghỉ." });
             }
-
+            // Lấy thông tin người duyệt (HoTen) từ bảng nhân viên
+            var nguoiDuyet = await _context.NhanViens.FirstOrDefaultAsync(nv => nv.MaNv == currentMaNv);
+            if (nguoiDuyet == null)
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy thông tin người duyệt." });
+            }
+            // Lấy thông tin nhân viên được duyệt
+            var nhanVien = await _context.NhanViens.FirstOrDefaultAsync(nv => nv.MaNv == ngayNghi.MaNv);
+            if (nhanVien == null)
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy thông tin nhân viên." });
+            }
             // Kiểm tra trạng thái cũ để tránh trừ phép nhiều lần nếu cập nhật trùng
             bool isAlreadyApproved = ngayNghi.TrangThai == "Đã duyệt";
-
             if (request.TrangThai == "Đã duyệt" && !isAlreadyApproved)
             {
                 var nam = ngayNghi.NgayNghi1.Year;
-
                 var sdp = await _context.SoDuPheps
                     .FirstOrDefaultAsync(x => x.MaNv == ngayNghi.MaNv && x.Nam == nam);
-
                 if (sdp == null)
                 {
                     return BadRequest(new { success = false, message = "Không tìm thấy số dư phép của nhân viên." });
                 }
-
                 if (sdp.SoNgayConLai <= 0)
                 {
                     return BadRequest(new { success = false, message = "Nhân viên không còn ngày nghỉ phép." });
                 }
-
                 // Trừ 1 ngày phép
                 sdp.SoNgayConLai -= 1;
                 sdp.NgayCapNhat = DateTime.Now;
@@ -76,15 +144,32 @@ namespace HR_KD.ApiControllers
 
             // Cập nhật trạng thái của ngày nghỉ
             ngayNghi.TrangThai = request.TrangThai;
-            ngayNghi.NgayLamDon = DateTime.Now;
+            ngayNghi.NgayDuyet = DateTime.Now;
+            ngayNghi.NguoiDuyetId = currentMaNv;  // Lưu ID người duyệt
+
+            // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
+            if (request.TrangThai == "Từ chối" && !string.IsNullOrEmpty(request.LyDo))
+            {
+                ngayNghi.GhiChu = request.LyDo;
+            }
 
             _context.NgayNghis.Update(ngayNghi);
             await _context.SaveChangesAsync();
 
-            return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+            // Trả về thông tin chi tiết bao gồm tên của người duyệt và nhân viên
+            return Ok(new
+            {
+                success = true,
+                message = "Cập nhật trạng thái thành công.",
+                data = new
+                {
+                    nguoiDuyet = nguoiDuyet.HoTen,
+                    trangThai = ngayNghi.TrangThai,
+                    ngayDuyet = ngayNghi.NgayDuyet,
+                    ghiChu = ngayNghi.GhiChu
+                }
+            });
         }
-
-
 
         [HttpGet]
         [Route("LeaveManager/GetSummary")]
@@ -127,6 +212,7 @@ namespace HR_KD.ApiControllers
             public int MaNgayNghi { get; set; }
             public string TrangThai { get; set; }
             public DateTime NgayCapNhat { get; set; }
+            public string? LyDo { get; set; }
         }
 
 

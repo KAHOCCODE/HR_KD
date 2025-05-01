@@ -13,11 +13,13 @@ namespace HR_KD.Controllers.ApiControllers
     {
         private readonly HrDbContext _context;
         private readonly ILogger<SalaryApiController> _logger;
+        private readonly PayrollCalculator _payrollCalculator;
 
         public SalaryApiController(HrDbContext context, ILogger<SalaryApiController> logger)
         {
             _context = context;
             _logger = logger;
+            _payrollCalculator = new PayrollCalculator(context);
         }
 
         // GET: api/SalaryApi/{maNv}
@@ -65,10 +67,9 @@ namespace HR_KD.Controllers.ApiControllers
                 }
 
                 // Kiểm tra dữ liệu đầu vào
-                if (salaryDTO.LuongCoBan < 0 || salaryDTO.PhuCapCoDinh < 0 || salaryDTO.ThuongCoDinh < 0 ||
-                    salaryDTO.BHXH < 0 || salaryDTO.BHYT < 0 || salaryDTO.BHTN < 0)
+                if (salaryDTO.LuongCoBan < 0 || salaryDTO.PhuCapCoDinh < 0 || salaryDTO.ThuongCoDinh < 0)
                 {
-                    return BadRequest("Lương, phụ cấp, thưởng và các khoản bảo hiểm không được âm.");
+                    return BadRequest("Lương, phụ cấp, thưởng không được âm.");
                 }
 
                 if (salaryDTO.NgayApDung < DateTime.Now.Date)
@@ -87,46 +88,34 @@ namespace HR_KD.Controllers.ApiControllers
                     return BadRequest("Nhân viên đã có thông tin lương.");
                 }
 
-                // Lấy thông tin vùng lương đang hoạt động
-                var activeRegion = await _context.VungLuongTheoDiaPhuongs
-                    .Where(v => v.IsActive)
+                // Lấy thông tin mức lương tối thiểu vùng đang hoạt động
+                var activeMinimumWage = await _context.MucLuongToiThieuVungs
+                    .Where(m => m.IsActive)
                     .FirstOrDefaultAsync();
 
-                if (activeRegion == null)
+                if (activeMinimumWage == null)
                 {
-                    return BadRequest("Không tìm thấy vùng lương đang hoạt động.");
-                }
-
-                // Lấy mức lương tối thiểu của vùng
-                var minimumWage = await _context.MucLuongToiThieuVungs
-                    .Where(m => m.VungLuong == activeRegion.VungLuong)
-                    .Select(m => m.MucLuongToiThieuThang)
-                    .FirstOrDefaultAsync();
-
-                if (minimumWage == 0)
-                {
-                    return BadRequest("Không tìm thấy mức lương tối thiểu cho vùng lương.");
+                    return BadRequest("Không tìm thấy mức lương tối thiểu vùng đang hoạt động.");
                 }
 
                 // Kiểm tra lương cơ bản so với mức lương tối thiểu
+                var minimumWage = activeMinimumWage.MucLuongToiThieuThang;
                 if (salaryDTO.LuongCoBan < minimumWage)
                 {
                     return BadRequest($"Lương cơ bản phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {minimumWage:N0} VNĐ.");
                 }
 
-                // Lấy tỷ lệ bảo hiểm từ ThongTinBaoHiem
-                var insuranceRates = await _context.ThongTinBaoHiems
-                    .Where(b => b.NgayHetHieuLuc == null)
-                    .ToListAsync();
+                // Tính toán các khoản bảo hiểm bằng PayrollCalculator
+                (decimal bhxh, decimal bhyt, decimal bhtn, string errorMessage) = await _payrollCalculator.CalculateInsurance(salaryDTO.LuongCoBan, salaryDTO.PhuCapCoDinh);
+                if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    return BadRequest(errorMessage);
+                }
 
-                var bhxhRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHXH")?.TyLeNguoiLaoDong ?? 0;
-                var bhytRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHYT")?.TyLeNguoiLaoDong ?? 0;
-                var bhtnRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHTN")?.TyLeNguoiLaoDong ?? 0;
-
-                // Tính toán các khoản bảo hiểm
-                salaryDTO.BHXH = salaryDTO.LuongCoBan * (bhxhRate / 100);
-                salaryDTO.BHYT = salaryDTO.LuongCoBan * (bhytRate / 100);
-                salaryDTO.BHTN = salaryDTO.LuongCoBan * (bhtnRate / 100);
+                // Gán các khoản bảo hiểm
+                salaryDTO.BHXH = bhxh;
+                salaryDTO.BHYT = bhyt;
+                salaryDTO.BHTN = bhtn;
 
                 // Tạo bản ghi lương mới
                 var salary = new ThongTinLuongNV
@@ -180,10 +169,9 @@ namespace HR_KD.Controllers.ApiControllers
                 }
 
                 // Kiểm tra dữ liệu đầu vào
-                if (salaryDTO.LuongCoBan < 0 || salaryDTO.PhuCapCoDinh < 0 || salaryDTO.ThuongCoDinh < 0 ||
-                    salaryDTO.BHXH < 0 || salaryDTO.BHYT < 0 || salaryDTO.BHTN < 0)
+                if (salaryDTO.LuongCoBan < 0 || salaryDTO.PhuCapCoDinh < 0 || salaryDTO.ThuongCoDinh < 0)
                 {
-                    return BadRequest("Lương, phụ cấp, thưởng và các khoản bảo hiểm không được âm.");
+                    return BadRequest("Lương, phụ cấp, thưởng không được âm.");
                 }
 
                 if (salaryDTO.NgayApDung < DateTime.Now.Date)
@@ -191,46 +179,34 @@ namespace HR_KD.Controllers.ApiControllers
                     return BadRequest("Ngày áp dụng không được là ngày trong quá khứ.");
                 }
 
-                // Lấy thông tin vùng lương đang hoạt động
-                var activeRegion = await _context.VungLuongTheoDiaPhuongs
-                    .Where(v => v.IsActive)
+                // Lấy thông tin mức lương tối thiểu vùng đang hoạt động
+                var activeMinimumWage = await _context.MucLuongToiThieuVungs
+                    .Where(m => m.IsActive)
                     .FirstOrDefaultAsync();
 
-                if (activeRegion == null)
+                if (activeMinimumWage == null)
                 {
-                    return BadRequest("Không tìm thấy vùng lương đang hoạt động.");
-                }
-
-                // Lấy mức lương tối thiểu của vùng
-                var minimumWage = await _context.MucLuongToiThieuVungs
-                    .Where(m => m.VungLuong == activeRegion.VungLuong)
-                    .Select(m => m.MucLuongToiThieuThang)
-                    .FirstOrDefaultAsync();
-
-                if (minimumWage == 0)
-                {
-                    return BadRequest("Không tìm thấy mức lương tối thiểu cho vùng lương.");
+                    return BadRequest("Không tìm thấy mức lương tối thiểu vùng đang hoạt động.");
                 }
 
                 // Kiểm tra lương cơ bản so với mức lương tối thiểu
+                var minimumWage = activeMinimumWage.MucLuongToiThieuThang;
                 if (salaryDTO.LuongCoBan < minimumWage)
                 {
                     return BadRequest($"Lương cơ bản phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {minimumWage:N0} VNĐ.");
                 }
 
-                // Lấy tỷ lệ bảo hiểm từ ThongTinBaoHiem
-                var insuranceRates = await _context.ThongTinBaoHiems
-                    .Where(b => b.NgayHetHieuLuc == null)
-                    .ToListAsync();
+                // Tính toán các khoản bảo hiểm bằng PayrollCalculator
+                (decimal bhxh, decimal bhyt, decimal bhtn, string errorMessage) = await _payrollCalculator.CalculateInsurance(salaryDTO.LuongCoBan, salaryDTO.PhuCapCoDinh);
+                if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    return BadRequest(errorMessage);
+                }
 
-                var bhxhRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHXH")?.TyLeNguoiLaoDong ?? 0;
-                var bhytRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHYT")?.TyLeNguoiLaoDong ?? 0;
-                var bhtnRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHTN")?.TyLeNguoiLaoDong ?? 0;
-
-                // Tính toán các khoản bảo hiểm
-                salaryDTO.BHXH = salaryDTO.LuongCoBan * (bhxhRate / 100);
-                salaryDTO.BHYT = salaryDTO.LuongCoBan * (bhytRate / 100);
-                salaryDTO.BHTN = salaryDTO.LuongCoBan * (bhtnRate / 100);
+                // Gán các khoản bảo hiểm
+                salaryDTO.BHXH = bhxh;
+                salaryDTO.BHYT = bhyt;
+                salaryDTO.BHTN = bhtn;
 
                 // Cập nhật thông tin lương
                 salary.LuongCoBan = salaryDTO.LuongCoBan;
@@ -255,5 +231,51 @@ namespace HR_KD.Controllers.ApiControllers
                 return StatusCode(500, "Có lỗi xảy ra khi cập nhật lương.");
             }
         }
+
+        // POST: api/SalaryApi/calculate-insurance
+        [HttpPost("calculate-insurance")]
+        public async Task<ActionResult<InsuranceCalculationDTO>> CalculateInsurance([FromBody] InsuranceInputDTO input)
+        {
+            try
+            {
+                if (input.LuongCoBan < 0 || input.PhuCapCoDinh < 0)
+                {
+                    return BadRequest("Lương cơ bản và phụ cấp cố định không được âm.");
+                }
+
+                var (bhxh, bhyt, bhtn, errorMessage) = await _payrollCalculator.CalculateInsurance(input.LuongCoBan, input.PhuCapCoDinh);
+                if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    return BadRequest(errorMessage);
+                }
+
+                var result = new InsuranceCalculationDTO
+                {
+                    BHXH = bhxh,
+                    BHYT = bhyt,
+                    BHTN = bhtn
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tính toán bảo hiểm: LuongCoBan={LuongCoBan}, PhuCapCoDinh={PhuCapCoDinh}", input.LuongCoBan, input.PhuCapCoDinh);
+                return StatusCode(500, "Có lỗi xảy ra khi tính toán bảo hiểm.");
+            }
+        }
+    }
+
+    public class InsuranceInputDTO
+    {
+        public decimal LuongCoBan { get; set; }
+        public decimal? PhuCapCoDinh { get; set; }
+    }
+
+    public class InsuranceCalculationDTO
+    {
+        public decimal BHXH { get; set; }
+        public decimal BHYT { get; set; }
+        public decimal BHTN { get; set; }
     }
 }

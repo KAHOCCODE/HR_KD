@@ -191,7 +191,7 @@ namespace HR_KD.ApiControllers
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
 
-            var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Đã duyệt");
+            var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Đã duyệt lận 1");
 
             if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
             {
@@ -343,7 +343,7 @@ namespace HR_KD.ApiControllers
                         {
                             MaNv = maNv.Value,
                             NgayLamViec = ngayLamViec,
-                            TrangThai = "Đã duyệt",
+                            TrangThai = "Đã duyệt lận 1",
                             GhiChu = "Chấp nhận yêu cầu chấm công"
                         };
                         _context.ChamCongs.Add(chamCong);
@@ -392,7 +392,7 @@ namespace HR_KD.ApiControllers
                 .Where(c => c.MaNv == maNV &&
                             c.NgayLamViec.Year == selectedMonth.Year &&
                             c.NgayLamViec.Month == selectedMonth.Month &&
-                            c.TrangThai.Trim() == "Đã duyệt")
+                            c.TrangThai.Trim() == "Đã duyệt lận 1")
                 .ToListAsync();
 
             if (!records.Any())
@@ -401,7 +401,7 @@ namespace HR_KD.ApiControllers
                     .Where(c => c.MaNv == maNV &&
                                 c.Ngay.Year == selectedMonth.Year &&
                                 c.Ngay.Month == selectedMonth.Month &&
-                                c.TrangThai.Trim() == "Đã duyệt")
+                                c.TrangThai.Trim() == "Đã duyệt lận 1")
                     .ToListAsync();
 
                 if (!historyRecords.Any())

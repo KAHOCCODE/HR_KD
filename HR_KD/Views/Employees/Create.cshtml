@@ -1,351 +1,317 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thêm Nhân Viên Mới</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/createemploy.css">
-</head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="card shadow border-0 overflow-hidden">
-            <div class="card-header bg-primary text-white p-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-user-plus fa-2x me-3"></i>
-                    <h2 class="mb-0 fw-bold">Thêm Nhân Viên Mới</h2>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-700 px-6 py-4">
+                <h2 class="text-2xl font-semibold text-white text-center">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Thêm Nhân Viên Mới
+                </h2>
+            </div>
+
+            <div class="p-4 bg-gray-50 border-b border-gray-200">
+                <div class="progress h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="formProgress" class="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                         style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="flex justify-between mt-2 text-xs font-medium text-gray-600">
+                    <span>0%</span>
+                    <span>25%</span>
+                    <span>50%</span>
+                    <span>75%</span>
+                    <span>100%</span>
                 </div>
             </div>
 
-            <div class="progress" style="height: 4px;">
-                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;"
-                     id="formProgress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-
-            <div class="card-body p-4">
-                <a href="~/EmployeeImport/Index" class="text-decoration-none">
-                    <div class="card border-0 shadow-sm mb-4 bg-info bg-opacity-10 hover-shadow transition" style="cursor: pointer;">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="text-info fw-bold mb-1">
-                                    <i class="fa fa-file-excel me-2"></i>Nhập Excel Danh Sách Nhân Viên
-                                </h5>
-                                <p class="mb-0 text-secondary">Tải file mẫu và import danh sách nhân viên hàng loạt dễ dàng.</p>
-                            </div>
-                            <div>
-                                <button class="btn btn-outline-info btn-lg">
-                                    <i class="fa fa-arrow-right me-2"></i>Đi tới Import
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </a>
+            <div class="p-4 sm:p-6">
                 <form id="createEmployeeForm" class="needs-validation" novalidate>
-                    <div class="row g-4">
-                        <!-- Left Column -->
-                        <div class="col-lg-8">
-                            <!-- Thông tin cá nhân -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header bg-white py-3">
-                                    <h5 class="mb-0 text-primary">
-                                        <i class="fas fa-id-card me-2"></i>Thông Tin Cá Nhân
-                                    </h5>
-                                </div>
-                                <div class="card-body p-4">
-                                    <div class="row g-3">
-                                        <!-- Họ và Tên -->
-                                        <div class="col-md-6">
-                                            <label for="HoTen" class="form-label">
-                                                <i class="fas fa-user me-1 text-muted"></i>Họ và Tên <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" class="form-control form-control-lg" id="HoTen" required />
-                                            <div class="invalid-feedback">Vui lòng nhập họ và tên</div>
-                                        </div>
-
-                                        <!-- Ngày Sinh -->
-                                        <div class="col-md-6">
-                                            <label for="NgaySinh" class="form-label">
-                                                <i class="fas fa-birthday-cake me-1 text-muted"></i>Ngày Sinh <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="date" class="form-control form-control-lg" id="NgaySinh" required />
-                                            <div class="invalid-feedback">Vui lòng chọn ngày sinh</div>
-                                        </div>
-
-                                        <!-- Giới Tính -->
-                                        <div class="col-md-6">
-                                            <label for="GioiTinh" class="form-label">
-                                                <i class="fas fa-venus-mars me-1 text-muted"></i>Giới Tính <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select form-select-lg" id="GioiTinh" required>
-                                                <option value="">-- Chọn giới tính --</option>
-                                                <option value="true">Nam</option>
-                                                <option value="false">Nữ</option>
-                                            </select>
-                                            <div class="invalid-feedback">Vui lòng chọn giới tính</div>
-                                        </div>
-
-                                        <!-- Trình Độ Học Vấn -->
-                                        <div class="col-md-6">
-                                            <label for="TrinhDoHocVan" class="form-label">
-                                                <i class="fas fa-graduation-cap me-1 text-muted"></i>Trình Độ Học Vấn
-                                            </label>
-                                            <select class="form-select form-select-lg" id="TrinhDoHocVan">
-                                                <option value="">-- Chọn trình độ --</option>
-                                                <option value="Trung học">Trung học</option>
-                                                <option value="Cao đẳng">Cao đẳng</option>
-                                                <option value="Đại học">Đại học</option>
-                                                <option value="Thạc sĩ">Thạc sĩ</option>
-                                                <option value="Tiến sĩ">Tiến sĩ</option>
-                                            </select>
-                                        </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Left Column: Ảnh, Địa chỉ, và Nhập Excel -->
+                        <div class="space-y-4">
+                            <!-- Ảnh đại diện -->
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-image mr-2 text-blue-600"></i>
+                                    Ảnh Đại Diện
+                                </h3>
+                                <div class="text-center">
+                                    <div class="avatar-preview rounded-full mx-auto mb-3 overflow-hidden border-4 border-gray-200" style="width: 150px; height: 150px;">
+                                        <img id="avatarPreview" src="~/images/employees/Avatar.jpg" class="w-full h-full object-cover" alt="Avatar Preview" />
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- Thông tin liên hệ -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header bg-white py-3">
-                                    <h5 class="mb-0 text-primary">
-                                        <i class="fas fa-address-book me-2"></i>Thông Tin Liên Hệ
-                                    </h5>
-                                </div>
-                                <div class="card-body p-4">
-                                    <div class="row g-3">
-                                        <!-- Email -->
-                                        <div class="col-md-6">
-                                            <label for="Email" class="form-label">
-                                                <i class="fas fa-envelope me-1 text-muted"></i>Email <span class="text-danger">*</span>
-                                            </label>
-                                            <div class="input-group input-group-lg">
-                                                <span class="input-group-text bg-light"><i class="fas fa-at"></i></span>
-                                                <input type="email" class="form-control" id="Email" required />
-                                            </div>
-                                            <div class="invalid-feedback">Vui lòng nhập email hợp lệ</div>
-                                        </div>
-
-                                        <!-- Số Điện Thoại -->
-                                        <div class="col-md-6">
-                                            <label for="Sdt" class="form-label">
-                                                <i class="fas fa-phone me-1 text-muted"></i>Số Điện Thoại <span class="text-danger">*</span>
-                                            </label>
-                                            <div class="input-group input-group-lg">
-                                                <span class="input-group-text bg-light"><i class="fas fa-phone"></i></span>
-                                                <input type="text" class="form-control" id="Sdt" required />
-                                            </div>
-                                            <div class="invalid-feedback">Vui lòng nhập số điện thoại</div>
-                                        </div>
-                                    </div>
+                                    <label for="AvatarUrl" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer text-sm">
+                                        <i class="fas fa-upload mr-1"></i>Chọn ảnh
+                                    </label>
+                                    <input type="file" id="AvatarUrl" name="AvatarUrl" accept=".jpg,.png,.jpeg" class="hidden" onchange="previewAvatar(this)" />
+                                    <p class="mt-1 text-xs text-gray-500">Định dạng: JPG, PNG (Tối đa 5MB)</p>
                                 </div>
                             </div>
 
                             <!-- Địa chỉ -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header bg-white py-3">
-                                    <h5 class="mb-0 text-primary">
-                                        <i class="fas fa-map-marker-alt me-2"></i>Địa Chỉ
-                                    </h5>
-                                </div>
-                                <div class="card-body p-4">
-                                    <div class="row g-3">
-                                        <!-- Tỉnh/Thành phố -->
-                                        <div class="col-md-6">
-                                            <label for="TinhThanh" class="form-label">
-                                                <i class="fas fa-city me-1 text-muted"></i>Tỉnh/Thành phố
-                                            </label>
-                                            <select class="form-select form-select-lg" id="TinhThanh">
-                                                <option value="">-- Chọn Tỉnh/Thành phố --</option>
-                                            </select>
-                                        </div>
-
-                                        <!-- Quận/Huyện -->
-                                        <div class="col-md-6">
-                                            <label for="QuanHuyen" class="form-label">
-                                                <i class="fas fa-building me-1 text-muted"></i>Quận/Huyện
-                                            </label>
-                                            <select class="form-select form-select-lg" id="QuanHuyen">
-                                                <option value="">-- Chọn Quận/Huyện --</option>
-                                            </select>
-                                        </div>
-
-                                        <!-- Phường/Xã -->
-                                        <div class="col-md-6">
-                                            <label for="PhuongXa" class="form-label">
-                                                <i class="fas fa-home me-1 text-muted"></i>Phường/Xã
-                                            </label>
-                                            <select class="form-select form-select-lg" id="PhuongXa">
-                                                <option value="">-- Chọn Phường/Xã --</option>
-                                            </select>
-                                        </div>
-
-                                        <!-- Số nhà, đường -->
-                                        <div class="col-md-6">
-                                            <label for="SoNhaDuong" class="form-label">
-                                                <i class="fas fa-road me-1 text-muted"></i>Số nhà, đường
-                                            </label>
-                                            <input type="text" class="form-control form-control-lg" id="SoNhaDuong" />
-                                        </div>
-
-                                        <!-- Địa chỉ đầy đủ -->
-                                        <div class="col-12">
-                                            <label for="DiaChiDayDu" class="form-label">
-                                                <i class="fas fa-map me-1 text-muted"></i>Địa Chỉ Đầy Đủ
-                                            </label>
-                                            <textarea class="form-control bg-light" id="DiaChiDayDu" rows="2" readonly></textarea>
-                                        </div>
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-map-marker-alt mr-2 text-blue-600"></i>
+                                    Địa Chỉ
+                                </h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label for="TinhThanh" class="block text-sm font-medium text-gray-700">
+                                            Tỉnh/Thành phố
+                                        </label>
+                                        <select id="TinhThanh" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm">
+                                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="QuanHuyen" class="block text-sm font-medium text-gray-700">
+                                            Quận/Huyện
+                                        </label>
+                                        <select id="QuanHuyen" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm">
+                                            <option value="">-- Chọn Quận/Huyện --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="PhuongXa" class="block text-sm font-medium text-gray-700">
+                                            Phường/Xã
+                                        </label>
+                                        <select id="PhuongXa" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm">
+                                            <option value="">-- Chọn Phường/Xã --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="SoNhaDuong" class="block text-sm font-medium text-gray-700">
+                                            Số nhà, đường
+                                        </label>
+                                        <input type="text" id="SoNhaDuong" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label for="DiaChiDayDu" class="block text-sm font-medium text-gray-700">
+                                            Địa Chỉ Đầy Đủ
+                                        </label>
+                                        <textarea id="DiaChiDayDu" rows="2" class="w-full px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-sm" readonly></textarea>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Nhập Excel -->
+                            <a href="~/EmployeeImport/Index" class="block">
+                                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-800">
+                                                <i class="fas fa-file-excel mr-2 text-green-600"></i>
+                                                Nhập Excel
+                                            </h3>
+                                            <p class="mt-1 text-xs text-gray-500">Tải file mẫu và import danh sách nhân viên.</p>
+                                        </div>
+                                        <button class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm">
+                                            <i class="fas fa-arrow-right mr-1"></i>Import
+                                        </button>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
 
-                        <!-- Right Column -->
-                        <div class="col-lg-4">
-                            <!-- Ảnh đại diện -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header bg-white py-3">
-                                    <h5 class="mb-0 text-primary">
-                                        <i class="fas fa-image me-2"></i>Ảnh Đại Diện
-                                    </h5>
-                                </div>
-                                <div class="card-body p-4 text-center">
-                                    <div class="avatar-upload mb-3">
-                                        <div class="avatar-preview rounded-circle mx-auto mb-3" style="width: 180px; height: 180px; overflow: hidden; border: 3px solid #eee;">
-                                            <img id="avatarPreview" src="/api/placeholder/180/180" class="w-100 h-100" style="object-fit: cover;" alt="Avatar Preview" />
-                                        </div>
-                                        <label for="AvatarUrl" class="btn btn-outline-primary">
-                                            <i class="fas fa-upload me-2"></i>Chọn ảnh
+                        <!-- Right Column: Thông tin cá nhân và Công việc -->
+                        <div class="space-y-4">
+                            <!-- Thông tin cá nhân -->
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-id-card mr-2 text-blue-600"></i>
+                                    Thông Tin Cá Nhân
+                                </h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label for="HoTen" class="block text-sm font-medium text-gray-700">
+                                            Họ và Tên <span class="text-red-500">*</span>
                                         </label>
-                                        <input type="file" class="form-control d-none" id="AvatarUrl" name="AvatarUrl" accept=".jpg,.png,.jpeg" onchange="previewAvatar(this)" />
-                                        <div class="small text-muted mt-2">Định dạng: JPG, PNG (Tối đa 5MB)</div>
+                                        <input type="text" id="HoTen" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required />
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng nhập họ và tên</p>
+                                    </div>
+                                    <div>
+                                        <label for="NgaySinh" class="block text-sm font-medium text-gray-700">
+                                            Ngày Sinh <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" id="NgaySinh" class="flatpickr w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required />
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng chọn ngày sinh</p>
+                                    </div>
+                                    <div>
+                                        <label for="GioiTinh" class="block text-sm font-medium text-gray-700">
+                                            Giới Tính <span class="text-red-500">*</span>
+                                        </label>
+                                        <select id="GioiTinh" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required>
+                                            <option value="">-- Chọn giới tính --</option>
+                                            <option value="true">Nam</option>
+                                            <option value="false">Nữ</option>
+                                        </select>
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng chọn giới tính</p>
+                                    </div>
+                                    <div>
+                                        <label for="TrinhDoHocVan" class="block text-sm font-medium text-gray-700">
+                                            Trình Độ Học Vấn
+                                        </label>
+                                        <select id="TrinhDoHocVan" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm">
+                                            <option value="">-- Chọn trình độ --</option>
+                                            <option value="Trung học">Trung học</option>
+                                            <option value="Cao đẳng">Cao đẳng</option>
+                                            <option value="Đại học">Đại học</option>
+                                            <option value="Thạc sĩ">Thạc sĩ</option>
+                                            <option value="Tiến sĩ">Tiến sĩ</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="Email" class="block text-sm font-medium text-gray-700">
+                                            Email <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="email" id="Email" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required />
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng nhập email hợp lệ</p>
+                                    </div>
+                                    <div>
+                                        <label for="Sdt" class="block text-sm font-medium text-gray-700">
+                                            Số Điện Thoại <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" id="Sdt" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required />
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng nhập số điện thoại</p>
+                                    </div>
+                                    <div>
+                                        <label for="SoNguoiPhuThuoc" class="block text-sm font-medium text-gray-700">
+                                            Số Người Phụ Thuộc
+                                        </label>
+                                        <input type="number" id="SoNguoiPhuThuoc" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" min="0" value="0" />
+                                        <p class="mt-1 text-xs text-gray-500">Nhập số người phụ thuộc (mặc định: 0)</p>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Thông tin công việc -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header bg-white py-3">
-                                    <h5 class="mb-0 text-primary">
-                                        <i class="fas fa-briefcase me-2"></i>Thông Tin Công Việc
-                                    </h5>
-                                </div>
-                                <div class="card-body p-4">
-                                    <div class="mb-3">
-                                        <label for="NgayVaoLam" class="form-label">
-                                            <i class="fas fa-calendar-check me-1 text-muted"></i>Ngày Vào Làm <span class="text-danger">*</span>
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-briefcase mr-2 text-blue-600"></i>
+                                    Thông Tin Công Việc
+                                </h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label for="NgayVaoLam" class="block text-sm font-medium text-gray-700">
+                                            Ngày Vào Làm <span class="text-red-500">*</span>
                                         </label>
-                                        <input type="date" class="form-control form-control-lg" id="NgayVaoLam" required />
-                                        <div class="invalid-feedback">Vui lòng chọn ngày vào làm</div>
+                                        <input type="text" id="NgayVaoLam" class="flatpickr w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required />
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng chọn ngày vào làm</p>
                                     </div>
-
-                                    <div class="mb-3">
-                                        <label for="MaChucVu" class="form-label">
-                                            <i class="fas fa-user-tie me-1 text-muted"></i>Chức Vụ <span class="text-danger">*</span>
+                                    <div>
+                                        <label for="MaChucVu" class="block text-sm font-medium text-gray-700">
+                                            Chức Vụ <span class="text-red-500">*</span>
                                         </label>
-                                        <select class="form-select form-select-lg" id="MaChucVu" required>
+                                        <select id="MaChucVu" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required>
                                             <option value="">-- Chọn chức vụ --</option>
                                         </select>
-                                        <div class="invalid-feedback">Vui lòng chọn chức vụ</div>
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng chọn chức vụ</p>
                                     </div>
-
-                                    <div class="mb-3">
-                                        <label for="MaPhongBan" class="form-label">
-                                            <i class="fas fa-sitemap me-1 text-muted"></i>Phòng Ban <span class="text-danger">*</span>
+                                    <div>
+                                        <label for="MaPhongBan" class="block text-sm font-medium text-gray-700">
+                                            Phòng Ban <span class="text-red-500">*</span>
                                         </label>
-                                        <select class="form-select form-select-lg" id="MaPhongBan" required>
+                                        <select id="MaPhongBan" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required>
                                             <option value="">-- Chọn phòng ban --</option>
                                         </select>
-                                        <div class="invalid-feedback">Vui lòng chọn phòng ban</div>
+                                        <p class="mt-1 text-xs text-red-500 hidden invalid-feedback">Vui lòng chọn phòng ban</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Nút Submit -->
-                    <div class="text-center mt-4">
-                        <button type="button" class="btn btn-light btn-lg me-2">
-                            <i class="fas fa-times me-2"></i>Hủy
+                    <!-- Buttons -->
+                    <div class="mt-6 flex justify-between">
+                        <button type="button" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors text-sm">
+                            <i class="fas fa-times mr-1"></i>Hủy
                         </button>
-                        <button type="submit" class="btn btn-primary btn-lg px-5">
-                            <i class="fas fa-save me-2"></i>Lưu & Tiếp Tục
+                        <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm">
+                            <i class="fas fa-save mr-1"></i>Lưu & Tiếp Tục
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
 
-        <!-- Tooltip Card -->
-        <div class="card border-0 shadow-sm mt-4 bg-light">
-            <div class="card-body p-3 d-flex align-items-center">
-                <i class="fas fa-info-circle text-primary me-3 fa-2x"></i>
-                <div>
-                    <p class="mb-0">Sau khi thêm nhân viên thành công, bạn sẽ được chuyển đến trang <strong>Thiết lập Lương</strong> cho nhân viên này.</p>
+            <!-- Tooltip Card -->
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 mt-4">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 mr-2 text-xl"></i>
+                    <p class="text-xs text-gray-600">Sau khi thêm nhân viên thành công, bạn sẽ được chuyển đến trang <strong>Thiết lập Hợp Đồng</strong> cho nhân viên này.</p>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.0/sweetalert2.all.min.js"></script>
-
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         $(document).ready(function () {
-            // Theo dõi tiến trình điền form
-            updateProgress();
-            $('input, select').on('change', updateProgress);
-
-            // Bootstrap form validation
-            const forms = document.querySelectorAll('.needs-validation');
-            Array.from(forms).forEach(form => {
-                form.addEventListener('submit', event => {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        highlightFirstError();
-                    } else {
-                        submitForm(event);
-                    }
-                    form.classList.add('was-validated');
-                }, false);
+            // Initialize Flatpickr for date inputs
+            flatpickr(".flatpickr", {
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/Y",
+                minDate: "1900-01-01",
+                onReady: function(selectedDates, dateStr, instance) {
+                    $(instance.input).removeAttr("disabled").removeAttr("readonly");
+                    instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
+                },
+                onOpen: function(selectedDates, dateStr, instance) {
+                    instance.calendarContainer.style.zIndex = "9999";
+                }
             });
 
-            // Highlight first error with smooth scroll
-            function highlightFirstError() {
-                const firstInvalid = document.querySelector('.form-control:invalid, .form-select:invalid');
-                if (firstInvalid) {
-                    firstInvalid.focus();
-                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                    // Add attention animation
-                    firstInvalid.classList.add('attention');
-                    setTimeout(() => {
-                        firstInvalid.classList.remove('attention');
-                    }, 1000);
-                }
-            }
-
             // Update progress bar
-            function updateProgress() {
-                const requiredFields = $('#createEmployeeForm [required]');
-                const filledFields = requiredFields.filter((i, field) => $(field).val() !== '');
-                const progressPercentage = (filledFields.length / requiredFields.length) * 100;
+            function updateProgressBar() {
+                let requiredFields = ["HoTen", "NgaySinh", "GioiTinh", "Email", "Sdt", "NgayVaoLam", "MaChucVu", "MaPhongBan"];
+                let filledCount = 0;
 
-                $('#formProgress').css('width', progressPercentage + '%');
-                $('#formProgress').attr('aria-valuenow', progressPercentage);
+                requiredFields.forEach(field => {
+                    if ($("#" + field).val()) filledCount++;
+                });
 
-                // Change color based on progress
-                if (progressPercentage < 33) {
-                    $('#formProgress').removeClass('bg-warning bg-success').addClass('bg-danger');
-                } else if (progressPercentage < 66) {
-                    $('#formProgress').removeClass('bg-danger bg-success').addClass('bg-warning');
-                } else {
-                    $('#formProgress').removeClass('bg-danger bg-warning').addClass('bg-success');
-                }
+                let optionalFields = ["TrinhDoHocVan", "TinhThanh", "QuanHuyen", "PhuongXa", "SoNhaDuong", "SoNguoiPhuThuoc"];
+                optionalFields.forEach(field => {
+                    if ($("#" + field).val() && $("#" + field).val() !== "") {
+                        filledCount += 0.5;
+                    }
+                });
+
+                let progressPercent = Math.min(100, Math.round((filledCount / (requiredFields.length + 2)) * 100));
+                $("#formProgress").css("width", progressPercent + "%").attr("aria-valuenow", progressPercent);
             }
+
+            // Form validation
+            $("#createEmployeeForm").on("submit", function (e) {
+                e.preventDefault();
+                let form = this;
+                if (form.checkValidity()) {
+                    submitForm(e);
+                } else {
+                    $(form).find(":invalid").first().focus();
+                    $(form).find(":invalid").each(function () {
+                        $(this).next(".invalid-feedback").removeClass("hidden");
+                    });
+                }
+                form.classList.add("was-validated");
+            });
+
+            // Update progress on input change
+            $("input, select, textarea").on("change keyup", function () {
+                updateProgressBar();
+                if ($(this).val()) {
+                    $(this).next(".invalid-feedback").addClass("hidden");
+                }
+            });
 
             // Load danh sách chức vụ
             $.get("/api/ChucVuApi", function (data) {
@@ -380,7 +346,6 @@
                 let quanHuyenDropdown = $("#QuanHuyen");
                 let phuongXaDropdown = $("#PhuongXa");
 
-                // Reset Quận/Huyện và Phường/Xã
                 quanHuyenDropdown.html('<option value="">-- Chọn Quận/Huyện --</option>');
                 phuongXaDropdown.html('<option value="">-- Chọn Phường/Xã --</option>');
 
@@ -399,7 +364,6 @@
                 let quanHuyenCode = $(this).val();
                 let phuongXaDropdown = $("#PhuongXa");
 
-                // Reset Phường/Xã
                 phuongXaDropdown.html('<option value="">-- Chọn Phường/Xã --</option>');
 
                 if (quanHuyenCode) {
@@ -435,17 +399,15 @@
             function submitForm(e) {
                 e.preventDefault();
 
-                // Hiển thị loading
                 Swal.fire({
                     title: 'Đang xử lý...',
-                    html: 'Vui lòng chờ trong giây lát',
+                    text: 'Vui lòng chờ trong giây lát',
                     allowOutsideClick: false,
                     didOpen: () => {
                         Swal.showLoading();
                     }
                 });
 
-                // Tạo FormData cho nhân viên
                 let formData = new FormData();
                 formData.append("HoTen", $("#HoTen").val());
                 formData.append("NgaySinh", $("#NgaySinh").val());
@@ -457,12 +419,12 @@
                 formData.append("MaChucVu", $("#MaChucVu").val());
                 formData.append("MaPhongBan", $("#MaPhongBan").val());
                 formData.append("NgayVaoLam", $("#NgayVaoLam").val());
+                formData.append("SoNguoiPhuThuoc", $("#SoNguoiPhuThuoc").val() || 0);
                 let avatar = $("#AvatarUrl")[0].files[0];
                 if (avatar) {
                     formData.append("AvatarUrl", avatar);
                 }
 
-                // Gửi dữ liệu nhân viên qua API
                 $.ajax({
                     url: "/api/EmployeesApi/CreateEmployee",
                     type: "POST",
@@ -470,7 +432,6 @@
                     contentType: false,
                     processData: false,
                     success: function (response) {
-                        // Lấy maNv từ response
                         let maNv = response.maNv;
                         if (!maNv) {
                             Swal.fire({
@@ -488,18 +449,11 @@
                             timer: 2000,
                             showConfirmButton: false
                         }).then(() => {
-                            // Chuyển hướng đến trang SetupSalary với maNv
-                            window.location.href = `/Employees/SetupSalary?maNv=${maNv}`;
+                            window.location.href = `/Employees/SetupContracts?maNv=${maNv}`;
                         });
                     },
                     error: function (xhr) {
-                        console.log("Error Response:", xhr);
-                        let errorMessage = "Lỗi không xác định!";
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseText) {
-                            errorMessage = xhr.responseText;
-                        }
+                        let errorMessage = xhr.responseJSON?.message || xhr.responseText || "Lỗi không xác định!";
                         Swal.fire({
                             icon: "error",
                             title: "Lỗi!",
@@ -508,18 +462,17 @@
                     }
                 });
             }
-        });
 
-        // Hiển thị ảnh xem trước
-        function previewAvatar(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    $('#avatarPreview').attr('src', e.target.result);
+            // Hiển thị ảnh xem trước
+            window.previewAvatar = function(input) {
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#avatarPreview').attr('src', e.target.result);
+                    }
+                    reader.readAsDataURL(input.files[0]);
                 }
-                reader.readAsDataURL(input.files[0]);
             }
-        }
+        });
     </script>
-</body>
-</html>
+}

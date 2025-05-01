@@ -28,6 +28,9 @@ public partial class NhanVien
     public DateOnly? NgayVaoLam { get; set; }
 
     public string? AvatarUrl { get; set; }
+
+    // Thêm trường mới để lưu số người phụ thuộc
+    public int SoNguoiPhuThuoc { get; set; } = 0; // Số người phụ thuộc (mặc định là 0)
     public virtual ICollection<HopDongLaoDong> HopDongLaoDongs { get; set; } = new List<HopDongLaoDong>();
     public virtual ICollection<BangLuong> BangLuongs { get; set; } = new List<BangLuong>();
 

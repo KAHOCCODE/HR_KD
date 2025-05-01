@@ -19,5 +19,7 @@ namespace HR_KD.Data
 
         [StringLength(200)]
         public string GhiChu { get; set; } // Ghi chú (VD: "Theo Nghị định 73/2023/NĐ-CP")
+
+        public bool IsActive { get; set; } = true;
     }
 }

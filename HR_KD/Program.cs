@@ -40,6 +40,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("EMPLOYEE", policy => policy.RequireRole("EMPLOYEE"));
     options.AddPolicy("EMPLOYEE_MANAGER", policy => policy.RequireRole("EMPLOYEE_MANAGER"));
     options.AddPolicy("LINE_MANAGER", policy => policy.RequireRole("LINE_MANAGER"));
+    // giám đốc
+    options.AddPolicy("DIRECTOR", policy => policy.RequireRole("DIRECTOR"));
+
 });
 
 // Cấu hình Entity Framework

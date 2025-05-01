@@ -42,9 +42,9 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Mã nhân viên không hợp lệ." });
                 }
 
+                // Lấy bản ghi chấm công (bỏ điều kiện trạng thái "Đã duyệt lần 1")
                 var attendanceRecords = await _context.ChamCongs
                     .Where(c => c.MaNv == employeeId &&
-                                c.TrangThai.Trim() == "Đã duyệt" &&
                                 c.NgayLamViec.Year == selectedMonth.Year &&
                                 c.NgayLamViec.Month == selectedMonth.Month)
                     .ToListAsync();
@@ -57,26 +57,13 @@ namespace HR_KD.ApiControllers
 
                 if (!attendanceRecords.Any())
                 {
-                    var allRecords = await _context.ChamCongs
-                        .Where(c => c.MaNv == employeeId &&
-                                    c.NgayLamViec.Year == selectedMonth.Year &&
-                                    c.NgayLamViec.Month == selectedMonth.Month)
-                        .ToListAsync();
-
-                    if (allRecords.Any())
-                    {
-                        _logger.LogInformation($"Có {allRecords.Count} bản ghi chấm công, nhưng không có bản ghi nào có trạng thái 'Đã duyệt'. Trạng thái mẫu: {allRecords.First().TrangThai}");
-                        return BadRequest(new { message = "Có dữ liệu chấm công nhưng không có bản ghi nào được duyệt." });
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Không có dữ liệu chấm công nào trong tháng này.");
-                        return BadRequest(new { message = "Không có dữ liệu chấm công trong tháng này." });
-                    }
+                    _logger.LogInformation("Không có dữ liệu chấm công nào trong tháng này.");
+                    return BadRequest(new { message = "Không có dữ liệu chấm công trong tháng này." });
                 }
 
+                // Lấy thông tin lương
                 var salaryInfo = await _context.ThongTinLuongNVs
-                    .Where(t => t.MaNv == employeeId && t.NgayApDung <= DateTime.Now)
+                    .Where(t => t.MaNv == employeeId && t.NgayApDung <= selectedMonth)
                     .OrderByDescending(t => t.NgayApDung)
                     .FirstOrDefaultAsync();
 
@@ -86,9 +73,11 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không tìm thấy thông tin lương." });
                 }
 
+                // Tính bảng lương
                 var calculator = new PayrollCalculator(_context);
-                var payroll = calculator.CalculatePayroll(employeeId, selectedMonth, attendanceRecords, salaryInfo);
+                var payroll = await calculator.CalculatePayroll(employeeId, selectedMonth, attendanceRecords, salaryInfo);
 
+                // Kiểm tra bảng lương đã tồn tại chưa
                 var existingPayroll = await _context.BangLuongs
                     .FirstOrDefaultAsync(b => b.MaNv == employeeId &&
                                               b.ThangNam.Year == selectedMonth.Year &&
@@ -102,7 +91,7 @@ namespace HR_KD.ApiControllers
                     existingPayroll.PhuCapThem = payroll.PhuCapThem;
                     existingPayroll.ThucNhan = payroll.ThucNhan;
                     existingPayroll.TongLuong = payroll.TongLuong;
-                    existingPayroll.TrangThai = "Đã tạo";
+                    existingPayroll.TrangThai = "Đã tạo - Chưa thanh toán";
                     _context.BangLuongs.Update(existingPayroll);
                 }
                 else
@@ -156,14 +145,15 @@ namespace HR_KD.ApiControllers
 
                 // Lấy thông tin nhân viên
                 var employee = await _context.NhanViens
+                    .Include(e => e.MaChucVuNavigation)
+                    .Include(e => e.MaPhongBanNavigation)
                     .Where(e => e.MaNv == employeeId)
                     .Select(e => new
                     {
                         e.HoTen,
                         e.Email,
-                        // With this corrected line:  
-                        e.MaChucVuNavigation.TenChucVu,
-                        e.MaPhongBanNavigation.TenPhongBan
+                        TenChucVu = e.MaChucVuNavigation.TenChucVu,
+                        TenPhongBan = e.MaPhongBanNavigation.TenPhongBan
                     })
                     .FirstOrDefaultAsync();
 
@@ -172,9 +162,9 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không tìm thấy thông tin nhân viên." });
                 }
 
-                // Lấy thông tin lương từ ThongTinLuongNVs
+                // Lấy thông tin lương
                 var salaryInfo = await _context.ThongTinLuongNVs
-                    .Where(t => t.MaNv == employeeId && t.NgayApDung <= DateTime.Now)
+                    .Where(t => t.MaNv == employeeId && t.NgayApDung <= selectedMonth)
                     .OrderByDescending(t => t.NgayApDung)
                     .FirstOrDefaultAsync();
 
@@ -183,20 +173,44 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không tìm thấy thông tin lương." });
                 }
 
-                // Lấy trạng thái chấm công (để tính ngày công thực tế)
+                // Lấy trạng thái chấm công (bỏ điều kiện trạng thái "Đã duyệt lần 1")
                 var attendanceRecords = await _context.ChamCongs
                     .Where(c => c.MaNv == employeeId &&
-                                c.TrangThai.Trim() == "Đã duyệt" &&
                                 c.NgayLamViec.Year == selectedMonth.Year &&
                                 c.NgayLamViec.Month == selectedMonth.Month)
                     .ToListAsync();
 
-                int actualWorkingDays = attendanceRecords.Count;
+                int actualWorkingDays = 27; // Sửa cứng tạm thời: 27 ngày công thực tế
+                decimal totalHours = 27 * 8; // Sửa cứng tạm thời: 27 ngày công * 8 giờ/ngày = 216 giờ
 
-                // Tính baseSalary (theo logic trong PayrollCalculator)
-                decimal totalHours = attendanceRecords.Sum(a => a.TongGio ?? 0);
-                decimal hourlyRate = salaryInfo.LuongCoBan / 160;
-                decimal baseSalary = totalHours * hourlyRate;
+                // Lấy thông tin hợp đồng và tỷ lệ lương
+                var contract = await _context.HopDongLaoDongs
+                    .Include(hd => hd.LoaiHopDong)
+                    .FirstOrDefaultAsync(hd => hd.MaNv == employeeId && hd.IsActive);
+
+                decimal tiLeLuong = contract != null ? (decimal)(contract.LoaiHopDong.TiLeLuong ?? 1.0) : 1.0m;
+
+                // Tính baseSalary thực tế (áp dụng TiLeLuong)
+                decimal adjustedSalary = salaryInfo.LuongCoBan * tiLeLuong;
+                decimal hourlyRate = adjustedSalary / 160;
+                decimal actualBaseSalary = totalHours * hourlyRate;
+
+                // Lấy thông tin tăng ca (bỏ điều kiện trạng thái "Đã duyệt lần 1")
+                var overtimeRecords = await _context.TangCas
+                    .Where(t => t.MaNv == employeeId &&
+                                t.NgayTangCa.Year == selectedMonth.Year &&
+                                t.NgayTangCa.Month == selectedMonth.Month)
+                    .ToListAsync();
+                decimal overtimeHours = overtimeRecords.Sum(t => (decimal)t.SoGioTangCa);
+                decimal overtimePay = overtimeRecords.Sum(t => (decimal)t.SoGioTangCa * hourlyRate * t.TyLeTangCa);
+
+                // Giả lập các khoản khấu trừ đi muộn, tạm ứng
+                decimal lateDeduction = 0;
+                decimal advanceDeduction = 0;
+
+                // Tính ngày nghỉ phép (giả lập)
+                int leaveDays = 0;
+                int annualLeaveDays = 0;
 
                 return Ok(new
                 {
@@ -211,25 +225,25 @@ namespace HR_KD.ApiControllers
                     payroll = new
                     {
                         monthYear,
-                        standardWorkingDays = 20, // Hardcode 20 ngày công chuẩn
+                        standardWorkingDays = 20,
                         actualWorkingDays,
-                        leaveDays = 0, // Nghỉ phép tháng
-                        annualLeaveDays = 0, // Phép năm
-                        baseSalary = salaryInfo.LuongCoBan, // Lương cơ bản
-                        actualBaseSalary = baseSalary, // Lương thực tế (baseSalary)
+                        leaveDays,
+                        annualLeaveDays,
+                        baseSalary = salaryInfo.LuongCoBan,
+                        actualBaseSalary,
                         bhxh = salaryInfo.BHXH,
                         bhyt = salaryInfo.BHYT,
                         bhtn = salaryInfo.BHTN,
-                        fixedAllowance = salaryInfo.PhuCapCoDinh ?? 0, // Phụ cấp cố định
-                        additionalAllowance = payroll.PhuCapThem, // Phụ cấp thêm
-                        kpiBonus = payroll.LuongThem, // Thưởng KPI
-                        overtimeHours = 0, // Giờ làm thêm
-                        overtimePay = 0, // Tiền làm thêm
-                        totalIncome = payroll.TongLuong, // Tổng thu nhập
-                        tax = payroll.ThueTNCN, // Thuế TNCN
-                        lateDeduction = 0, // Đi muộn
-                        advanceDeduction = 0, // Tạm ứng
-                        netIncome = payroll.ThucNhan // Thực nhận
+                        fixedAllowance = salaryInfo.PhuCapCoDinh ?? 0,
+                        additionalAllowance = payroll.PhuCapThem,
+                        kpiBonus = payroll.LuongThem,
+                        overtimeHours,
+                        overtimePay,
+                        totalIncome = payroll.TongLuong,
+                        tax = payroll.ThueTNCN,
+                        lateDeduction,
+                        advanceDeduction,
+                        netIncome = payroll.ThucNhan
                     }
                 });
             }

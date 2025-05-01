@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250430153406_DropVungLuongAndMucLuongCoSoInThongTinbaoHiem")]
+    partial class DropVungLuongAndMucLuongCoSoInThongTinbaoHiem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -272,36 +275,6 @@ namespace HR_KD.Migrations
                     b.HasIndex("MaPhongBan");
 
                     b.ToTable("DaoTao", (string)null);
-                });
-
-            modelBuilder.Entity("HR_KD.Data.GiamTruGiaCanh", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("GhiChu")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<decimal>("MucGiamTruBanThan")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("MucGiamTruNguoiPhuThuoc")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("NgayHetHieuLuc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("NgayHieuLuc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GiamTruGiaCanhs");
                 });
 
             modelBuilder.Entity("HR_KD.Data.LichSuChamCong", b =>
@@ -656,9 +629,6 @@ namespace HR_KD.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("SDT");
-
-                    b.Property<int>("SoNguoiPhuThuoc")
-                        .HasColumnType("int");
 
                     b.Property<string>("TrinhDoHocVan")
                         .HasMaxLength(100)

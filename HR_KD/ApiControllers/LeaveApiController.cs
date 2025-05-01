@@ -289,7 +289,7 @@ namespace HR_KD.ApiControllers
                 // Lấy các ngày đã đăng ký nghỉ phép (chỉ lấy những ngày đang chờ duyệt hoặc đã duyệt)
                 var registeredDates = await _context.NgayNghis
                     .Where(n => n.MaNv == currentMaNv.Value &&
-                          (n.TrangThai == "Chờ duyệt" || n.TrangThai == "Đã duyệt"))
+                          (n.TrangThai == "Chờ duyệt" || n.TrangThai == "Đã duyệt lận 1"))
                     .Select(n => n.NgayNghi1.ToString("yyyy-MM-dd"))
                     .ToListAsync();
 

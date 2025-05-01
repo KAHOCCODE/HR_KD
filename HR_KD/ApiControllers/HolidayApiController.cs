@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Net;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 namespace HR_KD.ApiControllers
 {
     [Route("api/Holidays")]
@@ -29,6 +30,13 @@ namespace HR_KD.ApiControllers
             if (holidayDto == null || string.IsNullOrEmpty(holidayDto.TenNgayLe) || holidayDto.NgayLe1 == default)
             {
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
+            }
+
+            // Kiểm tra thời gian hiện tại có nằm trong khoảng 1/12-30/12 không
+            var currentDate = DateTime.Now;
+            if (currentDate.Month != 12 || currentDate.Day < 1 || currentDate.Day > 30)
+            {
+                return BadRequest(new { success = false, message = "Chức năng thêm ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hàng năm." });
             }
 
             var existingHoliday = _context.NgayLes
@@ -66,6 +74,13 @@ namespace HR_KD.ApiControllers
         {
             try
             {
+                // Kiểm tra thời gian hiện tại có nằm trong khoảng 1/12-30/12 không
+                var currentDate = DateTime.Now;
+                if (currentDate.Month != 12 || currentDate.Day < 1 || currentDate.Day > 30)
+                {
+                    return BadRequest(new { success = false, message = "Chức năng xóa ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hàng năm." });
+                }
+
                 var holiday = _context.NgayLes.Find(id);
                 if (holiday == null)
                 {
@@ -191,6 +206,7 @@ namespace HR_KD.ApiControllers
         }
 
         [HttpPost("Approve/{id}")]
+        [Authorize(Policy = "IsDirector")]
         public IActionResult ApproveHoliday(int id)
         {
             try
@@ -216,6 +232,7 @@ namespace HR_KD.ApiControllers
         }
 
         [HttpPost("Reject/{id}")]
+        [Authorize(Policy = "IsDirector")]
         public IActionResult RejectHoliday(int id)
         {
             try
@@ -245,6 +262,7 @@ namespace HR_KD.ApiControllers
         }
 
         [HttpPost("Approve/year/{year}")]
+        [Authorize(Policy = "IsDirector")]
         public IActionResult ApproveAllHolidaysInYear(int year)
         {
             try

@@ -7,32 +7,9 @@
 <div class="container mt-4">
     <h2 class="text-primary">Quản lý Ngày Lễ</h2>
 
-    <form id="holidayForm">
-        <div class="mb-3">
-            <label class="form-label">Tên Ngày Lễ</label>
-            <input type="text" class="form-control" id="tenNgayLe" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Ngày Lễ</label>
-            <input type="text" class="form-control date-picker" id="holidayDate" placeholder="Chọn ngày lễ" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Số Ngày Nghỉ</label>
-            <input type="number" class="form-control" id="soNgayNghi" min="1" value="1">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Mô Tả</label>
-            <textarea class="form-control" id="moTa"></textarea>
-        </div>
-        <button type="button" class="btn btn-primary" id="saveHoliday">Lưu Ngày Lễ</button>
-        <div class="d-inline-flex align-items-center ms-2">
-            <label class="form-label me-2">Năm:</label>
-            <select id="fixedHolidayYear" class="form-select" style="width: 100px;">
-                <option value="">Năm nay</option>
-            </select>
-            <button type="button" class="btn btn-success ms-2" id="saveFixedHolidays">Lưu Lễ Có Sẵn</button>
-        </div>
-    </form>
+    <div class="alert alert-info" id="holidayPeriodAlert" style="display: none;">
+        <strong>Lưu ý:</strong> Chức năng thêm ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hàng năm.
+    </div>
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mt-4">Danh Sách Ngày Lễ</h3>
@@ -77,12 +54,93 @@
         </div>
     </div>
 </div>
-
+<form id="holidayForm">
+        <div class="mb-3">
+            <label class="form-label">Tên Ngày Lễ</label>
+            <input type="text" class="form-control" id="tenNgayLe" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ngày Lễ</label>
+            <input type="text" class="form-control date-picker" id="holidayDate" placeholder="Chọn ngày lễ" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Số Ngày Nghỉ</label>
+            <input type="number" class="form-control" id="soNgayNghi" min="1" value="1">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mô Tả</label>
+            <textarea class="form-control" id="moTa"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary" id="saveHoliday">Lưu Ngày Lễ</button>
+        <div class="d-inline-flex align-items-center ms-2">
+            <label class="form-label me-2">Năm:</label>
+            <select id="fixedHolidayYear" class="form-select" style="width: 100px;">
+                <option value="">Năm nay</option>
+            </select>
+            <button type="button" class="btn btn-success ms-2" id="saveFixedHolidays">Lưu Lễ Có Sẵn</button>
+        </div>
+    </form>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        // Kiểm tra thời gian hiện tại có nằm trong khoảng 1/12-30/12 không
+        function isInHolidayPeriod() {
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1; // Tháng bắt đầu từ 0
+            const currentDay = today.getDate();
+            
+            return currentMonth === 12 && currentDay >= 1 && currentDay <= 30;
+        }
+
+        // Hiển thị thông báo và disable form nếu không trong khoảng thời gian cho phép
+        function checkHolidayPeriod() {
+            const isInPeriod = isInHolidayPeriod();
+            const holidayForm = document.getElementById('holidayForm');
+            const saveButton = document.getElementById('saveHoliday');
+            const saveFixedButton = document.getElementById('saveFixedHolidays');
+            const alertElement = document.getElementById('holidayPeriodAlert');
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+
+            if (!isInPeriod) {
+                // Disable form thêm ngày lễ
+                holidayForm.style.opacity = '0.5';
+                holidayForm.style.pointerEvents = 'none';
+                saveButton.disabled = true;
+                saveFixedButton.disabled = true;
+                
+                // Disable các nút xóa
+                deleteButtons.forEach(button => {
+                    button.disabled = true;
+                    button.style.opacity = '0.5';
+                    button.style.cursor = 'not-allowed';
+                });
+
+                // Hiển thị thông báo
+                alertElement.style.display = 'block';
+            } else {
+                // Enable form thêm ngày lễ
+                holidayForm.style.opacity = '1';
+                holidayForm.style.pointerEvents = 'auto';
+                saveButton.disabled = false;
+                saveFixedButton.disabled = false;
+                
+                // Enable các nút xóa
+                deleteButtons.forEach(button => {
+                    button.disabled = false;
+                    button.style.opacity = '1';
+                    button.style.cursor = 'pointer';
+                });
+
+                // Ẩn thông báo
+                alertElement.style.display = 'none';
+            }
+        }
+
+        // Gọi hàm kiểm tra khi trang load và sau mỗi lần cập nhật bảng
+        checkHolidayPeriod();
+
         // Biến lưu ID ngày lễ cần xóa
         let holidayIdToDelete = null;
 
@@ -101,7 +159,7 @@
                         let today = new Date();
                         today.setHours(0, 0, 0, 0);
 
-                        // Chặn ngày trong quá khứ và Chủ Nhật
+                        // Chỉ chặn ngày trong quá khứ và Chủ Nhật
                         if (date < today || date.getDay() === 0) {
                             return true;
                         }
@@ -299,6 +357,11 @@ function saveFixedHolidaysForYear(year) {
                     // Thêm sự kiện cho các nút xóa
                     document.querySelectorAll('.delete-btn').forEach(button => {
                         button.addEventListener('click', function() {
+                            if (!isInHolidayPeriod()) {
+                                alert("Chức năng xóa ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hàng năm.");
+                                return;
+                            }
+
                             const id = this.getAttribute('data-id');
                             const name = this.getAttribute('data-name');
                             const date = this.getAttribute('data-date');
@@ -317,6 +380,9 @@ function saveFixedHolidaysForYear(year) {
 
                     // Cập nhật danh sách năm trong dropdown bộ lọc
                     updateYearOptions(data);
+
+                    // Kiểm tra lại trạng thái các nút sau khi cập nhật bảng
+                    checkHolidayPeriod();
                 });
         }
 

@@ -48,7 +48,8 @@ namespace HR_KD.ApiControllers
                     e.NgayVaoLam,
                     ChucVu = e.MaChucVuNavigation.TenChucVu,
                     PhongBan = e.MaPhongBanNavigation.TenPhongBan,
-                    e.AvatarUrl
+                    e.AvatarUrl,
+                    e.SoNguoiPhuThuoc
                 })
                 .ToList();
             return Ok(employees);
@@ -112,10 +113,40 @@ namespace HR_KD.ApiControllers
         }
         #endregion
 
+        #region Kiểm tra nhân viên đã có thông tin lương hay chưa
+        [HttpGet("CheckEmployeeSalary/{maNv}")]
+        public IActionResult CheckEmployeeSalary(int maNv)
+        {
+            try
+            {
+                // Kiểm tra nhân viên tồn tại
+                if (!_context.NhanViens.Any(nv => nv.MaNv == maNv))
+                {
+                    return BadRequest(new { message = "Nhân viên không tồn tại." });
+                }
+
+                // Kiểm tra xem nhân viên đã có thông tin lương hay chưa
+                bool hasSalary = _context.BangLuongs.Any(l => l.MaNv == maNv);
+
+                return Ok(new { hasSalary });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi kiểm tra thông tin lương của nhân viên.");
+                return StatusCode(500, new { message = "Lỗi server. Xem log để biết chi tiết.", error = ex.Message });
+            }
+        }
+        #endregion
+
         #region Thêm hoặc cập nhật hợp đồng
         [HttpPost("SaveContract")]
-        public IActionResult SaveContract([FromForm] ContractDTO contractDto)
+        public IActionResult SaveContract([FromBody] ContractDTO contractDto)
         {
+            if (contractDto == null)
+            {
+                return BadRequest(new { message = "Dữ liệu hợp đồng không được để trống." });
+            }
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors)
@@ -127,6 +158,12 @@ namespace HR_KD.ApiControllers
             using var transaction = _context.Database.BeginTransaction();
             try
             {
+                // Kiểm tra MaNv hợp lệ
+                if (contractDto.MaNv <= 0)
+                {
+                    return BadRequest(new { message = "Mã nhân viên không hợp lệ." });
+                }
+
                 // Kiểm tra nhân viên tồn tại
                 if (!_context.NhanViens.Any(nv => nv.MaNv == contractDto.MaNv))
                 {
@@ -141,27 +178,50 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Loại hợp đồng không tồn tại." });
                 }
 
-                // Kiểm tra ThoiHan so với ThoiHanMacDinh
-                if (loaiHopDong.ThoiHanMacDinh.HasValue && contractDto.ThoiHan.HasValue)
+                // Kiểm tra NgayBatDau bắt buộc
+                if (contractDto.NgayBatDau == default)
                 {
-                    if (contractDto.ThoiHan.Value > loaiHopDong.ThoiHanMacDinh.Value)
+                    return BadRequest(new { message = "Ngày bắt đầu là bắt buộc." });
+                }
+
+                // Kiểm tra ThoiHan so với ThoiHanMacDinh
+                // Bỏ qua kiểm tra nếu là hợp đồng không xác định thời hạn (MaLoaiHopDong = 2)
+                if (contractDto.MaLoaiHopDong != 2)
+                {
+                    if (loaiHopDong.ThoiHanMacDinh.HasValue && contractDto.ThoiHan.HasValue)
                     {
-                        return BadRequest(new { message = $"Thời hạn hợp đồng không được vượt quá {loaiHopDong.ThoiHanMacDinh.Value} tháng." });
+                        if (contractDto.ThoiHan.Value > loaiHopDong.ThoiHanMacDinh.Value)
+                        {
+                            return BadRequest(new { message = $"Thời hạn hợp đồng không được vượt quá {loaiHopDong.ThoiHanMacDinh.Value} tháng." });
+                        }
+                    }
+                    else if (!loaiHopDong.ThoiHanMacDinh.HasValue && contractDto.ThoiHan.HasValue)
+                    {
+                        return BadRequest(new { message = "Loại hợp đồng này không cho phép nhập thời hạn." });
                     }
                 }
-                else if (!loaiHopDong.ThoiHanMacDinh.HasValue && contractDto.ThoiHan.HasValue)
+                else
                 {
-                    return BadRequest(new { message = "Loại hợp đồng này không cho phép nhập thời hạn." });
+                    // Hợp đồng không xác định thời hạn: đảm bảo ThoiHan và NgayKetThuc là null
+                    contractDto.ThoiHan = null;
+                    contractDto.NgayKetThuc = null;
                 }
 
                 // Tính NgayKetThuc nếu không được gửi từ frontend
-                DateOnly? ngayKetThuc = contractDto.NgayKetThuc.HasValue
-                    ? DateOnly.FromDateTime(contractDto.NgayKetThuc.Value)
-                    : (contractDto.ThoiHan.HasValue && contractDto.ThoiHan > 0
-                        ? DateOnly.FromDateTime(contractDto.NgayBatDau.AddMonths(contractDto.ThoiHan.Value))
-                        : null);
+                DateOnly? ngayKetThuc = null;
+                if (contractDto.MaLoaiHopDong != 2) // Chỉ tính nếu không phải hợp đồng không xác định thời hạn
+                {
+                    if (!string.IsNullOrEmpty(contractDto.NgayKetThuc?.ToString()))
+                    {
+                        ngayKetThuc = DateOnly.FromDateTime(contractDto.NgayKetThuc.Value);
+                    }
+                    else if (contractDto.ThoiHan.HasValue && contractDto.ThoiHan > 0)
+                    {
+                        ngayKetThuc = DateOnly.FromDateTime(contractDto.NgayBatDau.AddMonths(contractDto.ThoiHan.Value));
+                    }
+                }
 
-                if (contractDto.MaHopDong.HasValue)
+                if (contractDto.MaHopDong > 0)
                 {
                     // Cập nhật hợp đồng
                     var existingContract = _context.HopDongLaoDongs
@@ -192,7 +252,7 @@ namespace HR_KD.ApiControllers
                         NgayBatDau = DateOnly.FromDateTime(contractDto.NgayBatDau),
                         NgayKetThuc = ngayKetThuc,
                         GhiChu = contractDto.GhiChu,
-                        SoLanGiaHan = 0, // Khởi tạo SoLanGiaHan
+                        SoLanGiaHan = 0,
                         IsActive = true
                     };
 
@@ -202,7 +262,7 @@ namespace HR_KD.ApiControllers
                 _context.SaveChanges();
                 transaction.Commit();
 
-                return Ok(new { message = "Hợp đồng đã được lưu thành công." });
+                return Ok(new { message = "Hợp đồng đã được lưu thành công.", maNv = contractDto.MaNv });
             }
             catch (Exception ex)
             {
@@ -254,7 +314,7 @@ namespace HR_KD.ApiControllers
 
                 if (extendDto.ConvertToUnlimited)
                 {
-                    // Chuyển sang hợp đồng không xác định thời hạn (MaLoaiHopDong = 2)
+                    // (MaLoaiHopDong = 2)
                     var loaiHopDongKhongThoiHan = _context.LoaiHopDongs
                         .FirstOrDefault(l => l.MaLoaiHopDong == 2);
                     if (loaiHopDongKhongThoiHan == null)
@@ -343,7 +403,8 @@ namespace HR_KD.ApiControllers
                     MaPhongBan = employeeDto.MaPhongBan,
                     MaChucVu = employeeDto.MaChucVu,
                     NgayVaoLam = DateOnly.FromDateTime(employeeDto.NgayVaoLam),
-                    AvatarUrl = null
+                    AvatarUrl = null,
+                    SoNguoiPhuThuoc = employeeDto.SoNguoiPhuThuoc
                 };
 
                 _context.NhanViens.Add(employee);
@@ -422,57 +483,57 @@ namespace HR_KD.ApiControllers
                 {
                     string subject = "Thông tin tài khoản nhân viên";
                     string body = $@"
-                    <table width='100%' cellpadding='0' cellspacing='0' style='font-family:Segoe UI, sans-serif; background: #f4f4f4; padding: 30px;'>
-                        <tr>
-                            <td align='center'>
-                                <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05);'>
-                                    <tr>
-                                        <td style='background-color: #004080; padding: 20px 0; text-align: center;'>
-                                            <img src='' alt='Company Logo' height='50' />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style='padding: 30px;'>
-                                            <h2 style='color: #004080;'>Chào {employeeDto.HoTen},</h2>
-                                            <p>Chúc mừng bạn đã trở thành một phần của công ty 🎉.</p>
-                                            <p>Dưới đây là thông tin tài khoản để bạn có thể đăng nhập vào hệ thống:</p>
+            <table width='100%' cellpadding='0' cellspacing='0' style='font-family:Segoe UI, sans-serif; background: #f4f4f4; padding: 30px;'>
+                <tr>
+                    <td align='center'>
+                        <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05);'>
+                            <tr>
+                                <td style='background-color: #004080; padding: 20px 0; text-align: center;'>
+                                    <img src='' alt='Company Logo' height='50' />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='padding: 30px;'>
+                                    <h2 style='color: #004080;'>Chào {employeeDto.HoTen},</h2>
+                                    <p>Chúc mừng bạn đã trở thành một phần của công ty 🎉.</p>
+                                    <p>Dưới đây là thông tin tài khoản để bạn có thể đăng nhập vào hệ thống:</p>
 
-                                            <table cellpadding='8' cellspacing='0' width='100%' style='margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;'>
-                                                <tr style='background-color: #f0f0f0;'>
-                                                    <th align='left'>Tài khoản</th>
-                                                    <th align='left'>Mật khẩu tạm thời</th>
-                                                </tr>
-                                                <tr>
-                                                    <td>{taiKhoan.Username}</td>
-                                                    <td>{defaultPassword}</td>
-                                                </tr>
-                                            </table>
+                                    <table cellpadding='8' cellspacing='0' width='100%' style='margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;'>
+                                        <tr style='background-color: #f0f0f0;'>
+                                            <th align='left'>Tài khoản</th>
+                                            <th align='left'>Mật khẩu tạm thời</th>
+                                        </tr>
+                                        <tr>
+                                            <td>{taiKhoan.Username}</td>
+                                            <td>{defaultPassword}</td>
+                                        </tr>
+                                    </table>
 
-                                            <p style='margin-top: 20px; color: #888;'>
-                                                * Vui lòng đăng nhập vào hệ thống và đổi mật khẩu để đảm bảo an toàn.
-                                            </p>
+                                    <p style='margin-top: 20px; color: #888;'>
+                                        * Vui lòng đăng nhập vào hệ thống và đổi mật khẩu để đảm bảo an toàn.
+                                    </p>
 
-                                            <div style='text-align:center; margin: 30px 0;'>
-                                                <a href='' 
-                                                    style='display:inline-block; background-color:#004080; color:white; padding:12px 20px; text-decoration:none; border-radius:5px; font-weight:bold;'>
-                                                    Đăng nhập ngay
-                                                </a>
-                                            </div>
+                                    <div style='text-align:center; margin: 30px 0;'>
+                                        <a href='' 
+                                            style='display:inline-block; background-color:#004080; color:white; padding:12px 20px; text-decoration:none; border-radius:5px; font-weight:bold;'>
+                                            Đăng nhập ngay
+                                        </a>
+                                    </div>
 
-                                            <p style='font-size: 13px; color: #999; text-align: center;'>
-                                                Nếu bạn có bất kỳ câu hỏi nào, hãy liên hệ với bộ phận IT để được hỗ trợ.
-                                            </p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style='background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
-                                            © 2025 Công ty ABC | <a href='https://yourcompanydomain.com' style='color:#004080;'>Trang chủ</a>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>";
+                                    <p style='font-size: 13px; color: #999; text-align: center;'>
+                                        Nếu bạn có bất kỳ câu hỏi nào, hãy liên hệ với bộ phận IT để được hỗ trợ.
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                                    © 2025 Công ty ABC | <a href='https://yourcompanydomain.com' style='color:#004080;'>Trang chủ</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>";
 
                     _emailService.SendEmail(employeeDto.Email, subject, body);
                 }
@@ -497,7 +558,8 @@ namespace HR_KD.ApiControllers
                     NgayVaoLam = employee.NgayVaoLam,
                     MaPhongBan = employee.MaPhongBan,
                     MaChucVu = employee.MaChucVu,
-                    AvatarUrl = employee.AvatarUrl
+                    AvatarUrl = employee.AvatarUrl,
+                    SoNguoiPhuThuoc = employee.SoNguoiPhuThuoc
                 };
 
                 return CreatedAtAction(nameof(GetEmployees), new { id = maNvMoi }, responseDto);

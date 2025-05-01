@@ -208,11 +208,17 @@
                                 <!-- Accessible to all users -->
                                 <li><a href="~/Attendance/Index"><i class="fa fa-list"></i> Danh sách chấm công</a></li>
                                 <!-- Restricted to EMPLOYEE_MANAGER role -->
-                                @* @if (User.IsInRole("EMPLOYEE_MANAGER"))
-                                { *@
+                                @if (User.IsInRole("DIRECTOR"))
+                                { 
+                                    <li><a href="~/AttendanceManager/Director"><i class="fa fa-calendar"></i> Quản lý ca làm việc</a></li>
+                                    <li><a href="~/AttendanceRequestManager/Index"><i class="fa fa-file-text"></i> Yêu cầu chấm công</a></li>
+                                }
+                                else if (User.IsInRole("EMPLOYEE_MANAGER"))
+                                { 
                                     <li><a href="~/AttendanceManager/Index"><i class="fa fa-calendar"></i> Quản lý ca làm việc</a></li>
-                                    <li><a href="~/AttendanceRequestManager/Index"><i class="fa fa-file-text"></i> Báo cáo chấm công</a></li>
-                                @* } *@
+                                }
+
+
                             </ul>
                         </li>
                         <!-- Updated Ngày lễ Dropdown -->
@@ -220,13 +226,15 @@
                             <a href="#"><i class="fa fa-clock-o"></i> <span>Ngày lễ</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
                                 <!-- Accessible to all users -->
-                                
-                                <!-- Restricted to EMPLOYEE_MANAGER role -->
-                                @* @if (User.IsInRole("EMPLOYEE_MANAGER"))
-                                { *@
-                                    <li><a href="~/Holiday/Index"><i class="fa fa-calendar"></i> Tạo ngày lễ</a></li>
-                                 <li><a href="~/HolidayManager/Index"><i class="fa fa-file-text"></i> Duyệt ngày lễ</a></li>
-                                @* } *@
+                                @if (User.IsInRole("DIRECTOR"))
+                                {
+                                        <li><a href="~/HolidayManager/Index"><i class="fa fa-file-text"></i> Duyệt ngày lễ</a></li>
+                                }
+                                else if (User.IsInRole("EMPLOYEE_MANAGER"))
+                                { 
+                                            <li><a href="~/Holiday/Index"><i class="fa fa-calendar"></i> Tạo ngày lễ</a></li>
+                                }
+                               
                             </ul>
                         </li>
 

@@ -1,106 +1,159 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thiết Lập Hợp Đồng</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/createemploy.css">
-</head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="card shadow border-0 overflow-hidden">
-            <div class="card-header bg-primary text-white p-4">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-file-contract fa-2x me-3"></i>
-                    <h2 class="mb-0 fw-bold">Thiết Lập Hợp Đồng</h2>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-700 px-6 py-5">
+                <h2 class="text-2xl font-semibold text-white text-center">
+                    <i class="fas fa-file-contract mr-2"></i>
+                    Thiết Lập Hợp Đồng
+                </h2>
+            </div>
+
+            <div class="p-6 bg-gray-50 border-b border-gray-200">
+                <div class="progress h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="formProgress" class="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                         style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="flex justify-between mt-3 text-sm font-medium text-gray-600">
+                    <span>Thông tin hợp đồng</span>
+                    <span>Hoàn tất</span>
                 </div>
             </div>
-            <div class="card-body p-4">
-                <form id="contractForm" class="needs-validation" novalidate>
-                    <input type="hidden" id="MaNv" value="@ViewBag.MaNv" />
-                    <input type="hidden" id="MaHopDong" />
 
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 text-primary">
-                                <i class="fas fa-file-contract me-2"></i>Thông Tin Hợp Đồng
-                            </h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row g-3">
-                                <!-- Loại hợp đồng -->
-                                <div class="col-md-6">
-                                    <label for="MaLoaiHopDong" class="form-label">
-                                        <i class="fas fa-file-alt me-1 text-muted"></i>Loại Hợp Đồng <span class="text-danger">*</span>
+            <form id="contractForm" class="p-6 sm:p-8">
+                <input type="hidden" id="MaNv" />
+                <input type="hidden" id="MaHopDong" />
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-file-contract mr-2 text-blue-600"></i>
+                                Thông tin hợp đồng
+                            </h3>
+
+                            <div class="space-y-5">
+                                <div>
+                                    <label for="MaLoaiHopDong" class="block text-sm font-medium text-gray-700">
+                                        Loại Hợp Đồng <span class="text-red-500">*</span>
                                     </label>
-                                    <select class="form-select form-select-lg" id="MaLoaiHopDong" required>
+                                    <select id="MaLoaiHopDong"
+                                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                            required>
                                         <option value="">-- Chọn loại hợp đồng --</option>
                                     </select>
-                                    <div class="invalid-feedback">Vui lòng chọn loại hợp đồng</div>
+                                    <p class="mt-1 text-xs text-gray-500">Chọn loại hợp đồng phù hợp</p>
                                 </div>
 
-                                <!-- Thời hạn hợp đồng -->
-                                <div class="col-md-6" id="ThoiHanContainer">
-                                    <label for="ThoiHan" class="form-label">
-                                        <i class="fas fa-clock me-1 text-muted"></i>Thời Hạn (tháng)
+                                <div id="ThoiHanContainer">
+                                    <label for="ThoiHan" class="block text-sm font-medium text-gray-700">
+                                        Thời Hạn (tháng)
                                     </label>
-                                    <input type="number" class="form-control form-control-lg" id="ThoiHan" min="0" />
-                                    <div class="invalid-feedback">Thời hạn phải nhỏ hơn hoặc bằng thời hạn mặc định</div>
+                                    <input type="number" id="ThoiHan" min="0"
+                                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                           placeholder="Nhập thời hạn hợp đồng" />
+                                    <p class="mt-1 text-xs text-gray-500">Thời hạn hợp đồng (nếu có)</p>
                                 </div>
 
-                                <!-- Ngày bắt đầu -->
-                                <div class="col-md-6">
-                                    <label for="NgayBatDau" class="form-label">
-                                        <i class="fas fa-calendar-check me-1 text-muted"></i>Ngày Bắt Đầu <span class="text-danger">*</span>
+                                <div>
+                                    <label for="NgayBatDau" class="block text-sm font-medium text-gray-700">
+                                        Ngày Bắt Đầu <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="date" class="form-control form-control-lg" id="NgayBatDau" required />
-                                    <div class="invalid-feedback">Vui lòng chọn ngày bắt đầu</div>
-                                </div>
-
-                                <!-- Ngày kết thúc (chỉ đọc) -->
-                                <div class="col-md-6">
-                                    <label for="NgayKetThuc" class="form-label">
-                                        <i class="fas fa-calendar-times me-1 text-muted"></i>Ngày Kết Thúc
-                                    </label>
-                                    <input type="date" class="form-control form-control-lg" id="NgayKetThuc" readonly />
-                                </div>
-
-                                <!-- Ghi chú -->
-                                <div class="col-12">
-                                    <label for="GhiChu" class="form-label">
-                                        <i class="fas fa-comment me-1 text-muted"></i>Ghi Chú
-                                    </label>
-                                    <textarea class="form-control" id="GhiChu" rows="3"></textarea>
+                                    <input type="text" id="NgayBatDau"
+                                           class="flatpickr w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                           placeholder="Chọn ngày" required />
+                                    <p class="mt-1 text-xs text-gray-500">Ngày bắt đầu hiệu lực hợp đồng</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Nút Submit -->
-                    <div class="text-center mt-4">
-                        <button type="button" class="btn btn-light btn-lg me-2" onclick="window.history.back()">
-                            <i class="fas fa-times me-2"></i>Hủy
-                        </button>
-                        <button type="submit" class="btn btn-primary btn-lg px-5">
-                            <i class="fas fa-save me-2"></i>Lưu Hợp Đồng
-                        </button>
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                                Chi tiết bổ sung
+                            </h3>
+
+                            <div class="space-y-5">
+                                <div>
+                                    <label for="NgayKetThuc" class="block text-sm font-medium text-gray-700">
+                                        Ngày Kết Thúc
+                                    </label>
+                                    <input type="text" id="NgayKetThuc"
+                                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-600"
+                                           readonly />
+                                    <p class="mt-1 text-xs text-gray-500">Ngày kết thúc (tự động tính)</p>
+                                </div>
+
+                                <div>
+                                    <label for="GhiChu" class="block text-sm font-medium text-gray-700">
+                                        Ghi Chú
+                                    </label>
+                                    <textarea id="GhiChu" rows="4"
+                                              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                                              placeholder="Thông tin bổ sung"></textarea>
+                                    <p class="mt-1 text-xs text-gray-500">Thông tin bổ sung về hợp đồng</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="mt-8 flex justify-between">
+                    <a href="/Employees/EmployeeContracts"
+                       class="inline-flex items-center px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors font-medium">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Quay Lại
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center px-6 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium">
+                        <i class="fas fa-save mr-2"></i>
+                        Lưu Hợp Đồng
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.0/sweetalert2.all.min.js"></script>
-
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         $(document).ready(function () {
+            // Lấy maNv từ query string
+            const urlParams = new URLSearchParams(window.location.search);
+            const maNv = urlParams.get('maNv');
+            $("#MaNv").val(maNv);
+
+            // Initialize Flatpickr
+            flatpickr("#NgayBatDau", {
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/Y",
+                minDate: "today",
+                defaultDate: "today",
+                onReady: function(selectedDates, dateStr, instance) {
+                    $(instance.input).removeAttr("disabled").removeAttr("readonly");
+                    instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
+                },
+                onOpen: function(selectedDates, dateStr, instance) {
+                    instance.calendarContainer.style.zIndex = "9999";
+                }
+            });
+
             // Load danh sách loại hợp đồng
             $.get("/api/LoaiHopDongApi", function (data) {
                 let dropdown = $("#MaLoaiHopDong");
@@ -115,15 +168,21 @@
                 let thoiHanMacDinh = $(this).find(':selected').data('thoihan');
                 let thoiHanInput = $("#ThoiHan");
                 let thoiHanContainer = $("#ThoiHanContainer");
+                let maLoaiHopDong = $(this).val();
 
-                if (thoiHanMacDinh) {
-                    // Hiển thị input ThoiHan và giới hạn giá trị
+                // Nếu là hợp đồng không xác định thời hạn (MaLoaiHopDong = 2)
+                if (maLoaiHopDong == 2) {
+                    thoiHanContainer.hide();
+                    thoiHanInput.val('');
+                    thoiHanInput.removeAttr('max');
+                    thoiHanInput.removeAttr('data-thoihan-mac-dinh');
+                    $("#NgayKetThuc").val(''); // Xóa ngày kết thúc
+                } else if (thoiHanMacDinh) {
                     thoiHanContainer.show();
                     thoiHanInput.val(thoiHanMacDinh);
                     thoiHanInput.attr('max', thoiHanMacDinh);
                     thoiHanInput.attr('data-thoihan-mac-dinh', thoiHanMacDinh);
                 } else {
-                    // Ẩn input ThoiHan
                     thoiHanContainer.hide();
                     thoiHanInput.val('');
                     thoiHanInput.removeAttr('max');
@@ -132,105 +191,185 @@
                 updateNgayKetThuc();
             });
 
-            // Cập nhật ngày kết thúc khi thay đổi ngày bắt đầu hoặc thời hạn
+            // Cập nhật ngày kết thúc
             $("#NgayBatDau, #ThoiHan").on("change input", updateNgayKetThuc);
 
             function updateNgayKetThuc() {
+                let maLoaiHopDong = $("#MaLoaiHopDong").val();
                 let ngayBatDau = $("#NgayBatDau").val();
                 let thoiHan = parseInt($("#ThoiHan").val()) || 0;
 
-                if (ngayBatDau && thoiHan > 0) {
+                // Nếu là hợp đồng không xác định thời hạn, không cần ngày kết thúc
+                if (maLoaiHopDong == 2) {
+                    $("#NgayKetThuc").val('');
+                } else if (ngayBatDau && thoiHan > 0) {
                     let startDate = new Date(ngayBatDau);
                     let endDate = new Date(startDate.setMonth(startDate.getMonth() + thoiHan));
-                    $("#NgayKetThuc").val(endDate.toISOString().split('T')[0]);
+                    let formattedEndDate = endDate.toISOString().split('T')[0];
+                    $("#NgayKetThuc").val(formattedEndDate);
                 } else {
                     $("#NgayKetThuc").val('');
                 }
             }
 
             // Load thông tin hợp đồng hiện tại (nếu có)
-            let maNv = $("#MaNv").val();
             if (maNv) {
                 $.get(`/api/EmployeesApi/GetEmployeeContract/${maNv}`, function (data) {
                     if (data && data.maHopDong) {
                         $("#MaHopDong").val(data.maHopDong);
-                        $("#MaLoaiHopDong").val(data.maLoaiHopDong).trigger('change'); // Trigger change để cập nhật ThoiHan
+                        $("#MaLoaiHopDong").val(data.maLoaiHopDong).trigger('change');
                         $("#ThoiHan").val(data.thoiHan);
                         $("#NgayBatDau").val(data.ngayBatDau ? new Date(data.ngayBatDau).toISOString().split('T')[0] : '');
                         $("#NgayKetThuc").val(data.ngayKetThuc ? new Date(data.ngayKetThuc).toISOString().split('T')[0] : '');
                         $("#GhiChu").val(data.ghiChu);
                     }
-                });
-            }
-
-            // Kiểm tra thời hạn hợp đồng trước khi gửi
-            $("#contractForm").on("submit", function (e) {
-                let thoiHan = parseInt($("#ThoiHan").val()) || 0;
-                let thoiHanMacDinh = parseInt($("#ThoiHan").attr('data-thoihan-mac-dinh')) || 0;
-
-                if (thoiHanMacDinh && thoiHan > thoiHanMacDinh) {
-                    e.preventDefault();
+                }).fail(function () {
                     Swal.fire({
                         icon: "error",
                         title: "Lỗi!",
-                        text: `Thời hạn hợp đồng không được vượt quá ${thoiHanMacDinh} tháng.`
+                        text: "Không thể tải thông tin hợp đồng.",
+                        confirmButtonColor: "#2563eb"
+                    });
+                });
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi!",
+                    text: "Không tìm thấy mã nhân viên.",
+                    confirmButtonColor: "#2563eb"
+                });
+            }
+
+            // Update progress bar
+            function updateProgressBar() {
+                let requiredFields = ["MaLoaiHopDong", "NgayBatDau"];
+                let filledCount = 0;
+
+                requiredFields.forEach(field => {
+                    if ($("#" + field).val()) filledCount++;
+                });
+
+                let optionalFields = ["ThoiHan", "GhiChu"];
+                optionalFields.forEach(field => {
+                    if ($("#" + field).val() && $("#" + field).val() !== "0") {
+                        filledCount += 0.5;
+                    }
+                });
+
+                let progressPercent = Math.min(100, Math.round((filledCount / (requiredFields.length + 1)) * 100));
+                $("#formProgress").css("width", progressPercent + "%").attr("aria-valuenow", progressPercent);
+            }
+
+            // Form input handlers
+            $("#MaLoaiHopDong, #NgayBatDau, #ThoiHan, #GhiChu").on("change input keyup", updateProgressBar);
+
+            // Form submission
+            $("#contractForm").submit(function (e) {
+                e.preventDefault();
+
+                // Progress bar animation
+                $("#formProgress").css({
+                    "width": "100%",
+                    "transition": "width 0.8s ease-in-out"
+                });
+
+                // Validate required fields
+                let requiredFields = [
+                    { id: "MaLoaiHopDong", name: "Loại Hợp Đồng" },
+                    { id: "NgayBatDau", name: "Ngày Bắt Đầu" }
+                ];
+
+                for (let field of requiredFields) {
+                    if (!$("#" + field.id).val()) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Thiếu thông tin",
+                            text: `Vui lòng nhập ${field.name}!`,
+                            confirmButtonColor: "#2563eb"
+                        });
+                        return;
+                    }
+                }
+
+                // Validate thời hạn (chỉ áp dụng cho hợp đồng không phải không xác định thời hạn)
+                let maLoaiHopDong = $("#MaLoaiHopDong").val();
+                let thoiHan = parseInt($("#ThoiHan").val()) || 0;
+                let thoiHanMacDinh = parseInt($("#ThoiHan").attr('data-thoihan-mac-dinh')) || 0;
+
+                if (maLoaiHopDong != 2 && thoiHanMacDinh && thoiHan > thoiHanMacDinh) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Thời hạn không hợp lệ",
+                        text: `Thời hạn hợp đồng không được vượt quá ${thoiHanMacDinh} tháng!`,
+                        confirmButtonColor: "#2563eb"
                     });
                     return;
                 }
 
-                if (!this.checkValidity()) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    highlightFirstError();
-                } else {
-                    submitForm(e);
-                }
-                this.classList.add('was-validated');
-            });
+                // Prepare data
+                let formData = {
+                    MaNv: maNv ? parseInt(maNv) : 0,
+                    MaHopDong: $("#MaHopDong").val() || 0,
+                    MaLoaiHopDong: parseInt($("#MaLoaiHopDong").val()),
+                    ThoiHan: maLoaiHopDong == 2 ? null : thoiHan, // Gửi null nếu là hợp đồng không xác định thời hạn
+                    NgayBatDau: $("#NgayBatDau").val(),
+                    NgayKetThuc: maLoaiHopDong == 2 ? null : $("#NgayKetThuc").val() || null, // Gửi null nếu là hợp đồng không xác định thời hạn
+                    GhiChu: $("#GhiChu").val()
+                };
 
-            function highlightFirstError() {
-                const firstInvalid = document.querySelector('.form-control:invalid, .form-select:invalid');
-                if (firstInvalid) {
-                    firstInvalid.focus();
-                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstInvalid.classList.add('attention');
-                    setTimeout(() => firstInvalid.classList.remove('attention'), 1000);
+                // Validate MaNv
+                if (!formData.MaNv) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi!",
+                        text: "Mã nhân viên không hợp lệ.",
+                        confirmButtonColor: "#2563eb"
+                    });
+                    return;
                 }
-            }
 
-            function submitForm(e) {
-                e.preventDefault();
+                // Show loading
                 Swal.fire({
-                    title: 'Đang xử lý...',
-                    html: 'Vui lòng chờ trong giây lát',
+                    title: "Đang xử lý...",
+                    text: "Vui lòng chờ trong giây lát",
                     allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
                 });
 
-                let formData = new FormData();
-                formData.append("MaNv", $("#MaNv").val());
-                formData.append("MaHopDong", $("#MaHopDong").val());
-                formData.append("MaLoaiHopDong", $("#MaLoaiHopDong").val());
-                formData.append("ThoiHan", $("#ThoiHan").val());
-                formData.append("NgayBatDau", $("#NgayBatDau").val());
-                formData.append("NgayKetThuc", $("#NgayKetThuc").val());
-                formData.append("GhiChu", $("#GhiChu").val());
-
+                // API call to save contract
                 $.ajax({
                     url: "/api/EmployeesApi/SaveContract",
                     type: "POST",
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function () {
-                        Swal.fire({
-                            icon: "success",
-                            title: "Thành công!",
-                            text: "Hợp đồng đã được lưu thành công!",
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            window.location.href = "/Employees/EmployeeContracts";
+                    contentType: "application/json",
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        // Sau khi lưu hợp đồng thành công, kiểm tra thông tin lương
+                        $.get(`/api/EmployeesApi/CheckEmployeeSalary/${formData.MaNv}`, function (salaryData) {
+                            Swal.fire({
+                                icon: "success",
+                                title: "Thành công!",
+                                text: "Hợp đồng đã được lưu thành công!",
+                                confirmButtonColor: "#2563eb",
+                                timer: 2000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                // Nếu nhân viên chưa có thông tin lương, chuyển hướng đến SetupSalary
+                                if (!salaryData.hasSalary) {
+                                    window.location.href = `/Employees/SetupSalary?maNv=${formData.MaNv}`;
+                                } else {
+                                    // Nếu đã có thông tin lương, chuyển hướng về EmployeeContracts
+                                    window.location.href = "/Employees/EmployeeContracts";
+                                }
+                            });
+                        }).fail(function () {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Lỗi!",
+                                text: "Không thể kiểm tra thông tin lương.",
+                                confirmButtonColor: "#2563eb"
+                            });
                         });
                     },
                     error: function (xhr) {
@@ -238,12 +377,15 @@
                         Swal.fire({
                             icon: "error",
                             title: "Lỗi!",
-                            text: errorMessage
+                            text: errorMessage,
+                            confirmButtonColor: "#2563eb"
                         });
                     }
                 });
-            }
+            });
+
+            // Initialize progress bar
+            updateProgressBar();
         });
     </script>
-</body>
-</html>
+}

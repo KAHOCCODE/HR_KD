@@ -41,6 +41,7 @@ namespace HR_KD.DTOs
         [AllowedExtensions(new string[] { ".jpg", ".png", ".jpeg" })]
         [MaxFileSize(5 * 1024 * 1024)]
         public IFormFile? AvatarUrl { get; set; }
+        public int SoNguoiPhuThuoc { get; set; } = 0; // Thêm trường mới, mặc định là 0
     }
 
     public class AllowedExtensionsAttribute : ValidationAttribute

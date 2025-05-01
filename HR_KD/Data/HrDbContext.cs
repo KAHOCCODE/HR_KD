@@ -68,9 +68,9 @@ public partial class HrDbContext : DbContext
     public virtual DbSet<MucLuongCoSo> MucLuongCoSos { get; set; }
     public virtual DbSet<ThongTinBaoHiem> ThongTinBaoHiems { get; set; }
     public virtual DbSet<LoaiHopDong> LoaiHopDongs { get; set; }
+    public virtual DbSet<GiamTruGiaCanh> GiamTruGiaCanhs { get; set; }
 
     public virtual DbSet<TieuChiDanhGiaFullTime> TieuChiDanhGiaFullTimes { get; set; }
-    public virtual DbSet<VungLuongTheoDiaPhuong> VungLuongTheoDiaPhuongs { get; set; }
 
     public virtual DbSet<TieuChiDanhGiaPartTime> TieuChiDanhGiaPartTimes { get; set; }
 

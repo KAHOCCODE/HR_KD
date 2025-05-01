@@ -151,30 +151,9 @@
             outline: none; /* Loại bỏ outline khi focus */
             border-color: #007bff; /* Đổi màu border khi focus */
         }
-    /* Điều chỉnh vị trí của pagination */
-    .pagination {
-        display: flex;
-        justify-content: center; /* Căn giữa theo chiều ngang */
-        align-items: center; /* Căn giữa theo chiều dọc */
-        margin-top: 20px; /* Thêm khoảng cách phía trên */
-    }
 
-        /* Điều chỉnh khoảng cách giữa các button */
-        .pagination button {
-            margin: 0 5px; /* Thêm khoảng cách giữa các button */
-        }
-    /* Điều chỉnh vị trí của pagination */
-    .pagination {
-        display: flex;
-        justify-content: center; /* Căn giữa theo chiều ngang */
-        align-items: center; /* Căn giữa theo chiều dọc */
-        margin-top: 20px; /* Thêm khoảng cách phía trên */
-    }
 
-        /* Điều chỉnh khoảng cách giữa các button */
-        .pagination button {
-            margin: 0 5px; /* Thêm khoảng cách giữa các button */
-        }
+
     /* Căn giữa nội dung trong các thẻ <th> và <td> */
     .table th,
     .table td {
@@ -375,6 +354,17 @@
     .rejected-badge {
         background-color: #dc3545;
     }
+    .file-link {
+    color: #007bff;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.file-link:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
 
 </style>
 
@@ -472,15 +462,20 @@
                         <th>Ngày nghỉ</th>
                         <th>Lý do</th>
                         <th>Trạng thái</th>
+                        <th>File đính kèm</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
                 <tbody id="pendingLeaveBody"></tbody>
             </table>
             <div class="pagination" id="pendingPagination">
-                <button id="pendingPrevPage" class="btn btn-secondary">Previous</button>
-                <span id="pendingPageInfo" class="mx-2"></span>
-                <button id="pendingNextPage" class="btn btn-secondary">Next</button>
+                <button id="pendingPrevPage" class="btn btn-sm">
+                    <i class="fas fa-chevron-left me-1"></i> Trước
+                </button>
+                <span id="pendingPageInfo" class="mx-3"></span>
+                <button id="pendingNextPage" class="btn btn-sm">
+                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                </button>
             </div>
         </div>
 
@@ -493,15 +488,22 @@
                         <th>Ngày nghỉ</th>
                         <th>Lý do</th>
                         <th>Trạng thái</th>
-                        <th>Thao tác</th>
+                        <th>File đính kèm</th>
+                        <th>Ngày duyệt</th>
+                        <th>Ghi chú</th>
+                        <th>Người duyệt</th>
                     </tr>
                 </thead>
                 <tbody id="approvedLeaveBody"></tbody>
             </table>
             <div class="pagination" id="approvedPagination">
-                <button id="approvedPrevPage" class="btn btn-secondary">Previous</button>
-                <span id="approvedPageInfo" class="mx-2"></span>
-                <button id="approvedNextPage" class="btn btn-secondary">Next</button>
+                <button id="approvedPrevPage" class="btn btn-sm">
+                    <i class="fas fa-chevron-left me-1"></i> Trước
+                </button>
+                <span id="approvedPageInfo" class="mx-3"></span>
+                <button id="approvedNextPage" class="btn btn-sm">
+                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                </button>
             </div>
         </div>
 
@@ -514,20 +516,26 @@
                         <th>Ngày nghỉ</th>
                         <th>Lý do</th>
                         <th>Trạng thái</th>
-                        <th>Thao tác</th>
+                        <th>File đính kèm</th>
+                        <th>Ngày duyệt</th>
+                        <th>Ghi chú</th>
+                        <th>Người duyệt</th>
                     </tr>
                 </thead>
                 <tbody id="rejectedLeaveBody"></tbody>
             </table>
             <div class="pagination" id="rejectedPagination">
-                <button id="rejectedPrevPage" class="btn btn-secondary">Previous</button>
-                <span id="rejectedPageInfo" class="mx-2"></span>
-                <button id="rejectedNextPage" class="btn btn-secondary">Next</button>
+                <button id="rejectedPrevPage" class="btn btn-sm">
+                    <i class="fas fa-chevron-left me-1"></i> Trước
+                </button>
+                <span id="rejectedPageInfo" class="mx-3"></span>
+                <button id="rejectedNextPage" class="btn btn-sm">
+                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                </button>
             </div>
         </div>
     </div>
 </div>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -536,133 +544,176 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script>
-    async function fetchAlreadyRegisteredDates() {
-        try {
-            const response = await fetch('/api/Leave/GetAlreadyRegisteredDates', {
-                headers: {
-                    "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
-            }
-
-            const result = await response.json();
-            if (result.success) {
-                return result.dates.map(dateStr => {
-                    const date = new Date(dateStr);
-                    return date.setHours(0, 0, 0, 0);
-                });
-            } else {
-                console.error("API error:", result.message);
-                return [];
-            }
-        } catch (error) {
-            console.error("Error fetching registered dates:", error);
-            return [];
-        }
-    }
-
-    // Thay thế đoạn khởi tạo Flatpickr trong sự kiện DOMContentLoaded
-    document.addEventListener("DOMContentLoaded", async function () {
-        // Lấy các ngày đã đăng ký trước khi khởi tạo datepicker
-        const registeredDates = await fetchAlreadyRegisteredDates();
-        // Thêm CSS cho ngày đã đăng ký
-        // Trong phần tạo styleElement, thay thế CSS cho .registered-day
-        const styleElement = document.createElement('style');
-        styleElement.textContent = `
-            .registered-day {
-                background-color: #a8f0b0 !important;
-                color: #28a745 !important;
-                border: 2px solid #28a745 !important;
-                position: relative;
-                cursor: not-allowed !important;
-                text-decoration: none !important;
-            }
-
-            .registered-day:hover::after {
-                content: attr(title);
-                position: absolute;
-                top: -35px;
-                left: 50%;
-                transform: translateX(-50%);
-                background-color: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 5px 10px;
-                border-radius: 4px;
-                font-size: 14px;
-                white-space: nowrap;
-                z-index: 100;
-            }
-        `;
-        document.head.appendChild(styleElement);
-
-        // Lấy token từ localStorage
-        const getAuthToken = () => localStorage.getItem('jwtToken');
-
-        // Config Flatpickr
-        const today = new Date().setHours(0, 0, 0, 0);
-        const datePicker = flatpickr("#datePicker", {
-            mode: "multiple",
-            dateFormat: "Y-m-d",
-            minDate: "today",
-            locale: "vn",
-            disable: [
-                function (date) {
-                    // Vô hiệu hóa thứ Bảy (6) và Chủ nhật (0)
-                    const isWeekend = (date.getDay() === 0 || date.getDay() === 6);
-
-                    // Vô hiệu hóa ngày đã đăng ký
-                    const dateTime = date.setHours(0, 0, 0, 0);
-                    const isAlreadyRegistered = registeredDates.includes(dateTime);
-
-                    return isWeekend || isAlreadyRegistered;
-                }
-            ],
-            onDayCreate: function (dObj, dStr, fp, dayElem) {
-                const date = dayElem.dateObj;
-                const dateTime = date.setHours(0, 0, 0, 0);
-
-                // Thêm tooltip cho ngày cuối tuần
-                if (date.getDay() === 0 || date.getDay() === 6) {
-                    dayElem.title = "Không thể đăng ký nghỉ phép vào ngày cuối tuần";
-                    dayElem.classList.add("weekend-day");
-                }
-
-                // Thêm tooltip cho ngày trong quá khứ
-                if (date < new Date().setHours(0, 0, 0, 0)) {
-                    dayElem.title = "Không thể đăng ký nghỉ phép vào ngày trong quá khứ";
-                    dayElem.classList.add("past-day");
-                }
-
-                // Thêm tooltip và style cho ngày đã đăng ký
-                if (registeredDates.includes(dateTime)) {
-                    dayElem.title = "Bạn đã đăng ký nghỉ phép vào ngày này";
-                    dayElem.classList.add("registered-day");
-                }
-            },
-            onClose: function (selectedDates) {
-                const validDates = selectedDates.filter(date => {
-                    const dateTime = date.setHours(0, 0, 0, 0);
-                    return date >= today && !registeredDates.includes(dateTime);
-                });
-
-                if (validDates.length !== selectedDates.length) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi chọn ngày',
-                        text: 'Có ngày không hợp lệ trong lựa chọn của bạn!'
-                    });
-                    this.clear();
-                }
-
-                document.getElementById("selectedDates").textContent =
-                    validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
+// Function to fetch already registered dates
+async function fetchAlreadyRegisteredDates() {
+    try {
+        const response = await fetch('/api/Leave/GetAlreadyRegisteredDates', {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
             }
         });
 
-        let selectedFilesArray = []; // Mảng lưu trữ file đã chọn
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            return result.dates.map(dateStr => {
+                const date = new Date(dateStr);
+                return date.setHours(0, 0, 0, 0);
+            });
+        } else {
+            console.error("API error:", result.message);
+            return [];
+        }
+    } catch (error) {
+        console.error("Error fetching registered dates:", error);
+        return [];
+    }
+}
+
+// Document Ready Event Handler
+document.addEventListener("DOMContentLoaded", async function () {
+    // Lấy các ngày đã đăng ký trước khi khởi tạo datepicker
+    const registeredDates = await fetchAlreadyRegisteredDates();
+    
+    // Thêm CSS cho ngày đã đăng ký
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        .registered-day {
+            background-color: #a8f0b0 !important;
+            color: #28a745 !important;
+            border: 2px solid #28a745 !important;
+            position: relative;
+            cursor: not-allowed !important;
+            text-decoration: none !important;
+        }
+
+        .registered-day:hover::after {
+            content: attr(title);
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 100;
+        }
+    `;
+    document.head.appendChild(styleElement);
+        // Add CSS for improved pagination
+        const paginationStyle = document.createElement('style');
+        paginationStyle.innerHTML = `
+            .pagination {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-top: 20px;
+                gap: 10px;
+            }
+
+            .pagination button {
+                background-color: #f8f9fa;
+                border: 1px solid #ddd;
+                color: #495057;
+                padding: 8px 15px;
+                border-radius: 5px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+
+            .pagination button:hover:not(:disabled) {
+                background-color: #e9ecef;
+                border-color: #adb5bd;
+            }
+
+            .pagination button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .pagination span {
+                font-weight: 500;
+                color: #495057;
+                padding: 5px 10px;
+                border-radius: 5px;
+                background-color: #ffffff;
+                border: 1px solid #e9ecef;
+            }
+        `;
+        document.head.appendChild(paginationStyle);
+
+    // Lấy token từ localStorage
+    const getAuthToken = () => localStorage.getItem('jwtToken');
+
+    // Config Flatpickr
+    const today = new Date().setHours(0, 0, 0, 0);
+    const datePicker = flatpickr("#datePicker", {
+        mode: "multiple",
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        locale: "vn",
+        disable: [
+            function (date) {
+                // Vô hiệu hóa thứ Bảy (6) và Chủ nhật (0)
+                const isWeekend = (date.getDay() === 0 || date.getDay() === 6);
+
+                // Vô hiệu hóa ngày đã đăng ký
+                const dateTime = date.setHours(0, 0, 0, 0);
+                const isAlreadyRegistered = registeredDates.includes(dateTime);
+
+                return isWeekend || isAlreadyRegistered;
+            }
+        ],
+        onDayCreate: function (dObj, dStr, fp, dayElem) {
+            const date = dayElem.dateObj;
+            const dateTime = date.setHours(0, 0, 0, 0);
+
+            // Thêm tooltip cho ngày cuối tuần
+            if (date.getDay() === 0 || date.getDay() === 6) {
+                dayElem.title = "Không thể đăng ký nghỉ phép vào ngày cuối tuần";
+                dayElem.classList.add("weekend-day");
+            }
+
+            // Thêm tooltip cho ngày trong quá khứ
+            if (date < new Date().setHours(0, 0, 0, 0)) {
+                dayElem.title = "Không thể đăng ký nghỉ phép vào ngày trong quá khứ";
+                dayElem.classList.add("past-day");
+            }
+
+            // Thêm tooltip và style cho ngày đã đăng ký
+            if (registeredDates.includes(dateTime)) {
+                dayElem.title = "Bạn đã đăng ký nghỉ phép vào ngày này";
+                dayElem.classList.add("registered-day");
+            }
+        },
+        onClose: function (selectedDates) {
+            const validDates = selectedDates.filter(date => {
+                const dateTime = date.setHours(0, 0, 0, 0);
+                return date >= today && !registeredDates.includes(dateTime);
+            });
+
+            if (validDates.length !== selectedDates.length) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi chọn ngày',
+                    text: 'Có ngày không hợp lệ trong lựa chọn của bạn!'
+                });
+                this.clear();
+            }
+
+            document.getElementById("selectedDates").textContent =
+                validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
+        }
+    });
+
+    let selectedFilesArray = []; // Mảng lưu trữ file đã chọn
 
         // Xử lý submit form
         document.getElementById("leaveForm").addEventListener("submit", async (e) => {
@@ -711,12 +762,9 @@
                     text: 'Đăng ký nghỉ phép thành công!'
                 });
 
-                // Reset form
-                datePicker.clear();
-                document.getElementById("leaveForm").reset();
-                document.getElementById("selectedDates").textContent = '';
-                document.getElementById("selectedFiles").innerHTML = '';
-                selectedFilesArray = []; // Reset mảng file
+                // Tải lại toàn bộ trang sau khi đăng ký thành công
+                window.location.reload();
+
             } catch (error) {
                 console.error('Submit error:', error);
                 Swal.fire({
@@ -727,455 +775,561 @@
             }
         });
 
-        // Hiển thị danh sách file đã chọn và cập nhật mảng selectedFilesArray
-        document.getElementById('fileAttachments')?.addEventListener('change', function (e) {
-            const newFiles = Array.from(this.files);
+    // Hiển thị danh sách file đã chọn và cập nhật mảng selectedFilesArray
+    document.getElementById('fileAttachments')?.addEventListener('change', function (e) {
+        const newFiles = Array.from(this.files);
 
-            // Thêm file mới vào mảng selectedFilesArray
-            selectedFilesArray = selectedFilesArray.concat(newFiles);
+        // Thêm file mới vào mảng selectedFilesArray
+        selectedFilesArray = selectedFilesArray.concat(newFiles);
 
-            // Cập nhật giao diện hiển thị danh sách file
-            updateSelectedFilesUI();
-        });
-
-        // Hàm cập nhật giao diện danh sách file
-        function updateSelectedFilesUI() {
-            const fileList = document.getElementById('selectedFiles');
-            fileList.innerHTML = '';
-
-            if (selectedFilesArray.length > 0) {
-                const fileCount = document.createElement('div');
-                fileCount.className = 'mb-2';
-                fileCount.innerHTML = `<strong>Đã chọn ${selectedFilesArray.length} file:</strong>`;
-                fileList.appendChild(fileCount);
-
-                const list = document.createElement('ul');
-                list.className = 'list-group';
-
-                selectedFilesArray.forEach(file => {
-                    const item = document.createElement('li');
-                    item.className = 'list-group-item d-flex justify-content-between align-items-center';
-
-                    const fileInfo = document.createElement('div');
-                    fileInfo.innerHTML = `
-                    <i class="fas fa-file me-2"></i>
-                    ${file.name}
-                    <span class="badge bg-secondary rounded-pill">${formatFileSize(file.size)}</span>
-                `;
-
-                    item.appendChild(fileInfo);
-                    list.appendChild(item);
-                });
-
-                fileList.appendChild(list);
-            }
-        }
-
-        // Hàm format file size
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
+        // Cập nhật giao diện hiển thị danh sách file
+        updateSelectedFilesUI();
     });
 
-    //Hiển thị lịch sử đăng ký nghỉ phép
-    document.addEventListener("DOMContentLoaded", async function () {
-        // Make sure Bootstrap JS is loaded for tabs functionality
-        if (typeof bootstrap === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
-            script.onload = initializeTabs; // Initialize tabs once Bootstrap is loaded
-            document.head.appendChild(script);
+    // Hàm cập nhật giao diện danh sách file
+    function updateSelectedFilesUI() {
+        const fileList = document.getElementById('selectedFiles');
+        fileList.innerHTML = '';
+
+        if (selectedFilesArray.length > 0) {
+            const fileCount = document.createElement('div');
+            fileCount.className = 'mb-2';
+            fileCount.innerHTML = `<strong>Đã chọn ${selectedFilesArray.length} file:</strong>`;
+            fileList.appendChild(fileCount);
+
+            const list = document.createElement('ul');
+            list.className = 'list-group';
+
+            selectedFilesArray.forEach(file => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+                const fileInfo = document.createElement('div');
+                fileInfo.innerHTML = `
+                <i class="fas fa-file me-2"></i>
+                ${file.name}
+                <span class="badge bg-secondary rounded-pill">${formatFileSize(file.size)}</span>
+            `;
+
+                item.appendChild(fileInfo);
+                list.appendChild(item);
+            });
+
+            fileList.appendChild(list);
+        }
+    }
+
+    // Hàm format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Make sure Bootstrap JS is loaded for tabs functionality
+    if (typeof bootstrap === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+        script.onload = initializeTabs; // Initialize tabs once Bootstrap is loaded
+        document.head.appendChild(script);
+    } else {
+        initializeTabs(); // Initialize tabs if Bootstrap is already loaded
+    }
+
+    // Initialize tab functionality
+    function initializeTabs() {
+        // Initialize Bootstrap tabs
+        const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabElements.forEach(tabElement => {
+            tabElement.addEventListener('click', function (event) {
+                event.preventDefault();
+
+                // Remove active class from all tabs
+                tabElements.forEach(tab => {
+                    tab.classList.remove('active');
+                    const tabPane = document.querySelector(tab.getAttribute('data-bs-target'));
+                    if (tabPane) {
+                        tabPane.classList.remove('show', 'active');
+                    }
+                });
+
+                // Add active class to current tab
+                this.classList.add('active');
+                const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
+                if (targetPane) {
+                    targetPane.classList.add('show', 'active');
+                }
+
+                // Update the table for the active tab
+                const tabId = this.getAttribute('data-bs-target').substring(1);
+                renderTable(tabId);
+            });
+        });
+
+        // Activate the first tab by default
+        if (tabElements.length > 0) {
+            const firstTab = tabElements[0];
+            firstTab.classList.add('active');
+            const firstTabPane = document.querySelector(firstTab.getAttribute('data-bs-target'));
+            if (firstTabPane) {
+                firstTabPane.classList.add('show', 'active');
+            }
+        }
+    }
+
+    // Fetch leave types
+    try {
+        const response = await fetch("/api/Leave/GetLeaveTypes");
+        const result = await response.json();
+
+        console.log("Dữ liệu trả về từ API:", result); // Kiểm tra dữ liệu
+
+        if (result && result.success && Array.isArray(result.leaveTypes)) {
+            const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+
+            // Xóa tất cả các option hiện có (trừ option mặc định)
+            leaveTypeSelect.innerHTML = '<option value="">Chọn loại nghỉ</option>';
+
+            // Thêm từng loại nghỉ phép vào select
+            result.leaveTypes.forEach(leaveType => {
+                const option = document.createElement("option");
+                option.value = leaveType.maLoaiNgayNghi; // Đảm bảo đúng tên thuộc tính
+                option.textContent = leaveType.tenLoai;
+                leaveTypeSelect.appendChild(option);
+            });
+
+            console.log("Số lượng option sau khi thêm:", leaveTypeSelect.options.length); // Kiểm tra số lượng option
         } else {
-            initializeTabs(); // Initialize tabs if Bootstrap is already loaded
+            console.error("Lỗi dữ liệu:", result);
+            alert("Dữ liệu không hợp lệ.");
         }
+    } catch (error) {
+        console.error("Lỗi hệ thống:", error);
+        alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+    }
 
-        // Initialize tab functionality
-        function initializeTabs() {
-            // Initialize Bootstrap tabs
-            const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
-            tabElements.forEach(tabElement => {
-                tabElement.addEventListener('click', function (event) {
-                    event.preventDefault();
-
-                    // Remove active class from all tabs
-                    tabElements.forEach(tab => {
-                        tab.classList.remove('active');
-                        const tabPane = document.querySelector(tab.getAttribute('data-bs-target'));
-                        if (tabPane) {
-                            tabPane.classList.remove('show', 'active');
-                        }
-                    });
-
-                    // Add active class to current tab
-                    this.classList.add('active');
-                    const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
-                    if (targetPane) {
-                        targetPane.classList.add('show', 'active');
-                    }
-
-                    // Update the table for the active tab
-                    const tabId = this.getAttribute('data-bs-target').substring(1);
-                    renderTable(tabId);
-                });
-            });
-
-            // Activate the first tab by default
-            if (tabElements.length > 0) {
-                const firstTab = tabElements[0];
-                firstTab.classList.add('active');
-                const firstTabPane = document.querySelector(firstTab.getAttribute('data-bs-target'));
-                if (firstTabPane) {
-                    firstTabPane.classList.add('show', 'active');
-                }
+    // Fetch available leave balance
+    fetch('/api/Leave/SoNgayConLai')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Lỗi khi lấy dữ liệu');
             }
-        }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Lưu giá trị vào biến global
+                availableLeaveBalance = data.soNgayConLai;
 
-        let leaveHistory = [];
-        const tabData = {
-            pending: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
-            approved: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
-            rejected: { currentPage: 1, itemsPerPage: 5, filteredData: [] }
-        };
-
-        // Function to fetch leave history data
-        async function fetchLeaveHistory() {
-            try {
-                const response = await fetch('/api/Leave/GetLeaveHistory', {
-                    headers: {
-                        "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
-                    }
-                });
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        window.location.href = '/login'; // Redirect if not logged in
-                        return;
-                    }
-                    throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
+                const soNgayConLaiElement = document.querySelector('.leave-info-card strong');
+                if (soNgayConLaiElement) {
+                    soNgayConLaiElement.textContent = `${data.soNgayConLai} ngày`;
                 }
 
-                const result = await response.json();
-                if (result?.success && Array.isArray(result.leaveHistory)) {
-                    leaveHistory = result.leaveHistory;
-
-                    // Filter data for each tab
-                    tabData.pending.filteredData = leaveHistory.filter(item => item.trangThai === "Chờ duyệt");
-                    tabData.approved.filteredData = leaveHistory.filter(item => item.trangThai === "Đã duyệt");
-                    tabData.rejected.filteredData = leaveHistory.filter(item => item.trangThai === "Từ chối");
-
-                    // Render all tabs
-                    renderTable('pending');
-                    renderTable('approved');
-                    renderTable('rejected');
-
-                    // Update tab badges if needed
-                    updateTabBadges();
-                } else {
-                    displayError("Không có dữ liệu nghỉ phép", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
-                }
-            } catch (error) {
-                console.error("Lỗi hệ thống:", error);
-                displayError("Lỗi kết nối server", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
-            }
-        }
-
-        // Function to update tab badges with count
-        function updateTabBadges() {
-            // Add badges to tabs showing count
-            const pendingCount = tabData.pending.filteredData.length;
-            const approvedCount = tabData.approved.filteredData.length;
-            const rejectedCount = tabData.rejected.filteredData.length;
-
-            // Create or update badge elements
-            updateBadge('pending-tab', pendingCount, 'pending-badge');
-            updateBadge('approved-tab', approvedCount, 'approved-badge');
-            updateBadge('rejected-tab', rejectedCount, 'rejected-badge');
-        }
-
-        // Helper function to update a single badge
-        function updateBadge(tabId, count, badgeClass) {
-            const tabElement = document.getElementById(tabId);
-            if (!tabElement) return;
-
-            // Remove existing badge if present
-            const existingBadge = tabElement.querySelector('.tab-badge');
-            if (existingBadge) {
-                existingBadge.remove();
-            }
-
-            // Add new badge
-            const badge = document.createElement('span');
-            badge.className = `tab-badge ${badgeClass}`;
-            badge.textContent = count;
-            tabElement.appendChild(badge);
-        }
-
-        // Function to render table data for a specific tab
-        function renderTable(tabId) {
-            const tableBodyId = `${tabId}LeaveBody`;
-            const tableBody = document.getElementById(tableBodyId);
-            if (!tableBody) {
-                console.error(`Không tìm thấy phần tử ${tableBodyId} trong DOM.`);
-                return;
-            }
-            tableBody.innerHTML = "";
-
-            const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
-            const paginatedData = paginateData(filteredData, currentPage, itemsPerPage);
-
-            if (paginatedData.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center">Không có đơn nào trong danh sách này</td></tr>`;
+                // Kiểm tra và cập nhật trạng thái nút đăng ký
+                checkLeaveBalance();
             } else {
-                paginatedData.forEach(item => {
-                    const row = document.createElement("tr");
-
-                    // Check status to determine if the cancel button should be displayed
-                    const canCancel = item.trangThai === "Chờ duyệt";
-                    const cancelButton = canCancel ?
-                        `<button class="btn-cancel" data-id="${item.id}">
-                                <i class="fas fa-times-circle"></i>
-                                <span>Hủy đơn</span>
-                            </button>` :
-                        '<span class="btn-cancel-disabled">Không khả dụng</span>';
-
-                    row.innerHTML = `
-                            <td>${item.tenLoai || "Không xác định"}</td>
-                            <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                            <td>${item.lyDo || "Không có lý do"}</td>
-                            <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                            <td>${cancelButton}</td>
-                        `;
-                    tableBody.appendChild(row);
-                });
+                console.error('Lỗi:', data.message);
             }
-
-            // Add event listeners for cancel buttons
-            document.querySelectorAll(`#${tableBodyId} .btn-cancel`).forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const leaveId = this.getAttribute('data-id');
-                    cancelLeaveRequest(leaveId);
-                });
-            });
-
-            updatePageInfo(tabId);
-        }
-
-        // Function to handle leave request cancellation
-        async function cancelLeaveRequest(leaveId) {
-            try {
-                // Show confirmation before cancellation
-                const result = await Swal.fire({
-                    title: 'Xác nhận hủy đơn',
-                    text: 'Bạn có chắc chắn muốn hủy đơn nghỉ phép này?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Có, hủy đơn!',
-                    cancelButtonText: 'Không, giữ lại'
-                });
-
-                if (result.isConfirmed) {
-                    // Call API to cancel the request
-                    const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-                        }
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok && data.success) {
-                        Swal.fire(
-                            'Đã hủy!',
-                            'Đơn nghỉ phép đã được hủy thành công.',
-                            'success'
-                        );
-
-                        // Update the list
-                        fetchLeaveHistory();
-                    } else {
-                        throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
-                    }
-                }
-            } catch (error) {
-                console.error('Lỗi khi hủy đơn:', error);
-                Swal.fire(
-                    'Lỗi!',
-                    error.message || 'Có lỗi xảy ra khi hủy đơn nghỉ phép.',
-                    'error'
-                );
-            }
-        }
-
-        // Function to paginate data
-        function paginateData(data, page, itemsPerPage) {
-            const startIndex = (page - 1) * itemsPerPage;
-            return data.slice(startIndex, startIndex + itemsPerPage);
-        }
-
-        // Function to update page information
-        function updatePageInfo(tabId) {
-            const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
-            const pageInfoElement = document.getElementById(`${tabId}PageInfo`);
-            if (pageInfoElement) {
-                pageInfoElement.textContent = `Trang ${currentPage} / ${totalPages}`;
-            }
-
-            // Update button states
-            const prevButton = document.getElementById(`${tabId}PrevPage`);
-            const nextButton = document.getElementById(`${tabId}NextPage`);
-
-            if (prevButton) prevButton.disabled = currentPage <= 1;
-            if (nextButton) nextButton.disabled = currentPage >= totalPages;
-        }
-
-        // Function to display error messages
-        function displayError(message, elementIds) {
-            elementIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.innerHTML = `<tr><td colspan='5' class='text-danger text-center'>${message}</td></tr>`;
-                }
-            });
-        }
-
-        // Function to determine CSS class based on status
-        function getStatusClass(status) {
-            if (!status) return "";
-            const normalizedStatus = status.trim().toLowerCase();
-            switch (normalizedStatus) {
-                case "chờ duyệt": return "text-warning bg-warning-subtle";
-                case "đã duyệt": return "text-success bg-success-subtle";
-                case "từ chối": return "text-danger bg-danger-subtle";
-                default: return "";
-            }
-        }
-
-        // Function to format date
-        function formatDate(dateStr) {
-            if (!dateStr) return "";
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return "Không xác định";
-            return date.toLocaleDateString('vi-VN'); // Format to Vietnamese date format
-        }
-
-        // Set up event listeners for pagination
-        ['pending', 'approved', 'rejected'].forEach(tabId => {
-            const prevButton = document.getElementById(`${tabId}PrevPage`);
-            const nextButton = document.getElementById(`${tabId}NextPage`);
-
-            if (prevButton) {
-                prevButton.addEventListener("click", () => {
-                    if (tabData[tabId].currentPage > 1) {
-                        tabData[tabId].currentPage--;
-                        renderTable(tabId);
-                    }
-                });
-            }
-
-            if (nextButton) {
-                nextButton.addEventListener("click", () => {
-                    const totalPages = Math.ceil(tabData[tabId].filteredData.length / tabData[tabId].itemsPerPage) || 1;
-                    if (tabData[tabId].currentPage < totalPages) {
-                        tabData[tabId].currentPage++;
-                        renderTable(tabId);
-                    }
-                });
-            }
+        })
+        .catch(error => {
+            console.error('Lỗi:', error);
         });
+        
+    // Fetch leave history initially
+    fetchLeaveHistory();
+});
 
-        // Initialize
-        fetchLeaveHistory();
-    });
+// Biến global để lưu số ngày phép còn lại
+let availableLeaveBalance = 0;
 
-    // lấy loại ngày nghỉ
-    document.addEventListener("DOMContentLoaded", async function () {
+// Global variables for leave history data
+let leaveHistory = [];
+const tabData = {
+    pending: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
+    approved: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
+    rejected: { currentPage: 1, itemsPerPage: 5, filteredData: [] }
+};
+
+// Function to fetch leave history data
+    async function fetchLeaveHistory() {
         try {
-            const response = await fetch("/api/Leave/GetLeaveTypes");
+            const response = await fetch('/api/Leave/GetLeaveHistory', {
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
+            }
+
             const result = await response.json();
+            console.log("Leave history data:", result); // Debug to verify nguoiDuyetHoTen
+            if (result?.success && Array.isArray(result.leaveHistory)) {
+                leaveHistory = result.leaveHistory;
 
-            console.log("Dữ liệu trả về từ API:", result); // Kiểm tra dữ liệu
+                // Filter data for each tab
+                tabData.pending.filteredData = leaveHistory.filter(item => item.trangThai === "Chờ duyệt");
+                tabData.approved.filteredData = leaveHistory.filter(item => item.trangThai === "Đã duyệt");
+                tabData.rejected.filteredData = leaveHistory.filter(item => item.trangThai === "Từ chối");
 
-            if (result && result.success && Array.isArray(result.leaveTypes)) {
-                const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+                // Render all tabs
+                renderTable('pending');
+                renderTable('approved');
+                renderTable('rejected');
 
-                // Xóa tất cả các option hiện có (trừ option mặc định)
-                leaveTypeSelect.innerHTML = '<option value="">Chọn loại nghỉ</option>';
+                // Update tab badges
+                updateTabBadges();
 
-                // Thêm từng loại nghỉ phép vào select
-                result.leaveTypes.forEach(leaveType => {
-                    const option = document.createElement("option");
-                    option.value = leaveType.maLoaiNgayNghi; // Đảm bảo đúng tên thuộc tính
-                    option.textContent = leaveType.tenLoai;
-                    leaveTypeSelect.appendChild(option);
-                });
-
-                console.log("Số lượng option sau khi thêm:", leaveTypeSelect.options.length); // Kiểm tra số lượng option
+                // Setup pagination controls
+                setupPaginationControls();
             } else {
-                console.error("Lỗi dữ liệu:", result);
-                alert("Dữ liệu không hợp lệ.");
+                displayError("Không có dữ liệu nghỉ phép", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
             }
         } catch (error) {
             console.error("Lỗi hệ thống:", error);
-            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+            displayError("Lỗi kết nối server", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
+        }
+    }
+    // Chức năng cập nhật huy hiệu tab với số lượng
+function updateTabBadges() {
+    // Add badges to tabs showing count
+    const pendingCount = tabData.pending.filteredData.length;
+    const approvedCount = tabData.approved.filteredData.length;
+    const rejectedCount = tabData.rejected.filteredData.length;
+
+    // Create or update badge elements
+    updateBadge('pending-tab', pendingCount, 'pending-badge');
+    updateBadge('approved-tab', approvedCount, 'approved-badge');
+    updateBadge('rejected-tab', rejectedCount, 'rejected-badge');
+}
+
+// Helper function to update a single badge
+function updateBadge(tabId, count, badgeClass) {
+    const tabElement = document.getElementById(tabId);
+    if (!tabElement) return;
+
+    // Remove existing badge if present
+    const existingBadge = tabElement.querySelector('.tab-badge');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+
+    // Add new badge
+    const badge = document.createElement('span');
+    badge.className = `tab-badge ${badgeClass}`;
+    badge.textContent = count;
+    tabElement.appendChild(badge);
+}
+
+// Function to display error message
+function displayError(message, tableBodyIds) {
+    tableBodyIds.forEach(id => {
+        const tableBody = document.getElementById(id);
+        if (tableBody) {
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">${message}</td></tr>`;
         }
     });
+}
 
-    // Biến global để lưu số ngày phép còn lại
-    let availableLeaveBalance = 0;
+// Function to render table data for a specific tab
+    function renderTable(tabId) {
+        const tableBodyId = `${tabId}LeaveBody`;
+        const tableBody = document.getElementById(tableBodyId);
+        if (!tableBody) {
+            console.error(`Không tìm thấy phần tử ${tableBodyId} trong DOM.`);
+            return;
+        }
+        tableBody.innerHTML = "";
 
-    // Sửa đoạn fetch số ngày phép còn lại để lưu giá trị vào biến global
-    document.addEventListener("DOMContentLoaded", function () {
-        fetch('/api/Leave/SoNgayConLai')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Lỗi khi lấy dữ liệu');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    // Lưu giá trị vào biến global
-                    availableLeaveBalance = data.soNgayConLai;
+        const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
+        const paginatedData = paginateData(filteredData, currentPage, itemsPerPage);
 
-                    const soNgayConLaiElement = document.querySelector('.leave-info-card strong');
-                    if (soNgayConLaiElement) {
-                        soNgayConLaiElement.textContent = `${data.soNgayConLai} ngày`;
-                    }
+        if (paginatedData.length === 0) {
+            let colspan = 6; // Mặc định cho tab pending
+            if (tabId === 'approved' || tabId === 'rejected') {
+                colspan = 8;
+            }
+            tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">Không có đơn nào trong danh sách này</td></tr>`;
+        } else {
+            paginatedData.forEach(item => {
+                const row = document.createElement("tr");
 
-                    // Kiểm tra và cập nhật trạng thái nút đăng ký
-                    checkLeaveBalance();
+                // Xử lý hiển thị file đính kèm
+                const fileDisplayHtml = generateFileDisplayHtml(item.fileDinhKem);
+
+                // Format ngày duyệt
+                const ngayDuyetFormatted = item.ngayDuyet ? formatDate(item.ngayDuyet) : "Chưa duyệt";
+
+                if (tabId === 'pending') {
+                    // Hiển thị cho tab đơn chờ duyệt (thêm cột file đính kèm)
+                    const cancelButton = `<button class="btn-cancel" data-id="${item.id}">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Hủy đơn</span>
+                        </button>`;
+
+                    row.innerHTML = `
+                        <td>${item.tenLoai || "Không xác định"}</td>
+                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                        <td>${item.lyDo || "Không có lý do"}</td>
+                        <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${cancelButton}</td>
+                    `;
                 } else {
-                    console.error('Lỗi:', data.message);
+                    // Hiển thị cho tab đơn đã duyệt và đơn từ chối
+                    row.innerHTML = `
+                        <td>${item.tenLoai || "Không xác định"}</td>
+                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                        <td>${item.lyDo || "Không có lý do"}</td>
+                        <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${ngayDuyetFormatted}</td>
+                        <td>${item.ghiChu || "Không có ghi chú"}</td>
+                        <td>${item.nguoiDuyetHoTen || "Chưa có"}</td> <!-- Sử dụng nguoiDuyetHoTen -->
+                    `;
                 }
-            })
-            .catch(error => {
-                console.error('Lỗi:', error);
+
+                tableBody.appendChild(row);
             });
-    });
+        }
 
-    // Hàm kiểm tra số ngày phép khả dụng
-    function checkLeaveBalance() {
-        const submitButton = document.getElementById("submitButton");
-        const leaveForm = document.getElementById("leaveForm");
-        const leaveSection = document.getElementById("leaveSection");
+        // Add event listeners for cancel buttons
+        document.querySelectorAll(`#${tableBodyId} .btn-cancel`).forEach(btn => {
+            btn.addEventListener('click', function () {
+                const leaveId = this.getAttribute('data-id');
+                cancelLeaveRequest(leaveId);
+            });
+        });
 
-        if (availableLeaveBalance <= 0) {
-            // Vô hiệu hóa nút đăng ký
-            submitButton.disabled = true;
-            submitButton.classList.remove("btn-success");
-            submitButton.classList.add("btn-secondary");
+        // Add event listeners for file links
+        document.querySelectorAll(`#${tableBodyId} .file-link`).forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const filePath = this.getAttribute('data-path');
+                viewFile(filePath);
+            });
+        });
+
+        // Initialize dropdowns for Bootstrap
+        initializeDropdowns();
+
+        updatePaginationControls(tabId);
+    }
+
+// Function to generate file display HTML
+function generateFileDisplayHtml(fileDinhKem) {
+    if (!fileDinhKem) {
+        return '<span class="text-muted">Không có</span>';
+    }
+    
+    // Split by dash if multiple files
+    const files = fileDinhKem.split('-');
+    
+    if (files.length === 0 || (files.length === 1 && !files[0].trim())) {
+        return '<span class="text-muted">Không có</span>';
+    }
+    
+    if (files.length === 1) {
+        // Single file
+        return `<a href="#" class="file-link" data-path="/uploads/${files[0]}">
+                    <i class="fas fa-file me-1"></i>${truncateFileName(files[0])}
+                </a>`;
+    } else {
+        // Multiple files - sửa cấu trúc dropdown cho Bootstrap 5
+        const uniqueId = `dropdown-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        let fileListHtml = `<div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                    id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-paperclip me-1"></i>${files.length} files
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
+                            
+        files.forEach(file => {
+            fileListHtml += `<li>
+                              <a class="dropdown-item file-link" href="#" data-path="/uploads/${file}">
+                                <i class="fas fa-file me-1"></i>${truncateFileName(file)}
+                              </a>
+                            </li>`;
+        });
+        
+        fileListHtml += `</ul></div>`;
+        return fileListHtml;
+    }
+}
+
+// Replace your current dropdown initialization code with this:
+function initializeDropdowns() {
+    // Check if Bootstrap is loaded
+    if (typeof bootstrap !== 'undefined') {
+        // Initialize all dropdowns
+        const dropdownElements = document.querySelectorAll('.dropdown-toggle');
+        dropdownElements.forEach(dropdownToggleEl => {
+            // Only initialize if not already initialized
+            if (!dropdownToggleEl._dropdown) {
+                new bootstrap.Dropdown(dropdownToggleEl);
+            }
+        });
+    } else {
+        // If Bootstrap isn't loaded, try loading it again
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+        script.onload = initializeDropdowns;
+        document.head.appendChild(script);
+    }
+}
+
+// Then call this function after rendering your table content
+// In your renderTable function, replace the dropdown initialization part with:
+initializeDropdowns();
+c
+
+// Helper function to truncate file names if too long
+function truncateFileName(fileName) {
+    const maxLength = 15;
+    if (fileName.length <= maxLength) {
+        return fileName;
+    }
+    
+    const extension = fileName.split('.').pop();
+    const nameWithoutExt = fileName.substring(0, fileName.length - extension.length - 1);
+    
+    if (nameWithoutExt.length <= maxLength - 5) {
+        return fileName;
+    }
+    
+    return `${nameWithoutExt.substring(0, maxLength - 5)}...${extension}`;
+}
+
+// Function to view a file
+    function viewFile(filePath) {
+        console.log("Viewing file:", filePath); // Debug log
+
+        // Check file extension
+        const extension = filePath.split('.').pop().toLowerCase();
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'];
+
+        if (imageExtensions.includes(extension)) {
+            // Show image preview for image files
+            Swal.fire({
+                title: 'Xem file',
+                html: `<img src="${filePath}" class="img-fluid" alt="Preview">`,
+                width: 800,
+                showCloseButton: true,
+                showConfirmButton: false
+            });
+        } else {
+            // For other files, open in new tab
+            window.open(filePath, '_blank');
+        }
+    }
+
+    // Chức năng hủy yêu cầu nghỉ phép
+    async function cancelLeaveRequest(leaveId) {
+        try {
+            const result = await Swal.fire({
+                title: 'Xác nhận hủy đơn',
+                text: "Bạn có chắc chắn muốn hủy đơn nghỉ phép này?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Đồng ý hủy',
+                cancelButtonText: 'Không'
+            });
+
+            if (result.isConfirmed) {
+                const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire(
+                        'Đã hủy!',
+                        'Đơn nghỉ phép đã được hủy thành công.',
+                        'success'
+                    );
+
+                    // Làm mới dữ liệu sau khi hủy
+                    fetchLeaveHistory();
+                } else {
+                    Swal.fire(
+                        'Lỗi!',
+                        data.message || 'Không thể hủy đơn nghỉ phép.',
+                        'error'
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Lỗi khi hủy đơn:', error);
+            Swal.fire(
+                'Lỗi hệ thống',
+                'Đã xảy ra lỗi, vui lòng thử lại sau.',
+                'error'
+            );
+        }
+    }
+
+    // Chức năng trợ giúp để định dạng ngày tháng
+    function formatDate(dateString) {
+        if (!dateString) return '';
+
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return dateString;
+        }
+    }
+
+// Helper function to get status class for styling
+function getStatusClass(status) {
+    switch (status) {
+        case 'Chờ duyệt':
+            return 'bg-warning-subtle';
+        case 'Đã duyệt':
+            return 'bg-success-subtle';
+        case 'Từ chối':
+            return 'bg-danger-subtle';
+        default:
+            return '';
+    }
+}
+
+
+
+// Hàm kiểm tra số ngày phép khả dụng
+function checkLeaveBalance() {
+    const submitButton = document.getElementById("submitButton");
+    const leaveForm = document.getElementById("leaveForm");
+    const leaveSection = document.getElementById("leaveSection");
+
+    if (availableLeaveBalance <= 0) {
+        // Vô hiệu hóa nút đăng ký
+        submitButton.disabled = true;
+        submitButton.classList.remove("btn-success");
+        submitButton.classList.add("btn-secondary");
+
 
             // Thêm thông báo về số ngày phép đã hết
             if (!document.getElementById("noLeaveMessage")) {
@@ -1200,6 +1354,80 @@
                 alertMessage.remove();
             }
         }
+    }
+
+    // Function to setup pagination controls
+    function setupPaginationControls() {
+        // Setup pagination for all tabs
+        ['pending', 'approved', 'rejected'].forEach(tabId => {
+            setupPaginationForTab(tabId);
+        });
+    }
+
+    // Setup pagination controls for a specific tab
+    function setupPaginationForTab(tabId) {
+        const prevButton = document.getElementById(`${tabId}PrevPage`);
+        const nextButton = document.getElementById(`${tabId}NextPage`);
+
+        if (!prevButton || !nextButton) {
+            console.error(`Pagination buttons not found for ${tabId}`);
+            return;
+        }
+
+        // Remove existing event listeners to prevent duplicates
+        prevButton.replaceWith(prevButton.cloneNode(true));
+        nextButton.replaceWith(nextButton.cloneNode(true));
+
+        // Get the fresh references after replacing
+        const newPrevButton = document.getElementById(`${tabId}PrevPage`);
+        const newNextButton = document.getElementById(`${tabId}NextPage`);
+
+        // Add event listeners
+        newPrevButton.addEventListener('click', function () {
+            if (tabData[tabId].currentPage > 1) {
+                tabData[tabId].currentPage--;
+                renderTable(tabId);
+            }
+        });
+
+        newNextButton.addEventListener('click', function () {
+            const totalPages = Math.ceil(tabData[tabId].filteredData.length / tabData[tabId].itemsPerPage);
+            if (tabData[tabId].currentPage < totalPages) {
+                tabData[tabId].currentPage++;
+                renderTable(tabId);
+            }
+        });
+    }
+
+    // Updated function to update pagination controls with better UI
+    function updatePaginationControls(tabId) {
+        const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+        // Update page info text
+        const pageInfoElement = document.getElementById(`${tabId}PageInfo`);
+        if (pageInfoElement) {
+            pageInfoElement.textContent = `Trang ${currentPage} / ${Math.max(totalPages, 1)}`;
+        }
+
+        // Update previous button state
+        const prevButton = document.getElementById(`${tabId}PrevPage`);
+        if (prevButton) {
+            prevButton.disabled = currentPage <= 1;
+        }
+
+        // Update next button state
+        const nextButton = document.getElementById(`${tabId}NextPage`);
+        if (nextButton) {
+            nextButton.disabled = currentPage >= totalPages || totalPages === 0;
+        }
+    }
+
+    // Pagination helper functions
+    function paginateData(data, page, itemsPerPage) {
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+        return data.slice(startIndex, endIndex);
     }
 
 

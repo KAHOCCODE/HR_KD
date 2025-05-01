@@ -47,7 +47,7 @@
                                         Lương Cơ Bản <span class="text-red-500">*</span>
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="LuongCoBan"
+                                        <input type="number" step="0.01" id="LuongCoBan" min="0" max="100000000"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900"
                                                placeholder="Nhập lương cơ bản" required />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
@@ -55,7 +55,7 @@
                                         </span>
                                     </div>
                                     <p id="minimumWageText" class="mt-1 text-xs text-gray-500">
-                                        Lương cơ bản trước thuế (Tối thiểu: <span id="minimumWageValue">0</span> VNĐ)
+                                        Lương cơ bản trước thuế (Tối thiểu: <span id="minimumWageValue">0</span> VNĐ, Tối đa: 100.000.000 VNĐ)
                                     </p>
                                 </div>
 
@@ -64,14 +64,14 @@
                                         Thưởng Cố Định
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="ThuongCoDinh" value="0"
+                                        <input type="number" step="0.01" id="ThuongCoDinh" value="0" min="0" max="100000000"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
                                                placeholder="Nhập thưởng cố định" />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
                                             VNĐ
                                         </span>
                                     </div>
-                                    <p class="mt-1 text-xs text-gray-500">Thưởng cố định hàng tháng</p>
+                                    <p class="mt-1 text-xs text-gray-500">Thưởng cố định hàng tháng (Tối đa: 100.000.000 VNĐ)</p>
                                 </div>
 
                                 <div>
@@ -101,14 +101,14 @@
                                         Phụ Cấp Cố Định
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="PhuCapCoDinh" value="0"
+                                        <input type="number" step="0.01" id="PhuCapCoDinh" value="0" min="0" max="100000000"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
                                                placeholder="Nhập phụ cấp cố định" />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
                                             VNĐ
                                         </span>
                                     </div>
-                                    <p class="mt-1 text-xs text-gray-500">Phụ cấp cố định hàng tháng</p>
+                                    <p class="mt-1 text-xs text-gray-500">Phụ cấp cố định hàng tháng (Tối đa: 100.000.000 VNĐ)</p>
                                 </div>
 
                                 <div class="grid grid-cols-3 gap-4">
@@ -192,7 +192,14 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         $(document).ready(function () {
-            let insuranceRates = { BHXH: 0, BHYT: 0, BHTN: 0 };
+            // Currency formatter
+            function formatCurrency(amount) {
+                return new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                    maximumFractionDigits: 0
+                }).format(amount);
+            }
 
             // Initialize Flatpickr
             flatpickr("#NgayApDung", {
@@ -210,16 +217,7 @@
                 }
             });
 
-            // Currency formatter
-            function formatCurrency(amount) {
-                return new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND',
-                    maximumFractionDigits: 0
-                }).format(amount);
-            }
-
-            // Fetch minimum wage and insurance rates
+            // Fetch minimum wage
             function loadInitialData() {
                 Swal.fire({
                     title: "Đang tải...",
@@ -230,84 +228,105 @@
                     }
                 });
 
-                // Fetch active region and minimum wage
+                // Fetch active minimum wage
                 $.ajax({
-                    url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
+                    url: "/api/PayrollSettingApi/muc-luong-toi-thieu-vung",
                     method: "GET",
                     success: function (data) {
-                        var activeRegion = data.find(v => v.isActive);
-                        if (activeRegion) {
-                            $.ajax({
-                                url: `/api/PayrollSettingApi/muc-luong-toi-thieu-vung/${activeRegion.vungLuong}`,
-                                method: "GET",
-                                success: function (wageData) {
-                                    $("#minimumWage").val(wageData.mucLuongToiThieuThang);
-                                    $("#minimumWageValue").text(wageData.mucLuongToiThieuThang.toLocaleString());
-                                    $("#LuongCoBan").attr("min", wageData.mucLuongToiThieuThang);
-                                    updateProgressBar();
-                                    updateSummary();
-                                },
-                                error: function () {
-                                    Swal.fire({
-                                        icon: "error",
-                                        title: "Lỗi",
-                                        text: "Không thể tải mức lương tối thiểu.",
-                                        confirmButtonColor: "#2563eb"
-                                    });
-                                }
-                            });
+                        var activeMinimumWage = data.find(m => m.isActive);
+                        if (activeMinimumWage) {
+                            $("#minimumWage").val(activeMinimumWage.mucLuongToiThieuThang);
+                            $("#minimumWageValue").text(activeMinimumWage.mucLuongToiThieuThang.toLocaleString());
+                            $("#LuongCoBan").attr("min", activeMinimumWage.mucLuongToiThieuThang);
+                            updateProgressBar();
+                            updateSummary();
                         } else {
                             Swal.fire({
                                 icon: "error",
                                 title: "Lỗi",
-                                text: "Không tìm thấy vùng lương đang hoạt động.",
+                                text: "Không tìm thấy mức lương tối thiểu vùng đang hoạt động.",
                                 confirmButtonColor: "#2563eb"
                             });
                         }
-                    },
-                    error: function () {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Lỗi",
-                            text: "Không thể tải thông tin vùng lương.",
-                            confirmButtonColor: "#2563eb"
-                        });
-                    }
-                });
-
-                // Fetch insurance rates
-                $.ajax({
-                    url: "/api/PayrollSettingApi/thong-tin-bao-hiem",
-                    method: "GET",
-                    success: function (data) {
-                        data.forEach(item => {
-                            if (!item.ngayHetHieuLuc) {
-                                if (item.loaiBaoHiem === "BHXH") insuranceRates.BHXH = item.tyLeNguoiLaoDong;
-                                if (item.loaiBaoHiem === "BHYT") insuranceRates.BHYT = item.tyLeNguoiLaoDong;
-                                if (item.loaiBaoHiem === "BHTN") insuranceRates.BHTN = item.tyLeNguoiLaoDong;
-                            }
-                        });
-                        updateInsuranceFields();
                         Swal.close();
                     },
                     error: function () {
                         Swal.fire({
                             icon: "error",
                             title: "Lỗi",
-                            text: "Không thể tải tỷ lệ bảo hiểm.",
+                            text: "Không thể tải mức lương tối thiểu.",
                             confirmButtonColor: "#2563eb"
                         });
                     }
                 });
             }
 
-            // Update insurance fields based on LuongCoBan
+            // Update insurance fields by calling API
             function updateInsuranceFields() {
                 let luongCoBan = parseFloat($("#LuongCoBan").val()) || 0;
-                $("#BHXH").val((luongCoBan * (insuranceRates.BHXH / 100)).toFixed(2));
-                $("#BHYT").val((luongCoBan * (insuranceRates.BHYT / 100)).toFixed(2));
-                $("#BHTN").val((luongCoBan * (insuranceRates.BHTN / 100)).toFixed(2));
-                updateSummary();
+                let phuCapCoDinh = parseFloat($("#PhuCapCoDinh").val()) || 0;
+                let minimumWage = parseFloat($("#minimumWage").val()) || 0;
+                const maxReasonableSalary = 100000000; // 100 triệu VNĐ
+
+                // Kiểm tra mức lương tối đa hợp lý
+                if (luongCoBan > maxReasonableSalary || phuCapCoDinh > maxReasonableSalary) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Lương không hợp lý",
+                        text: `Lương cơ bản và phụ cấp không được vượt quá ${formatCurrency(maxReasonableSalary)}!`,
+                        confirmButtonColor: "#2563eb"
+                    });
+                    $("#BHXH").val("0");
+                    $("#BHYT").val("0");
+                    $("#BHTN").val("0");
+                    updateSummary();
+                    return;
+                }
+
+                // Kiểm tra mức lương tối thiểu trước khi gọi API
+                let luongDongBaoHiem = luongCoBan + phuCapCoDinh;
+                if (luongDongBaoHiem < minimumWage) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Lương không hợp lệ",
+                        text: `Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp) phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
+                        confirmButtonColor: "#2563eb"
+                    });
+                    $("#BHXH").val("0");
+                    $("#BHYT").val("0");
+                    $("#BHTN").val("0");
+                    updateSummary();
+                    return;
+                }
+
+                $.ajax({
+                    url: "/api/SalaryApi/calculate-insurance",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        LuongCoBan: luongCoBan,
+                        PhuCapCoDinh: phuCapCoDinh
+                    }),
+                    success: function (data) {
+                        $("#BHXH").val(data.bhxh.toFixed(2));
+                        $("#BHYT").val(data.bhyt.toFixed(2));
+                        $("#BHTN").val(data.bhtn.toFixed(2));
+                        updateSummary();
+                    },
+                    error: function (xhr) {
+                        let errorMessage = xhr.responseJSON?.message || "Không thể tính toán bảo hiểm.";
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi",
+                            text: errorMessage,
+                            confirmButtonColor: "#2563eb"
+                        });
+                        $("#BHXH").val("0");
+                        $("#BHYT").val("0");
+                        $("#BHTN").val("0");
+                        updateSummary();
+                    }
+                });
             }
 
             // Update progress bar
@@ -348,14 +367,18 @@
                 $("#luongThucLanh").text(formatCurrency(luongThucLanh));
             }
 
-            // Form input handlers
-            $("#LuongCoBan").on("change keyup", function() {
-                updateInsuranceFields();
-                updateProgressBar();
-                updateSummary();
+            // Form input handlers with debounce
+            let debounceTimeout;
+            $("#LuongCoBan, #PhuCapCoDinh").on("change keyup", function() {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(() => {
+                    updateInsuranceFields();
+                    updateProgressBar();
+                    updateSummary();
+                }, 300);
             });
 
-            $("input:not(#LuongCoBan), textarea").on("change keyup", function() {
+            $("input:not(#LuongCoBan, #PhuCapCoDinh), textarea").on("change keyup", function() {
                 updateProgressBar();
                 updateSummary();
             });
@@ -393,12 +416,26 @@
 
                 // Validate minimum wage
                 let luongCoBan = parseFloat($("#LuongCoBan").val());
+                let phuCapCoDinh = parseFloat($("#PhuCapCoDinh").val()) || 0;
                 let minimumWage = parseFloat($("#minimumWage").val());
-                if (luongCoBan < minimumWage) {
+                let luongDongBaoHiem = luongCoBan + phuCapCoDinh;
+                if (luongDongBaoHiem < minimumWage) {
                     Swal.fire({
                         icon: "warning",
                         title: "Lương không hợp lệ",
-                        text: `Lương cơ bản phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
+                        text: `Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp) phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
+                        confirmButtonColor: "#2563eb"
+                    });
+                    return;
+                }
+
+                // Validate maximum reasonable salary
+                const maxReasonableSalary = 100000000; // 100 triệu VNĐ
+                if (luongCoBan > maxReasonableSalary || phuCapCoDinh > maxReasonableSalary) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Lương không hợp lý",
+                        text: `Lương cơ bản và phụ cấp không được vượt quá ${formatCurrency(maxReasonableSalary)}!`,
                         confirmButtonColor: "#2563eb"
                     });
                     return;

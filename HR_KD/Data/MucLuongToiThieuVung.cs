@@ -15,5 +15,7 @@ namespace HR_KD.Data
         [Required]
         [Column(TypeName = "decimal(18,0)")]
         public decimal MucLuongToiThieuGio { get; set; } // Lưu dưới dạng số nguyên (VD: 23.800)
+
+        public bool IsActive { get; set; } = true;
     }
 }

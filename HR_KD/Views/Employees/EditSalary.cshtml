@@ -261,37 +261,23 @@
 
             // Fetch minimum wage and insurance rates
             function loadInitialData() {
-                // Fetch active region and minimum wage
+                // Fetch active minimum wage
                 $.ajax({
-                    url: "/api/PayrollSettingApi/vung-luong-theo-dia-phuong",
+                    url: "/api/PayrollSettingApi/muc-luong-toi-thieu-vung",
                     method: "GET",
                     success: function (data) {
-                        var activeRegion = data.find(v => v.isActive);
-                        if (activeRegion) {
-                            $.ajax({
-                                url: `/api/PayrollSettingApi/muc-luong-toi-thieu-vung/${activeRegion.vungLuong}`,
-                                method: "GET",
-                                success: function (wageData) {
-                                    $("#minimumWage").val(wageData.mucLuongToiThieuThang);
-                                    $("#minimumWageValue").text(wageData.mucLuongToiThieuThang.toLocaleString());
-                                    $("#LuongCoBan").attr("min", wageData.mucLuongToiThieuThang);
-                                    updateProgressBar();
-                                    updateSummary();
-                                },
-                                error: function () {
-                                    Swal.fire({
-                                        icon: "error",
-                                        title: "Lỗi",
-                                        text: "Không thể tải mức lương tối thiểu.",
-                                        confirmButtonColor: "#ca8a04"
-                                    });
-                                }
-                            });
+                        var activeMinimumWage = data.find(m => m.isActive);
+                        if (activeMinimumWage) {
+                            $("#minimumWage").val(activeMinimumWage.mucLuongToiThieuThang);
+                            $("#minimumWageValue").text(activeMinimumWage.mucLuongToiThieuThang.toLocaleString());
+                            $("#LuongCoBan").attr("min", activeMinimumWage.mucLuongToiThieuThang);
+                            updateProgressBar();
+                            updateSummary();
                         } else {
                             Swal.fire({
                                 icon: "error",
                                 title: "Lỗi",
-                                text: "Không tìm thấy vùng lương đang hoạt động.",
+                                text: "Không tìm thấy mức lương tối thiểu vùng đang hoạt động.",
                                 confirmButtonColor: "#ca8a04"
                             });
                         }
@@ -300,7 +286,7 @@
                         Swal.fire({
                             icon: "error",
                             title: "Lỗi",
-                            text: "Không thể tải thông tin vùng lương.",
+                            text: "Không thể tải mức lương tối thiểu.",
                             confirmButtonColor: "#ca8a04"
                         });
                     }

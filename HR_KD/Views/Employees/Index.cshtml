@@ -100,13 +100,16 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 mb-3 mb-md-0">
                             <div class="card border-0 bg-warning bg-opacity-10">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <h6 class="text-warning fw-bold mb-0">Phòng ban</h6>
-                                            <h3 class="mt-2 mb-0" id="departmentCount">0</h3>
+                                            <h6 class="text-warning fw-bold mb-0">Người phụ thuộc</h6>
+                                            <h3 class="mt-2 mb-0" id="dependentCount">0</h3>
+                                        </div>
+                                        <div class="bg-warning bg-opacity-25 p-3 rounded-circle">
+                                            <i class="fa fa-users fa-2x" style="color: white;"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -124,6 +127,7 @@
                                     <th>Họ Tên</th>
                                     <th>Ngày Sinh</th>
                                     <th>Giới Tính</th>
+                                    <th>Người PT</th> <!-- Thêm cột mới -->
                                     <th>SĐT</th>
                                     <th>Email</th>
                                     <th>Phòng Ban</th>
@@ -334,9 +338,6 @@
                         let option = new Option(pb.tenPhongBan, pb.maPhongBan);
                         filterPhongBan.appendChild(option);
                     });
-
-                    // Cập nhật số lượng phòng ban
-                    document.getElementById("departmentCount").textContent = data.length;
                 })
                 .catch(error => {
                     console.error('Error loading PhongBan:', error);
@@ -416,11 +417,15 @@
             document.getElementById("totalEmployees").textContent = data.length;
 
             // Số lượng nhân viên nam/nữ
-            const maleCount = data.filter(emp => emp.gioiTinh == "Nam").length;
-            const femaleCount = data.filter(emp => emp.gioiTinh == "Nữ").length;
+            const maleCount = data.filter(emp => emp.gioiTinh === "Nam").length;
+            const femaleCount = data.filter(emp => emp.gioiTinh === "Nữ").length;
 
             document.getElementById("maleCount").textContent = maleCount;
             document.getElementById("femaleCount").textContent = femaleCount;
+
+            // Tính tổng số người phụ thuộc
+            const totalDependents = data.reduce((sum, emp) => sum + (emp.soNguoiPhuThuoc || 0), 0);
+            document.getElementById("dependentCount").textContent = totalDependents;
         }
 
         function applyFilters() {
@@ -492,6 +497,7 @@
                 </td>
                 <td>${new Date(employee.ngaySinh).toLocaleDateString('vi-VN')}</td>
                 <td>${genderBadge}</td>
+                <td>${employee.soNguoiPhuThuoc || 0}</td> <!-- Hiển thị số người phụ thuộc -->
                 <td>${employee.sdt}</td>
                 <td>${employee.email}</td>
                 <td>${employee.phongBan || '<span class="text-muted fst-italic">Chưa cập nhật</span>'}</td>

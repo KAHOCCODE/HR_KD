@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250430145317_AddIsActiveInMucLuongCoSo")]
+    partial class AddIsActiveInMucLuongCoSo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -272,36 +275,6 @@ namespace HR_KD.Migrations
                     b.HasIndex("MaPhongBan");
 
                     b.ToTable("DaoTao", (string)null);
-                });
-
-            modelBuilder.Entity("HR_KD.Data.GiamTruGiaCanh", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("GhiChu")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<decimal>("MucGiamTruBanThan")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("MucGiamTruNguoiPhuThuoc")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("NgayHetHieuLuc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("NgayHieuLuc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GiamTruGiaCanhs");
                 });
 
             modelBuilder.Entity("HR_KD.Data.LichSuChamCong", b =>
@@ -657,9 +630,6 @@ namespace HR_KD.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("SDT");
 
-                    b.Property<int>("SoNguoiPhuThuoc")
-                        .HasColumnType("int");
-
                     b.Property<string>("TrinhDoHocVan")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -961,6 +931,12 @@ namespace HR_KD.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("MucLuongCoSoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MucLuongToiThieuVungId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("NgayHetHieuLuc")
                         .HasColumnType("datetime2");
 
@@ -974,6 +950,10 @@ namespace HR_KD.Migrations
                         .HasColumnType("decimal(5,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MucLuongCoSoId");
+
+                    b.HasIndex("MucLuongToiThieuVungId");
 
                     b.ToTable("ThongTinBaoHiems");
                 });
@@ -1378,6 +1358,25 @@ namespace HR_KD.Migrations
                         .HasConstraintName("FK__ThongBao__MaNV__01142BA1");
 
                     b.Navigation("MaNvNavigation");
+                });
+
+            modelBuilder.Entity("HR_KD.Data.ThongTinBaoHiem", b =>
+                {
+                    b.HasOne("HR_KD.Data.MucLuongCoSo", "MucLuongCoSo")
+                        .WithMany()
+                        .HasForeignKey("MucLuongCoSoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HR_KD.Data.MucLuongToiThieuVung", "MucLuongToiThieuVung")
+                        .WithMany()
+                        .HasForeignKey("MucLuongToiThieuVungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MucLuongCoSo");
+
+                    b.Navigation("MucLuongToiThieuVung");
                 });
 
             modelBuilder.Entity("HR_KD.Data.ThongTinLuongNV", b =>

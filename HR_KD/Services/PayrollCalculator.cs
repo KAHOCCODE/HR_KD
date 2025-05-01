@@ -37,20 +37,17 @@ public class PayrollCalculator
 
         // 2. Tính tổng giờ làm việc
         decimal totalHours = 27 * 8; // Sửa cứng tạm thời: 27 ngày công * 8 giờ/ngày = 216 giờ
-        // Nếu dữ liệu ChamCong đáng tin cậy, nên dùng:
-        // decimal totalHours = attendanceRecords.Sum(a => a.TongGio ?? 0);
 
         // 3. Tính lương cơ bản theo giờ (giả định 160 giờ/tháng) và áp dụng tỷ lệ lương ngay từ đầu
         decimal adjustedSalary = salaryInfo.LuongCoBan * tiLeLuong;
         decimal hourlyRate = adjustedSalary / 160;
         decimal baseSalary = totalHours * hourlyRate;
 
-        // 4. Tính lương tăng ca (lọc trạng thái "Đã duyệt lần 1")
+        // 4. Tính lương tăng ca (bỏ điều kiện trạng thái "Đã duyệt lần 1")
         var overtimeRecords = await _context.TangCas
             .Where(t => t.MaNv == employeeId &&
                         t.NgayTangCa.Year == monthYear.Year &&
-                        t.NgayTangCa.Month == monthYear.Month &&
-                        t.TrangThai.Trim() == "Đã duyệt lần 1")
+                        t.NgayTangCa.Month == monthYear.Month)
             .ToListAsync();
         decimal overtimeSalary = overtimeRecords.Sum(t => (decimal)t.SoGioTangCa * hourlyRate * t.TyLeTangCa);
 

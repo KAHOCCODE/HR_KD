@@ -136,7 +136,6 @@ namespace HR_KD.ApiControllers
         [Route("GetLeaveHistory")]
         public async Task<IActionResult> GetLeaveHistory()
         {
-            // Lấy mã NV từ claims
             var currentMaNv = GetMaNvFromClaims();
             if (currentMaNv == null)
             {
@@ -144,7 +143,7 @@ namespace HR_KD.ApiControllers
             }
 
             var leaveHistory = await _context.NgayNghis
-                .Where(n => n.MaNv == currentMaNv.Value) // Sử dụng mã NV từ claims
+                .Where(n => n.MaNv == currentMaNv.Value)
                 .Join(_context.LoaiNgayNghis,
                       n => n.MaLoaiNgayNghi,
                       l => l.MaLoaiNgayNghi,
@@ -156,17 +155,21 @@ namespace HR_KD.ApiControllers
                 .SelectMany(nl => nl.nvGroup.DefaultIfEmpty(),
                             (nl, nv) => new
                             {
-                                id = nl.n.MaNgayNghi, // Sử dụng MaNgayNghi thay vì Id
+                                id = nl.n.MaNgayNghi,
                                 MaLoaiNgayNghi = nl.n.MaLoaiNgayNghi,
                                 TenLoai = nl.l.TenLoai,
                                 NgayNghi = nl.n.NgayNghi1.ToString("yyyy-MM-dd"),
                                 LyDo = nl.n.LyDo,
-                                TrangThai = nl.n.MaTrangThai,
+                                // Thay MaTrangThai bằng TenTrangThai
+                                TrangThai = _context.TrangThais
+                                    .Where(t => t.MaTrangThai == nl.n.MaTrangThai)
+                                    .Select(t => t.TenTrangThai)
+                                    .FirstOrDefault() ?? "Không xác định",
                                 FileDinhKem = nl.n.FileDinhKem,
                                 NgayDuyet = nl.n.NgayDuyet,
                                 GhiChu = nl.n.GhiChu,
                                 NguoiDuyetId = nl.n.NguoiDuyetId,
-                                NguoiDuyetHoTen = nv != null ? nv.HoTen : "Chưa có" // Lấy họ tên, mặc định "Chưa có" nếu null
+                                NguoiDuyetHoTen = nv != null ? nv.HoTen : "Chưa có"
                             })
                 .ToListAsync();
 

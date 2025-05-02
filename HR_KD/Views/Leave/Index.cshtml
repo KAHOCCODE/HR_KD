@@ -1109,10 +1109,8 @@
     function renderTable(tabId) {
         const tableBodyId = `${tabId}LeaveBody`;
         const tableBody = document.getElementById(tableBodyId);
-        if (!tableBody) {
-            console.error(`Không tìm thấy phần tử ${tableBodyId} trong DOM.`);
-            return;
-        }
+        if (!tableBody) return;
+
         tableBody.innerHTML = "";
 
         const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
@@ -1120,41 +1118,39 @@
 
         if (paginatedData.length === 0) {
             let colspan = 6;
-            if (tabId === 'approved' || tabId === 'rejected') {
-                colspan = 8;
-            }
+            if (tabId === 'approved' || tabId === 'rejected') colspan = 8;
             tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">Không có đơn nào trong danh sách này</td></tr>`;
         } else {
             paginatedData.forEach(item => {
-                const row = document.createElement("tr");
                 const fileDisplayHtml = generateFileDisplayHtml(item.fileDinhKem);
                 const ngayDuyetFormatted = item.ngayDuyet ? formatDate(item.ngayDuyet) : "Chưa duyệt";
+                const trangThaiText = getStatusText(item.trangThai); // Ánh xạ MaTrangThai sang TenTrangThai
 
                 if (tabId === 'pending') {
                     const cancelButton = `<button class="btn-cancel" data-id="${item.id}">
-                                    <i class="fas fa-times-circle"></i>
-                                    <span>Hủy đơn</span>
-                                </button>`;
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Hủy đơn</span>
+                                    </button>`;
 
                     row.innerHTML = `
-                                <td>${item.tenLoai || "Không xác định"}</td>
-                                <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                                <td>${item.lyDo || "Không có lý do"}</td>
-                                <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                                <td>${fileDisplayHtml}</td>
-                                <td>${cancelButton}</td>
-                            `;
+                        <td>${item.tenLoai || "Không xác định"}</td>
+                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                        <td>${item.lyDo || "Không có lý do"}</td>
+                        <td><span class="status ${getStatusClass(trangThaiText)}">${trangThaiText}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${cancelButton}</td>
+                    `;
                 } else {
                     row.innerHTML = `
-                                <td>${item.tenLoai || "Không xác định"}</td>
-                                <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                                <td>${item.lyDo || "Không có lý do"}</td>
-                                <td><span class="status ${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                                <td>${fileDisplayHtml}</td>
-                                <td>${ngayDuyetFormatted}</td>
-                                <td>${item.ghiChu || "Không có ghi chú"}</td>
-                                <td>${item.nguoiDuyetHoTen || "Chưa có"}</td>
-                            `;
+                        <td>${item.tenLoai || "Không xác định"}</td>
+                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
+                        <td>${item.lyDo || "Không có lý do"}</td>
+                        <td><span class="status ${getStatusClass(trangThaiText)}">${trangThaiText}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${ngayDuyetFormatted}</td>
+                        <td>${item.ghiChu || "Không có ghi chú"}</td>
+                        <td>${item.nguoiDuyetHoTen || "Chưa có"}</td>
+                    `;
                 }
 
                 tableBody.appendChild(row);

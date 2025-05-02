@@ -289,7 +289,7 @@ namespace HR_KD.ApiControllers
                 // Lấy các ngày đã đăng ký nghỉ phép (chỉ lấy những ngày đang chờ duyệt hoặc đã duyệt)
                 var registeredDates = await _context.NgayNghis
                     .Where(n => n.MaNv == currentMaNv.Value &&
-                          (n.TrangThai == "Chờ duyệt" || n.TrangThai == "Đã duyệt lận 1"))
+                          (n.TrangThai == "Chờ duyệt" || n.TrangThai == "Đã duyệt"))
                     .Select(n => n.NgayNghi1.ToString("yyyy-MM-dd"))
                     .ToListAsync();
 
@@ -299,6 +299,38 @@ namespace HR_KD.ApiControllers
             {
                 Console.WriteLine($"❌ Lỗi Server: {ex}");
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
+
+        [HttpGet("GetHolidays")]
+        public async Task<IActionResult> GetHolidays()
+        {
+            try
+            {
+                var holidays = await _context.NgayLes
+                    .Where(h => h.TrangThai == "Đã duyệt")
+                    .Select(h => new
+                    {
+                        ngayLe = h.NgayLe1.ToString("yyyy-MM-dd"),
+                        tenNgayLe = h.TenNgayLe,
+                        soNgayNghi = h.SoNgayNghi,
+                        trangThai = h.TrangThai
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    holidays = holidays
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Lỗi hệ thống: " + ex.Message
+                });
             }
         }
 

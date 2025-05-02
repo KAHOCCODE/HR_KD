@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250502094239_addForeignTrangThaiToNgayNghi")]
+    partial class addForeignTrangThaiToNgayNghi
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -632,6 +635,9 @@ namespace HR_KD.Migrations
                         .HasColumnType("int")
                         .HasColumnName("MaNV");
 
+                    b.Property<int>("MaTrangThai")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("NgayDuyet")
                         .HasColumnType("datetime2");
 
@@ -651,6 +657,8 @@ namespace HR_KD.Migrations
                     b.HasIndex("MaLoaiNgayNghi");
 
                     b.HasIndex("MaNv");
+
+                    b.HasIndex("MaTrangThai");
 
                     b.HasIndex("NguoiDuyetId");
 
@@ -1376,6 +1384,12 @@ namespace HR_KD.Migrations
                         .IsRequired()
                         .HasConstraintName("FK__NgayNghi__MaNV__5070F446");
 
+                    b.HasOne("HR_KD.Data.TrangThai", "TrangThai")
+                        .WithMany("NgayNghis")
+                        .HasForeignKey("MaTrangThai")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("HR_KD.Data.NhanVien", "NguoiDuyet")
                         .WithMany()
                         .HasForeignKey("NguoiDuyetId");
@@ -1385,6 +1399,8 @@ namespace HR_KD.Migrations
                     b.Navigation("MaNvNavigation");
 
                     b.Navigation("NguoiDuyet");
+
+                    b.Navigation("TrangThai");
                 });
 
             modelBuilder.Entity("HR_KD.Data.NhanVien", b =>
@@ -1602,6 +1618,11 @@ namespace HR_KD.Migrations
             modelBuilder.Entity("HR_KD.Data.TieuChiDanhGiaFullTime", b =>
                 {
                     b.Navigation("ChiTietDanhGia");
+                });
+
+            modelBuilder.Entity("HR_KD.Data.TrangThai", b =>
+                {
+                    b.Navigation("NgayNghis");
                 });
 #pragma warning restore 612, 618
         }

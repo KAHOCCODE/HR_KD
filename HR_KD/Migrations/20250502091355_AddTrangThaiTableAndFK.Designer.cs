@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250502091355_AddTrangThaiTableAndFK")]
+    partial class AddTrangThaiTableAndFK
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -457,16 +460,6 @@ namespace HR_KD.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaLoaiNgayNghi"));
 
-                    b.Property<bool>("CoTinhVaoLuong")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("HuongLuong")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<string>("MoTa")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -475,11 +468,6 @@ namespace HR_KD.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("TinhVaoPhepNam")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
 
                     b.HasKey("MaLoaiNgayNghi")
                         .HasName("PK__LoaiNgay__3E18383F70879B53");
@@ -645,6 +633,15 @@ namespace HR_KD.Migrations
                     b.Property<int?>("NguoiDuyetId")
                         .HasColumnType("int");
 
+                    b.Property<string>("TrangThai")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Chưa Duyệt");
+
+                    b.Property<int?>("TrangThaiMaTrangThai")
+                        .HasColumnType("int");
+
                     b.HasKey("MaNgayNghi")
                         .HasName("PK__NgayNghi__526A7F783CFC0001");
 
@@ -653,6 +650,8 @@ namespace HR_KD.Migrations
                     b.HasIndex("MaNv");
 
                     b.HasIndex("NguoiDuyetId");
+
+                    b.HasIndex("TrangThaiMaTrangThai");
 
                     b.ToTable("NgayNghi", null, t =>
                         {
@@ -1380,6 +1379,10 @@ namespace HR_KD.Migrations
                         .WithMany()
                         .HasForeignKey("NguoiDuyetId");
 
+                    b.HasOne("HR_KD.Data.TrangThai", null)
+                        .WithMany("NgayNghis")
+                        .HasForeignKey("TrangThaiMaTrangThai");
+
                     b.Navigation("MaLoaiNgayNghiNavigation");
 
                     b.Navigation("MaNvNavigation");
@@ -1602,6 +1605,11 @@ namespace HR_KD.Migrations
             modelBuilder.Entity("HR_KD.Data.TieuChiDanhGiaFullTime", b =>
                 {
                     b.Navigation("ChiTietDanhGia");
+                });
+
+            modelBuilder.Entity("HR_KD.Data.TrangThai", b =>
+                {
+                    b.Navigation("NgayNghis");
                 });
 #pragma warning restore 612, 618
         }

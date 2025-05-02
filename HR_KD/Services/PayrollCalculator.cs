@@ -49,7 +49,7 @@ public class PayrollCalculator
             .Where(n => n.MaNv == employeeId &&
                         n.NgayNghi1.Year == monthYear.Year &&
                         n.NgayNghi1.Month == monthYear.Month &&
-                        n.TrangThai == "Đã duyệt")
+                        n.MaTrangThai == 2)
             .ToListAsync();
 
         var attendanceDates = attendanceRecords.Select(a => a.NgayLamViec).ToHashSet();

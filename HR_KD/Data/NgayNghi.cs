@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HR_KD.Data;
 
@@ -12,9 +13,7 @@ public partial class NgayNghi
     public DateOnly NgayNghi1 { get; set; }
 
     public string? LyDo { get; set; }
-
-    public string? TrangThai { get; set; }
-
+    
     public int? MaLoaiNgayNghi { get; set; }
 
     public DateTime NgayLamDon { get; set; }
@@ -22,6 +21,8 @@ public partial class NgayNghi
     public int? NguoiDuyetId { get; set; }
 
     public DateTime NgayDuyet { get; set; } = DateTime.Now;
+
+    public int MaTrangThai { get; set; } = 1;
 
     public string? GhiChu { get; set; }
 
@@ -32,4 +33,5 @@ public partial class NgayNghi
     public virtual NhanVien MaNvNavigation { get; set; } = null!;
 
     public virtual NhanVien? NguoiDuyet { get; set; }
+
 }

@@ -113,7 +113,7 @@ namespace HR_KD.ApiControllers
                         NgayNghi1 = DateOnly.FromDateTime(ngayNghi),
                         NgayLamDon =DateTime.Now,
                         LyDo = request.LyDo ?? "Không có lý do",
-                        TrangThai = "Chờ duyệt",
+                        MaTrangThai = 1,
                         MaLoaiNgayNghi = request.MaLoaiNgayNghi.Value,
                         FileDinhKem = fileAttachments // Thêm file đính kèm
                    
@@ -161,7 +161,7 @@ namespace HR_KD.ApiControllers
                                 TenLoai = nl.l.TenLoai,
                                 NgayNghi = nl.n.NgayNghi1.ToString("yyyy-MM-dd"),
                                 LyDo = nl.n.LyDo,
-                                TrangThai = nl.n.TrangThai,
+                                TrangThai = nl.n.MaTrangThai,
                                 FileDinhKem = nl.n.FileDinhKem,
                                 NgayDuyet = nl.n.NgayDuyet,
                                 GhiChu = nl.n.GhiChu,
@@ -289,7 +289,7 @@ namespace HR_KD.ApiControllers
                 // Lấy các ngày đã đăng ký nghỉ phép (chỉ lấy những ngày đang chờ duyệt hoặc đã duyệt)
                 var registeredDates = await _context.NgayNghis
                     .Where(n => n.MaNv == currentMaNv.Value &&
-                          (n.TrangThai == "Chờ duyệt" || n.TrangThai == "Đã duyệt"))
+                          (n.MaTrangThai == 1 || n.MaTrangThai == 2))
                     .Select(n => n.NgayNghi1.ToString("yyyy-MM-dd"))
                     .ToListAsync();
 
@@ -358,7 +358,7 @@ namespace HR_KD.ApiControllers
                 }
 
                 // Kiểm tra xem có thể hủy không (chỉ hủy được đơn đang chờ duyệt)
-                if (leaveRequest.TrangThai != "Chờ duyệt")
+                if (leaveRequest.MaTrangThai != 1)
                 {
                     return BadRequest(new { success = false, message = "Chỉ có thể hủy đơn đang chờ duyệt." });
                 }

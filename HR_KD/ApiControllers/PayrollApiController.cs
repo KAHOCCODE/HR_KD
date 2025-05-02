@@ -201,7 +201,7 @@ namespace HR_KD.ApiControllers
                     .Where(n => n.MaNv == employeeId &&
                                 n.NgayNghi1.Year == selectedMonth.Year &&
                                 n.NgayNghi1.Month == selectedMonth.Month &&
-                                n.TrangThai == "Đã duyệt")
+                                n.MaTrangThai == 2 )
                     .ToListAsync();
 
                 int daysInMonth = DateTime.DaysInMonth(selectedMonth.Year, selectedMonth.Month);

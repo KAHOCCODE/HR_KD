@@ -444,7 +444,7 @@ namespace HR_KD.ApiControllers
                     NgayNghi1 = request.NgayLamViec,
                     LyDo = !string.IsNullOrEmpty(request.LyDo) ? request.LyDo : "Không có lý do cụ thể",
                     MaLoaiNgayNghi = request.MaLoaiNgayNghi,
-                    TrangThai = "Từ chối",
+                    MaTrangThai = 3,
                     NgayLamDon = DateTime.Now
                 };
 

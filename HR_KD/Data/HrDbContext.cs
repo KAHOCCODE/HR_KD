@@ -14,7 +14,8 @@ public partial class HrDbContext : DbContext
         : base(options)
     {
     }
-    
+
+    public DbSet<TrangThai> TrangThais { get; set; }
 
     public virtual DbSet<BangLuong> BangLuongs { get; set; }
 
@@ -244,6 +245,19 @@ public partial class HrDbContext : DbContext
 
             entity.Property(e => e.MoTa).HasMaxLength(255);
             entity.Property(e => e.TenLoai).HasMaxLength(100);
+
+            // Thêm các cột mới
+            entity.Property(e => e.HuongLuong)
+                  .IsRequired() // Không cho phép NULL
+                  .HasDefaultValue(false); // Giá trị mặc định là false
+
+            entity.Property(e => e.TinhVaoPhepNam)
+                  .IsRequired()
+                  .HasDefaultValue(false);
+
+            entity.Property(e => e.CoTinhVaoLuong)
+                  .IsRequired()
+                  .HasDefaultValue(false);
         });
 
         modelBuilder.Entity<LoginHistory>(entity =>
@@ -251,6 +265,22 @@ public partial class HrDbContext : DbContext
             entity.ToTable("LoginHistory");
             entity.HasKey(e => e.LoginId).HasName("PK__LoginHis__C9F84E0D1A2B3F4D");
 
+        });
+
+        modelBuilder.Entity<TrangThai>(entity =>
+        {
+            entity.HasKey(e => e.MaTrangThai);
+            entity.Property(e => e.TenTrangThai)
+                  .IsRequired()
+                  .HasMaxLength(50);
+
+            // ✅ Dữ liệu mẫu
+            entity.HasData(
+                new TrangThai { MaTrangThai = 1, TenTrangThai = "Chờ duyệt" },
+                new TrangThai { MaTrangThai = 2, TenTrangThai = "Đã duyệt" },
+                new TrangThai { MaTrangThai = 3, TenTrangThai = "Từ chối" },
+                new TrangThai { MaTrangThai = 4, TenTrangThai = "Đã hủy" }
+            );
         });
 
         modelBuilder.Entity<NgayLe>(entity =>
@@ -273,9 +303,8 @@ public partial class HrDbContext : DbContext
             entity.Property(e => e.LyDo).HasMaxLength(255);
             entity.Property(e => e.MaNv).HasColumnName("MaNV");
             entity.Property(e => e.NgayNghi1).HasColumnName("NgayNghi");
-            entity.Property(e => e.TrangThai)
-                .HasMaxLength(50)
-                .HasDefaultValue("Chưa Duyệt");
+
+            
 
             entity.HasOne(d => d.MaLoaiNgayNghiNavigation).WithMany(p => p.NgayNghis)
                 .HasForeignKey(d => d.MaLoaiNgayNghi)

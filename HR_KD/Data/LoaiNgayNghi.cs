@@ -11,5 +11,9 @@ public partial class LoaiNgayNghi
 
     public string? MoTa { get; set; }
 
+    public bool HuongLuong { get; set; }
+    public bool TinhVaoPhepNam { get; set; }
+    public bool CoTinhVaoLuong { get; set; }
+
     public virtual ICollection<NgayNghi> NgayNghis { get; set; } = new List<NgayNghi>();
 }

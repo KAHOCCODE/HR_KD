@@ -42,7 +42,6 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Mã nhân viên không hợp lệ." });
                 }
 
-                // Lấy bản ghi chấm công (bỏ điều kiện trạng thái "Đã duyệt lần 1")
                 var attendanceRecords = await _context.ChamCongs
                     .Where(c => c.MaNv == employeeId &&
                                 c.NgayLamViec.Year == selectedMonth.Year &&
@@ -57,11 +56,9 @@ namespace HR_KD.ApiControllers
 
                 if (!attendanceRecords.Any())
                 {
-                    _logger.LogInformation("Không có dữ liệu chấm công nào trong tháng này.");
-                    return BadRequest(new { message = "Không có dữ liệu chấm công trong tháng này." });
+                    _logger.LogInformation("Không có dữ liệu chấm công nào trong tháng này, sẽ kiểm tra ngày lễ và ngày nghỉ.");
                 }
 
-                // Lấy thông tin lương
                 var salaryInfo = await _context.ThongTinLuongNVs
                     .Where(t => t.MaNv == employeeId && t.NgayApDung <= selectedMonth)
                     .OrderByDescending(t => t.NgayApDung)
@@ -73,11 +70,9 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không tìm thấy thông tin lương." });
                 }
 
-                // Tính bảng lương
                 var calculator = new PayrollCalculator(_context);
                 var payroll = await calculator.CalculatePayroll(employeeId, selectedMonth, attendanceRecords, salaryInfo);
 
-                // Kiểm tra bảng lương đã tồn tại chưa
                 var existingPayroll = await _context.BangLuongs
                     .FirstOrDefaultAsync(b => b.MaNv == employeeId &&
                                               b.ThangNam.Year == selectedMonth.Year &&
@@ -131,7 +126,6 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Định dạng tháng không hợp lệ." });
                 }
 
-                // Kiểm tra xem nhân viên đã có bảng lương chưa
                 var payroll = await _context.BangLuongs
                     .Where(b => b.MaNv == employeeId &&
                                 b.ThangNam.Year == selectedMonth.Year &&
@@ -143,7 +137,6 @@ namespace HR_KD.ApiControllers
                     return Ok(new { hasPayroll = false });
                 }
 
-                // Lấy thông tin nhân viên
                 var employee = await _context.NhanViens
                     .Include(e => e.MaChucVuNavigation)
                     .Include(e => e.MaPhongBanNavigation)
@@ -153,7 +146,8 @@ namespace HR_KD.ApiControllers
                         e.HoTen,
                         e.Email,
                         TenChucVu = e.MaChucVuNavigation.TenChucVu,
-                        TenPhongBan = e.MaPhongBanNavigation.TenPhongBan
+                        TenPhongBan = e.MaPhongBanNavigation.TenPhongBan,
+                        SoNguoiPhuThuoc = e.SoNguoiPhuThuoc
                     })
                     .FirstOrDefaultAsync();
 
@@ -162,7 +156,6 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không tìm thấy thông tin nhân viên." });
                 }
 
-                // Lấy thông tin lương
                 var salaryInfo = await _context.ThongTinLuongNVs
                     .Where(t => t.MaNv == employeeId && t.NgayApDung <= selectedMonth)
                     .OrderByDescending(t => t.NgayApDung)
@@ -173,29 +166,101 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không tìm thấy thông tin lương." });
                 }
 
-                // Lấy trạng thái chấm công (bỏ điều kiện trạng thái "Đã duyệt lần 1")
                 var attendanceRecords = await _context.ChamCongs
                     .Where(c => c.MaNv == employeeId &&
                                 c.NgayLamViec.Year == selectedMonth.Year &&
                                 c.NgayLamViec.Month == selectedMonth.Month)
                     .ToListAsync();
 
-                int actualWorkingDays = 27; // Sửa cứng tạm thời: 27 ngày công thực tế
-                decimal totalHours = 27 * 8; // Sửa cứng tạm thời: 27 ngày công * 8 giờ/ngày = 216 giờ
+                decimal totalHours = attendanceRecords.Sum(a => a.TongGio ?? 0);
+                var attendanceDates = attendanceRecords.Select(a => a.NgayLamViec).ToHashSet();
+                int actualWorkingDays = attendanceRecords.Count;
 
-                // Lấy thông tin hợp đồng và tỷ lệ lương
+                var holidays = await _context.NgayLes
+                    .Where(h => h.NgayLe1.Year == selectedMonth.Year &&
+                                h.NgayLe1.Month == selectedMonth.Month &&
+                                (h.TrangThai == null || h.TrangThai != "Đã hủy"))
+                    .ToListAsync();
+
+                int holidayDays = 0;
+                foreach (var holiday in holidays)
+                {
+                    var holidayStart = holiday.NgayLe1;
+                    var holidayEnd = holiday.NgayLe1.AddDays((holiday.SoNgayNghi ?? 1) - 1);
+                    for (var date = holidayStart; date <= holidayEnd; date = date.AddDays(1))
+                    {
+                        if (date.Month == selectedMonth.Month && date.Year == selectedMonth.Year)
+                        {
+                            holidayDays++;
+                        }
+                    }
+                }
+
+                var approvedLeaves = await _context.NgayNghis
+                    .Include(n => n.MaLoaiNgayNghiNavigation)
+                    .Where(n => n.MaNv == employeeId &&
+                                n.NgayNghi1.Year == selectedMonth.Year &&
+                                n.NgayNghi1.Month == selectedMonth.Month &&
+                                n.TrangThai == "Đã duyệt")
+                    .ToListAsync();
+
+                int daysInMonth = DateTime.DaysInMonth(selectedMonth.Year, selectedMonth.Month);
+                for (int day = 1; day <= daysInMonth; day++)
+                {
+                    var currentDate = new DateOnly(selectedMonth.Year, selectedMonth.Month, day);
+                    if (attendanceDates.Contains(currentDate))
+                        continue;
+
+                    bool isHoliday = holidays.Any(h =>
+                    {
+                        var holidayStart = h.NgayLe1;
+                        var holidayEnd = h.NgayLe1.AddDays((h.SoNgayNghi ?? 1) - 1);
+                        return currentDate >= holidayStart && currentDate <= holidayEnd;
+                    });
+
+                    bool isApprovedLeave = approvedLeaves.Any(l => l.NgayNghi1 == currentDate);
+
+                    if (isHoliday || isApprovedLeave)
+                    {
+                        totalHours += 8;
+                        actualWorkingDays++;
+                    }
+                }
+
+                var monthlyLeaves = approvedLeaves
+                    .Where(l => l.MaLoaiNgayNghiNavigation != null &&
+                                !l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Không lương") &&
+                                l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Tháng"))
+                    .Count();
+
+                var annualLeaves = approvedLeaves
+                    .Where(l => l.MaLoaiNgayNghiNavigation != null &&
+                                !l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Không lương") &&
+                                l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Năm"))
+                    .Count();
+
+                var otherLeaves = approvedLeaves
+                    .Where(l => l.MaLoaiNgayNghiNavigation != null &&
+                                !l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Không lương") &&
+                                !l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Tháng") &&
+                                !l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Năm"))
+                    .Count();
+
+                var unpaidLeaves = approvedLeaves
+                    .Where(l => l.MaLoaiNgayNghiNavigation != null &&
+                                l.MaLoaiNgayNghiNavigation.TenLoai.Contains("Không lương"))
+                    .Count();
+
                 var contract = await _context.HopDongLaoDongs
                     .Include(hd => hd.LoaiHopDong)
                     .FirstOrDefaultAsync(hd => hd.MaNv == employeeId && hd.IsActive);
 
                 decimal tiLeLuong = contract != null ? (decimal)(contract.LoaiHopDong.TiLeLuong ?? 1.0) : 1.0m;
 
-                // Tính baseSalary thực tế (áp dụng TiLeLuong)
-                decimal adjustedSalary = salaryInfo.LuongCoBan * tiLeLuong;
-                decimal hourlyRate = adjustedSalary / 160;
-                decimal actualBaseSalary = totalHours * hourlyRate;
+                int standardWorkingDays = 30;
+                decimal actualBaseSalary = salaryInfo.LuongCoBan * ((decimal)actualWorkingDays / standardWorkingDays) * tiLeLuong;
 
-                // Lấy thông tin tăng ca (bỏ điều kiện trạng thái "Đã duyệt lần 1")
+                decimal hourlyRate = (salaryInfo.LuongCoBan * tiLeLuong) / 160;
                 var overtimeRecords = await _context.TangCas
                     .Where(t => t.MaNv == employeeId &&
                                 t.NgayTangCa.Year == selectedMonth.Year &&
@@ -204,13 +269,8 @@ namespace HR_KD.ApiControllers
                 decimal overtimeHours = overtimeRecords.Sum(t => (decimal)t.SoGioTangCa);
                 decimal overtimePay = overtimeRecords.Sum(t => (decimal)t.SoGioTangCa * hourlyRate * t.TyLeTangCa);
 
-                // Giả lập các khoản khấu trừ đi muộn, tạm ứng
                 decimal lateDeduction = 0;
                 decimal advanceDeduction = 0;
-
-                // Tính ngày nghỉ phép (giả lập)
-                int leaveDays = 0;
-                int annualLeaveDays = 0;
 
                 return Ok(new
                 {
@@ -220,15 +280,19 @@ namespace HR_KD.ApiControllers
                         employee.HoTen,
                         employee.Email,
                         employee.TenChucVu,
-                        employee.TenPhongBan
+                        employee.TenPhongBan,
+                        employee.SoNguoiPhuThuoc
                     },
                     payroll = new
                     {
                         monthYear,
-                        standardWorkingDays = 20,
+                        standardWorkingDays,
                         actualWorkingDays,
-                        leaveDays,
-                        annualLeaveDays,
+                        holidayDays,
+                        monthlyLeaveDays = monthlyLeaves,
+                        annualLeaveDays = annualLeaves,
+                        otherLeaveDays = otherLeaves,
+                        unpaidLeaveDays = unpaidLeaves,
                         baseSalary = salaryInfo.LuongCoBan,
                         actualBaseSalary,
                         bhxh = salaryInfo.BHXH,

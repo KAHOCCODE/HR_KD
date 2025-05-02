@@ -105,7 +105,6 @@
 
                     data.forEach(function(employee) {
                         var status = getAttendanceStatus(employee.maNv, monthYear);
-                        // Kiểm tra xem nhân viên đã có bảng lương chưa
                         $.ajax({
                             url: '/api/PayrollApi/GetPayrollDetails',
                             method: 'GET',
@@ -182,13 +181,10 @@
             return result;
         }
 
-        // Xử lý nút "Tạo bảng lương"
         $('#employeeTable').on('click', '.btn-generate-payroll', function() {
             var employeeId = parseInt($(this).data('id'));
             var employeeName = $(this).data('name');
             var monthYear = $('#monthSelect').val();
-
-            console.log('Tạo bảng lương cho nhân viên:', { employeeId: employeeId, employeeName: employeeName, monthYear: monthYear });
 
             if (!monthYear) {
                 Swal.fire({
@@ -250,7 +246,6 @@
             });
         });
 
-        // Xử lý nút "Xem bảng lương"
         $('#employeeTable').on('click', '.btn-view-payroll', function() {
             var employeeId = parseInt($(this).data('id'));
             var employeeName = $(this).data('name');
@@ -284,35 +279,41 @@
                     var payroll = response.payroll;
                     var employee = response.employee;
 
-                    // Định dạng tiền tệ
+                    // Log dữ liệu từ API để kiểm tra
+                    console.log('Dữ liệu nhân viên từ API:', employee);
+                    console.log('Số người phụ thuộc:', employee.soNguoiPhuThuoc);
+
                     const formatCurrency = (amount) => {
                         return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
                     };
 
-                    // Tạo nội dung HTML cho bảng lương
                     var content = `
                         <h4>Phiếu lương chi tiết tháng ${payroll.monthYear}</h4>
-                        <p><strong>Tên nhân viên:</strong> ${employee.HoTen || 'N/A'}</p>
-                        <p><strong>Email:</strong> ${employee.Email || 'N/A'}</p>
-                        <p><strong>Vị trí:</strong> ${employee.TenChucVu || 'N/A'}</p>
-                        <p><strong>Phòng ban:</strong> ${employee.TenPhongBan || 'N/A'}</p>
+                        <p><strong>Tên nhân viên:</strong> ${employee.hoTen || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${employee.email || 'N/A'}</p>
+                        <p><strong>Vị trí:</strong> ${employee.tenChucVu || 'N/A'}</p>
+                        <p><strong>Phòng ban:</strong> ${employee.tenPhongBan || 'N/A'}</p>
+                        <p><strong>Số người phụ thuộc:</strong> ${employee.soNguoiPhuThuoc ?? 0}</p>
 
                         <h5>I - Ngày công / Ngày phép</h5>
                         <p>- Ngày công chuẩn: ${payroll.standardWorkingDays}</p>
                         <p>- Ngày công thực tế: ${payroll.actualWorkingDays}</p>
-                        <p>- Nghỉ phép tháng: ${payroll.leaveDays}</p>
+                        <p>- Số ngày lễ: ${payroll.holidayDays}</p>
+                        <p>- Nghỉ phép tháng: ${payroll.monthlyLeaveDays}</p>
                         <p>- Phép năm: ${payroll.annualLeaveDays}</p>
+                        <p>- Nghỉ phép khác: ${payroll.otherLeaveDays}</p>
+                        <p>- Nghỉ không lương: ${payroll.unpaidLeaveDays}</p>
 
                         <h5>II - Thu nhập</h5>
                         <h6>1. Lương</h6>
-                        <p>Lương: ${formatCurrency(payroll.baseSalary)}</p>
+                        <p>Lương cơ bản: ${formatCurrency(payroll.baseSalary)}</p>
                         <p>Lương thực tế: ${formatCurrency(payroll.actualBaseSalary)}</p>
                         <p>BHXH: ${formatCurrency(payroll.bhxh)}</p>
                         <p>BHYT: ${formatCurrency(payroll.bhyt)}</p>
                         <p>BHTN: ${formatCurrency(payroll.bhtn)}</p>
 
                         <h6>2. Phụ cấp</h6>
-                        <p>Phụ cấp: ${formatCurrency(payroll.fixedAllowance)}</p>
+                        <p>Phụ cấp cố định: ${formatCurrency(payroll.fixedAllowance)}</p>
                         <p>Phụ cấp thêm: ${formatCurrency(payroll.additionalAllowance)}</p>
 
                         <h6>3. Thưởng</h6>

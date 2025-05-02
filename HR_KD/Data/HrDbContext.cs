@@ -15,8 +15,6 @@ public partial class HrDbContext : DbContext
     {
     }
 
-    public DbSet<TrangThai> TrangThais { get; set; }
-
     public virtual DbSet<BangLuong> BangLuongs { get; set; }
 
     public virtual DbSet<CauHinhLuongThue> CauHinhLuongThues { get; set; }
@@ -267,21 +265,6 @@ public partial class HrDbContext : DbContext
 
         });
 
-        modelBuilder.Entity<TrangThai>(entity =>
-        {
-            entity.HasKey(e => e.MaTrangThai);
-            entity.Property(e => e.TenTrangThai)
-                  .IsRequired()
-                  .HasMaxLength(50);
-
-            // ✅ Dữ liệu mẫu
-            entity.HasData(
-                new TrangThai { MaTrangThai = 1, TenTrangThai = "Chờ duyệt" },
-                new TrangThai { MaTrangThai = 2, TenTrangThai = "Đã duyệt" },
-                new TrangThai { MaTrangThai = 3, TenTrangThai = "Từ chối" },
-                new TrangThai { MaTrangThai = 4, TenTrangThai = "Đã hủy" }
-            );
-        });
 
         modelBuilder.Entity<NgayLe>(entity =>
         {

@@ -161,10 +161,10 @@ namespace HR_KD.ApiControllers
                                 NgayNghi = nl.n.NgayNghi1.ToString("yyyy-MM-dd"),
                                 LyDo = nl.n.LyDo,
                                 // Thay MaTrangThai bằng TenTrangThai
-                                TrangThai = _context.TrangThais
-                                    .Where(t => t.MaTrangThai == nl.n.MaTrangThai)
-                                    .Select(t => t.TenTrangThai)
-                                    .FirstOrDefault() ?? "Không xác định",
+                                //TrangThai = _context.TrangThais
+                                //    .Where(t => t.MaTrangThai == nl.n.MaTrangThai)
+                                //    .Select(t => t.TenTrangThai)
+                                //    .FirstOrDefault() ?? "Không xác định",
                                 FileDinhKem = nl.n.FileDinhKem,
                                 NgayDuyet = nl.n.NgayDuyet,
                                 GhiChu = nl.n.GhiChu,

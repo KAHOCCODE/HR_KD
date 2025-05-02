@@ -14,6 +14,7 @@ public partial class HrDbContext : DbContext
         : base(options)
     {
     }
+    
 
     public virtual DbSet<BangLuong> BangLuongs { get; set; }
 
@@ -75,11 +76,13 @@ public partial class HrDbContext : DbContext
     public virtual DbSet<TieuChiDanhGiaPartTime> TieuChiDanhGiaPartTimes { get; set; }
 
     public virtual DbSet<YeuCauSuaChamCong> YeuCauSuaChamCongs { get; set; }
-    
+    public DbSet<LamBu> LamBus { get; set; }
 
-//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Data Source=DESKTOP-3TRF427\\HOANGKA;Initial Catalog=QuanLyNhanSu;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
+
+
+    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+    //        => optionsBuilder.UseSqlServer("Data Source=DESKTOP-3TRF427\\HOANGKA;Initial Catalog=QuanLyNhanSu;Integrated Security=True;Encrypt=True;Trust Server Certificate=True");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

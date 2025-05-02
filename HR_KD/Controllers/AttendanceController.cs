@@ -9,7 +9,12 @@ namespace HR_KD.Controllers
         {
             return View();
         }
-        
+        public IActionResult Index2()
+        {
+            return View();
+        }
+
+
     }
 
 }

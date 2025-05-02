@@ -10,6 +10,7 @@
 <div class="dashboard-card bg-white p-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i> Chấm công nâng cao</h5>
 
+    <!-- Calendar Section -->
     <div class="row mb-3">
         <div class="col-md-6">
             <div class="form-group">
@@ -19,128 +20,150 @@
         </div>
     </div>
 
+    <!-- Attendance Controls -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Chấm công</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button class="btn btn-primary w-100" id="set8hBtn">
+                                <i class="fas fa-clock me-2"></i>8h làm việc
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Giờ vào</label>
+                                <input type="time" class="form-control" id="checkInTime">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Giờ ra</label>
+                                <input type="time" class="form-control" id="checkOutTime">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Tổng giờ</label>
+                                <input type="text" class="form-control" id="totalHours" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overtime and Compensation Controls -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Bù giờ</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Giờ vào bù</label>
+                                <input type="time" class="form-control" id="compStartTime">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Giờ ra bù</label>
+                                <input type="time" class="form-control" id="compEndTime">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group w-100 mt-2">
+                        <button class="btn btn-outline-success" id="comp1h">+1 giờ</button>
+                        <button class="btn btn-outline-success" id="comp2h">+2 giờ</button>
+                        <button class="btn btn-outline-success" id="comp3h">+3 giờ</button>
+                        <button class="btn btn-outline-success" id="comp4h">+4 giờ</button>
+                        <button class="btn btn-outline-danger" id="cancelComp">Hủy</button>
+                    </div>
+                    <div class="mt-2">
+                        <label>Ghi chú bù giờ</label>
+                        <textarea class="form-control" id="compNote" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Tăng ca</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Giờ vào tăng ca</label>
+                                <input type="time" class="form-control" id="otStartTime">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Giờ ra tăng ca</label>
+                                <input type="time" class="form-control" id="otEndTime">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group w-100 mt-2">
+                        <button class="btn btn-outline-primary" id="ot1h">+1 giờ</button>
+                        <button class="btn btn-outline-primary" id="ot2h">+2 giờ</button>
+                        <button class="btn btn-outline-primary" id="ot3h">+3 giờ</button>
+                        <button class="btn btn-outline-primary" id="ot4h">+4 giờ</button>
+                        <button class="btn btn-outline-danger" id="cancelOT">Hủy</button>
+                    </div>
+                    <div class="mt-2">
+                        <label>Ghi chú tăng ca</label>
+                        <textarea class="form-control" id="otNote" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Schedule Table -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <button class="btn btn-success" id="applyToSelected">
+                <i class="fas fa-check me-2"></i>Áp dụng cho ngày đã chọn
+            </button>
+        </div>
+    </div>
+
     <div class="table-responsive">
         <table class="table table-bordered" id="workScheduleTable">
             <thead class="thead-light">
                 <tr>
+                    <th style="width: 50px;">
+                        <input type="checkbox" id="selectAll">
+                    </th>
                     <th>Ngày làm việc</th>
-                    <th>Giờ vào</th>
-                    <th>Giờ ra</th>
+                    <th>Số giờ làm</th>
                     <th>Số giờ tăng ca</th>
                     <th>Số giờ bù</th>
-                    <th>Hành động</th>
                 </tr>
             </thead>
             <tbody id="workScheduleBody"></tbody>
         </table>
     </div>
-</div>
 
-<!-- Action Modal -->
-<div class="modal fade" id="actionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Thực hiện hành động</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="attendanceSection" class="mb-3">
-                    <h6>Chấm công</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="checkInTime">Giờ vào</label>
-                                <input type="time" class="form-control" id="checkInTime">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="checkOutTime">Giờ ra</label>
-                                <div class="d-flex">
-                                    <input type="time" class="form-control me-2" id="checkOutTime">
-                                    <button class="btn btn-outline-secondary" id="set8hBtn" title="Tự động điền giờ làm từ 8h đến 18h">8h</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group mt-2">
-                        <label for="attendanceNote">Ghi chú chấm công</label>
-                        <textarea class="form-control" id="attendanceNote" rows="2"></textarea>
-                    </div>
-                </div>
-
-                <div id="overtimeSection" class="mb-3">
-                    <h6>Tăng ca</h6>
-                    <div class="btn-group mb-2">
-                        <button class="btn btn-outline-primary" id="ot1h">1 giờ</button>
-                        <button class="btn btn-outline-primary" id="ot2h">2 giờ</button>
-                        <button class="btn btn-outline-primary" id="ot3h">3 giờ</button>
-                        <button class="btn btn-outline-primary" id="ot4h">4 giờ</button>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="otCheckInTime">Giờ vào tăng ca</label>
-                                <input type="time" class="form-control" id="otCheckInTime" value="18:00">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="otCheckOutTime">Giờ ra tăng ca</label>
-                                <input type="time" class="form-control" id="otCheckOutTime">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group mt-2">
-                        <label for="overtimeNote">Ghi chú tăng ca</label>
-                        <textarea class="form-control" id="overtimeNote" rows="2"></textarea>
-                    </div>
-                </div>
-
-                <div id="compensationSection" class="mb-3">
-                    <h6>Bù giờ</h6>
-                    <div class="btn-group mb-2">
-                        <button class="btn btn-outline-success" id="comp1h">1 giờ</button>
-                        <button class="btn btn-outline-success" id="comp2h">2 giờ</button>
-                        <button class="btn btn-outline-success" id="comp3h">3 giờ</button>
-                        <button class="btn btn-outline-success" id="comp4h">4 giờ</button>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="compCheckInTime">Giờ vào bù</label>
-                                <input type="time" class="form-control" id="compCheckInTime">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="compCheckOutTime">Giờ ra bù</label>
-                                <input type="time" class="form-control" id="compCheckOutTime">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group mt-2">
-                        <label for="compensationNote">Ghi chú bù giờ</label>
-                        <textarea class="form-control" id="compensationNote" rows="2"></textarea>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button type="button" class="btn btn-primary" id="submitAll">Lưu</button>
-                </div>
-            </div>
-        </div>
+    <div class="mt-3">
+        <button class="btn btn-primary" id="submitAll">Lưu tất cả</button>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     let selectedWorkDays = [];
     let currentSelectedDate = null;
+    let workScheduleData = {};
+    let lastClickedType = null; // Track which type was clicked last
 
     // Initialize date picker
     flatpickr("#workDateRange", {
@@ -162,14 +185,36 @@
 
             while (currentDate <= endDate) {
                 if (currentDate.getDay() >= 1 && currentDate.getDay() <= 6) {
-                    selectedWorkDays.push(formatDateToYMD(currentDate));
+                    const dateStr = formatDateToYMD(currentDate);
+                    selectedWorkDays.push(dateStr);
+                    if (!workScheduleData[dateStr]) {
+                        workScheduleData[dateStr] = {
+                            selected: false,
+                            checkIn: '',
+                            checkOut: '',
+                            totalHours: 0,
+                            overtimeHours: 0,
+                            compensationHours: 0
+                        };
+                    }
                 }
                 currentDate.setDate(currentDate.getDate() + 1);
             }
         } else if (selectedDates.length === 1) {
             const selectedDate = selectedDates[0];
             if (selectedDate.getDay() !== 0) {
-                selectedWorkDays.push(formatDateToYMD(selectedDate));
+                const dateStr = formatDateToYMD(selectedDate);
+                selectedWorkDays.push(dateStr);
+                if (!workScheduleData[dateStr]) {
+                    workScheduleData[dateStr] = {
+                        selected: false,
+                        checkIn: '',
+                        checkOut: '',
+                        totalHours: 0,
+                        overtimeHours: 0,
+                        compensationHours: 0
+                    };
+                }
             }
         }
         updateWorkScheduleTable();
@@ -194,110 +239,263 @@
         tbody.innerHTML = '';
 
         selectedWorkDays.forEach(date => {
+            const data = workScheduleData[date];
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${formatDate(new Date(date))}</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
                 <td>
-                    <button class="btn btn-primary btn-sm" onclick="showActionModal('${date}')">
-                        <i class="fas fa-edit"></i>
-                    </button>
+                    <input type="checkbox" class="date-checkbox" data-date="${date}" ${data.selected ? 'checked' : ''}>
                 </td>
+                <td>${formatDate(new Date(date))}</td>
+                <td>${data.checkIn ? `${data.checkIn} - ${data.checkOut} (${data.totalHours}h)` : '-'}</td>
+                <td>${data.overtimeHours > 0 ? `${data.overtimeStart} - ${data.overtimeEnd} (${data.overtimeHours}h)` : '-'}</td>
+                <td>${data.compensationHours > 0 ? `${data.compensationStart} - ${data.compensationEnd} (${data.compensationHours}h)` : '-'}</td>
             `;
             tbody.appendChild(row);
         });
-    }
 
-    function showActionModal(date) {
-        currentSelectedDate = date;
-        const modal = new bootstrap.Modal(document.getElementById('actionModal'));
-        modal.show();
-    }
-
-    // Update overtime buttons to set end time
-    ['1h', '2h', '3h', '4h'].forEach(hours => {
-        document.getElementById(`ot${hours}`).addEventListener('click', () => {
-            const overtimeHours = parseInt(hours);
-            document.getElementById('otCheckInTime').value = '18:00';
-            document.getElementById('otCheckOutTime').value = `${18 + overtimeHours}:00`;
+        // Add event listeners to checkboxes
+        document.querySelectorAll('.date-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const date = this.dataset.date;
+                workScheduleData[date].selected = this.checked;
+            });
         });
+    }
+
+    // Event listeners for attendance controls
+    document.getElementById('set8hBtn').addEventListener('click', () => {
+        document.getElementById('checkInTime').value = '08:00';
+        document.getElementById('checkOutTime').value = '18:00';
+        updateTotalHours();
     });
 
-    // Update compensation buttons to set end time
+    document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
+    document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
+
+    function updateTotalHours() {
+        const checkIn = document.getElementById('checkInTime').value;
+        const checkOut = document.getElementById('checkOutTime').value;
+        if (checkIn && checkOut) {
+            const hours = calculateHours(checkIn, checkOut);
+            document.getElementById('totalHours').value = `${hours}h`;
+        }
+    }
+
+    // Cancel buttons
+    document.getElementById('cancelOT').addEventListener('click', () => {
+        document.getElementById('otStartTime').value = '';
+        document.getElementById('otEndTime').value = '';
+        document.getElementById('otNote').value = '';
+        
+        // If compensation exists, reset its start time to 6:00 PM
+        if (document.getElementById('compStartTime').value) {
+            document.getElementById('compStartTime').value = '18:00';
+            // Recalculate compensation end time based on current hours
+            const compStart = document.getElementById('compStartTime').value;
+            const compEnd = document.getElementById('compEndTime').value;
+            if (compEnd) {
+                const hours = calculateHours(compStart, compEnd);
+                document.getElementById('compEndTime').value = addHours('18:00', hours);
+            }
+        }
+    });
+
+    document.getElementById('cancelComp').addEventListener('click', () => {
+        document.getElementById('compStartTime').value = '';
+        document.getElementById('compEndTime').value = '';
+        document.getElementById('compNote').value = '';
+        
+        // If overtime exists, reset its start time to 6:00 PM
+        if (document.getElementById('otStartTime').value) {
+            document.getElementById('otStartTime').value = '18:00';
+            // Recalculate overtime end time based on current hours
+            const otStart = document.getElementById('otStartTime').value;
+            const otEnd = document.getElementById('otEndTime').value;
+            if (otEnd) {
+                const hours = calculateHours(otStart, otEnd);
+                document.getElementById('otEndTime').value = addHours('18:00', hours);
+            }
+        }
+    });
+
+    // Compensation buttons
     ['1h', '2h', '3h', '4h'].forEach(hours => {
         document.getElementById(`comp${hours}`).addEventListener('click', () => {
             const compHours = parseInt(hours);
-            const startTime = document.getElementById('compCheckInTime').value || '08:00';
-            const startHour = parseInt(startTime.split(':')[0]);
-            document.getElementById('compCheckOutTime').value = `${startHour + compHours}:00`;
+            lastClickedType = 'comp';
+            
+            // If this is the first click or compensation was clicked last
+            if (!document.getElementById('otEndTime').value) {
+                document.getElementById('compStartTime').value = '18:00';
+            } else {
+                // If overtime was set first, use its end time
+                document.getElementById('compStartTime').value = document.getElementById('otEndTime').value;
+            }
+            
+            const endTime = addHours(document.getElementById('compStartTime').value, compHours);
+            
+            // Check if end time exceeds 10:00 PM
+            if (endTime > '22:00') {
+                Swal.fire('Lỗi!', 'Giờ bù phải trong khoảng từ 18:00 đến 22:00', 'error');
+                return;
+            }
+            
+            document.getElementById('compEndTime').value = endTime;
+            updateOvertimeAndCompensation();
         });
     });
 
-    // Submit all data
-    document.getElementById('submitAll').addEventListener('click', async () => {
-        const checkInTime = document.getElementById('checkInTime').value;
-        const checkOutTime = document.getElementById('checkOutTime').value;
-        const attendanceNote = document.getElementById('attendanceNote').value;
-        const otCheckInTime = document.getElementById('otCheckInTime').value;
-        const otCheckOutTime = document.getElementById('otCheckOutTime').value;
-        const overtimeNote = document.getElementById('overtimeNote').value;
-        const compCheckInTime = document.getElementById('compCheckInTime').value;
-        const compCheckOutTime = document.getElementById('compCheckOutTime').value;
-        const compensationNote = document.getElementById('compensationNote').value;
+    // Overtime buttons
+    ['1h', '2h', '3h', '4h'].forEach(hours => {
+        document.getElementById(`ot${hours}`).addEventListener('click', () => {
+            const overtimeHours = parseInt(hours);
+            lastClickedType = 'ot';
+            
+            // If this is the first click or overtime was clicked last
+            if (!document.getElementById('compEndTime').value) {
+                document.getElementById('otStartTime').value = '18:00';
+            } else {
+                // If compensation was set first, use its end time
+                document.getElementById('otStartTime').value = document.getElementById('compEndTime').value;
+            }
+            
+            const endTime = addHours(document.getElementById('otStartTime').value, overtimeHours);
+            
+            // Check if end time exceeds 10:00 PM
+            if (endTime > '22:00') {
+                Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
+                return;
+            }
+            
+            document.getElementById('otEndTime').value = endTime;
+            updateOvertimeAndCompensation();
+        });
+    });
 
-        if (!checkInTime || !checkOutTime) {
-            Swal.fire('Lỗi!', 'Vui lòng nhập đầy đủ giờ vào và giờ ra chấm công', 'error');
+    function addHours(time, hours) {
+        const [hoursStr, minutesStr] = time.split(':');
+        let newHours = parseInt(hoursStr) + hours;
+        return `${newHours.toString().padStart(2, '0')}:${minutesStr}`;
+    }
+
+    function updateOvertimeAndCompensation() {
+        const otStartTime = document.getElementById('otStartTime').value;
+        const otEndTime = document.getElementById('otEndTime').value;
+        const compStartTime = document.getElementById('compStartTime').value;
+        const compEndTime = document.getElementById('compEndTime').value;
+
+        // Calculate hours
+        const otHours = calculateHours(otStartTime, otEndTime) || 0;
+        const compHours = calculateHours(compStartTime, compEndTime) || 0;
+        const totalHours = otHours + compHours;
+
+        // Validate time range
+        const minTime = '18:00'; // 6:00 PM
+        const maxTime = '22:00'; // 10:00 PM
+
+        if (otStartTime && (otStartTime < minTime || otStartTime > maxTime)) {
+            Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
+            document.getElementById('otStartTime').value = '';
+            document.getElementById('otEndTime').value = '';
+            return;
+        }
+
+        if (otEndTime && (otEndTime < minTime || otEndTime > maxTime)) {
+            Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
+            document.getElementById('otEndTime').value = '';
+            return;
+        }
+
+        if (compStartTime && (compStartTime < minTime || compStartTime > maxTime)) {
+            Swal.fire('Lỗi!', 'Giờ bù phải trong khoảng từ 18:00 đến 22:00', 'error');
+            document.getElementById('compStartTime').value = '';
+            document.getElementById('compEndTime').value = '';
+            return;
+        }
+
+        if (compEndTime && (compEndTime < minTime || compEndTime > maxTime)) {
+            Swal.fire('Lỗi!', 'Giờ bù phải trong khoảng từ 18:00 đến 22:00', 'error');
+            document.getElementById('compEndTime').value = '';
+            return;
+        }
+
+        // Validate total hours
+        if (totalHours > 4) {
+            Swal.fire('Lỗi!', 'Tổng số giờ tăng ca và bù giờ không được vượt quá 4 giờ', 'error');
+            // Reset the last changed value
+            if (lastClickedType === 'ot') {
+                document.getElementById('otEndTime').value = '';
+            } else if (lastClickedType === 'comp') {
+                document.getElementById('compEndTime').value = '';
+            }
+            return;
+        }
+    }
+
+    // Select all checkbox
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.date-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+            const date = checkbox.dataset.date;
+            workScheduleData[date].selected = this.checked;
+        });
+    });
+
+    // Submit all button
+    document.getElementById('submitAll').addEventListener('click', async () => {
+        const selectedDates = Object.entries(workScheduleData)
+            .filter(([_, data]) => data.selected)
+            .map(([date, data]) => ({
+                date,
+                ...data
+            }));
+
+        if (selectedDates.length === 0) {
+            Swal.fire('Lỗi!', 'Vui lòng chọn ít nhất một ngày', 'error');
             return;
         }
 
         try {
-            const data = {
-                attendance: [{
-                    NgayLamViec: currentSelectedDate,
-                    GioVao: checkInTime,
-                    GioRa: checkOutTime,
-                    TongGio: calculateHours(checkInTime, checkOutTime),
-                    TrangThai: 'Chờ duyệt',
-                    GhiChu: attendanceNote
-                }]
-            };
-
-            if (otCheckInTime && otCheckOutTime) {
-                data.overtime = [{
-                    NgayTangCa: currentSelectedDate,
-                    GioVaoTangCa: otCheckInTime,
-                    GioRaTangCa: otCheckOutTime,
-                    SoGioTangCa: calculateHours(otCheckInTime, otCheckOutTime),
-                    GhiChu: overtimeNote
-                }];
-            }
-
-            if (compCheckInTime && compCheckOutTime) {
-                data.compensation = [{
-                    NgayBu: currentSelectedDate,
-                    GioVaoBu: compCheckInTime,
-                    GioRaBu: compCheckOutTime,
-                    SoGioBu: calculateHours(compCheckInTime, compCheckOutTime),
-                    GhiChu: compensationNote
-                }];
-            }
-
             const response = await fetch('/api/Attendance/SubmitAttendance', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify({
+                    attendance: selectedDates.map(date => ({
+                        NgayLamViec: date.date,
+                        GioVao: date.checkIn,
+                        GioRa: date.checkOut,
+                        TongGio: date.totalHours,
+                        TrangThai: 'Chờ duyệt',
+                        GhiChu: date.attendanceNote
+                    })),
+                    overtime: selectedDates
+                        .filter(date => date.overtimeHours > 0)
+                        .map(date => ({
+                            NgayTangCa: date.date,
+                            GioVaoTangCa: date.overtimeStart,
+                            GioRaTangCa: date.overtimeEnd,
+                            SoGioTangCa: date.overtimeHours,
+                            GhiChu: date.overtimeNote
+                        })),
+                    compensation: selectedDates
+                        .filter(date => date.compensationHours > 0)
+                        .map(date => ({
+                            NgayBu: date.date,
+                            GioVaoBu: date.compensationStart,
+                            GioRaBu: date.compensationEnd,
+                            SoGioBu: date.compensationHours,
+                            GhiChu: date.compensationNote
+                        }))
+                })
             });
 
             const result = await response.json();
             if (result.success) {
-                Swal.fire('Thành công!', 'Dữ liệu đã được lưu thành công', 'success');
+                Swal.fire('Thành công!', 'Lưu dữ liệu thành công', 'success');
                 updateWorkScheduleTable();
-                bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
             } else {
                 Swal.fire('Lỗi!', result.message, 'error');
             }
@@ -306,16 +504,100 @@
         }
     });
 
-    // Add event listener for 8h button
-    document.getElementById('set8hBtn').addEventListener('click', () => {
-        document.getElementById('checkInTime').value = '08:00';
-        document.getElementById('checkOutTime').value = '18:00';
+    // Apply to selected dates button
+    document.getElementById('applyToSelected').addEventListener('click', () => {
+        const checkIn = document.getElementById('checkInTime').value;
+        const checkOut = document.getElementById('checkOutTime').value;
+        const otStartTime = document.getElementById('otStartTime').value;
+        const otEndTime = document.getElementById('otEndTime').value;
+        const compStartTime = document.getElementById('compStartTime').value;
+        const compEndTime = document.getElementById('compEndTime').value;
+        const otNote = document.getElementById('otNote').value;
+        const compNote = document.getElementById('compNote').value;
+
+        // Calculate hours
+        const otHours = calculateHours(otStartTime, otEndTime) || 0;
+        const compHours = calculateHours(compStartTime, compEndTime) || 0;
+        const totalHours = otHours + compHours;
+
+        // Validate total hours
+        if (totalHours >= 4) {
+            Swal.fire('Lỗi!', 'Tổng số giờ tăng ca và bù giờ không được vượt quá 4 giờ', 'error');
+            return;
+        }
+
+        // Get all selected dates
+        const selectedDates = Object.entries(workScheduleData)
+            .filter(([_, data]) => data.selected)
+            .map(([date]) => date);
+
+        if (selectedDates.length === 0) {
+            Swal.fire('Lỗi!', 'Vui lòng chọn ít nhất một ngày', 'error');
+            return;
+        }
+
+        // Update data for all selected dates
+        selectedDates.forEach(date => {
+            workScheduleData[date] = {
+                ...workScheduleData[date],
+                checkIn: checkIn,
+                checkOut: checkOut,
+                totalHours: checkIn && checkOut ? calculateHours(checkIn, checkOut) : 0,
+                overtimeHours: otHours,
+                overtimeStart: otStartTime,
+                overtimeEnd: otEndTime,
+                overtimeNote: otNote,
+                compensationHours: compHours,
+                compensationStart: compStartTime,
+                compensationEnd: compEndTime,
+                compensationNote: compNote
+            };
+        });
+
+        // Update the table
+        updateWorkScheduleTable();
+
+        // Clear input fields
+        document.getElementById('checkInTime').value = '';
+        document.getElementById('checkOutTime').value = '';
+        document.getElementById('totalHours').value = '';
+        document.getElementById('otStartTime').value = '';
+        document.getElementById('otEndTime').value = '';
+        document.getElementById('compStartTime').value = '';
+        document.getElementById('compEndTime').value = '';
+        document.getElementById('otNote').value = '';
+        document.getElementById('compNote').value = '';
+
+        // Clear selected dates
+        selectedDates.forEach(date => {
+            workScheduleData[date].selected = false;
+        });
+        document.getElementById('selectAll').checked = false;
+
+        // Update the table again to reflect cleared selections
+        updateWorkScheduleTable();
+
+        Swal.fire('Thành công!', 'Đã áp dụng dữ liệu cho các ngày đã chọn', 'success');
     });
 
     function calculateHours(startTime, endTime) {
         const start = new Date(`2000-01-01T${startTime}`);
         const end = new Date(`2000-01-01T${endTime}`);
         let hours = (end - start) / (1000 * 60 * 60);
+        
+        // Subtract lunch break (1 hour) if working more than 4 hours
+        if (hours > 4) {
+            hours -= 1;
+        }
+        
+        // Add 1 hour for employees
+        hours += 1;
+        
+        // Cap total working hours at 8 hours per day
+        if (hours > 8) {
+            hours = 8;
+        }
+        
         return parseFloat(hours.toFixed(2));
     }
 </script> 

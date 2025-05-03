@@ -24,23 +24,37 @@ namespace HR_KD.ApiControllers
         [HttpPost("SetChamCongGioRaVao")]
         public async Task<IActionResult> SetChamCongGioRaVao([FromBody] ChamCongGioRaVao model)
         {
-            if (model == null || model.Id <= 0)
+            if (model == null)
             {
                 return BadRequest("Invalid data");
             }
 
-            var existing = await _context.ChamCongGioRaVaos.FindAsync(model.Id);
+            // Look for the most recent active record
+            var existing = await _context.ChamCongGioRaVaos
+                .Where(x => x.KichHoat)
+                .OrderByDescending(x => x.Id)
+                .FirstOrDefaultAsync();
+
             if (existing != null)
             {
+                // Update the existing record
                 existing.GioVao = model.GioVao;
                 existing.GioRa = model.GioRa;
                 existing.KichHoat = model.KichHoat;
+                existing.TongGio = model.TongGio;
                 _context.ChamCongGioRaVaos.Update(existing);
             }
             else
             {
-                model.Id = await _context.ChamCongGioRaVaos.MaxAsync(x => (int?)x.Id) ?? 0 + 1;
-                _context.ChamCongGioRaVaos.Add(model);
+                // Create a new record (do not set Id manually)
+                var newRecord = new ChamCongGioRaVao
+                {
+                    GioVao = model.GioVao,
+                    GioRa = model.GioRa,
+                    KichHoat = model.KichHoat,
+                    TongGio = model.TongGio
+                };
+                _context.ChamCongGioRaVaos.Add(newRecord);
             }
 
             await _context.SaveChangesAsync();
@@ -87,9 +101,8 @@ namespace HR_KD.ApiControllers
                 return BadRequest("Invalid data");
             }
 
-            model.Id = await _context.TiLeTangCas.MaxAsync(x => (int?)x.Id) ?? 0 + 1;
-            model.KichHoat = false;
-            _context.TiLeTangCas.Add(model);
+            model.KichHoat = false; // Set default value
+            _context.TiLeTangCas.Add(model); // Let EF Core generate the Id
             await _context.SaveChangesAsync();
 
             return Json(model);
@@ -201,6 +214,26 @@ namespace HR_KD.ApiControllers
                 .OrderByDescending(x => x.Id)
                 .FirstOrDefaultAsync();
             return Json(data);
+        }
+        // 🔹 Lấy danh sách chấm công của nhân viên
+        [HttpGet("GetAttendanceManagerRecords")]
+        public IActionResult GetAttendanceRecords(int maNv)
+        {
+            var records = _context.LichSuChamCongs
+                .Where(cc => cc.MaNv == maNv && (cc.TrangThai == null || cc.TrangThai == "Đã Duyệt"))
+                .Select(cc => new
+                {
+                    cc.MaLichSuChamCong,
+                    cc.Ngay,
+                    cc.GioVao,
+                    cc.GioRa,
+                    cc.TongGio,
+                    TrangThai = cc.TrangThai ?? "Đã Duyệt",
+                    cc.GhiChu
+                })
+                .ToList();
+
+            return Ok(new { success = true, records });
         }
     }
 }

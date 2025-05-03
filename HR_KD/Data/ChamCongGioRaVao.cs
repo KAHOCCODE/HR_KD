@@ -7,5 +7,6 @@
         public DateTime GioVao { get; set; }
         public DateTime GioRa { get; set; } 
         public bool KichHoat { get; set; } = false;
+        public decimal TongGio { get; set; }
     }
 }

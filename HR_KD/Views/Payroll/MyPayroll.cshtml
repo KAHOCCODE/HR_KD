@@ -1,0 +1,48 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Bảng lương cá nhân";
+}
+<h3>Bảng lương cá nhân</h3>
+
+<div class="form-group">
+    <label>Chọn tháng (yyyy-MM):</label>
+    <input type="month" id="monthInput" class="form-control" value="@DateTime.Now.ToString("yyyy-MM")" />
+</div>
+<button class="btn btn-primary mt-2" onclick="loadPayroll()">Xem lương</button>
+
+<div id="payrollResult" class="mt-4"></div>
+
+@section Scripts {
+    <script>
+        function loadPayroll() {
+            var month = $('#monthInput').val();
+            $.ajax({
+                url: '/api/PayrollApi/MyPayroll?monthYear=' + month,
+                type: 'GET',
+                success: function (data) {
+                    if (!data.hasPayroll) {
+                        $('#payrollResult').html(`<div class="alert alert-warning"><strong>Thông báo:</strong> ${data.message}</div>`);
+                    } else {
+                        $('#payrollResult').html(`
+                                            <div class="alert alert-success">
+                                                <h5>Lương tháng ${data.thang}</h5>
+                                                <ul class="list-group">
+                                                    <li class="list-group-item">Tổng lương: <strong>${data.tongLuong.toLocaleString()}</strong></li>
+                                                    <li class="list-group-item">Thực nhận: <strong>${data.thucNhan.toLocaleString()}</strong></li>
+                                                    <li class="list-group-item">Phụ cấp thêm: ${data.phuCapThem}</li>
+                                                    <li class="list-group-item">Lương tăng ca: ${data.luongTangCa}</li>
+                                                    <li class="list-group-item">Thưởng KPI: ${data.luongThem}</li>
+                                                    <li class="list-group-item">Thuế TNCN: ${data.thueTNCN}</li>
+                                                    <li class="list-group-item">Trạng thái: <span class="badge bg-info text-dark">${data.trangThai}</span></li>
+                                                </ul>
+                                            </div>
+                                        `);
+                    }
+                },
+                error: function () {
+                    $('#payrollResult').html(`<div class="alert alert-danger">Lỗi khi lấy dữ liệu bảng lương.</div>`);
+                }
+            });
+        }
+    </script>
+}

@@ -1,361 +1,177 @@
-﻿@model dynamic
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
-    ViewData["Title"] = "Quản lý bảng lương";
 }
 
-<h2>Quản lý bảng lương</h2>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="form-group">
-            <label for="monthSelect">Chọn tháng:</label>
-            <select id="monthSelect" class="form-control" style="width: 200px;">
-                @{
-                    var currentDate = DateTime.Now;
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var month = currentDate.AddMonths(-i);
-                        var monthValue = month.ToString("yyyy-MM");
-                        var monthDisplay = month.ToString("MMMM yyyy");
-                        <option value="@monthValue">@monthDisplay</option>
-                    }
+<div class="container py-4">
+    <h2 class="text-2xl font-bold mb-4">Quản lý bảng lương theo phòng ban</h2>
+
+    <div class="mb-3">
+        <label class="form-label">Chọn tháng/năm:</label>
+        <div class="d-flex gap-2">
+            <select id="monthSelect" class="form-select w-auto">
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">Tháng @i</option>
                 }
             </select>
+            <select id="yearSelect" class="form-select w-auto">
+                @for (int i = 2020; i <= DateTime.Now.Year + 1; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">@i</option>
+                }
+            </select>
+            <button class="btn btn-primary" onclick="loadPayrollStatus()">Tải dữ liệu</button>
         </div>
-        <table class="table table-bordered" id="employeeTable">
-            <thead>
-                <tr>
-                    <th>Mã NV</th>
-                    <th>Họ Tên</th>
-                    <th>Phòng Ban</th>
-                    <th>Chức Vụ</th>
-                    <th>Trạng Thái</th>
-                    <th>Hành Động</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
     </div>
+
+    <div id="payrollContainer"></div>
 </div>
 
-<!-- Modal hiển thị chi tiết bảng lương -->
-<div class="modal fade" id="payrollDetailModal" tabindex="-1" role="dialog" aria-labelledby="payrollDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+<div class="modal fade" id="createPayrollModal" tabindex="-1">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="payrollDetailModalLabel">Phiếu lương chi tiết</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
+                <h5 class="modal-title">Tạo bảng lương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="payrollDetailContent">
-                    <!-- Nội dung bảng lương sẽ được điền bằng JavaScript -->
-                </div>
+                <p>Bạn có muốn tạo bảng lương cho <strong id="modalEmployeeName"></strong> không?</p>
+                <input type="hidden" id="modalMaNv" />
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button class="btn btn-primary" onclick="confirmCreatePayroll()">Tạo</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Include jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Include SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Include Bootstrap JS for modal -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<!-- Include Bootstrap CSS for modal -->
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<script>
-    $(document).ready(function() {
-        loadEmployees();
+<div class="modal fade" id="viewPayrollModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi tiết bảng lương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="payrollDetailContainer" class="space-y-2 text-sm">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        function loadEmployees() {
-            var monthYear = $('#monthSelect').val();
-            if (!monthYear) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Chưa chọn tháng',
-                    text: 'Vui lòng chọn tháng để xem danh sách nhân viên.',
-                    confirmButtonText: 'OK'
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        function loadPayrollStatus() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+
+            $.get(`/api/PayrollApi/GetPayrollStatus?year=${year}&month=${month}`, function (result) {
+                let html = '';
+                result.forEach(pb => {
+                    html += `<div class="bg-white border border-gray-200 rounded p-3 mb-4 shadow-sm">
+                                                        <h4 class="text-lg font-semibold mb-3 text-indigo-600">${pb.tenPhongBan}</h4>
+                                                        <div class="row">`;
+
+                    pb.nhanViens.forEach(nv => {
+                        html += `<div class="col-md-6 mb-3">
+                                                            <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <div class="fw-semibold">${nv.hoTen}</div>
+                                                                    <div class="text-muted">${nv.coBangLuong ? 'Đã có bảng lương' : 'Chưa có bảng lương'}</div>
+                                                                </div>
+                                                                <div>
+                                                                    ${nv.coBangLuong
+                                ? `<button class="btn btn-outline-primary btn-sm" onclick="openPayrollDetail(${nv.maNv})">Xem</button>`
+                                : `<button class="btn btn-success btn-sm" onclick="openCreateModal(${nv.maNv}, '${nv.hoTen}')">Tạo</button>`}
+                                                                </div>
+                                                            </div>
+                                                        </div>`;
+                    });
+
+                    html += `</div></div>`;
                 });
-                $('#employeeTable tbody').empty();
-                return;
-            }
 
-            $.ajax({
-                url: '/api/EmployeesApi',
-                method: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    console.log('Dữ liệu từ API /api/EmployeesApi:', data);
-                    var tbody = $('#employeeTable tbody');
-                    tbody.empty();
-                    if (!Array.isArray(data) || data.length === 0) {
-                        Swal.fire({
-                            icon: 'info',
-                            title: 'Không có dữ liệu',
-                            text: 'Không tìm thấy nhân viên nào.',
-                            confirmButtonText: 'OK'
-                        });
-                        return;
-                    }
-
-                    data.forEach(function(employee) {
-                        var status = getAttendanceStatus(employee.maNv, monthYear);
-                        $.ajax({
-                            url: '/api/PayrollApi/GetPayrollDetails',
-                            method: 'GET',
-                            data: { employeeId: employee.maNv, monthYear: monthYear },
-                            async: false,
-                            success: function(response) {
-                                var buttonText = response.hasPayroll ? 'Xem bảng lương' : 'Tạo bảng lương';
-                                var buttonClass = response.hasPayroll ? 'btn-view-payroll' : 'btn-generate-payroll';
-                                tbody.append(`
-                                    <tr>
-                                        <td>${employee.maNv}</td>
-                                        <td>${employee.hoTen}</td>
-                                        <td>${employee.phongBan}</td>
-                                        <td>${employee.chucVu}</td>
-                                        <td>${status}</td>
-                                        <td>
-                                            <button class="btn btn-primary ${buttonClass}"
-                                                    data-id="${employee.maNv}"
-                                                    data-name="${employee.hoTen}">${buttonText}</button>
-                                        </td>
-                                    </tr>
-                                `);
-                            },
-                            error: function(err) {
-                                console.error('Lỗi khi kiểm tra bảng lương:', err);
-                                tbody.append(`
-                                    <tr>
-                                        <td>${employee.maNv}</td>
-                                        <td>${employee.hoTen}</td>
-                                        <td>${employee.phongBan}</td>
-                                        <td>${employee.chucVu}</td>
-                                        <td>${status}</td>
-                                        <td>
-                                            <button class="btn btn-primary btn-generate-payroll"
-                                                    data-id="${employee.maNv}"
-                                                    data-name="${employee.hoTen}">Tạo bảng lương</button>
-                                        </td>
-                                    </tr>
-                                `);
-                            }
-                        });
-                    });
-                },
-                error: function(err) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi',
-                        text: 'Không thể tải danh sách nhân viên: ' + (err.responseJSON?.message || 'Lỗi không xác định'),
-                        confirmButtonText: 'OK'
-                    });
-                }
+                $('#payrollContainer').html(html);
             });
         }
 
-        function getAttendanceStatus(employeeId, monthYear) {
-            if (!monthYear) return 'Chưa chọn tháng';
-
-            var result = 'Chưa có dữ liệu';
-            $.ajax({
-                url: '/api/Attendance/GetStatusForMonth',
-                method: 'GET',
-                async: false,
-                data: {
-                    maNV: employeeId,
-                    monthYear: monthYear
-                },
-                success: function(data) {
-                    result = data.status || 'Chưa có dữ liệu';
-                },
-                error: function() {
-                    result = 'Lỗi tải trạng thái';
-                }
-            });
-            return result;
+        function openCreateModal(maNv, hoTen) {
+            $('#modalMaNv').val(maNv);
+            $('#modalEmployeeName').text(hoTen);
+            const modal = new bootstrap.Modal(document.getElementById('createPayrollModal'));
+            modal.show();
         }
 
-        $('#employeeTable').on('click', '.btn-generate-payroll', function() {
-            var employeeId = parseInt($(this).data('id'));
-            var employeeName = $(this).data('name');
-            var monthYear = $('#monthSelect').val();
+        function confirmCreatePayroll() {
+            const maNv = $('#modalMaNv').val();
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
 
-            if (!monthYear) {
+            $.post(`/api/PayrollApi/CreateOrGetPayroll?maNv=${maNv}&year=${year}&month=${month}`, function (response) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createPayrollModal'));
+                modal.hide();
+                loadPayrollStatus();
                 Swal.fire({
-                    icon: 'warning',
-                    title: 'Chưa chọn tháng',
-                    text: 'Vui lòng chọn tháng trước khi tạo bảng lương.',
-                    confirmButtonText: 'OK'
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: `Đã tạo bảng lương cho nhân viên có mã ${maNv} tháng ${month}/${year}.`,
+                    timer: 1500,
+                    showConfirmButton: false
                 });
-                return;
-            }
-
-            if (!employeeId || employeeId <= 0) {
+            }).fail(function (xhr) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Lỗi',
-                    text: 'Mã nhân viên không hợp lệ.',
-                    confirmButtonText: 'OK'
+                    title: 'Lỗi!',
+                    text: xhr.responseText
                 });
-                return;
-            }
-
-            Swal.fire({
-                title: 'Xác nhận',
-                text: `Bạn có muốn tạo bảng lương cho nhân viên ${employeeName} (ID: ${employeeId}) trong tháng ${monthYear}?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Có',
-                cancelButtonText: 'Không'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '/api/PayrollApi/GeneratePayroll',
-                        method: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
-                            employeeId: employeeId,
-                            monthYear: monthYear
-                        }),
-                        success: function(response) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Thành công',
-                                text: `Đã tạo bảng lương cho nhân viên ${employeeName} (ID: ${employeeId}) trong tháng ${monthYear}`,
-                                confirmButtonText: 'OK'
-                            });
-                            loadEmployees();
-                        },
-                        error: function(err) {
-                            var errorMessage = err.responseJSON?.message || 'Lỗi không xác định';
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi',
-                                text: `Không thể tạo bảng lương: ${errorMessage}`,
-                                confirmButtonText: 'OK'
-                            });
-                        }
-                    });
-                }
             });
+        }
+
+        // Load mặc định khi mở trang
+        $(document).ready(function () {
+            loadPayrollStatus();
         });
 
-        $('#employeeTable').on('click', '.btn-view-payroll', function() {
-            var employeeId = parseInt($(this).data('id'));
-            var employeeName = $(this).data('name');
-            var monthYear = $('#monthSelect').val();
+        //xem bảng lương chi tiết modal
+        function openPayrollDetail(maNv) {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
 
-            if (!monthYear) {
+            $.get(`/api/PayrollApi/GetPayrollDetail?maNv=${maNv}&year=${year}&month=${month}`, function (data) {
+                const html = `
+                                    <div><strong>Họ tên:</strong> ${data.hoTen}</div>
+                                    <div><strong>Tháng:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                                    <hr />
+                                    <div><strong>Lương thêm:</strong> ${data.luongThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                    <div><strong>Phụ cấp thêm:</strong> ${data.phuCapThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                    <div><strong>Lương tăng ca:</strong> ${data.luongTangCa?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                    <div><strong>Thuế TNCN:</strong> -${data.thueTNCN?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                    <hr />
+                                    <div><strong>Tổng lương:</strong> ${data.tongLuong?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                    <div class="fw-bold text-lg text-success"><strong>Lương thực lãnh:</strong> ${data.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                    ${data.ghiChu ? `<div><strong>Ghi chú:</strong> ${data.ghiChu}</div>` : ''}
+                                `;
+
+                $('#payrollDetailContainer').html(html);
+                const modal = new bootstrap.Modal(document.getElementById('viewPayrollModal'));
+                modal.show();
+            }).fail(function (xhr) {
                 Swal.fire({
-                    icon: 'warning',
-                    title: 'Chưa chọn tháng',
-                    text: 'Vui lòng chọn tháng trước khi xem bảng lương.',
-                    confirmButtonText: 'OK'
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: xhr.responseText
                 });
-                return;
-            }
-
-            $.ajax({
-                url: '/api/PayrollApi/GetPayrollDetails',
-                method: 'GET',
-                data: { employeeId: employeeId, monthYear: monthYear },
-                success: function(response) {
-                    if (!response.hasPayroll) {
-                        Swal.fire({
-                            icon: 'info',
-                            title: 'Chưa có bảng lương',
-                            text: `Nhân viên ${employeeName} (ID: ${employeeId}) chưa có bảng lương trong tháng ${monthYear}.`,
-                            confirmButtonText: 'OK'
-                        });
-                        return;
-                    }
-
-                    var payroll = response.payroll;
-                    var employee = response.employee;
-
-                    // Log dữ liệu từ API để kiểm tra
-                    console.log('Dữ liệu nhân viên từ API:', employee);
-                    console.log('Số người phụ thuộc:', employee.soNguoiPhuThuoc);
-
-                    const formatCurrency = (amount) => {
-                        return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
-                    };
-
-                    var content = `
-                        <h4>Phiếu lương chi tiết tháng ${payroll.monthYear}</h4>
-                        <p><strong>Tên nhân viên:</strong> ${employee.hoTen || 'N/A'}</p>
-                        <p><strong>Email:</strong> ${employee.email || 'N/A'}</p>
-                        <p><strong>Vị trí:</strong> ${employee.tenChucVu || 'N/A'}</p>
-                        <p><strong>Phòng ban:</strong> ${employee.tenPhongBan || 'N/A'}</p>
-                        <p><strong>Số người phụ thuộc:</strong> ${employee.soNguoiPhuThuoc ?? 0}</p>
-
-                        <h5>I - Ngày công / Ngày phép</h5>
-                        <p>- Ngày công chuẩn: ${payroll.standardWorkingDays}</p>
-                        <p>- Ngày công thực tế: ${payroll.actualWorkingDays}</p>
-                        <p>- Số ngày lễ: ${payroll.holidayDays}</p>
-                        <p>- Nghỉ phép tháng: ${payroll.monthlyLeaveDays}</p>
-                        <p>- Phép năm: ${payroll.annualLeaveDays}</p>
-                        <p>- Nghỉ phép khác: ${payroll.otherLeaveDays}</p>
-                        <p>- Nghỉ không lương: ${payroll.unpaidLeaveDays}</p>
-
-                        <h5>II - Thu nhập</h5>
-                        <h6>1. Lương</h6>
-                        <p>Lương cơ bản: ${formatCurrency(payroll.baseSalary)}</p>
-                        <p>Lương thực tế: ${formatCurrency(payroll.actualBaseSalary)}</p>
-                        <p>BHXH: ${formatCurrency(payroll.bhxh)}</p>
-                        <p>BHYT: ${formatCurrency(payroll.bhyt)}</p>
-                        <p>BHTN: ${formatCurrency(payroll.bhtn)}</p>
-
-                        <h6>2. Phụ cấp</h6>
-                        <p>Phụ cấp cố định: ${formatCurrency(payroll.fixedAllowance)}</p>
-                        <p>Phụ cấp thêm: ${formatCurrency(payroll.additionalAllowance)}</p>
-
-                        <h6>3. Thưởng</h6>
-                        <p>Thưởng KPI: ${formatCurrency(payroll.kpiBonus)}</p>
-
-                        <h6>4. OT</h6>
-                        <p>Giờ làm thêm: ${payroll.overtimeHours}</p>
-                        <p>Tiền làm thêm: ${formatCurrency(payroll.overtimePay)}</p>
-
-                        <h5>III - Tổng thu nhập</h5>
-                        <p>${formatCurrency(payroll.totalIncome)}</p>
-
-                        <h5>IV - Khấu trừ</h5>
-                        <p>BHXH: ${formatCurrency(payroll.bhxh)}</p>
-                        <p>BHYT: ${formatCurrency(payroll.bhyt)}</p>
-                        <p>BHTN: ${formatCurrency(payroll.bhtn)}</p>
-                        <p>Thuế TNCN: ${formatCurrency(payroll.tax)}</p>
-                        <p>Đi muộn: ${formatCurrency(payroll.lateDeduction)}</p>
-                        <p>Tạm ứng: ${formatCurrency(payroll.advanceDeduction)}</p>
-
-                        <h5>V - Thực nhận</h5>
-                        <p>Tổng thu nhập thực nhận tháng ${payroll.monthYear} là: ${formatCurrency(payroll.netIncome)}</p>
-                    `;
-
-                    $('#payrollDetailContent').html(content);
-                    $('#payrollDetailModal').modal('show');
-                },
-                error: function(err) {
-                    var errorMessage = err.responseJSON?.message || 'Lỗi không xác định';
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi',
-                        text: `Không thể lấy thông tin bảng lương: ${errorMessage}`,
-                        confirmButtonText: 'OK'
-                    });
-                }
             });
-        });
-
-        $('#monthSelect').change(function() {
-            loadEmployees();
-        });
-    });
-</script>
+        }
+    </script>
+}

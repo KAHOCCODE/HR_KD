@@ -1,0 +1,435 @@
+﻿@model IEnumerable<HR_KD.Data.LoaiNgayNghi>
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+@{
+    ViewData["Title"] = "Quản lý loại ngày nghỉ";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <!-- Card Header với gradient -->
+                <div class="card-header bg-gradient-primary text-white rounded-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0 fw-bold">
+                                <i class="fas fa-calendar-alt me-2"></i>@ViewData["Title"]
+                            </h4>
+                            <p class="text-white-50 mb-0">Quản lý các loại nghỉ phép và chế độ hưởng lương</p>
+                        </div>
+                        <a asp-action="Create" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus-circle me-1"></i> Thêm loại nghỉ
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle fs-4 me-2"></i>
+                                <span>@TempData["SuccessMessage"]</span>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle fs-4 me-2"></i>
+                                <span>@TempData["ErrorMessage"]</span>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <!-- Search and Filter Controls -->
+                    @* <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" id="tableSearch" class="form-control border-start-0" placeholder="Tìm kiếm loại ngày nghỉ...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex justify-content-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-filter me-1"></i> Lọc
+                                    </button>
+                                    <ul class="dropdown-menu shadow-sm" aria-labelledby="filterDropdown">
+                                        <li><a class="dropdown-item" href="#" data-filter="all">Tất cả</a></li>
+                                        <li><a class="dropdown-item" href="#" data-filter="huongluong">Có hưởng lương</a></li>
+                                        <li><a class="dropdown-item" href="#" data-filter="phepnam">Tính vào phép năm</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div> *@
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="loaiNgayNghiTable">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th class="ps-3">@Html.DisplayNameFor(model => model.MaLoaiNgayNghi)</th>
+                                    <th>@Html.DisplayNameFor(model => model.TenLoai)</th>
+                                    <th>@Html.DisplayNameFor(model => model.MoTa)</th>
+                                    <th class="text-center">
+                                        <span data-bs-toggle="tooltip" title="Nhân viên có được hưởng lương khi nghỉ">
+                                            <i class="fas fa-coins me-1"></i> Hưởng lương
+                                        </span>
+                                    </th>
+                                    <th class="text-center">
+                                        <span data-bs-toggle="tooltip" title="Ngày nghỉ này có tính vào phép năm">
+                                            <i class="fas fa-calendar-check me-1"></i> Phép năm
+                                        </span>
+                                    </th>
+                                    <th class="text-center">
+                                        <span data-bs-toggle="tooltip" title="Ngày nghỉ này có tính vào lương">
+                                            <i class="fas fa-money-bill-wave me-1"></i> Tính lương
+                                        </span>
+                                    </th>
+                                    <th class="text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr class="border-bottom">
+                                        <td class="ps-3">
+                                            <span class="badge bg-primary rounded-pill">@item.MaLoaiNgayNghi</span>
+                                        </td>
+                                        <td class="fw-medium">@item.TenLoai</td>
+                                        <td class="text-muted">@item.MoTa</td>
+                                        <td class="text-center">
+                                            @if (item.HuongLuong)
+                                            {
+                                                <span class="status-indicator">
+                                                    <i class="fas fa-check-circle text-success fs-5"></i>
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-indicator">
+                                                    <i class="fas fa-times-circle text-secondary fs-5"></i>
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.TinhVaoPhepNam)
+                                            {
+                                                <span class="status-indicator">
+                                                    <i class="fas fa-check-circle text-success fs-5"></i>
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-indicator">
+                                                    <i class="fas fa-times-circle text-secondary fs-5"></i>
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.CoTinhVaoLuong)
+                                            {
+                                                <span class="status-indicator">
+                                                    <i class="fas fa-check-circle text-success fs-5"></i>
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-indicator">
+                                                    <i class="fas fa-times-circle text-secondary fs-5"></i>
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a asp-action="Edit" asp-route-id="@item.MaLoaiNgayNghi" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Chỉnh sửa">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                               @*  <a asp-action="Details" asp-route-id="@item.MaLoaiNgayNghi" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Xem chi tiết">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </a> *@
+                                                <a asp-action="Delete" asp-route-id="@item.MaLoaiNgayNghi" class="btn btn-sm btn-danger" data-toggle="tooltip" title="Xóa">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </a>
+                                            </div>
+
+                                          
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State UI -->
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <img src="~/images/empty-state.svg" alt="Không có dữ liệu" class="img-fluid mb-3" style="max-width: 200px;">
+                            <h5>Chưa có loại ngày nghỉ nào</h5>
+                            <p class="text-muted">Bạn có thể thêm loại ngày nghỉ mới bằng cách nhấn vào nút "Thêm loại nghỉ"</p>
+                            <a asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-1"></i> Thêm loại nghỉ ngay
+                            </a>
+                        </div>
+                    }
+
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted small">
+                            Hiển thị <span id="displayCount">@Model.Count()</span> loại ngày nghỉ
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info cards row -->
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Tổng loại ngày nghỉ</h6>
+                            <h3 class="mb-0 fw-bold">@Model.Count()</h3>
+                        </div>
+                      @*   <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                            <i class="fas fa-calendar-alt fa-2x text-white"></i>
+                        </div> *@
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Loại có hưởng lương</h6>
+                            <h3 class="mb-0 fw-bold">@Model.Count(m => m.HuongLuong)</h3>
+                        </div>
+                       @*  <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                            <i class="fas fa-coins fa-2x text-white"></i>
+                        </div> *@
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Tính vào phép năm</h6>
+                            <h3 class="mb-0 fw-bold">@Model.Count(m => m.TinhVaoPhepNam)</h3>
+                        </div>
+                     @*    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                            <i class="fas fa-calendar-check fa-2x text-white"></i>
+                        </div> *@
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // loai-ngay-nghi.js - JavaScript cho các tính năng tương tác với Loại Ngày Nghỉ
+        $(document).ready(function () {
+            // Khởi tạo DataTable với ngôn ngữ tiếng Việt
+            var table = $('#loaiNgayNghiTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Vietnamese.json'
+                },
+                responsive: true,
+                columnDefs: [
+                    { orderable: false, targets: -1 } // Cột cuối cùng (thao tác) không được sắp xếp
+                ],
+                order: [[0, 'asc']] // Sắp xếp theo mã loại ngày nghỉ mặc định
+            });
+
+            // Khởi tạo tooltip
+            $('[data-toggle="tooltip"]').tooltip();
+
+            // Tự động đóng thông báo sau 5 giây
+            setTimeout(function () {
+                $(".alert").alert('close');
+            }, 5000);
+
+            // Xác nhận xóa
+            $('.btn-delete').on('click', function (e) {
+                if (!confirm('Bạn có chắc chắn muốn xóa loại ngày nghỉ này?')) {
+                    e.preventDefault();
+                }
+            });
+
+            // Chức năng thêm mới nhanh bằng AJAX
+            $('#quickAddForm').on('submit', function (e) {
+                e.preventDefault();
+                var formData = $(this).serialize();
+
+                $.ajax({
+                    url: '/api/LoaiNgayNghi',
+                    type: 'POST',
+                    data: formData,
+                    success: function (result) {
+                        // Hiển thị thông báo thành công
+                        toastr.success('Thêm loại ngày nghỉ thành công!');
+
+                        // Làm mới bảng hoặc thêm hàng mới vào bảng
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 1000);
+                    },
+                    error: function (xhr) {
+                        // Xử lý lỗi
+                        var errorMsg = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Đã xảy ra lỗi khi thêm loại ngày nghỉ!';
+                        toastr.error(errorMsg);
+                    }
+                });
+            });
+
+            // Tìm kiếm nâng cao
+            $('#advancedSearchBtn').on('click', function () {
+                var tenLoai = $('#searchTenLoai').val().toLowerCase();
+                var huongLuong = $('#searchHuongLuong').val();
+                var tinhVaoPhepNam = $('#searchTinhVaoPhepNam').val();
+
+                // Custom search DataTables
+                $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                    var match = true;
+
+                    // Tìm theo tên loại
+                    if (tenLoai && data[1].toLowerCase().indexOf(tenLoai) === -1) {
+                        match = false;
+                    }
+
+                    // Tìm theo hưởng lương
+                    if (huongLuong !== '') {
+                        var isHuongLuong = data[3].indexOf('Có') !== -1;
+                        if ((huongLuong === 'true' && !isHuongLuong) ||
+                            (huongLuong === 'false' && isHuongLuong)) {
+                            match = false;
+                        }
+                    }
+
+                    // Tìm theo tính vào phép năm
+                    if (tinhVaoPhepNam !== '') {
+                        var isTinhVaoPhepNam = data[4].indexOf('Có') !== -1;
+                        if ((tinhVaoPhepNam === 'true' && !isTinhVaoPhepNam) ||
+                            (tinhVaoPhepNam === 'false' && isTinhVaoPhepNam)) {
+                            match = false;
+                        }
+                    }
+
+                    return match;
+                });
+
+                // Vẽ lại bảng với kết quả tìm kiếm
+                table.draw();
+
+                // Xóa hàm tìm kiếm tùy chỉnh
+                $.fn.dataTable.ext.search.pop();
+            });
+
+            // Reset form tìm kiếm nâng cao
+            $('#resetSearchBtn').on('click', function () {
+                $('#searchTenLoai').val('');
+                $('#searchHuongLuong').val('');
+                $('#searchTinhVaoPhepNam').val('');
+                table.search('').columns().search('').draw();
+            });
+        });
+    </script>
+
+    <style>
+        /* Custom CSS for modern design */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .card {
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        }
+
+        .bg-gradient-success {
+            background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+        }
+
+        .bg-gradient-info {
+            background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+        }
+
+        .table th {
+            font-weight: 600;
+            color: #5a5c69;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+            .status-indicator:hover {
+                transform: scale(1.2);
+            }
+
+        .table-hover-highlight {
+            background-color: rgba(78, 115, 223, 0.05);
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-outline-primary:hover, .btn-outline-info:hover, .btn-outline-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .rounded-top {
+            border-top-left-radius: 0.75rem !important;
+            border-top-right-radius: 0.75rem !important;
+        }
+
+        /* Animations */
+        .animate__animated {
+            animation-duration: 0.8s;
+        }
+
+        .animate__fadeIn {
+            animation-name: fadeIn;
+        }
+    </style>
+
+    <!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add Font Awesome if not already in your layout -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    <!-- Add Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+
+}

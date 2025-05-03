@@ -7,7 +7,7 @@ namespace HR_KD.ApiControllers
     public class LeaveManagerApiController : Controller
     {
         private readonly HrDbContext _context;
-        
+
         public LeaveManagerApiController(HrDbContext context)
         {
             _context = context;
@@ -18,6 +18,7 @@ namespace HR_KD.ApiControllers
             var maNvClaim = User.FindFirst("MaNV")?.Value;
             return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
         }
+
         [HttpGet]
         [Route("LeaveManager/GetAll")]
         public async Task<IActionResult> GetAllLeaveRequests()
@@ -30,6 +31,7 @@ namespace HR_KD.ApiControllers
                     join sdp in _context.SoDuPheps
                         on new { nn.MaNv, Nam = nn.NgayNghi1.Year } equals new { sdp.MaNv, sdp.Nam } into sdpJoin
                     from sdp in sdpJoin.DefaultIfEmpty()
+                    join tt in _context.TrangThais on nn.MaTrangThai equals tt.MaTrangThai
                     orderby nn.NgayNghi1 descending
                     select new
                     {
@@ -39,6 +41,7 @@ namespace HR_KD.ApiControllers
                         NgayNghi = nn.NgayNghi1.ToString("dd/MM/yyyy"),
                         nn.LyDo,
                         nn.MaTrangThai,
+                        TrangThai = tt.TenTrangThai, // Renamed for frontend consistency
                         nn.FileDinhKem,
                         SoNgayConLai = sdp != null ? sdp.SoNgayConLai : 0,
                         NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy")
@@ -53,9 +56,9 @@ namespace HR_KD.ApiControllers
                     item.NgayNghi,
                     item.LyDo,
                     item.MaTrangThai,
+                    item.TrangThai, // Using the properly renamed field
                     item.SoNgayConLai,
                     item.NgayCapNhat,
-                    // Xử lý danh sách file đính kèm
                     FileDinhKem = ProcessAttachmentFiles(item.FileDinhKem)
                 }).ToList();
 
@@ -93,6 +96,7 @@ namespace HR_KD.ApiControllers
 
             return result;
         }
+
         [HttpPost]
         [Route("LeaveManager/UpdateStatus")]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusRequest request)
@@ -103,27 +107,45 @@ namespace HR_KD.ApiControllers
             {
                 return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
             }
+
             // Tìm ngày nghỉ theo mã
             var ngayNghi = await _context.NgayNghis.FindAsync(request.MaNgayNghi);
             if (ngayNghi == null)
             {
                 return NotFound(new { success = false, message = "Không tìm thấy bản ghi ngày nghỉ." });
             }
+
             // Lấy thông tin người duyệt (HoTen) từ bảng nhân viên
             var nguoiDuyet = await _context.NhanViens.FirstOrDefaultAsync(nv => nv.MaNv == currentMaNv);
             if (nguoiDuyet == null)
             {
                 return BadRequest(new { success = false, message = "Không tìm thấy thông tin người duyệt." });
             }
+
             // Lấy thông tin nhân viên được duyệt
             var nhanVien = await _context.NhanViens.FirstOrDefaultAsync(nv => nv.MaNv == ngayNghi.MaNv);
             if (nhanVien == null)
             {
                 return BadRequest(new { success = false, message = "Không tìm thấy thông tin nhân viên." });
             }
+
+            // Chuyển đổi trangThai từ frontend sang mã trạng thái trong database
+            string newMaTrangThai;
+            switch (request.TrangThai)
+            {
+                case "Đã duyệt":
+                    newMaTrangThai = "NN2";
+                    break;
+                case "Từ chối":
+                    newMaTrangThai = "NN3";
+                    break;
+                default:
+                    return BadRequest(new { success = false, message = "Trạng thái không hợp lệ." });
+            }
+
             // Kiểm tra trạng thái cũ để tránh trừ phép nhiều lần nếu cập nhật trùng
-            bool isAlreadyApproved = ngayNghi.MaTrangThai == 2;
-            if (request.MaTrangThai == "Đã duyệt" && !isAlreadyApproved)
+            bool isAlreadyApproved = ngayNghi.MaTrangThai == "NN2";
+            if (newMaTrangThai == "NN2" && !isAlreadyApproved)
             {
                 var nam = ngayNghi.NgayNghi1.Year;
                 var sdp = await _context.SoDuPheps
@@ -143,18 +165,24 @@ namespace HR_KD.ApiControllers
             }
 
             // Cập nhật trạng thái của ngày nghỉ
-            ngayNghi.MaTrangThai = request.MaTrangThai == "Đã duyệt" ? 2 : 3; // 2: Đã duyệt, 3: Từ chối
+            ngayNghi.MaTrangThai = newMaTrangThai;
             ngayNghi.NgayDuyet = DateTime.Now;
             ngayNghi.NguoiDuyetId = currentMaNv;  // Lưu ID người duyệt
 
             // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
-            if (request.MaTrangThai == "Từ chối" && !string.IsNullOrEmpty(request.LyDo))
+            if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
             {
                 ngayNghi.GhiChu = request.LyDo;
             }
 
             _context.NgayNghis.Update(ngayNghi);
             await _context.SaveChangesAsync();
+
+            // Lấy tên trạng thái từ bảng TrangThais
+            var tenTrangThai = await _context.TrangThais
+                .Where(tt => tt.MaTrangThai == newMaTrangThai)
+                .Select(tt => tt.TenTrangThai)
+                .FirstOrDefaultAsync();
 
             // Trả về thông tin chi tiết bao gồm tên của người duyệt và nhân viên
             return Ok(new
@@ -164,7 +192,8 @@ namespace HR_KD.ApiControllers
                 data = new
                 {
                     nguoiDuyet = nguoiDuyet.HoTen,
-                    trangThai = ngayNghi.MaTrangThai,
+                    maTrangThai = ngayNghi.MaTrangThai,
+                    trangThai = tenTrangThai,
                     ngayDuyet = ngayNghi.NgayDuyet,
                     ghiChu = ngayNghi.GhiChu
                 }
@@ -183,17 +212,17 @@ namespace HR_KD.ApiControllers
 
             // Đếm số đơn chờ duyệt
             var pendingCount = await _context.NgayNghis
-                .CountAsync(nn => nn.MaTrangThai == 1);
+                .CountAsync(nn => nn.MaTrangThai == "NN1");
 
             // Đếm số đơn đã duyệt trong ngày hiện tại
             var approvedTodayCount = await _context.NgayNghis
-      .CountAsync(nn => nn.MaTrangThai == 2 &&
-                        nn.NgayLamDon.Date == today);
+                .CountAsync(nn => nn.MaTrangThai == "NN2" &&
+                                 nn.NgayLamDon.Date == today);
 
             // Đếm tổng số đơn trong tháng hiện tại
             var currentMonthCount = await _context.NgayNghis
                 .CountAsync(nn => nn.NgayNghi1.Month == currentMonth &&
-                                  nn.NgayNghi1.Year == currentYear);
+                                 nn.NgayNghi1.Year == currentYear);
 
             return Ok(new
             {
@@ -210,12 +239,9 @@ namespace HR_KD.ApiControllers
         public class UpdateStatusRequest
         {
             public int MaNgayNghi { get; set; }
-            public string MaTrangThai { get; set; }
+            public string TrangThai { get; set; } // Changed from MaTrangThai
             public DateTime NgayCapNhat { get; set; }
             public string? LyDo { get; set; }
         }
-
-
-
     }
 }

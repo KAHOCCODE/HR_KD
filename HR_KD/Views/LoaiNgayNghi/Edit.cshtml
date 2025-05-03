@@ -1,0 +1,403 @@
+﻿@model HR_KD.Data.LoaiNgayNghi
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+@{
+    ViewData["Title"] = "Chỉnh sửa loại ngày nghỉ";
+}
+
+<!-- CSS tùy chỉnh -->
+<style>
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        border: none;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        color: white;
+        padding: 1.25rem;
+        border-bottom: none;
+    }
+    
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        border-color: #86b7fe;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        border: none;
+        border-radius: 6px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(13, 110, 253, 0.2);
+    }
+    
+    .btn-secondary {
+        border-radius: 6px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+    
+    .required-marker {
+        color: #dc3545;
+        margin-left: 4px;
+    }
+    
+    .switch-container {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #0d6efd;
+    }
+    
+    .switch-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+    }
+    
+    .custom-switch {
+        margin-bottom: 1rem;
+    }
+    
+    .custom-switch .custom-control-label {
+        font-weight: 500;
+        padding-left: 0.5rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    
+    .form-control-icon {
+        position: relative;
+    }
+    
+    .form-control-icon i {
+        position: absolute;
+        top: 50%;
+        left: 10px;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    
+    .form-control-icon .form-control {
+        padding-left: 35px;
+    }
+    
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .card-body {
+        padding: 2rem;
+    }
+    
+    .text-muted-custom {
+        color: #6c757d;
+        font-size: 13px;
+        margin-top: 5px;
+    }
+    
+    /* Custom switch styling */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+        margin-right: 10px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+        background-color: #0d6efd;
+    }
+    
+    input:focus + .toggle-slider {
+        box-shadow: 0 0 1px #0d6efd;
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(30px);
+    }
+    
+    .toggle-label {
+        font-weight: 500;
+        margin-left: 10px;
+        line-height: 30px;
+        vertical-align: middle;
+    }
+    
+    .breadcrumb-container {
+        margin-bottom: 1.5rem;
+    }
+    
+    .breadcrumb {
+        background-color: transparent;
+        padding: 0;
+    }
+    
+    .breadcrumb-item a {
+        color: #6c757d;
+        text-decoration: none;
+    }
+    
+    .breadcrumb-item.active {
+        color: #212529;
+        font-weight: 500;
+    }
+   
+    
+</style>
+
+<div class="container-fluid py-4 animate-fade-in">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb-container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/"><i class="fas fa-home"></i> Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="/QuanLyNgayNghi">Quản lý ngày nghỉ</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index">Loại ngày nghỉ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fw-bold">
+                    <i class="fas fa-edit me-2"></i>@ViewData["Title"]
+                </h4>
+                <a asp-action="Index" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" id="editLeaveTypeForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+                <input type="hidden" asp-for="MaLoaiNgayNghi" />
+
+                <div class="row form-section">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label asp-for="TenLoai" class="form-label">
+                                Tên loại ngày nghỉ <span class="required-marker">*</span>
+                            </label>
+                            <div class="form-control-icon">
+                                <i class="fas fa-tag"></i>
+                                <input asp-for="TenLoai" class="form-control" placeholder="Nhập tên loại ngày nghỉ" required />
+                            </div>
+                            <div class="text-muted-custom">
+                                <i class="fas fa-info-circle me-1"></i> Tên loại phải có ít nhất 2 ký tự
+                            </div>
+                            <span asp-validation-for="TenLoai" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label asp-for="MoTa" class="form-label">Mô tả</label>
+                            <div class="form-control-icon">
+                                <i class="fas fa-align-left"></i>
+                                <textarea asp-for="MoTa" class="form-control" rows="3" placeholder="Nhập mô tả chi tiết về loại ngày nghỉ này"></textarea>
+                            </div>
+                            <div class="text-muted-custom">
+                                <i class="fas fa-info-circle me-1"></i> Mô tả chi tiết giúp người dùng hiểu rõ về loại ngày nghỉ
+                            </div>
+                            <span asp-validation-for="MoTa" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="switch-container">
+                    <h5 class="switch-title"><i class="fas fa-sliders-h me-2"></i>Cấu hình loại ngày nghỉ</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" asp-for="HuongLuong">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <label class="toggle-label" for="HuongLuong">
+                                    Được hưởng lương
+                                    <div class="text-muted-custom">Nhân viên vẫn được hưởng lương khi nghỉ</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" asp-for="TinhVaoPhepNam">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <label class="toggle-label" for="TinhVaoPhepNam">
+                                    Tính vào phép năm
+                                    <div class="text-muted-custom">Số ngày nghỉ sẽ trừ vào phép năm</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" asp-for="CoTinhVaoLuong">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <label class="toggle-label" for="CoTinhVaoLuong">
+                                    Có tính vào lương
+                                    <div class="text-muted-custom">Ảnh hưởng đến tính toán lương</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-icon">
+                        <i class="fas fa-save"></i> Lưu thay đổi
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary btn-icon">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Add Font Awesome if not already in your layout -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+<!-- Add Animate.css for animations -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function () {
+            // Hiệu ứng khi trang load xong
+            $('.card').addClass('animate-fade-in');
+            
+            // Validate cho form
+            $("#editLeaveTypeForm").validate({
+                rules: {
+                    TenLoai: {
+                        required: true,
+                        minlength: 2
+                    }
+                },
+                messages: {
+                    TenLoai: {
+                        required: "Vui lòng nhập tên loại ngày nghỉ",
+                        minlength: "Tên loại ngày nghỉ phải có ít nhất 2 ký tự"
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function(element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function(element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+            
+            // Hiệu ứng khi hover vào các phần tử
+            $(".form-control").hover(function() {
+                $(this).addClass("shadow-sm");
+            }, function() {
+                $(this).removeClass("shadow-sm");
+            });
+            
+            // Hiệu ứng toggle switch
+            $(".toggle-switch input").change(function() {
+                if($(this).is(":checked")) {
+                    $(this).parent().next(".toggle-label").addClass("text-primary");
+                } else {
+                    $(this).parent().next(".toggle-label").removeClass("text-primary");
+                }
+            });
+            
+            // Kích hoạt các toggle switch đã được chọn
+            $(".toggle-switch input:checked").each(function() {
+                $(this).parent().next(".toggle-label").addClass("text-primary");
+            });
+            
+            // Hiệu ứng khi focus vào input
+            $(".form-control").focus(function() {
+                $(this).parent().find("i").addClass("text-primary");
+            }).blur(function() {
+                $(this).parent().find("i").removeClass("text-primary");
+            });
+        });
+    </script>
+}

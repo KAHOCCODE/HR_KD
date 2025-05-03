@@ -15,6 +15,7 @@ public partial class HrDbContext : DbContext
     {
     }
 
+    public virtual DbSet<TrangThai> TrangThais { get; set; } = null!;
     public virtual DbSet<BangLuong> BangLuongs { get; set; }
 
     public virtual DbSet<CauHinhLuongThue> CauHinhLuongThues { get; set; }
@@ -286,8 +287,9 @@ public partial class HrDbContext : DbContext
             entity.Property(e => e.LyDo).HasMaxLength(255);
             entity.Property(e => e.MaNv).HasColumnName("MaNV");
             entity.Property(e => e.NgayNghi1).HasColumnName("NgayNghi");
-
-            
+            entity.Property(e => e.MaTrangThai)
+      .HasMaxLength(450)
+      .IsUnicode(true);
 
             entity.HasOne(d => d.MaLoaiNgayNghiNavigation).WithMany(p => p.NgayNghis)
                 .HasForeignKey(d => d.MaLoaiNgayNghi)

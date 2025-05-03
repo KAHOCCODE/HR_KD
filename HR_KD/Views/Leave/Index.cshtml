@@ -1124,14 +1124,14 @@
             paginatedData.forEach(item => {
                 const fileDisplayHtml = generateFileDisplayHtml(item.fileDinhKem);
                 const ngayDuyetFormatted = item.ngayDuyet ? formatDate(item.ngayDuyet) : "Chưa duyệt";
-                const trangThaiText = getStatusText(item.trangThai); // Ánh xạ MaTrangThai sang TenTrangThai
+                const trangThaiText = item.trangThai; // Fix: Use item.trangThai directly
 
+                const row = document.createElement("tr");
                 if (tabId === 'pending') {
                     const cancelButton = `<button class="btn-cancel" data-id="${item.id}">
                                         <i class="fas fa-times-circle"></i>
                                         <span>Hủy đơn</span>
                                     </button>`;
-
                     row.innerHTML = `
                         <td>${item.tenLoai || "Không xác định"}</td>
                         <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
@@ -1152,7 +1152,6 @@
                         <td>${item.nguoiDuyetHoTen || "Chưa có"}</td>
                     `;
                 }
-
                 tableBody.appendChild(row);
             });
         }

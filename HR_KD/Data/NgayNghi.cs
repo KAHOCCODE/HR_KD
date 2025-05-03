@@ -22,7 +22,8 @@ public partial class NgayNghi
 
     public DateTime NgayDuyet { get; set; } = DateTime.Now;
 
-    public int MaTrangThai { get; set; } = 1;
+    public string MaTrangThai { get; set; } = "NN1";
+
 
     public string? GhiChu { get; set; }
 

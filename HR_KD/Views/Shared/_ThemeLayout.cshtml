@@ -245,15 +245,32 @@
                             </a>
                         </li>
 
+                        <!-- Quản lý lương -->
                         <li class="submenu">
                             <a href="#"><i class="fa fa-money"></i> <span>Quản lý lương</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
-                                <li><a href="~/Payroll/Index"><i class="fa fa-calculator"></i> Bảng lương</a></li>
+                                <li><a href="~/Payroll/Index"><i class="fa fa-calculator"></i> Bảng lương cá nhân</a></li>
+                                @if (User.IsInRole("EMPLOYEE"))
+                                {
+                                    <li><a href="~/Payroll/Confirm"><i class="fa fa-clipboard-check"></i> Xác nhận lương</a></li>
+                                }
+                                @if (User.IsInRole("LINE_MANAGER"))
+                                {
+                                    <li><a href="~/PayrollApproval/ByManager"><i class="fa fa-users-cog"></i> Trưởng phòng xét duyệt</a></li>
+                                }
+                                @if (User.IsInRole("EMPLOYEE_MANAGER"))
+                                {
+                                    <li><a href="~/PayrollApproval/ByAccountant"><i class="fa fa-file-invoice-dollar"></i> Kế toán duyệt</a></li>
+                                }
+                                @if (User.IsInRole("DIRECTOR"))
+                                {
+                                    <li><a href="~/PayrollApproval/Final"><i class="fa fa-user-tie"></i> Giám đốc duyệt</a></li>
+                                }
+
                                 <li><a href="~/SalaryStatistics/Index"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
                                 <li><a href="~/LeaveManager/Index"><i class="fa fa-calendar-times"></i> Quản lý ngày phép</a></li>
                             </ul>
                         </li>
-
                         <li class="submenu">
                             <a href="#"><i class="fa fa-briefcase"></i> <span>Tuyển dụng</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">

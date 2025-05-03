@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250503171129_AddLichLamViectoTable")]
+    partial class AddLichLamViectoTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -330,64 +333,6 @@ namespace HR_KD.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GiamTruGiaCanhs");
-                });
-
-            modelBuilder.Entity("HR_KD.Data.GioChuan", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("IdLichLamViec")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("KichHoat")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Nam")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang1")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang10")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang11")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang12")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang2")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang3")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang4")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang5")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang6")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang7")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang8")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Thang9")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GioChuans");
                 });
 
             modelBuilder.Entity("HR_KD.Data.LamBu", b =>
@@ -1183,29 +1128,6 @@ namespace HR_KD.Migrations
                     b.HasIndex("MaNv");
 
                     b.ToTable("ThongTinLuongNVs");
-                });
-
-            modelBuilder.Entity("HR_KD.Data.TiLeTangCa", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("KichHoat")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("TenTiLeTangCa")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("TiLe")
-                        .HasColumnType("float");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TiLeTangCas");
                 });
 
             modelBuilder.Entity("HR_KD.Data.TieuChiDanhGiaFullTime", b =>

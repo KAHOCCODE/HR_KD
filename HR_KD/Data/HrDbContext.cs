@@ -14,7 +14,10 @@ public partial class HrDbContext : DbContext
         : base(options)
     {
     }
-
+    public virtual DbSet<GioChuan> GioChuans { get; set; } = null!;
+    public virtual DbSet<TiLeTangCa> TiLeTangCas { get; set; } = null!;
+    public virtual DbSet<LichLamViec> LichLamViecs { get; set; } = null!;
+    public virtual DbSet<ChamCongGioRaVao> ChamCongGioRaVaos { get; set; } 
     public virtual DbSet<TrangThai> TrangThais { get; set; } = null!;
     public virtual DbSet<BangLuong> BangLuongs { get; set; }
 

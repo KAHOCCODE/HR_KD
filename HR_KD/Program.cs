@@ -24,6 +24,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IAuthorizationHandler, ManageSubordinateHandler>();
 builder.Services.AddScoped<ExcelTemplateService>();
 builder.Services.AddScoped<UsernameGeneratorService>();
+builder.Services.AddScoped<PayrollCalculator>();
 
 // Cấu hình Authentication 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

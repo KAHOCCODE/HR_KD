@@ -1,4 +1,5 @@
 ﻿using HR_KD.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HR_KD.Controllers
@@ -13,6 +14,11 @@ namespace HR_KD.Controllers
         }
 
         public IActionResult Index()
+        {
+            return View();
+        }
+        [Authorize(Roles = "EMPLOYEE")]
+        public IActionResult MyPayroll()
         {
             return View();
         }

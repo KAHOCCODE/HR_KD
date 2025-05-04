@@ -27,7 +27,7 @@ public partial class BangLuong
 
     public DateTime NgayTao { get; set; }
 
-    public string? TrangThai { get; set; } = "Chưa thanh toán";
+    public string? TrangThai { get; set; } 
 
     public string? GhiChu { get; set; }
 

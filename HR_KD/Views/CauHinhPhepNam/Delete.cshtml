@@ -1,0 +1,57 @@
+﻿@model HR_KD.ViewModels.CauHinhPhepNamItemViewModel
+
+@{
+    ViewData["Title"] = "Xóa cấu hình phép năm";
+}
+
+<div class="container-fluid">
+    <h1 class="mt-4">Xóa cấu hình phép năm</h1>
+
+    <div class="alert alert-danger">
+        <h4><i class="fas fa-exclamation-triangle"></i> Cảnh báo</h4>
+        <p>Bạn có chắc chắn muốn xóa cấu hình phép năm này?</p>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-info-circle mr-1"></i>
+            Thông tin cấu hình
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Năm:</dt>
+                <dd class="col-sm-9">@Model.Nam</dd>
+
+                <dt class="col-sm-3">Số ngày phép mặc định:</dt>
+                <dd class="col-sm-9">@Model.SoNgayPhepMacDinh</dd>
+
+                <dt class="col-sm-3">Chính sách áp dụng:</dt>
+                <dd class="col-sm-9">
+                    @if (Model.DanhSachTenChinhSach != null && Model.DanhSachTenChinhSach.Any())
+                    {
+                        <ul>
+                            @foreach (var tenChinhSach in Model.DanhSachTenChinhSach)
+                            {
+                                <li>@tenChinhSach</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Không có chính sách</span>
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Xác nhận xóa
+        </button>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+    </form>
+</div>

@@ -1,0 +1,174 @@
+﻿@model HR_KD.Models.ChinhSachPhepNamListViewModel
+@{
+    ViewData["Title"] = "Danh sách chính sách phép năm";
+}
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<div class="container-fluid p-0">
+    <div class="row mb-2 mb-xl-3">
+        <div class="col-auto d-none d-sm-block">
+            <h3>Danh sách chính sách phép năm</h3>
+        </div>
+
+        <div class="col-auto ms-auto text-end mt-n1">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fa fa-plus"></i> Thêm mới
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-md-8">
+                    <form asp-action="Index" method="get" class="d-flex">
+                        <div class="input-group">
+                            <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="Tìm kiếm theo tên chính sách...">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Tên chính sách</th>
+                            <th>Số năm</th>
+                            <th>Số ngày cộng thêm</th>
+                            <th>Áp dụng từ năm</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.ChinhSachPhepNams.Any())
+                        {
+                            @for (int i = 0; i < Model.ChinhSachPhepNams.Count; i++)
+                            {
+                                var item = Model.ChinhSachPhepNams[i];
+                                var stt = (Model.PageIndex - 1) * Model.PageSize + i + 1;
+                                <tr>
+                                    <td>@stt</td>
+                                    <td>@item.TenChinhSach</td>
+                                    <td>@item.SoNam</td>
+                                    <td>@item.SoNgayCongThem</td>
+                                    <td>@item.ApDungTuNam</td>
+                                    <td>
+                                        <span class="badge @(item.ConHieuLuc ? "bg-success" : "bg-danger")">
+                                            @(item.ConHieuLuc ? "Còn hiệu lực" : "Hết hiệu lực")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">
+                                                <i class="fas fa-info-circle"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+
+                                            @*  <form asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm @(item.ConHieuLuc ? "btn-secondary" : "btn-success")"
+                                    title="@(item.ConHieuLuc ? "Vô hiệu hóa" : "Kích hoạt")">
+                                    <i class="fas @(item.ConHieuLuc ? "fa-toggle-off" : "fa-toggle-on")"></i>
+                                    </button>
+                                    </form> *@
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center">Không tìm thấy dữ liệu.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-center">
+                    <nav>
+                        <ul class="pagination">
+                            @if (Model.PageIndex > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" asp-action="Index" asp-route-pageIndex="1" asp-route-searchString="@ViewBag.SearchString">Đầu</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" asp-action="Index" asp-route-pageIndex="@(Model.PageIndex - 1)" asp-route-searchString="@ViewBag.SearchString">Trước</a>
+                                </li>
+                            }
+
+                            @{
+                                var startPage = Math.Max(1, Model.PageIndex - 2);
+                                var endPage = Math.Min(Model.TotalPages, startPage + 4);
+                                startPage = Math.Max(1, endPage - 4);
+                            }
+
+                            @for (var i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                    <a class="page-link" asp-action="Index" asp-route-pageIndex="@i" asp-route-searchString="@ViewBag.SearchString">@i</a>
+                                </li>
+                            }
+
+                            @if (Model.PageIndex < Model.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" asp-action="Index" asp-route-pageIndex="@(Model.PageIndex + 1)" asp-route-searchString="@ViewBag.SearchString">Sau</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" asp-action="Index" asp-route-pageIndex="@Model.TotalPages" asp-route-searchString="@ViewBag.SearchString">Cuối</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Tự động đóng thông báo sau 5 giây
+            setTimeout(function () {
+                $('.alert').alert('close');
+            }, 5000);
+        });
+    </script>
+    <!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add Font Awesome if not already in your layout -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    <!-- Add Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+}

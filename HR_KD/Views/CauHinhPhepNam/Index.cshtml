@@ -1,0 +1,86 @@
+﻿@model HR_KD.ViewModels.CauHinhPhepNamListViewModel
+
+@{
+    ViewData["Title"] = "Danh sách cấu hình phép năm";
+}
+
+<div class="container-fluid">
+    <h1 class="mt-4">Danh sách cấu hình phép năm</h1>
+    
+    <p>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Thêm mới
+        </a>
+    </p>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table mr-1"></i>
+            Danh sách cấu hình phép năm
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Năm</th>
+                            <th>Số ngày phép mặc định</th>
+                            <th>Chính sách áp dụng</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.DanhSachCauHinh)
+                        {
+                            <tr>
+                                <td>@item.Nam</td>
+                                <td>@item.SoNgayPhepMacDinh</td>
+                                <td>
+                                    @if (item.DanhSachTenChinhSach != null && item.DanhSachTenChinhSach.Any())
+                                    {
+                                        <ul class="list-unstyled mb-0">
+                                            @foreach (var tenChinhSach in item.DanhSachTenChinhSach)
+                                            {
+                                                <li><span class="badge badge-info">@tenChinhSach</span></li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Không có chính sách</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">
+                                            <i class="fas fa-info-circle"></i> Chi tiết
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> Xóa
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#dataTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Vietnamese.json"
+                },
+                "order": [[0, "desc"]]
+            });
+        });
+    </script>
+}

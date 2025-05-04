@@ -1,0 +1,81 @@
+﻿@model HR_KD.ViewModels.CauHinhPhepNamViewModel
+
+@{
+    ViewData["Title"] = "Chi tiết cấu hình phép năm";
+}
+
+<div class="container-fluid">
+    <h1 class="mt-4">Chi tiết cấu hình phép năm @Model.Nam</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-info-circle mr-1"></i>
+            Thông tin cấu hình
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Năm:</dt>
+                        <dd class="col-sm-8">@Model.Nam</dd>
+
+                        <dt class="col-sm-4">Số ngày phép mặc định:</dt>
+                        <dd class="col-sm-8">@Model.SoNgayPhepMacDinh</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-list mr-1"></i>
+            Chính sách áp dụng
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Tên chính sách</th>
+                            <th>Số năm áp dụng</th>
+                            <th>Số ngày cộng thêm</th>
+                            <th>Áp dụng từ năm</th>
+                            <th>Còn hiệu lực</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.DanhSachChinhSach.Where(c => c.IsSelected))
+                        {
+                            <tr>
+                                <td>@item.TenChinhSach</td>
+                                <td>@item.SoNam</td>
+                                <td>@item.SoNgayCongThem</td>
+                                <td>@item.ApDungTuNam</td>
+                                <td>
+                                    @if (item.ConHieuLuc)
+                                    {
+                                        <span class="badge badge-success">Còn hiệu lực</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-danger">Hết hiệu lực</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Sửa
+        </a>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+    </div>
+</div>

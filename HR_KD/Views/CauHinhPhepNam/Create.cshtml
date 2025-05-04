@@ -1,0 +1,335 @@
+﻿@model HR_KD.ViewModels.CauHinhPhepNamViewModel
+
+@{
+    ViewData["Title"] = "Thêm mới cấu hình phép năm";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Thêm mới cấu hình phép năm</h1>
+        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 config-card">
+        <div class="card-header bg-gradient-primary text-white py-3">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-plus-circle fa-2x mr-3"></i>
+                <h5 class="mb-0">Thông tin cấu hình</h5>
+            </div>
+        </div>
+        <div class="card-body bg-light">
+            <form asp-action="Create" id="createForm">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger fade show" role="alert"></div>
+
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <label asp-for="Nam" class="form-label">
+                                <i class="far fa-calendar-alt text-primary"></i> Năm
+                            </label>
+                            <input asp-for="Nam" class="form-control form-control-lg rounded-pill" />
+                            <span asp-validation-for="Nam" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <label asp-for="SoNgayPhepMacDinh" class="form-label">
+                                <i class="far fa-calendar-check text-primary"></i> Số ngày phép mặc định
+                            </label>
+                            <input asp-for="SoNgayPhepMacDinh" class="form-control form-control-lg rounded-pill" />
+                            <span asp-validation-for="SoNgayPhepMacDinh" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="policy-section mt-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-list-ul text-primary fa-lg mr-2"></i>
+                        <h5 class="mb-0">Chính sách áp dụng</h5>
+                    </div>
+                    
+                    <div class="policy-table-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover policy-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width: 5%">Chọn</th>
+                                        <th style="width: 25%">Tên chính sách</th>
+                                        <th style="width: 15%">Số năm</th>
+                                        <th style="width: 20%">Số ngày cộng thêm</th>
+                                        <th style="width: 15%">Áp dụng từ năm</th>
+                                        <th style="width: 20%">Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.DanhSachChinhSach.Count; i++)
+                                    {
+                                        var chinhSach = Model.DanhSachChinhSach[i];
+                                        <tr class="policy-row @(chinhSach.ConHieuLuc ? "" : "text-muted")">
+                                            <td>
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox"
+                                                        class="custom-control-input policy-checkbox"
+                                                        id="chinhsach-@chinhSach.Id"
+                                                        name="ChinhSachPhepNamIds"
+                                                        value="@chinhSach.Id"
+                                                        @(chinhSach.IsSelected ? "checked" : "") />
+                                                    <label class="custom-control-label" for="chinhsach-@chinhSach.Id"></label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <label for="chinhsach-@chinhSach.Id" class="policy-name mb-0">
+                                                    @chinhSach.TenChinhSach
+                                                </label>
+                                            </td>
+                                            <td>@chinhSach.SoNam</td>
+                                            <td>
+                                                <span class="badge badge-info rounded-pill px-3 py-2">
+                                                    +@chinhSach.SoNgayCongThem ngày
+                                                </span>
+                                            </td>
+                                            <td>@chinhSach.ApDungTuNam</td>
+                                            <td>
+                                                @if (chinhSach.ConHieuLuc)
+                                                {
+                                                    <span class="badge badge-success rounded-pill px-3 py-2">
+                                                        <i class="fas fa-check-circle mr-1"></i> Còn hiệu lực
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-danger rounded-pill px-3 py-2">
+                                                        <i class="fas fa-times-circle mr-1"></i> Hết hiệu lực
+                                                    </span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions mt-4 d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5">
+                        <i class="fas fa-save mr-2"></i> Lưu cấu hình
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-lg rounded-pill px-5">
+                        <i class="fas fa-times mr-2"></i> Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+    <style>
+        /* Định dạng chung */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .page-title {
+            color: #3f51b5;
+            font-weight: 600;
+            font-size: 2rem;
+        }
+
+        .config-card {
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .config-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* Gradient header */
+        .bg-gradient-primary {
+            background: linear-gradient(45deg, #3f51b5, #2196f3);
+        }
+
+        /* Form styling */
+        label.form-label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .form-control {
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #3f51b5;
+            box-shadow: 0 0 0 0.2rem rgba(63, 81, 181, 0.25);
+        }
+
+        .form-control-lg {
+            font-size: 1rem;
+        }
+
+        /* Policy table */
+        .policy-section {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .policy-table-container {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .policy-table {
+            margin-bottom: 0;
+        }
+
+        .policy-table thead th {
+            border-top: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            color: #495057;
+        }
+
+        .policy-row {
+            transition: all 0.2s ease;
+        }
+
+        .policy-row:hover {
+            background-color: rgba(63, 81, 181, 0.05);
+        }
+
+        .policy-name {
+            font-weight: 500;
+            color: #212529;
+            cursor: pointer;
+        }
+
+        /* Checkbox styling */
+        .custom-switch .custom-control-label::before {
+            border-radius: 30px;
+            height: 1.5rem;
+            width: 2.5rem;
+            background-color: #e9ecef;
+        }
+
+        .custom-switch .custom-control-input:checked ~ .custom-control-label::before {
+            background-color: #3f51b5;
+            border-color: #3f51b5;
+        }
+
+        .custom-switch .custom-control-input:focus ~ .custom-control-label::before {
+            box-shadow: 0 0 0 0.2rem rgba(63, 81, 181, 0.25);
+        }
+
+        .custom-switch .custom-control-label::after {
+            top: calc(0.25rem + 2px);
+            left: calc(-2.25rem + 2px);
+            width: calc(1rem - 4px);
+            height: calc(1rem - 4px);
+        }
+
+        /* Badge styling */
+        .badge-info {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .badge-success {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .badge-danger {
+            background-color: #f44336;
+            color: white;
+        }
+
+        /* Button styling */
+        .btn {
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #3f51b5;
+            border-color: #3f51b5;
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: #303f9f;
+            border-color: #303f9f;
+            box-shadow: 0 5px 15px rgba(63, 81, 181, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-secondary:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .form-actions .btn {
+            padding: 12px 30px;
+        }
+
+      
+    </style>
+
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        $(document).ready(function () {
+            // Hiệu ứng làm nổi bật hàng khi checkbox được chọn
+            $('.policy-checkbox').change(function() {
+                if($(this).is(':checked')) {
+                    $(this).closest('tr').addClass('table-active');
+                } else {
+                    $(this).closest('tr').removeClass('table-active');
+                }
+            });
+
+            // Áp dụng lớp active ban đầu dựa trên trạng thái checkbox
+            $('.policy-checkbox').each(function() {
+                if($(this).is(':checked')) {
+                    $(this).closest('tr').addClass('table-active');
+                }
+            });
+
+            // Kiểm tra biểu mẫu trước khi gửi
+            $('#createForm').submit(function(e) {
+                // Kiểm tra xem đã chọn ít nhất một chính sách chưa
+                // (Có thể bỏ qua nếu không cần kiểm tra này)
+                if($('.policy-checkbox:checked').length === 0) {
+                    // Hiển thị thông báo nếu muốn nhắc người dùng chọn ít nhất một chính sách
+                    // e.preventDefault();
+                    // alert('Vui lòng chọn ít nhất một chính sách!');
+                }
+            });
+
+            // Cho phép nhấp vào tên chính sách để chọn/bỏ chọn
+            $('.policy-name').click(function() {
+                const checkbox = $(this).closest('tr').find('.policy-checkbox');
+                checkbox.prop('checked', !checkbox.prop('checked')).change();
+            });
+        });
+    </script>
+}

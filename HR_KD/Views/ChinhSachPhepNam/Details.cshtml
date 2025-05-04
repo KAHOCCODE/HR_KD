@@ -1,0 +1,57 @@
+﻿@model HR_KD.Models.ChinhSachPhepNamViewModel
+@{
+    ViewData["Title"] = "Chi tiết chính sách phép năm";
+}
+
+<div class="container-fluid p-0">
+    <div class="row mb-2 mb-xl-3">
+        <div class="col-auto d-none d-sm-block">
+            <h3>Chi tiết chính sách phép năm</h3>
+        </div>
+        <div class="col-auto ms-auto text-end mt-n1">
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.TenChinhSach)</dt>
+                        <dd class="col-sm-9">@Html.DisplayFor(model => model.TenChinhSach)</dd>
+
+                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SoNam)</dt>
+                        <dd class="col-sm-9">@Html.DisplayFor(model => model.SoNam)</dd>
+
+                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SoNgayCongThem)</dt>
+                        <dd class="col-sm-9">@Html.DisplayFor(model => model.SoNgayCongThem)</dd>
+
+                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ApDungTuNam)</dt>
+                        <dd class="col-sm-9">@Html.DisplayFor(model => model.ApDungTuNam)</dd>
+
+                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ConHieuLuc)</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge @(Model.ConHieuLuc ? "bg-success" : "bg-danger")">
+                                @(Model.ConHieuLuc ? "Còn hiệu lực" : "Hết hiệu lực")
+                            </span>
+                        </dd>
+                    </dl>
+
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+                                <i class="fas fa-edit"></i> Chỉnh sửa
+                            </a>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-list"></i> Quay lại danh sách
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

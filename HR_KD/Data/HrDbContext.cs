@@ -14,6 +14,9 @@ public partial class HrDbContext : DbContext
         : base(options)
     {
     }
+    public virtual DbSet<CauHinhPhepNam> CauHinhPhepNams { get; set; }
+    public virtual DbSet<ChinhSachPhepNam> ChinhSachPhepNams { get; set; }
+    public virtual DbSet<CauHinhPhep_ChinhSach> CauHinhPhep_ChinhSachs { get; set; }
     public virtual DbSet<GioChuan> GioChuans { get; set; } = null!;
     public virtual DbSet<TiLeTangCa> TiLeTangCas { get; set; } = null!;
     public virtual DbSet<LichLamViec> LichLamViecs { get; set; } = null!;
@@ -500,6 +503,43 @@ public partial class HrDbContext : DbContext
                 .HasForeignKey(d => d.MaNv)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__YeuCauSuaC__MaNV__76969D2E");
+        });
+
+        // Cấu hình cho ChinhSachPhepNam
+        modelBuilder.Entity<ChinhSachPhepNam>(entity =>
+        {
+            entity.ToTable("ChinhSachPhepNam"); // Ánh xạ đúng tên bảng để tránh lỗi 'ChinhSachPhepNams'
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TenChinhSach).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.SoNam).IsRequired();
+            entity.Property(e => e.SoNgayCongThem).IsRequired();
+            entity.Property(e => e.ApDungTuNam).IsRequired();
+            entity.Property(e => e.ConHieuLuc).IsRequired();
+        });
+
+        // Cấu hình cho CauHinhPhepNam
+        modelBuilder.Entity<CauHinhPhepNam>(entity =>
+        {
+            entity.ToTable("CauHinhPhepNam");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Nam).IsRequired();
+            entity.Property(e => e.SoNgayPhepMacDinh).IsRequired();
+            entity.HasIndex(e => e.Nam).IsUnique(); // Đảm bảo mỗi năm chỉ có một cấu hình
+        });
+
+        // Cấu hình cho bảng trung gian CauHinhPhep_ChinhSach
+        modelBuilder.Entity<CauHinhPhep_ChinhSach>(entity =>
+        {
+            entity.ToTable("CauHinhPhep_ChinhSach");
+            entity.HasKey(e => new { e.CauHinhPhepNamId, e.ChinhSachPhepNamId });
+            entity.HasOne(e => e.CauHinhPhepNam)
+                  .WithMany(c => c.CauHinhPhep_ChinhSachs)
+                  .HasForeignKey(e => e.CauHinhPhepNamId)
+                  .HasConstraintName("FK_CauHinhPhep_ChinhSach_CauHinhPhepNam");
+            entity.HasOne(e => e.ChinhSachPhepNam)
+                  .WithMany(c => c.CauHinhPhep_ChinhSachs)
+                  .HasForeignKey(e => e.ChinhSachPhepNamId)
+                  .HasConstraintName("FK_CauHinhPhep_ChinhSach_ChinhSachPhepNam");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -1,0 +1,90 @@
+﻿@model HR_KD.Models.ChinhSachPhepNamViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa chính sách phép năm";
+}
+
+<div class="container-fluid p-0">
+    <div class="row mb-2 mb-xl-3">
+        <div class="col-auto d-none d-sm-block">
+            <h3>Chỉnh sửa chính sách phép năm</h3>
+        </div>
+        <div class="col-auto ms-auto text-end mt-n1">
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="TenChinhSach" class="form-label"></label>
+                                    <input asp-for="TenChinhSach" class="form-control" />
+                                    <span asp-validation-for="TenChinhSach" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="ApDungTuNam" class="form-label"></label>
+                                    <input asp-for="ApDungTuNam" class="form-control" type="number" />
+                                    <span asp-validation-for="ApDungTuNam" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="SoNam" class="form-label"></label>
+                                    <input asp-for="SoNam" class="form-control" type="number" min="1" />
+                                    <span asp-validation-for="SoNam" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="SoNgayCongThem" class="form-label"></label>
+                                    <input asp-for="SoNgayCongThem" class="form-control" type="number" min="0" />
+                                    <span asp-validation-for="SoNgayCongThem" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input asp-for="ConHieuLuc" class="form-check-input" type="checkbox" />
+                                    <label asp-for="ConHieuLuc" class="form-check-label"></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Lưu
+                                </button>
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Hủy
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

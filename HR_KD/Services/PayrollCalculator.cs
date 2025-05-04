@@ -20,7 +20,7 @@ public class PayrollCalculator
         {
             MaNv = employeeId,
             ThangNam = DateOnly.FromDateTime(monthYear),
-            TrangThai = "Đã tạo - Chưa thanh toán"
+            TrangThai = "BL1"
         };
 
         var contract = await _context.HopDongLaoDongs

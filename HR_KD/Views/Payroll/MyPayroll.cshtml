@@ -2,45 +2,147 @@
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     ViewData["Title"] = "Bảng lương cá nhân";
 }
-<h3>Bảng lương cá nhân</h3>
 
-<div class="form-group">
-    <label>Chọn tháng (yyyy-MM):</label>
-    <input type="month" id="monthInput" class="form-control" value="@DateTime.Now.ToString("yyyy-MM")" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="container py-4">
+    <h2 class="text-2xl font-bold mb-4">Bảng lương cá nhân</h2>
+
+    <div id="myPayrollContainer"></div>
 </div>
-<button class="btn btn-primary mt-2" onclick="loadPayroll()">Xem lương</button>
 
-<div id="payrollResult" class="mt-4"></div>
+<div class="modal fade" id="payrollDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi tiết bảng lương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="payrollDetailContent" class="space-y-2 text-sm">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script>
-        function loadPayroll() {
-            var month = $('#monthInput').val();
-            $.ajax({
-                url: '/api/PayrollApi/MyPayroll?monthYear=' + month,
-                type: 'GET',
-                success: function (data) {
-                    if (!data.hasPayroll) {
-                        $('#payrollResult').html(`<div class="alert alert-warning"><strong>Thông báo:</strong> ${data.message}</div>`);
-                    } else {
-                        $('#payrollResult').html(`
-                                            <div class="alert alert-success">
-                                                <h5>Lương tháng ${data.thang}</h5>
-                                                <ul class="list-group">
-                                                    <li class="list-group-item">Tổng lương: <strong>${data.tongLuong.toLocaleString()}</strong></li>
-                                                    <li class="list-group-item">Thực nhận: <strong>${data.thucNhan.toLocaleString()}</strong></li>
-                                                    <li class="list-group-item">Phụ cấp thêm: ${data.phuCapThem}</li>
-                                                    <li class="list-group-item">Lương tăng ca: ${data.luongTangCa}</li>
-                                                    <li class="list-group-item">Thưởng KPI: ${data.luongThem}</li>
-                                                    <li class="list-group-item">Thuế TNCN: ${data.thueTNCN}</li>
-                                                    <li class="list-group-item">Trạng thái: <span class="badge bg-info text-dark">${data.trangThai}</span></li>
-                                                </ul>
+        $(document).ready(function () {
+            loadMyPayrolls();
+        });
+
+        function loadMyPayrolls() {
+            $.get('/api/PayrollApi/MyPayroll', function (response) {
+                let html = '';
+                if (response.hasPayroll) {
+                    response.data.forEach(yearData => {
+                        html += `<div class="bg-white border border-gray-200 rounded p-3 mb-4 shadow-sm">
+                                            <h3 class="text-xl font-semibold mb-3 text-indigo-600">Năm ${yearData.year}</h3>
+                                            <div class="row">`;
+                        yearData.months.forEach(monthData => {
+                            html += `<div class="col-md-6 mb-3">
+                                                <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <div class="fw-semibold">${monthData.displayMonthYear}</div>
+                                                        <div class="text-muted">Trạng thái: ${monthData.trangThai}</div>
+                                                    </div>
+                                                    <div>
+                                                        <button class="btn btn-outline-primary btn-sm" onclick="showPayrollDetail(${monthData.maLuong})">Xem chi tiết</button>
+                                                    </div>
+                                                </div>
+                                            </div>`;
+                        });
+                        html += `</div></div>`;
+                    });
+                } else {
+                    html = `<div class="alert alert-info">${response.message}</div>`;
+                }
+                $('#myPayrollContainer').html(html);
+            }).fail(function (xhr) {
+                $('#myPayrollContainer').html(`<div class="alert alert-danger">Lỗi khi tải bảng lương cá nhân.</div>`);
+                console.error("Lỗi tải bảng lương cá nhân:", xhr);
+            });
+        }
+
+        function showPayrollDetail(maLuong) {
+            $.get(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, function (data) {
+                const html = `
+                                            <div><strong>Tháng:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                                            <hr />
+                                            <div><strong>Lương thêm:</strong> ${data.luongThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div><strong>Phụ cấp thêm:</strong> ${data.phuCapThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div><strong>Lương tăng ca:</strong> ${data.luongTangCa?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div><strong>Thuế TNCN:</strong> -${data.thueTNCN?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <hr />
+                                            <div><strong>Tổng lương:</strong> ${data.tongLuong?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div class="fw-bold text-lg text-success"><strong>Lương thực lãnh:</strong> ${data.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            ${data.ghiChu ? `<div><strong>Ghi chú:</strong> ${data.ghiChu}</div>` : ''}
+                                            <hr />
+                                            <div class="d-flex justify-content-end">
+                                                ${data.trangThai === 'BL1' ? `<button class="btn btn-success btn-sm me-2" onclick="confirmPayroll(${maLuong})">Xác nhận</button>
+                                                                               <button class="btn btn-warning btn-sm" onclick="rejectPayroll(${maLuong})">Gửi điều chỉnh</button>` : ''}
                                             </div>
-                                        `);
-                    }
-                },
-                error: function () {
-                    $('#payrollResult').html(`<div class="alert alert-danger">Lỗi khi lấy dữ liệu bảng lương.</div>`);
+                                        `;
+                $('#payrollDetailContent').html(html);
+                const modal = new bootstrap.Modal(document.getElementById('payrollDetailModal'));
+                modal.show();
+            }).fail(function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: xhr.responseText
+                });
+            });
+        }
+
+        function confirmPayroll(maLuong) {
+            Swal.fire({
+                title: 'Xác nhận?',
+                text: 'Bạn có chắc chắn muốn xác nhận bảng lương này?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận',
+                cancelButtonText: 'Hủy',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post(`/api/PayrollApi/EmployeeConfirmPayroll/${maLuong}`, function (response) {
+                        Swal.fire('Thành công!', response, 'success').then(() => {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('payrollDetailModal'));
+                            modal.hide();
+                            loadMyPayrolls();
+                        });
+                    }).fail(function (xhr) {
+                        Swal.fire('Lỗi!', xhr.responseText, 'error');
+                    });
+                }
+            });
+        }
+
+        function rejectPayroll(maLuong) {
+            Swal.fire({
+                title: 'Gửi yêu cầu điều chỉnh',
+                input: 'textarea',
+                inputLabel: 'Lý do điều chỉnh:',
+                showCancelButton: true,
+                confirmButtonText: 'Gửi',
+                cancelButtonText: 'Hủy',
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    $.post(`/api/PayrollApi/EmployeeRejectPayroll/${maLuong}`, { lyDo: result.value }, function (response) {
+                        Swal.fire('Thành công!', response, 'success').then(() => {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('payrollDetailModal'));
+                            modal.hide();
+                            loadMyPayrolls();
+                        });
+                    }).fail(function (xhr) {
+                        Swal.fire('Lỗi!', xhr.responseText, 'error');
+                    });
                 }
             });
         }

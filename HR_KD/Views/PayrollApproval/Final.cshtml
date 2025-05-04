@@ -1,0 +1,118 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="container py-4">
+    <h2 class="text-2xl font-bold mb-4">Duyệt bảng lương cuối cùng</h2>
+
+    <div class="mb-3">
+        <label class="form-label">Chọn tháng/năm:</label>
+        <div class="d-flex gap-2">
+            <select id="monthSelect" class="form-select w-auto">
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">Tháng @i</option>
+                }
+            </select>
+            <select id="yearSelect" class="form-select w-auto">
+                @for (int i = 2020; i <= DateTime.Now.Year + 1; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">@i</option>
+                }
+            </select>
+            <button class="btn btn-primary" onclick="loadDepartmentPayrolls('Final')">Tải dữ liệu</button>
+        </div>
+    </div>
+
+    <div id="payrollListContainer">
+    </div>
+
+    <button id="finalApproveBtn" class="btn btn-info mt-3" onclick="sendPayrolls('FinalApprove')" disabled>Duyệt cuối cùng</button>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        function loadDepartmentPayrolls(view) {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+            const url = `/api/PayrollApprovalApi/GetDepartmentPayrolls?year=${year}&month=${month}`;
+
+            $.get(url, function (result) {
+                let html = '';
+                result.forEach(department => {
+                    html += `<div class="bg-white border border-gray-200 rounded p-3 mb-4 shadow-sm">
+                                        <h4 class="text-lg font-semibold mb-3 text-indigo-600">${department.tenPhongBan}</h4>
+                                        <div class="overflow-x-auto">
+                                            <table class="table table-sm table-striped w-full">
+                                                <thead>
+                                                    <tr>
+                                                        <th><input type="checkbox" class="form-check-input" onchange="toggleSelectAll(this, '${department.tenPhongBan}')"></th>
+                                                        <th>Mã NV</th>
+                                                        <th>Họ tên</th>
+                                                        <th>Thực nhận</th>
+                                                        <th>Trạng thái</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>`;
+                    department.nhanViens.forEach(employee => {
+                        html += `<tr>
+                                            <td><input type="checkbox" class="form-check-input department-${department.tenPhongBan}" value="${employee.maLuong}" onchange="updateFinalApproveButtonStatus()"></td>
+                                            <td>${employee.maNv}</td>
+                                            <td>${employee.hoTen}</td>
+                                            <td>${employee.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</td>
+                                            <td>${employee.trangThai}</td>
+                                        </tr>`;
+                    });
+                    html += `</tbody></table></div></div>`;
+                });
+                $('#payrollListContainer').html(html);
+                $('#finalApproveBtn').prop('disabled', true); // Disable button on load
+            });
+        }
+
+        function toggleSelectAll(checkbox, department) {
+            const checkboxes = $(`.department-${department}`);
+            checkboxes.prop('checked', checkbox.checked);
+            updateFinalApproveButtonStatus();
+        }
+
+        function updateFinalApproveButtonStatus() {
+            const checkedCount = $('input[type="checkbox"]:checked').length;
+            $('#finalApproveBtn').prop('disabled', checkedCount === 0);
+        }
+
+        function sendPayrolls(action) {
+            const selectedPayrolls = $('input[type="checkbox"]:checked').map(function () {
+                return parseInt(this.value);
+            }).get();
+
+            if (selectedPayrolls.length > 0) {
+                $.ajax({
+                    url: `/api/PayrollApprovalApi/${action}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(selectedPayrolls),
+                    success: function (response) {
+                        alert(response);
+                        loadDepartmentPayrolls('Final'); // Reload data after action
+                    },
+                    error: function (xhr, status, error) {
+                        alert('Đã xảy ra lỗi: ' + xhr.responseText);
+                    }
+                });
+            } else {
+                alert('Vui lòng chọn ít nhất một bảng lương.');
+            }
+        }
+
+        $(document).ready(function () {
+            loadDepartmentPayrolls('Final'); // Load data on page load
+        });
+    </script>
+}

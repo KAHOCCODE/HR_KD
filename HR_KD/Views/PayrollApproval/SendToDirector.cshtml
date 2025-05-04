@@ -1,0 +1,174 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Duyệt bảng lương (Giám đốc)";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="container py-4">
+    <h2 class="text-2xl font-bold mb-4">Duyệt bảng lương (Giám đốc)</h2>
+
+    <div class="mb-3">
+        <label class="form-label">Chọn tháng/năm:</label>
+        <div class="d-flex gap-2">
+            <select id="monthSelect" class="form-select w-auto">
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">Tháng @i</option>
+                }
+            </select>
+            <select id="yearSelect" class="form-select w-auto">
+                @for (int i = 2020; i <= DateTime.Now.Year + 1; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">@i</option>
+                }
+            </select>
+            <button class="btn btn-primary" onclick="loadPayrollsForDirector()">Tải dữ liệu</button>
+        </div>
+    </div>
+
+    <div id="payrollsForDirectorContainer"></div>
+</div>
+
+<div class="modal fade" id="returnDirectorReasonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Lý do trả về</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" id="returnDirectorReason" rows="3" placeholder="Nhập lý do trả về"></textarea>
+                <input type="hidden" id="selectedDirectorPayrollIds" />
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button class="btn btn-warning" onclick="confirmReturnToAccountant()">Trả về</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            loadPayrollsForDirector();
+        });
+
+        function loadPayrollsForDirector() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+
+            $.get(`/api/PayrollApprovalApi/GetPayrollsForDirector?year=${year}&month=${month}`, function (data) {
+                let html = '<table class="table table-striped bg-white shadow-sm rounded">';
+                html += '<thead class="bg-light"><tr><th>Mã NV</th><th>Họ tên</th><th>Thực nhận</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>';
+                if (data && data.length > 0) {
+                    data.forEach(payroll => {
+                        html += `<tr>
+                                            <td>${payroll.maNv}</td>
+                                            <td>${payroll.hoTen}</td>
+                                            <td>${payroll.thucNhan ? payroll.thucNhan.toLocaleString('vi-VN') : ''} VND</td>
+                                            <td><span class="${getStatusClass(payroll.trangThai)}">${payroll.trangThai}</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info" onclick="viewPayrollDetail(${payroll.maLuong})">Chi tiết</button>
+                                                <button class="btn btn-sm btn-success ms-2" onclick="finalApprove([${payroll.maLuong}])">Duyệt</button>
+                                                <button class="btn btn-sm btn-warning ms-2" onclick="openReturnDirectorModal([${payroll.maLuong}])">Trả về</button>
+                                            </td>
+                                        </tr>`;
+                    });
+                } else {
+                    html += '<tr><td colspan="5" class="text-center">Không có bảng lương nào chờ duyệt.</td></tr>';
+                }
+                html += '</tbody></table>';
+                $('#payrollsForDirectorContainer').html(html);
+            }).fail(function (xhr) {
+                $('#payrollsForDirectorContainer').html(`<div class="alert alert-danger">Lỗi khi tải bảng lương cho giám đốc: ${xhr.responseText}</div>`);
+                console.error("Lỗi tải bảng lương cho giám đốc:", xhr);
+            });
+        }
+
+        function viewPayrollDetail(maLuong) {
+            window.location.href = `/Payroll/PayrollDetail/${maLuong}`;
+        }
+
+        function finalApprove(maLuongList) {
+            Swal.fire({
+                title: 'Duyệt cuối cùng?',
+                text: 'Bạn có chắc chắn muốn duyệt cuối cùng các bảng lương này?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Duyệt',
+                cancelButtonText: 'Hủy',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/api/PayrollApprovalApi/FinalApprove`,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(maLuongList),
+                        success: function (response) {
+                            Swal.fire('Thành công!', response, 'success').then(() => {
+                                loadPayrollsForDirector();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('Lỗi!', xhr.responseText, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function openReturnDirectorModal(maLuongList) {
+            $('#selectedDirectorPayrollIds').val(JSON.stringify(maLuongList));
+            const modal = new bootstrap.Modal(document.getElementById('returnDirectorReasonModal'));
+            modal.show();
+        }
+
+        function confirmReturnToAccountant() {
+            const maLuongList = JSON.parse($('#selectedDirectorPayrollIds').val());
+            const lyDo = $('#returnDirectorReason').val();
+            if (lyDo.trim() === '') {
+                Swal.fire('Cảnh báo!', 'Vui lòng nhập lý do trả về.', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: `/api/PayrollApprovalApi/ReturnToAccountant`,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ maLuongList: maLuongList, lyDo: lyDo }),
+                success: function (response) {
+                    Swal.fire('Thành công!', response, 'success').then(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('returnDirectorReasonModal'));
+                        modal.hide();
+                        loadPayrollsForDirector();
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi!', xhr.responseText, 'error');
+                }
+            });
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'BL1': return 'badge bg-secondary';
+                case 'BL1A': return 'badge bg-info';
+                case 'BL1R': return 'badge bg-warning text-dark';
+                case 'BL2': return 'badge bg-primary';
+                case 'BL2R': return 'badge bg-warning text-dark';
+                case 'BL3': return 'badge bg-success';
+                case 'BL3R': return 'badge bg-warning text-dark';
+                case 'BL4': return 'badge bg-success text-white bg-gradient';
+                case 'BL5': return 'badge bg-light text-dark border';
+                default: return 'badge bg-light text-dark border';
+            }
+        }
+    </script>
+}

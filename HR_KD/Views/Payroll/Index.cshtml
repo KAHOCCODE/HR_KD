@@ -1,5 +1,6 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Quản lý bảng lương theo phòng ban";
 }
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -79,23 +80,23 @@
                 let html = '';
                 result.forEach(pb => {
                     html += `<div class="bg-white border border-gray-200 rounded p-3 mb-4 shadow-sm">
-                                                        <h4 class="text-lg font-semibold mb-3 text-indigo-600">${pb.tenPhongBan}</h4>
-                                                        <div class="row">`;
+                                            <h4 class="text-lg font-semibold mb-3 text-indigo-600">${pb.tenPhongBan}</h4>
+                                            <div class="row">`;
 
                     pb.nhanViens.forEach(nv => {
                         html += `<div class="col-md-6 mb-3">
-                                                            <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
-                                                                <div>
-                                                                    <div class="fw-semibold">${nv.hoTen}</div>
-                                                                    <div class="text-muted">${nv.coBangLuong ? 'Đã có bảng lương' : 'Chưa có bảng lương'}</div>
-                                                                </div>
-                                                                <div>
-                                                                    ${nv.coBangLuong
+                                                <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <div class="fw-semibold">${nv.hoTen}</div>
+                                                        <div class="text-muted">${nv.coBangLuong ? 'Đã có bảng lương' : 'Chưa có bảng lương'}</div>
+                                                    </div>
+                                                    <div>
+                                                        ${nv.coBangLuong
                                 ? `<button class="btn btn-outline-primary btn-sm" onclick="openPayrollDetail(${nv.maNv})">Xem</button>`
                                 : `<button class="btn btn-success btn-sm" onclick="openCreateModal(${nv.maNv}, '${nv.hoTen}')">Tạo</button>`}
-                                                                </div>
-                                                            </div>
-                                                        </div>`;
+                                                    </div>
+                                                </div>
+                                            </div>`;
                     });
 
                     html += `</div></div>`;
@@ -137,30 +138,24 @@
             });
         }
 
-        // Load mặc định khi mở trang
-        $(document).ready(function () {
-            loadPayrollStatus();
-        });
-
-        //xem bảng lương chi tiết modal
         function openPayrollDetail(maNv) {
             const year = $('#yearSelect').val();
             const month = $('#monthSelect').val();
 
-            $.get(`/api/PayrollApi/GetPayrollDetail?maNv=${maNv}&year=${year}&month=${month}`, function (data) {
+            $.get(`/api/PayrollApi/GetPayrollDetail/${maNv}`, function (data) {
                 const html = `
-                                    <div><strong>Họ tên:</strong> ${data.hoTen}</div>
-                                    <div><strong>Tháng:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
-                                    <hr />
-                                    <div><strong>Lương thêm:</strong> ${data.luongThem?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                    <div><strong>Phụ cấp thêm:</strong> ${data.phuCapThem?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                    <div><strong>Lương tăng ca:</strong> ${data.luongTangCa?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                    <div><strong>Thuế TNCN:</strong> -${data.thueTNCN?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                    <hr />
-                                    <div><strong>Tổng lương:</strong> ${data.tongLuong?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                    <div class="fw-bold text-lg text-success"><strong>Lương thực lãnh:</strong> ${data.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                    ${data.ghiChu ? `<div><strong>Ghi chú:</strong> ${data.ghiChu}</div>` : ''}
-                                `;
+                                            <div><strong>Họ tên:</strong> ${data.hoTen}</div>
+                                            <div><strong>Tháng:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                                            <hr />
+                                            <div><strong>Lương thêm:</strong> ${data.luongThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div><strong>Phụ cấp thêm:</strong> ${data.phuCapThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div><strong>Lương tăng ca:</strong> ${data.luongTangCa?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div><strong>Thuế TNCN:</strong> -${data.thueTNCN?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <hr />
+                                            <div><strong>Tổng lương:</strong> ${data.tongLuong?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            <div class="fw-bold text-lg text-success"><strong>Lương thực lãnh:</strong> ${data.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                            ${data.ghiChu ? `<div><strong>Ghi chú:</strong> ${data.ghiChu}</div>` : ''}
+                                        `;
 
                 $('#payrollDetailContainer').html(html);
                 const modal = new bootstrap.Modal(document.getElementById('viewPayrollModal'));
@@ -173,5 +168,10 @@
                 });
             });
         }
+
+        // Load mặc định khi mở trang
+        $(document).ready(function () {
+            loadPayrollStatus();
+        });
     </script>
 }

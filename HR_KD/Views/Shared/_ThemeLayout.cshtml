@@ -13,6 +13,7 @@
     <link rel="stylesheet" type="text/css" href="~/assets/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="~/assets/css/font-awesome.min.css">
     <link rel="stylesheet" type="text/css" href="~/assets/css/style.css">
+    @RenderSection("Styles", required: false)
 </head>
 
 <body>
@@ -244,29 +245,45 @@
                                 <span>Nghỉ Phép</span>
                             </a>
                         </li>
+<!--Quản lý lương -->
+                        @{
+                            bool isDirector = User.IsInRole("DIRECTOR");
+                            bool isAccountant = User.IsInRole("EMPLOYEE_MANAGER");
+                            bool isManager = User.IsInRole("LINE_MANAGER");
+                            bool isEmployee = User.IsInRole("EMPLOYEE");
+                        }
 
-                        <!-- Quản lý lương -->
                         <li class="submenu">
                             <a href="#"><i class="fa fa-money"></i> <span>Quản lý lương</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
-                                <li><a href="~/Payroll/Index"><i class="fa fa-calculator"></i> Bảng lương cá nhân</a></li>
-                                @if (User.IsInRole("EMPLOYEE"))
+
+                                @* Chung cho tất cả: Bảng lương cá nhân *@
+                                <li><a href="~/Payroll/MyPayroll"><i class="fa fa-wallet"></i> Bảng lương cá nhân</a></li>
+
+                                @* Menu theo vai trò *@
+                                @if (isManager || isAccountant || isDirector)
                                 {
-                                    <li><a href="~/Payroll/Confirm"><i class="fa fa-clipboard-check"></i> Xác nhận lương</a></li>
-                                }
-                                @if (User.IsInRole("LINE_MANAGER"))
-                                {
-                                    <li><a href="~/PayrollApproval/ByManager"><i class="fa fa-users-cog"></i> Trưởng phòng xét duyệt</a></li>
-                                }
-                                @if (User.IsInRole("EMPLOYEE_MANAGER"))
-                                {
-                                    <li><a href="~/PayrollApproval/ByAccountant"><i class="fa fa-file-invoice-dollar"></i> Kế toán duyệt</a></li>
-                                }
-                                @if (User.IsInRole("DIRECTOR"))
-                                {
-                                    <li><a href="~/PayrollApproval/Final"><i class="fa fa-user-tie"></i> Giám đốc duyệt</a></li>
+                                    <li><a href="~/Payroll/Index"><i class="fa fa-calculator"></i> Tạo bảng lương theo phòng</a></li>
                                 }
 
+                                @if (isManager || isDirector)
+                                {
+                                    <li><a href="~/PayrollApproval/DepartmentReview"><i class="fa fa-eye"></i> Rà soát bảng lương</a></li>
+                                    <li><a href="~/PayrollApproval/ByManager"><i class="fa fa-user-check"></i> Gửi kế toán</a></li>
+                                }
+
+                                @if (isAccountant || isDirector)
+                                {
+                                    <li><a href="~/PayrollApproval/ByAccountant"><i class="fa fa-file-invoice-dollar"></i> Duyệt kế toán</a></li>
+                                    <li><a href="~/PayrollApproval/SendToDirector"><i class="fa fa-paper-plane"></i> Gửi giám đốc</a></li>
+                                }
+
+                                @if (isDirector)
+                                {
+                                    <li><a href="~/PayrollApproval/Final"><i class="fa fa-user-tie"></i> Duyệt cuối cùng</a></li>
+                                }
+
+                                @* Chức năng thống kê, quản lý ngày phép – chung *@
                                 <li><a href="~/SalaryStatistics/Index"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
                                 <li><a href="~/LeaveManager/Index"><i class="fa fa-calendar-times"></i> Quản lý ngày phép</a></li>
                             </ul>

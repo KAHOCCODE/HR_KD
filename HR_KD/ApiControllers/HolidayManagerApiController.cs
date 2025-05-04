@@ -24,7 +24,7 @@ namespace HR_KD.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<NgayLe>> GetHolidays(int? year)
+        public async Task<ActionResult<IEnumerable<NgayLe>>> GetHolidays(int? year)
         {
             IQueryable<NgayLe> holidays = _context.NgayLes;
 
@@ -33,19 +33,23 @@ namespace HR_KD.Controllers
                 holidays = holidays.Where(h => h.NgayLe1.Year == year.Value);
             }
 
-            return holidays.ToListAsync().Result; // Sử dụng Result() để đồng bộ hóa cho đơn giản trong ví dụ
+            return await holidays.ToListAsync();
         }
 
         [HttpGet("years")]
-        public ActionResult<IEnumerable<int>> GetHolidayYears()
+        public async Task<ActionResult<IEnumerable<int>>> GetHolidayYears()
         {
-            return _context.NgayLes.Select(h => h.NgayLe1.Year).Distinct().OrderByDescending(y => y).ToListAsync().Result;
+            return await _context.NgayLes
+                .Select(h => h.NgayLe1.Year)
+                .Distinct()
+                .OrderByDescending(y => y)
+                .ToListAsync();
         }
 
         [HttpGet("{id}")]
-        public ActionResult<NgayLe> GetHoliday(int id)
+        public async Task<ActionResult<NgayLe>> GetHoliday(int id)
         {
-            var holiday = _context.NgayLes.FindAsync(id).Result;
+            var holiday = await _context.NgayLes.FindAsync(id);
             if (holiday == null)
             {
                 return NotFound();
@@ -67,7 +71,7 @@ namespace HR_KD.Controllers
                 holiday.TrangThai = "Đã duyệt";
                 await _context.SaveChangesAsync();
 
-                // Cập nhật chấm công
+                // Update attendance
                 var allEmployees = await _context.NhanViens.ToListAsync();
                 foreach (var employee in allEmployees)
                 {
@@ -90,7 +94,7 @@ namespace HR_KD.Controllers
                 }
                 await _context.SaveChangesAsync();
 
-                // Gửi email thông báo cho ngày lễ vừa duyệt
+                // Send email notification
                 await SendHolidayApprovalNotification(holiday);
 
                 return Ok($"Ngày lễ ID {id} đã được duyệt và thông báo đã được gửi.");
@@ -113,6 +117,27 @@ namespace HR_KD.Controllers
             return Ok($"Ngày lễ ID {id} đã bị từ chối.");
         }
 
+        [HttpPost("cancel/{id}")]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var holiday = await _context.NgayLes.FindAsync(id);
+            if (holiday == null)
+            {
+                return NotFound();
+            }
+
+            holiday.TrangThai = "Chờ duyệt";
+
+            var relatedAttendances = await _context.ChamCongs
+                .Where(cc => cc.NgayLamViec == holiday.NgayLe1)
+                .ToListAsync();
+            _context.ChamCongs.RemoveRange(relatedAttendances);
+
+            await _context.SaveChangesAsync();
+
+            return Ok($"Ngày lễ ID {id} đã được hủy, trạng thái chuyển về 'Chờ duyệt' và tất cả chấm công liên quan đã bị xóa.");
+        }
+
         [HttpPost("approve/year/{year}")]
         public async Task<IActionResult> ApproveAllByYear(int year)
         {
@@ -129,7 +154,6 @@ namespace HR_KD.Controllers
             {
                 holiday.TrangThai = "Đã duyệt";
 
-                // Cập nhật chấm công
                 var allEmployees = await _context.NhanViens.ToListAsync();
                 foreach (var employee in allEmployees)
                 {
@@ -153,7 +177,6 @@ namespace HR_KD.Controllers
             }
             await _context.SaveChangesAsync();
 
-            // Gửi email thông báo tổng hợp cho tất cả ngày lễ vừa duyệt trong năm
             await SendBulkHolidayApprovalNotification(holidaysToApprove);
 
             return Ok($"{holidaysToApprove.Count} ngày lễ trong năm {year} đã được duyệt và thông báo đã được gửi.");
@@ -173,11 +196,9 @@ namespace HR_KD.Controllers
         private async Task SendBulkHolidayApprovalNotification(List<NgayLe> holidays)
         {
             var employeesToSend = await _context.NhanViens.Where(e => !string.IsNullOrEmpty(e.Email)).ToListAsync();
-            if (employeesToSend.Count == 0) return;
+            if (employeesToSend.Count == 0 || holidays.Count == 0) return;
 
-            if (holidays.Count == 0) return;
-
-            var latestYear = holidays.First().NgayLe1.Year; // Giả sử tất cả ngày lễ đều trong cùng một năm
+            var latestYear = holidays.First().NgayLe1.Year;
 
             string subject = $"Thông báo: Lịch nghỉ lễ năm {latestYear} đã được duyệt";
             string body = $"Chào bạn,\n\nDưới đây là lịch nghỉ lễ năm {latestYear} đã được duyệt:\n\n";
@@ -195,24 +216,23 @@ namespace HR_KD.Controllers
         private async Task SendEmailAsync(List<NhanVien> recipients, string subject, string body)
         {
             var smtpServer = _configuration["EmailSettings:SmtpServer"];
-            var smtpPortString = _configuration["EmailSettings:SmtpPort"]; // Lấy giá trị dưới dạng string
-            var smtpUsername = _configuration["EmailSettings:SmtpUsername"]; // Đã sửa theo cấu hình chuẩn
-            var smtpPassword = _configuration["EmailSettings:SmtpPassword"]; // Đã sửa theo cấu hình chuẩn
-            var fromEmail = _configuration["EmailSettings:FromEmail"];     // Thêm nếu bạn dùng
-            var displayName = _configuration["EmailSettings:DisplayName"]; // Thêm nếu bạn dùng
+            var smtpPortString = _configuration["EmailSettings:SmtpPort"];
+            var smtpUsername = _configuration["EmailSettings:SmtpUsername"];
+            var smtpPassword = _configuration["EmailSettings:SmtpPassword"];
+            var fromEmail = _configuration["EmailSettings:FromEmail"];
+            var displayName = _configuration["EmailSettings:DisplayName"];
 
-            // Kiểm tra cấu hình quan trọng
             if (string.IsNullOrEmpty(smtpServer) || string.IsNullOrEmpty(smtpPortString) ||
                 string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword) || string.IsNullOrEmpty(fromEmail))
             {
                 Console.WriteLine("Lỗi cấu hình: Thiếu thông tin cấu hình email quan trọng.");
-                return; // Hoặc ném một exception phù hợp
+                return;
             }
 
             if (!int.TryParse(smtpPortString, out var smtpPort))
             {
                 Console.WriteLine($"Lỗi cấu hình: Giá trị SmtpPort không hợp lệ: '{smtpPortString}'.");
-                return; // Hoặc ném một exception
+                return;
             }
 
             using (SmtpClient smtpClient = new SmtpClient(smtpServer, smtpPort))
@@ -226,7 +246,7 @@ namespace HR_KD.Controllers
                     try
                     {
                         MailMessage mailMessage = new MailMessage(
-                            new MailAddress(fromEmail, displayName ?? "Ban quản lý"), //Sử dụng displayName nếu có
+                            new MailAddress(fromEmail, displayName ?? "Ban quản lý"),
                             new MailAddress(employee.Email)
                         );
                         mailMessage.Subject = subject;
@@ -239,11 +259,9 @@ namespace HR_KD.Controllers
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Lỗi khi gửi email '{subject}' đến {employee.Email}: {ex.Message}");
-                        // Ghi log lỗi chi tiết hơn ở đây (ví dụ: sử dụng ILogger)
                     }
                 }
             }
         }
-
     }
 }

@@ -129,7 +129,7 @@
                              NgayTangCa = ngayTangCa,
                              SoGioTangCa = entry.SoGioTangCa,
                              TyLeTangCa = 1,   //Default overtime rate
-                             TrangThai = "Chờ duyệt"
+                             TrangThai = "TC1"
                          };
                          _context.TangCas.Add(tangCa);
                      }
@@ -191,7 +191,7 @@
                  return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
              }
 
-             var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Đã duyệt lận 1");
+             var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "CC2");
 
              if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
              {
@@ -255,7 +255,7 @@
                  return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
              }
 
-             var query = _context.LichSuChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "Chờ duyệt");
+             var query = _context.LichSuChamCongs.Where(c => c.MaNv == maNv.Value && c.TrangThai == "LS1");
 
              if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
              {
@@ -308,76 +308,76 @@
              return Ok(new { success = true, requests });
          }
 
-         //[HttpPost("AcceptAttendanceRequest")]
-         //public async Task<IActionResult> AcceptAttendanceRequest(AcceptAttendanceRequestDTO request)
-         //{
-         //    var maNv = GetMaNvFromClaims();
-         //    if (!maNv.HasValue)
-         //    {
-         //        return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
-         //    }
+         [HttpPost("AcceptAttendanceRequest")]
+         public async Task<IActionResult> AcceptAttendanceRequest(AcceptAttendanceRequestDTO request)
+         {
+             var maNv = GetMaNvFromClaims();
+             if (!maNv.HasValue)
+             {
+                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
+             }
 
-         //    var yeuCau = await _context.YeuCauSuaChamCongs
-         //        .FirstOrDefaultAsync(y => y.MaYeuCau == request.MaYeuCau && y.MaNv == maNv.Value);
+             var yeuCau = await _context.YeuCauSuaChamCongs
+                 .FirstOrDefaultAsync(y => y.MaYeuCau == request.MaYeuCau && y.MaNv == maNv.Value);
 
-         //    if (yeuCau == null)
-         //    {
-         //        return NotFound(new { success = false, message = "Không tìm thấy yêu cầu chấm công." });
-         //    }
+             if (yeuCau == null)
+             {
+                 return NotFound(new { success = false, message = "Không tìm thấy yêu cầu chấm công." });
+             }
 
-         //    try
-         //    {
-         //        foreach (var entry in request.AttendanceData)
-         //        {
-         //            if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
-         //            {
-         //                return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
-         //            }
+             try
+             {
+                 foreach (var entry in request.AttendanceData)
+                 {
+                     if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
+                     {
+                         return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
+                     }
 
-         //            var chamCong = await _context.ChamCongs
-         //                .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.NgayLamViec == ngayLamViec);
+                     var chamCong = await _context.ChamCongs
+                         .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.NgayLamViec == ngayLamViec);
 
-         //            if (chamCong == null)
-         //            {
-         //                chamCong = new ChamCong
-         //                {
-         //                    MaNv = maNv.Value,
-         //                    NgayLamViec = ngayLamViec,
-         //                    TrangThai = "Đã duyệt lận 1",
-         //                    GhiChu = "Chấp nhận yêu cầu chấm công"
-         //                };
-         //                _context.ChamCongs.Add(chamCong);
-         //            }
+                     if (chamCong == null)
+                     {
+                        chamCong = new ChamCong
+                         {
+                            MaNv = maNv.Value,
+                             NgayLamViec = ngayLamViec,
+                            TrangThai = "CC2",
+                             GhiChu = "Chấp nhận yêu cầu chấm công"
+                         };
+                         _context.ChamCongs.Add(chamCong);
+                     }
 
-         //            chamCong.GioVao = yeuCau.GioVaoMoi ?? chamCong.GioVao;
-         //            chamCong.GioRa = yeuCau.GioRaMoi ?? chamCong.GioRa;
+                     chamCong.GioVao = yeuCau.GioVaoMoi ?? chamCong.GioVao;
+                     chamCong.GioRa = yeuCau.GioRaMoi ?? chamCong.GioRa;
 
-         //            if (chamCong.GioVao.HasValue && chamCong.GioRa.HasValue)
-         //            {
-         //                chamCong.TongGio = (decimal)(chamCong.GioRa.Value - chamCong.GioVao.Value).TotalHours;
-         //            }
-         //        }
+                    if (chamCong.GioVao.HasValue && chamCong.GioRa.HasValue)
+                     {
+                         chamCong.TongGio = (decimal)(chamCong.GioRa.Value - chamCong.GioVao.Value).TotalHours;
+                     }
+                 }
 
-         //        _context.YeuCauSuaChamCongs.Remove(yeuCau);
-         //        await _context.SaveChangesAsync();
+                 _context.YeuCauSuaChamCongs.Remove(yeuCau);
+                 await _context.SaveChangesAsync();
 
-         //        return Ok(new
-         //        {
-         //            success = true,
-         //            message = "Xử lý yêu cầu thành công",
-         //            deletedRequestId = yeuCau.MaYeuCau
-         //        });
-         //    }
-         //    catch (Exception ex)
-         //    {
-         //        return StatusCode(500, new
-         //        {
-         //            success = false,
-         //            message = "Lỗi hệ thống",
-         //            error = ex.Message
-         //        });
-         //    }
-         //}
+                 return Ok(new
+                 {
+                     success = true,
+                     message = "Xử lý yêu cầu thành công",
+                     deletedRequestId = yeuCau.MaYeuCau
+                 });
+             }
+             catch (Exception ex)
+             {
+                 return StatusCode(500, new
+                 {
+                     success = false,
+                     message = "Lỗi hệ thống",
+                     error = ex.Message
+                 });
+             }
+         }
 
          [HttpGet("GetStatusForMonth")]
          public async Task<IActionResult> GetStatusForMonth(int maNV, string? monthYear = null)
@@ -392,7 +392,7 @@
                  .Where(c => c.MaNv == maNV &&
                              c.NgayLamViec.Year == selectedMonth.Year &&
                              c.NgayLamViec.Month == selectedMonth.Month &&
-                             c.TrangThai.Trim() == "Đã duyệt lận 1")
+                             c.TrangThai.Trim() == "CC2")
                  .ToListAsync();
 
              if (!records.Any())
@@ -401,7 +401,7 @@
                      .Where(c => c.MaNv == maNV &&
                                  c.Ngay.Year == selectedMonth.Year &&
                                  c.Ngay.Month == selectedMonth.Month &&
-                                 c.TrangThai.Trim() == "Đã duyệt lận 1")
+                                 c.TrangThai.Trim() == "LS2")
                      .ToListAsync();
 
                  if (!historyRecords.Any())

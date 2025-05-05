@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250505191650_AddTongGioThieuToTable")]
+    partial class AddTongGioThieuToTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1516,43 +1519,6 @@ namespace HR_KD.Migrations
                     b.ToTable("HopDongLaoDongs");
                 });
 
-            modelBuilder.Entity("PhepNamNhanVien", b =>
-                {
-                    b.Property<int>("MaNv")
-                        .HasColumnType("int")
-                        .HasColumnName("MaNV");
-
-                    b.Property<int>("Nam")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CauHinhPhepNamId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("GhiChu")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsReset")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime>("NgayCapNhat")
-                        .HasColumnType("date");
-
-                    b.Property<decimal>("SoNgayDaSuDung")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<decimal>("SoNgayPhepDuocCap")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.HasKey("MaNv", "Nam");
-
-                    b.HasIndex("CauHinhPhepNamId");
-
-                    b.ToTable("PhepNamNhanVien", (string)null);
-                });
-
             modelBuilder.Entity("HR_KD.Data.BangLuong", b =>
                 {
                     b.HasOne("HR_KD.Data.NhanVien", "MaNvNavigation")
@@ -1865,27 +1831,6 @@ namespace HR_KD.Migrations
                     b.Navigation("NhanVien");
                 });
 
-            modelBuilder.Entity("PhepNamNhanVien", b =>
-                {
-                    b.HasOne("CauHinhPhepNam", "CauHinhPhepNam")
-                        .WithMany()
-                        .HasForeignKey("CauHinhPhepNamId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_PhepNamNhanVien_CauHinhPhepNam");
-
-                    b.HasOne("HR_KD.Data.NhanVien", "MaNvNavigation")
-                        .WithMany("PhepNamNhanViens")
-                        .HasForeignKey("MaNv")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_PhepNamNhanVien_NhanVien");
-
-                    b.Navigation("CauHinhPhepNam");
-
-                    b.Navigation("MaNvNavigation");
-                });
-
             modelBuilder.Entity("CauHinhPhepNam", b =>
                 {
                     b.Navigation("CauHinhPhep_ChinhSachs");
@@ -1933,8 +1878,6 @@ namespace HR_KD.Migrations
                     b.Navigation("LichSuDaoTaos");
 
                     b.Navigation("NgayNghis");
-
-                    b.Navigation("PhepNamNhanViens");
 
                     b.Navigation("SoDuPheps");
 

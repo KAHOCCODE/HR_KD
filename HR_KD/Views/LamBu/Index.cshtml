@@ -1,0 +1,489 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="~/css/attend.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
+<style>
+    .invalid-input { border-color: red; }
+    .form-group { margin-bottom: 1rem; }
+    .btn-group .btn { font-size: 0.9rem; }
+    .table th, .table td { vertical-align: middle; }
+    .dashboard-card { border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+</style>
+
+<div class="dashboard-card bg-white p-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i> Quản lý làm bù</h5>
+
+    <!-- Calendar Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="workDateRange" class="form-label fw-bold">Chọn ngày làm bù</label>
+                <input type="text" class="form-control" id="workDateRange" placeholder="Chọn ngày hoặc khoảng ngày">
+            </div>
+        </div>
+    </div>
+
+    <!-- Compensatory Work Controls -->
+    <div class="row mb-4">
+        <!-- Day Compensatory Work Controls (Left) -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold">Làm bù ban ngày</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button class="btn btn-primary w-100" id="set8hBtn">
+                                <i class="fas fa-clock me-2"></i>8h làm bù
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tổng giờ</label>
+                                <input type="text" class="form-control" id="totalHours" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-2">
+                            <div class="form-group">
+                                <label>Giờ vào</label>
+                                <input type="time" class="form-control" id="checkInTime">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-2">
+                            <div class="form-group">
+                                <label>Giờ ra</label>
+                                <input type="time" class="form-control" id="checkOutTime">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label>Ghi chú</label>
+                        <textarea class="form-control" id="attendanceNote" rows="2" placeholder="Nhập ghi chú (nếu có)"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Night Compensatory Work Controls (Right) -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold">Làm bù ban đêm</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Giờ vào</label>
+                                <input type="time" class="form-control" id="nightStartTime">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Giờ ra</label>
+                                <input type="time" class="form-control" id="nightEndTime">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group w-100 mt-2">
+                        <button class="btn btn-outline-primary" id="night1h">+1h</button>
+                        <button class="btn btn-outline-primary" id="night2h">+2h</button>
+                        <button class="btn btn-outline-primary" id="night3h">+3h</button>
+                        <button class="btn btn-outline-primary" id="night4h">+4h</button>
+                        <button class="btn btn-outline-danger" id="cancelNight">Hủy</button>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label>Ghi chú</label>
+                        <textarea class="form-control" id="nightNote" rows="2" placeholder="Nhập ghi chú (nếu có)"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply Button -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <button class="btn btn-success" id="applyToSelected">
+                <i class="fas fa-check me-2"></i>Áp dụng cho ngày đã chọn
+            </button>
+        </div>
+    </div>
+
+    <!-- Work Schedule Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover" id="workScheduleTable">
+            <thead class="thead-light">
+                <tr>
+                    <th style="width: 50px;">
+                        <input type="checkbox" id="selectAll">
+                    </th>
+                    <th>Ngày làm bù</th>
+                    <th>Giờ làm ban ngày</th>
+                    <th>Giờ làm ban đêm</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody id="workScheduleBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="mt-4">
+        <button class="btn btn-primary" id="submitAll">
+            <i class="fas fa-save me-2"></i>Lưu tất cả
+        </button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    let selectedWorkDays = [];
+    let workScheduleData = {};
+
+    // Initialize date picker
+    flatpickr("#workDateRange", {
+        mode: "range",
+        dateFormat: "d/m/Y",
+        weekNumbers: true,
+        locale: { firstDayOfWeek: 1 },
+        onClose: handleDateRangeClose
+    });
+
+    function handleDateRangeClose(selectedDates) {
+        selectedWorkDays = [];
+        if (selectedDates.length === 2) {
+            let currentDate = new Date(selectedDates[0]);
+            const endDate = new Date(selectedDates[1]);
+            while (currentDate <= endDate) {
+                const dateStr = formatDateToYMD(currentDate);
+                selectedWorkDays.push(dateStr);
+                if (!workScheduleData[dateStr]) {
+                    workScheduleData[dateStr] = {
+                        selected: false,
+                        checkIn: '',
+                        checkOut: '',
+                        totalHours: 0,
+                        nightStart: '',
+                        nightEnd: '',
+                        nightHours: 0,
+                        attendanceNote: '',
+                        nightNote: ''
+                    };
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        } else if (selectedDates.length === 1) {
+            const dateStr = formatDateToYMD(selectedDates[0]);
+            selectedWorkDays.push(dateStr);
+            if (!workScheduleData[dateStr]) {
+                workScheduleData[dateStr] = {
+                    selected: false,
+                    checkIn: '',
+                    checkOut: '',
+                    totalHours: 0,
+                    nightStart: '',
+                    nightEnd: '',
+                    nightHours: 0,
+                    attendanceNote: '',
+                    nightNote: ''
+                };
+            }
+        }
+        updateWorkScheduleTable();
+    }
+
+    function formatDateToYMD(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function formatDate(date) {
+        return moment(date).format('DD/MM/YYYY');
+    }
+
+    function updateWorkScheduleTable() {
+        const tbody = document.getElementById('workScheduleBody');
+        tbody.innerHTML = '';
+        selectedWorkDays.forEach(date => {
+            const data = workScheduleData[date];
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="checkbox" class="date-checkbox" data-date="${date}" ${data.selected ? 'checked' : ''}></td>
+                <td>${formatDate(new Date(date))}</td>
+                <td>${data.checkIn ? `${data.checkIn} - ${data.checkOut} (${data.totalHours}h)` : '-'}</td>
+                <td>${data.nightHours > 0 ? `${data.nightStart} - ${data.nightEnd} (${data.nightHours}h)` : '-'}</td>
+                <td>${data.attendanceNote || data.nightNote || '-'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.querySelectorAll('.date-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                workScheduleData[this.dataset.date].selected = this.checked;
+            });
+        });
+    }
+
+    function calculateHours(startTime, endTime) {
+        if (!startTime || !endTime) return 0;
+        const start = new Date(`2000-01-01T${startTime}`);
+        const end = new Date(`2000-01-01T${endTime}`);
+        let hours = (end - start) / (1000 * 60 * 60);
+        if (hours < 0) hours += 24;
+        if (hours >= 8) hours -= 2;
+        return Math.max(0, parseFloat(hours.toFixed(2)));
+    }
+
+    function calculateRawHours(startTime, endTime) {
+        if (!startTime || !endTime) return 0;
+        const start = new Date(`2000-01-01T${startTime}`);
+        const end = new Date(`2000-01-01T${endTime}`);
+        let hours = (end - start) / (1000 * 60 * 60);
+        if (hours < 0) hours += 24;
+        return parseFloat(hours.toFixed(2));
+    }
+
+    function updateTotalHours() {
+        const checkIn = document.getElementById('checkInTime');
+        const checkOut = document.getElementById('checkOutTime');
+        const totalHoursInput = document.getElementById('totalHours');
+        checkIn.class凉classList.remove('invalid-input');
+        checkOut.classList.remove('invalid-input');
+
+        if (checkIn.value && checkOut.value) {
+            const hours = calculateHours(checkIn.value, checkOut.value);
+            totalHoursInput.value = `${hours}h`;
+        } else {
+            totalHoursInput.value = '';
+        }
+    }
+
+    function validateDayHours(checkIn, checkOut, date) {
+        const dateObj = new Date(date);
+        const dayOfWeek = dateObj.getDay();
+        const checkInInput = document.getElementById('checkInTime');
+        const checkOutInput = document.getElementById('checkOutTime');
+
+        if (checkIn && checkOut) {
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                if (checkIn < '18:00' || checkIn > '22:00' || checkOut < '18:00' || checkOut > '22:00') {
+                    checkInInput.classList.add('invalid-input');
+                    checkOutInput.classList.add('invalid-input');
+                    return false;
+                }
+            } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                if ((checkIn < '08:00' || checkIn > '18:00' || checkOut < '08:00' || checkOut > '18:00') &&
+                    (checkIn < '18:00' || checkIn > '22:00' || checkOut < '18:00' || checkOut > '22:00')) {
+                    checkInInput.classList.add('invalid-input');
+                    checkOutInput.classList.add('invalid-input');
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function updateNightHours() {
+        const nightStart = document.getElementById('nightStartTime');
+        const nightEnd = document.getElementById('nightEndTime');
+        nightStart.classList.remove('invalid-input');
+        nightEnd.classList.remove('invalid-input');
+
+        if (nightStart.value && nightEnd.value) {
+            const hours = calculateRawHours(nightStart.value, nightEnd.value);
+            if (nightStart.value < '18:00' || nightStart.value > '22:00' || nightEnd.value < '18:00' || nightEnd.value > '22:00' || hours > 4) {
+                nightStart.classList.add('invalid-input');
+                nightEnd.classList.add('invalid-input');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
+    document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
+    document.getElementById('nightStartTime').addEventListener('change', updateNightHours);
+    document.getElementById('nightEndTime').addEventListener('change', updateNightHours);
+
+    document.getElementById('set8hBtn').addEventListener('click', () => {
+        const checkIn = document.getElementById('checkInTime');
+        const checkOut = document.getElementById('checkOutTime');
+        checkIn.value = '08:00';
+        checkOut.value = '18:00';
+        updateTotalHours();
+    });
+
+    ['1h', '2h', '3h', '4h'].forEach(hours => {
+        document.getElementById(`night${hours}`).addEventListener('click', () => {
+            const nightStart = document.getElementById('nightStartTime');
+            const nightEnd = document.getElementById('nightEndTime');
+            nightStart.value = '18:00';
+            const endTime = addHours('18:00', parseInt(hours));
+            if (endTime > '22:00') {
+                Swal.fire('Lỗi!', 'Giờ làm bù ban đêm phải trong khoảng từ 18:00 đến 22:00', 'error');
+                return;
+            }
+            nightEnd.value = endTime;
+            updateNightHours();
+        });
+    });
+
+    document.getElementById('cancelNight').addEventListener('click', () => {
+        document.getElementById('nightStartTime').value = '';
+        document.getElementById('nightEndTime').value = '';
+        document.getElementById('nightNote').value = '';
+        updateNightHours();
+    });
+
+    function addHours(time, hours) {
+        const [hoursStr, minutesStr] = time.split(':');
+        let newHours = parseInt(hoursStr) + hours;
+        return `${newHours.toString().padStart(2, '0')}:${minutesStr}`;
+    }
+
+    document.getElementById('selectAll').addEventListener('change', function() {
+        document.querySelectorAll('.date-checkbox').forEach(checkbox => {
+            checkbox.checked = this.checked;
+            workScheduleData[checkbox.dataset.date].selected = this.checked;
+        });
+    });
+
+    document.getElementById('applyToSelected').addEventListener('click', async () => {
+        const checkIn = document.getElementById('checkInTime').value;
+        const checkOut = document.getElementById('checkOutTime').value;
+        const nightStart = document.getElementById('nightStartTime').value;
+        const nightEnd = document.getElementById('nightEndTime').value;
+        const attendanceNote = document.getElementById('attendanceNote').value;
+        const nightNote = document.getElementById('nightNote').value;
+
+        const selectedDates = Object.entries(workScheduleData)
+            .filter(([_, data]) => data.selected)
+            .map(([date]) => date);
+
+        if (selectedDates.length === 0) {
+            Swal.fire('Lỗi!', 'Vui lòng chọn ít nhất một ngày', 'error');
+            return;
+        }
+
+        // Validate day compensatory work
+        if (checkIn && checkOut) {
+            for (const date of selectedDates) {
+                if (!validateDayHours(checkIn, checkOut, date)) {
+                    Swal.fire('Lỗi!', `Giờ làm bù không hợp lệ cho ngày ${formatDate(new Date(date))}.`, 'error');
+                    return;
+                }
+            }
+        }
+
+        // Validate night compensatory work
+        if (nightStart && nightEnd && !updateNightHours()) {
+            Swal.fire('Lỗi!', 'Giờ làm bù ban đêm không hợp lệ.', 'error');
+            return;
+        }
+
+        // Check for time conflicts
+        if (checkIn && checkOut && nightStart && nightEnd) {
+            const dayStart = new Date(`2000-01-01T${checkIn}`);
+            const dayEnd = new Date(`2000-01-01T${checkOut}`);
+            const nightStartTime = new Date(`2000-01-01T${nightStart}`);
+            const nightEndTime = new Date(`2000-01-01T${nightEnd}`);
+            if ((nightStartTime >= dayStart && nightStartTime <= dayEnd) ||
+                (nightEndTime >= dayStart && nightEndTime <= dayEnd) ||
+                (nightStartTime <= dayStart && nightEndTime >= dayEnd)) {
+                Swal.fire('Lỗi!', 'Giờ làm bù ban ngày và ban đêm không được trùng nhau.', 'error');
+                return;
+            }
+        }
+
+        selectedDates.forEach(date => {
+            workScheduleData[date] = {
+                ...workScheduleData[date],
+                checkIn,
+                checkOut,
+                totalHours: checkIn && checkOut ? calculateHours(checkIn, checkOut) : 0,
+                nightStart,
+                nightEnd,
+                nightHours: nightStart && nightEnd ? calculateRawHours(nightStart, nightEnd) : 0,
+                attendanceNote,
+                nightNote
+            };
+        });
+
+        updateWorkScheduleTable();
+
+        document.getElementById('checkInTime').value = '';
+        document.getElementById('checkOutTime').value = '';
+        document.getElementById('totalHours').value = '';
+        document.getElementById('nightStartTime').value = '';
+        document.getElementById('nightEndTime').value = '';
+        document.getElementById('attendanceNote').value = '';
+        document.getElementById('nightNote').value = '';
+
+        selectedDates.forEach(date => workScheduleData[date].selected = false);
+        document.getElementById('selectAll').checked = false;
+
+        updateWorkScheduleTable();
+        Swal.fire('Thành công!', 'Đã áp dụng dữ liệu cho các ngày đã chọn.', 'success');
+    });
+
+    document.getElementById('submitAll').addEventListener('click', async () => {
+        const selectedDates = Object.entries(workScheduleData)
+            .filter(([_, data]) => data.selected)
+            .map(([date, data]) => ({ date, ...data }));
+
+        if (selectedDates.length === 0) {
+            Swal.fire('Lỗi!', 'Vui lòng chọn ít nhất một ngày.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/LamBu/SubmitLamBu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lamBu: selectedDates
+                        .filter(date => date.checkIn && date.checkOut)
+                        .map(date => ({
+                            NgayLamViec: date.date,
+                            GioVao: date.checkIn,
+                            GioRa: date.checkOut,
+                            TongGio: date.totalHours,
+                            TrangThai: 'LS1',
+                            GhiChu: date.attendanceNote,
+                            MaNV: 1 // Replace with actual employee ID
+                        })),
+                    lamBuBanDem: selectedDates
+                        .filter(date => date.nightHours > 0)
+                        .map(date => ({
+                            NgayLamViec: date.date,
+                            GioVao: date.nightStart,
+                            GioRa: date.nightEnd,
+                            TongGio: date.nightHours,
+                            TrangThai: 'LBBD',
+                            GhiChu: date.nightNote,
+                            MaNV: 1 // Replace with actual employee ID
+                        }))
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                Swal.fire('Thành công!', 'Lưu dữ liệu làm bù thành công.', 'success');
+                workScheduleData = {};
+                selectedWorkDays = [];
+                updateWorkScheduleTable();
+            } else {
+                Swal.fire('Lỗi!', result.message, 'error');
+            }
+        } catch (error) {
+            Swal.fire('Lỗi!', 'Có lỗi xảy ra khi lưu dữ liệu.', 'error');
+        }
+    });
+</script>

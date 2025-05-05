@@ -1,4 +1,3 @@
-
 @{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
@@ -238,24 +237,54 @@
         });
     }
 
-    // Event listeners for attendance controls
-    document.getElementById('set8hBtn').addEventListener('click', () => {
-        document.getElementById('checkInTime').value = '08:00';
-        document.getElementById('checkOutTime').value = '18:00';
-        updateTotalHours();
-    });
+    // Hàm tính số giờ làm việc
+    function calculateHours(startTime, endTime) {
+        if (!startTime || !endTime) return 0;
 
-    document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
-    document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
+        const start = new Date(`2000-01-01T${startTime}`);
+        const end = new Date(`2000-01-01T${endTime}`);
 
+        // Tính số giờ làm việc
+        let hours = (end - start) / (1000 * 60 * 60);
+
+        // Kiểm tra nếu giờ ra nhỏ hơn giờ vào (qua ngày)
+        if (hours < 0) {
+            hours += 24;
+        }
+
+        // Trừ 2 tiếng nghỉ nếu làm từ 8 tiếng trở lên
+        if (hours >= 8) {
+            hours -= 2;
+        }
+
+        // Làm tròn đến 2 chữ số thập phân và đảm bảo không âm
+        return Math.max(0, parseFloat(hours.toFixed(2)));
+    }
+
+    // Hàm cập nhật tổng số giờ
     function updateTotalHours() {
         const checkIn = document.getElementById('checkInTime').value;
         const checkOut = document.getElementById('checkOutTime').value;
+        const totalHoursInput = document.getElementById('totalHours');
+
         if (checkIn && checkOut) {
             const hours = calculateHours(checkIn, checkOut);
-            document.getElementById('totalHours').value = `${hours}h`;
+            totalHoursInput.value = `${hours}h`;
+        } else {
+            totalHoursInput.value = '';
         }
     }
+
+    // Gắn sự kiện cho các input giờ vào và giờ ra
+    document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
+    document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
+
+    // Hàm set 8h làm việc
+    document.getElementById('set8hBtn').addEventListener('click', () => {
+        document.getElementById('checkInTime').value = '08:00';
+        document.getElementById('checkOutTime').value = '18:00'; // 10h (8h làm việc + 2h nghỉ)
+        updateTotalHours();
+    });
 
     // Cancel overtime button
     document.getElementById('cancelOT').addEventListener('click', () => {
@@ -288,6 +317,14 @@
         return `${newHours.toString().padStart(2, '0')}:${minutesStr}`;
     }
 
+    function calculateOvertimeHours(startTime, endTime) {
+        if (!startTime || !endTime) return 0;
+        const start = new Date(`2000-01-01T${startTime}`);
+        const end = new Date(`2000-01-01T${endTime}`);
+        let hours = (end - start) / (1000 * 60 * 60);
+        return parseFloat(hours.toFixed(2));
+    }
+
     function calculateRawHours(startTime, endTime) {
         if (!startTime || !endTime) return 0;
         const start = new Date(`2000-01-01T${startTime}`);
@@ -303,8 +340,8 @@
         // Calculate hours for validation (raw hours without adjustments)
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
 
-        // Calculate hours for display and storage (with adjustments)
-        const otHours = calculateHours(otStartTime, otEndTime) || 0;
+        // Calculate hours for display and storage
+        const otHours = calculateOvertimeHours(otStartTime, otEndTime) || 0;
 
         // Validate time range
         const minTime = '18:00'; // 6:00 PM
@@ -405,7 +442,7 @@
 
         // Calculate hours
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
-        const otHours = calculateHours(otStartTime, otEndTime) || 0;
+        const otHours = calculateOvertimeHours(otStartTime, otEndTime) || 0;
 
         // Validate total overtime hours
         if (otRawHours > 4) {
@@ -461,26 +498,4 @@
 
         Swal.fire('Thành công!', 'Đã áp dụng dữ liệu cho các ngày đã chọn', 'success');
     });
-
-    function calculateHours(startTime, endTime) {
-        if (!startTime || !endTime) return 0;
-        const start = new Date(`2000-01-01T${startTime}`);
-        const end = new Date(`2000-01-01T${endTime}`);
-        let hours = (end - start) / (1000 * 60 * 60);
-
-        // Subtract lunch break (1 hour) if working more than 4 hours
-        if (hours > 4) {
-            hours -= 1;
-        }
-
-        // Add 1 hour for employees
-        hours += 1;
-
-        // Cap total working hours at 8 hours per day
-        if (hours > 8) {
-            hours = 8;
-        }
-
-        return parseFloat(hours.toFixed(2));
-    }
 </script>

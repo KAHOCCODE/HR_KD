@@ -9,10 +9,9 @@
     <!-- Bộ lọc -->
     <div class="row mb-3">
         <div class="col-md-4">
-            <label class="form-label">Chọn phòng ban</label>
-            <select class="form-control" id="departmentFilter">
-                <option value="">Tất cả</option>
-            </select>
+            <label class="form-label">Phòng ban</label>
+            <div class="form-control" id="departmentName"></div>
+            <input type="hidden" id="departmentFilter" value="">
         </div>
         <div class="col-md-4">
             <label class="form-label">Chọn chức vụ</label>
@@ -166,14 +165,27 @@
 
     // Load bộ lọc
     function loadDepartments() {
-        fetch("/api/AttendanceManager/GetDepartmentsManager")
-            .then(res => res.json())
-            .then(data => {
-                const select = document.getElementById("departmentFilter");
-                select.innerHTML = '<option value="">Tất cả</option>';
-                data.forEach(d => select.innerHTML += `<option value="${d.maPhongBan}">${d.tenPhongBan}</option>`);
-            });
-    }
+    fetch("/api/AttendanceManager/GetDepartmentsManagerIndex")
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.maPhongBan && data.tenPhongBan) {
+                document.getElementById("departmentName").textContent = data.tenPhongBan;
+                document.getElementById("departmentFilter").value = data.maPhongBan;
+                loadEmployees();
+            } else {
+                document.getElementById("departmentName").textContent = "Không có phòng ban";
+                document.getElementById("departmentFilter").value = "";
+                clearTables();
+            }
+        })
+        .catch(error => {
+            console.error("Lỗi khi tải phòng ban:", error);
+            document.getElementById("departmentName").textContent = "Lỗi tải phòng ban";
+            document.getElementById("departmentFilter").value = "";
+            clearTables();
+        });
+
+}
 
     function loadPositions() {
         fetch("/api/AttendanceManager/GetPositionsManager")

@@ -8,6 +8,7 @@ using MimeKit;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System;
+using Microsoft.EntityFrameworkCore;
 
 [Route("api/AttendanceManager")]
 [ApiController]
@@ -22,6 +23,13 @@ public class AttendanceManagerController : ControllerBase
         _configuration = configuration;
     }
 
+    // Lấy MaNv từ claims
+    private int? GetMaNvFromClaims()
+    {
+        var maNvClaim = User.FindFirst("MaNV")?.Value;
+        return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
+    }
+
     // 🔹 Lấy danh sách phòng ban
     [HttpGet("GetDepartmentsManager")]
     public IActionResult GetDepartments()
@@ -29,6 +37,28 @@ public class AttendanceManagerController : ControllerBase
         var departments = _context.PhongBans
             .Select(pb => new { pb.MaPhongBan, pb.TenPhongBan })
             .ToList();
+
+        return Ok(departments);
+    }
+
+    [HttpGet("GetDepartmentsManagerIndex")]
+    public IActionResult GetDepartmentsIndex()
+    {
+        int? maNv = GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
+        var departments = _context.NhanViens
+            .Where(nv => nv.MaNv == maNv)
+            .Select(nv => new
+            {
+                nv.MaPhongBanNavigation.MaPhongBan,
+                nv.MaPhongBanNavigation.TenPhongBan
+            })
+            .FirstOrDefault();
+
+        if (departments == null)
+            return NotFound("Không tìm thấy phòng ban của nhân viên.");
 
         return Ok(departments);
     }
@@ -92,7 +122,8 @@ public class AttendanceManagerController : ControllerBase
                 cc.GioRa,
                 cc.TongGio,
                 TrangThai = cc.TrangThai ?? "LS1",
-                cc.GhiChu
+                cc.GhiChu,
+                cc.MaNvDuyet
             })
             .ToList();
 
@@ -103,6 +134,10 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveAttendanceManager")]
     public IActionResult ApproveAttendance(ApproveAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         var lichSu = _context.LichSuChamCongs.FirstOrDefault(cc => cc.MaLichSuChamCong == request.MaChamCong);
         if (lichSu == null)
         {
@@ -113,6 +148,7 @@ public class AttendanceManagerController : ControllerBase
         {
             lichSu.TrangThai = "LS4";
             lichSu.GhiChu = request.GhiChu ?? "Không có ghi chú";
+            lichSu.MaNvDuyet = maNv;
 
             var employee = _context.NhanViens.Find(lichSu.MaNv);
             if (employee != null)
@@ -138,11 +174,13 @@ public class AttendanceManagerController : ControllerBase
             GioRa = lichSu.GioRa,
             TongGio = lichSu.TongGio,
             TrangThai = "CC2",
-            GhiChu = lichSu.GhiChu
+            GhiChu = lichSu.GhiChu,
+            MaNvDuyet = maNv
         };
 
         _context.ChamCongs.Add(chamCong);
         lichSu.TrangThai = "LS2";
+        lichSu.MaNvDuyet = maNv;
         _context.SaveChanges();
 
         return Ok(new { success = true, message = "Duyệt chấm công thành công." });
@@ -152,6 +190,10 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveMultipleAttendanceManager")]
     public IActionResult ApproveMultipleAttendance([FromBody] ApproveMultipleAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         using (var transaction = _context.Database.BeginTransaction())
         {
             try
@@ -178,6 +220,7 @@ public class AttendanceManagerController : ControllerBase
                     {
                         lichSu.TrangThai = "LS4";
                         lichSu.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                        lichSu.MaNvDuyet = maNv;
 
                         var employee = _context.NhanViens.Find(lichSu.MaNv);
                         if (employee != null)
@@ -202,11 +245,13 @@ public class AttendanceManagerController : ControllerBase
                             GioRa = lichSu.GioRa,
                             TongGio = lichSu.TongGio,
                             TrangThai = "CC2",
-                            GhiChu = lichSu.GhiChu
+                            GhiChu = lichSu.GhiChu,
+                            MaNvDuyet = maNv
                         };
 
                         _context.ChamCongs.Add(chamCong);
                         lichSu.TrangThai = "LS2";
+                        lichSu.MaNvDuyet = maNv;
                     }
                 }
 
@@ -250,7 +295,8 @@ public class AttendanceManagerController : ControllerBase
                 tc.NgayTangCa,
                 tc.SoGioTangCa,
                 tc.TyLeTangCa,
-                TrangThai = tc.TrangThai ?? "TC1"
+                TrangThai = tc.TrangThai ?? "TC1",
+                tc.MaNvDuyet
             })
             .ToList();
 
@@ -261,6 +307,10 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveOvertime")]
     public IActionResult ApproveOvertime(ApproveAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         var tangCa = _context.TangCas.FirstOrDefault(tc => tc.MaTangCa == request.MaChamCong);
         if (tangCa == null)
         {
@@ -271,6 +321,7 @@ public class AttendanceManagerController : ControllerBase
         {
             tangCa.TrangThai = "TC4";
             tangCa.GhiChu = request.GhiChu ?? "Không có ghi chú";
+            tangCa.MaNvDuyet = maNv;
 
             var employee = _context.NhanViens.Find(tangCa.MaNv);
             if (employee != null)
@@ -289,6 +340,7 @@ public class AttendanceManagerController : ControllerBase
         }
 
         tangCa.TrangThai = "TC2";
+        tangCa.MaNvDuyet = maNv;
         _context.SaveChanges();
 
         return Ok(new { success = true, message = "Duyệt tăng ca thành công." });
@@ -298,6 +350,10 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveMultipleOvertime")]
     public IActionResult ApproveMultipleOvertime([FromBody] ApproveMultipleAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         using (var transaction = _context.Database.BeginTransaction())
         {
             try
@@ -324,6 +380,7 @@ public class AttendanceManagerController : ControllerBase
                     {
                         tangCa.TrangThai = "TC4";
                         tangCa.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                        tangCa.MaNvDuyet = maNv;
 
                         var employee = _context.NhanViens.Find(tangCa.MaNv);
                         if (employee != null)
@@ -341,6 +398,7 @@ public class AttendanceManagerController : ControllerBase
                         }
 
                         tangCa.TrangThai = "TC2";
+                        tangCa.MaNvDuyet = maNv;
                     }
                 }
 
@@ -386,7 +444,8 @@ public class AttendanceManagerController : ControllerBase
                 cc.GioRa,
                 cc.TongGio,
                 TrangThai = cc.TrangThai ?? "CC2",
-                cc.GhiChu
+                cc.GhiChu,
+                cc.MaNvDuyet
             })
             .ToList();
 
@@ -397,32 +456,52 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveAttendanceManagerDerector")]
     public IActionResult ApproveAttendanceDerector(ApproveAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == request.MaChamCong);
         if (chamCong == null)
         {
             return BadRequest(new { success = false, message = "Không tìm thấy lịch sử chấm công." });
         }
 
+        var employee = _context.NhanViens.Find(chamCong.MaNv);
+        if (employee == null)
+        {
+            return BadRequest(new { success = false, message = "Không tìm thấy nhân viên." });
+        }
+
         if (request.TrangThai == "Đã duyệt")
         {
-            CapNhatTrangThaiChamCong(request.MaChamCong, "CC3");
+            chamCong.TrangThai = "CC3";
+            chamCong.MaNvDuyet = maNv;
 
-            var employee = _context.NhanViens.Find(chamCong.MaNv);
-            if (employee != null)
+            const decimal standardHours = 8.0m;
+            if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
             {
-                SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                decimal shortfall = standardHours - chamCong.TongGio.Value;
+
+                var gioThieu = new GioThieu
+                {
+                    NgayThieu = chamCong.NgayLamViec,
+                    TongGioThieu = shortfall,
+                    MaNv = chamCong.MaNv,
+                    MaNvNavigation = employee
+                };
+                _context.GioThieus.Add(gioThieu);
+
+                UpdateTongGioThieu(chamCong.MaNv, chamCong.NgayLamViec, shortfall);
             }
+
+            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
         }
         else if (request.TrangThai == "Từ chối")
         {
-            CapNhatTrangThaiChamCong(request.MaChamCong, "CC4");
+            chamCong.TrangThai = "CC4";
             chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
-
-            var employee = _context.NhanViens.Find(chamCong.MaNv);
-            if (employee != null)
-            {
-                SendRejectionEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC4", "chấm công", chamCong.GhiChu);
-            }
+            chamCong.MaNvDuyet = maNv;
+            SendRejectionEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC4", "chấm công", chamCong.GhiChu);
         }
 
         _context.SaveChanges();
@@ -434,12 +513,17 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveMultipleAttendanceManagerDerector")]
     public IActionResult ApproveMultipleAttendanceDerector([FromBody] ApproveMultipleAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         using (var transaction = _context.Database.BeginTransaction())
         {
             try
             {
                 var failedRecords = new List<int>();
                 var rejectionDetails = new List<(string Email, string HoTen, DateOnly Ngay, string GhiChu)>();
+                const decimal standardHours = 8.0m;
 
                 foreach (var maChamCong in request.MaChamCongList)
                 {
@@ -456,26 +540,42 @@ public class AttendanceManagerController : ControllerBase
                         continue;
                     }
 
+                    var employee = _context.NhanViens.Find(chamCong.MaNv);
+                    if (employee == null)
+                    {
+                        failedRecords.Add(maChamCong);
+                        continue;
+                    }
+
                     if (request.TrangThai == "Từ chối")
                     {
                         chamCong.TrangThai = "CC4";
                         chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
-
-                        var employee = _context.NhanViens.Find(chamCong.MaNv);
-                        if (employee != null)
-                        {
-                            rejectionDetails.Add((employee.Email, employee.HoTen, chamCong.NgayLamViec, chamCong.GhiChu));
-                        }
+                        chamCong.MaNvDuyet = maNv;
+                        rejectionDetails.Add((employee.Email, employee.HoTen, chamCong.NgayLamViec, chamCong.GhiChu));
                     }
                     else if (request.TrangThai == "Đã duyệt")
                     {
                         chamCong.TrangThai = "CC3";
+                        chamCong.MaNvDuyet = maNv;
 
-                        var employee = _context.NhanViens.Find(chamCong.MaNv);
-                        if (employee != null)
+                        if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
                         {
-                            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                            decimal shortfall = standardHours - chamCong.TongGio.Value;
+
+                            var gioThieu = new GioThieu
+                            {
+                                NgayThieu = chamCong.NgayLamViec,
+                                TongGioThieu = shortfall,
+                                MaNv = chamCong.MaNv,
+                                MaNvNavigation = employee
+                            };
+                            _context.GioThieus.Add(gioThieu);
+
+                            UpdateTongGioThieu(chamCong.MaNv, chamCong.NgayLamViec, shortfall);
                         }
+
+                        SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
                     }
                 }
 
@@ -519,7 +619,8 @@ public class AttendanceManagerController : ControllerBase
                 tc.NgayTangCa,
                 tc.SoGioTangCa,
                 tc.TyLeTangCa,
-                TrangThai = tc.TrangThai ?? "TC2"
+                TrangThai = tc.TrangThai ?? "TC2",
+                tc.MaNvDuyet
             })
             .ToList();
 
@@ -530,6 +631,10 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveOvertimeDerector")]
     public IActionResult ApproveOvertimeDerector(ApproveAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         var tangCa = _context.TangCas.FirstOrDefault(tc => tc.MaTangCa == request.MaChamCong);
         if (tangCa == null)
         {
@@ -537,12 +642,13 @@ public class AttendanceManagerController : ControllerBase
         }
 
         tangCa.TrangThai = request.TrangThai == "Đã duyệt" ? "TC3" : "TC4";
-        tangCa.GhiChu = request.TrangThai == "TC4" ? (request.GhiChu ?? "Không có ghi chú") : null;
+        tangCa.GhiChu = request.TrangThai == "Từ chối" ? (request.GhiChu ?? "Không có ghi chú") : null;
+        tangCa.MaNvDuyet = maNv;
 
         var employee = _context.NhanViens.Find(tangCa.MaNv);
         if (employee != null)
         {
-            if (request.TrangThai == "TC4")
+            if (request.TrangThai == "Từ chối")
             {
                 SendRejectionEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, "TC4", "tăng ca", tangCa.GhiChu);
             }
@@ -561,6 +667,10 @@ public class AttendanceManagerController : ControllerBase
     [HttpPost("ApproveMultipleOvertimeDerector")]
     public IActionResult ApproveMultipleOvertimeDerector([FromBody] ApproveMultipleAttendanceRequestDTO request)
     {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
         using (var transaction = _context.Database.BeginTransaction())
         {
             try
@@ -587,6 +697,7 @@ public class AttendanceManagerController : ControllerBase
                     {
                         tangCa.TrangThai = "TC4";
                         tangCa.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                        tangCa.MaNvDuyet = maNv;
 
                         var employee = _context.NhanViens.Find(tangCa.MaNv);
                         if (employee != null)
@@ -597,6 +708,7 @@ public class AttendanceManagerController : ControllerBase
                     else if (request.TrangThai == "Đã duyệt")
                     {
                         tangCa.TrangThai = "TC3";
+                        tangCa.MaNvDuyet = maNv;
 
                         var employee = _context.NhanViens.Find(tangCa.MaNv);
                         if (employee != null)
@@ -631,6 +743,36 @@ public class AttendanceManagerController : ControllerBase
                 transaction.Rollback();
                 return BadRequest(new { success = false, message = ex.Message });
             }
+        }
+    }
+
+    // 🔹 Helper method to update or create TongGioThieu for the month
+    private void UpdateTongGioThieu(int maNv, DateOnly ngayLamViec, decimal shortfall)
+    {
+        var firstDayOfMonth = new DateOnly(ngayLamViec.Year, ngayLamViec.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+        var tongGioThieu = _context.TongGioThieus
+            .FirstOrDefault(t => t.MaNv == maNv &&
+                                 t.NgayBatDauThieu == firstDayOfMonth &&
+                                 t.NgayKetThucThieu == lastDayOfMonth);
+
+        if (tongGioThieu == null)
+        {
+            tongGioThieu = new TongGioThieu
+            {
+                MaNv = maNv,
+                NgayBatDauThieu = firstDayOfMonth,
+                NgayKetThucThieu = lastDayOfMonth,
+                TongGioConThieu = shortfall,
+                TongGioLamBu = 0m,
+                MaNvNavigation = _context.NhanViens.Find(maNv)
+            };
+            _context.TongGioThieus.Add(tongGioThieu);
+        }
+        else
+        {
+            tongGioThieu.TongGioConThieu += shortfall;
         }
     }
 
@@ -729,15 +871,6 @@ public class AttendanceManagerController : ControllerBase
             client.Authenticate(senderEmail, senderPassword);
             client.Send(message);
             client.Disconnect(true);
-        }
-    }
-
-    private void CapNhatTrangThaiLichSuChamCong(int maLichSuChamCong, string trangThai)
-    {
-        var lichSu = _context.LichSuChamCongs.FirstOrDefault(cc => cc.MaLichSuChamCong == maLichSuChamCong);
-        if (lichSu != null)
-        {
-            lichSu.TrangThai = trangThai;
         }
     }
 

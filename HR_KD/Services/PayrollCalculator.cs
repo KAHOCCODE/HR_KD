@@ -188,7 +188,7 @@ public class PayrollCalculator
         return tax;
     }
 
-    public async Task<(decimal BHXH, decimal BHYT, decimal BHTN, string ErrorMessage)> CalculateInsurance(decimal luongCoBan, decimal? phuCapCoDinh)
+    public async Task<(decimal BHXH, decimal BHYT, decimal BHTN, string ErrorMessage)> CalculateInsurance(decimal luongCoBan, decimal? phuCapCoDinh, decimal? thuongCoDinh)
     {
         try
         {
@@ -218,7 +218,7 @@ public class PayrollCalculator
             var bhytRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHYT")?.TyLeNguoiLaoDong ?? 0;
             var bhtnRate = insuranceRates.FirstOrDefault(b => b.LoaiBaoHiem == "BHTN")?.TyLeNguoiLaoDong ?? 0;
 
-            var luongDongBaoHiem = luongCoBan + (phuCapCoDinh ?? 0);
+            var luongDongBaoHiem = luongCoBan + (phuCapCoDinh ?? 0) + (thuongCoDinh ?? 0);
 
             var mucLuongToiThieuVung = activeMinimumWage.MucLuongToiThieuThang;
             var mucLuongToiDaBHXH_BHYT = activeBaseSalary.LuongCoSo * 20;
@@ -226,7 +226,7 @@ public class PayrollCalculator
 
             if (luongDongBaoHiem < mucLuongToiThieuVung)
             {
-                return (0, 0, 0, $"Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp) phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {mucLuongToiThieuVung:N0} VNĐ.");
+                return (0, 0, 0, $"Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp cố định + thưởng cố định) phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {mucLuongToiThieuVung:N0} VNĐ.");
             }
 
             var luongDongBHXH = Math.Min(luongDongBaoHiem, mucLuongToiDaBHXH_BHYT);

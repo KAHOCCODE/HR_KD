@@ -265,15 +265,16 @@
             function updateInsuranceFields() {
                 let luongCoBan = parseFloat($("#LuongCoBan").val()) || 0;
                 let phuCapCoDinh = parseFloat($("#PhuCapCoDinh").val()) || 0;
+                let thuongCoDinh = parseFloat($("#ThuongCoDinh").val()) || 0;
                 let minimumWage = parseFloat($("#minimumWage").val()) || 0;
                 const maxReasonableSalary = 100000000; // 100 triệu VNĐ
 
                 // Kiểm tra mức lương tối đa hợp lý
-                if (luongCoBan > maxReasonableSalary || phuCapCoDinh > maxReasonableSalary) {
+                if (luongCoBan > maxReasonableSalary || phuCapCoDinh > maxReasonableSalary || thuongCoDinh > maxReasonableSalary) {
                     Swal.fire({
                         icon: "warning",
                         title: "Lương không hợp lý",
-                        text: `Lương cơ bản và phụ cấp không được vượt quá ${formatCurrency(maxReasonableSalary)}!`,
+                        text: `Lương cơ bản, phụ cấp và thưởng cố định không được vượt quá ${formatCurrency(maxReasonableSalary)}!`,
                         confirmButtonColor: "#2563eb"
                     });
                     $("#BHXH").val("0");
@@ -284,12 +285,12 @@
                 }
 
                 // Kiểm tra mức lương tối thiểu trước khi gọi API
-                let luongDongBaoHiem = luongCoBan + phuCapCoDinh;
+                let luongDongBaoHiem = luongCoBan + phuCapCoDinh + thuongCoDinh;
                 if (luongDongBaoHiem < minimumWage) {
                     Swal.fire({
                         icon: "warning",
                         title: "Lương không hợp lệ",
-                        text: `Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp) phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
+                        text: `Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp + thưởng) phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
                         confirmButtonColor: "#2563eb"
                     });
                     $("#BHXH").val("0");
@@ -305,7 +306,8 @@
                     contentType: "application/json",
                     data: JSON.stringify({
                         LuongCoBan: luongCoBan,
-                        PhuCapCoDinh: phuCapCoDinh
+                        PhuCapCoDinh: phuCapCoDinh,
+                        ThuongCoDinh: thuongCoDinh
                     }),
                     success: function (data) {
                         $("#BHXH").val(data.bhxh.toFixed(2));
@@ -369,7 +371,7 @@
 
             // Form input handlers with debounce
             let debounceTimeout;
-            $("#LuongCoBan, #PhuCapCoDinh").on("change keyup", function() {
+            $("#LuongCoBan, #PhuCapCoDinh, #ThuongCoDinh").on("change keyup", function() {
                 clearTimeout(debounceTimeout);
                 debounceTimeout = setTimeout(() => {
                     updateInsuranceFields();
@@ -378,7 +380,7 @@
                 }, 300);
             });
 
-            $("input:not(#LuongCoBan, #PhuCapCoDinh), textarea").on("change keyup", function() {
+            $("input:not(#LuongCoBan, #PhuCapCoDinh, #ThuongCoDinh), textarea").on("change keyup", function() {
                 updateProgressBar();
                 updateSummary();
             });
@@ -417,13 +419,14 @@
                 // Validate minimum wage
                 let luongCoBan = parseFloat($("#LuongCoBan").val());
                 let phuCapCoDinh = parseFloat($("#PhuCapCoDinh").val()) || 0;
+                let thuongCoDinh = parseFloat($("#ThuongCoDinh").val()) || 0;
                 let minimumWage = parseFloat($("#minimumWage").val());
-                let luongDongBaoHiem = luongCoBan + phuCapCoDinh;
+                let luongDongBaoHiem = luongCoBan + phuCapCoDinh + thuongCoDinh;
                 if (luongDongBaoHiem < minimumWage) {
                     Swal.fire({
                         icon: "warning",
                         title: "Lương không hợp lệ",
-                        text: `Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp) phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
+                        text: `Mức lương đóng bảo hiểm (lương cơ bản + phụ cấp + thưởng) phải lớn hơn hoặc bằng ${formatCurrency(minimumWage)}!`,
                         confirmButtonColor: "#2563eb"
                     });
                     return;
@@ -431,11 +434,11 @@
 
                 // Validate maximum reasonable salary
                 const maxReasonableSalary = 100000000; // 100 triệu VNĐ
-                if (luongCoBan > maxReasonableSalary || phuCapCoDinh > maxReasonableSalary) {
+                if (luongCoBan > maxReasonableSalary || phuCapCoDinh > maxReasonableSalary || thuongCoDinh > maxReasonableSalary) {
                     Swal.fire({
                         icon: "warning",
                         title: "Lương không hợp lý",
-                        text: `Lương cơ bản và phụ cấp không được vượt quá ${formatCurrency(maxReasonableSalary)}!`,
+                        text: `Lương cơ bản, phụ cấp và thưởng cố định không được vượt quá ${formatCurrency(maxReasonableSalary)}!`,
                         confirmButtonColor: "#2563eb"
                     });
                     return;

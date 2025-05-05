@@ -106,7 +106,11 @@ namespace HR_KD.Controllers.ApiControllers
                 }
 
                 // Tính toán các khoản bảo hiểm bằng PayrollCalculator
-                (decimal bhxh, decimal bhyt, decimal bhtn, string errorMessage) = await _payrollCalculator.CalculateInsurance(salaryDTO.LuongCoBan, salaryDTO.PhuCapCoDinh);
+                (decimal bhxh, decimal bhyt, decimal bhtn, string errorMessage) = await _payrollCalculator.CalculateInsurance(
+                    salaryDTO.LuongCoBan,
+                    salaryDTO.PhuCapCoDinh,
+                    salaryDTO.ThuongCoDinh
+                );
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
                     return BadRequest(errorMessage);
@@ -197,7 +201,11 @@ namespace HR_KD.Controllers.ApiControllers
                 }
 
                 // Tính toán các khoản bảo hiểm bằng PayrollCalculator
-                (decimal bhxh, decimal bhyt, decimal bhtn, string errorMessage) = await _payrollCalculator.CalculateInsurance(salaryDTO.LuongCoBan, salaryDTO.PhuCapCoDinh);
+                (decimal bhxh, decimal bhyt, decimal bhtn, string errorMessage) = await _payrollCalculator.CalculateInsurance(
+                    salaryDTO.LuongCoBan,
+                    salaryDTO.PhuCapCoDinh,
+                    salaryDTO.ThuongCoDinh
+                );
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
                     return BadRequest(errorMessage);
@@ -238,12 +246,16 @@ namespace HR_KD.Controllers.ApiControllers
         {
             try
             {
-                if (input.LuongCoBan < 0 || input.PhuCapCoDinh < 0)
+                if (input.LuongCoBan < 0 || input.PhuCapCoDinh < 0 || input.ThuongCoDinh < 0)
                 {
-                    return BadRequest("Lương cơ bản và phụ cấp cố định không được âm.");
+                    return BadRequest("Lương cơ bản, phụ cấp cố định và thưởng cố định không được âm.");
                 }
 
-                var (bhxh, bhyt, bhtn, errorMessage) = await _payrollCalculator.CalculateInsurance(input.LuongCoBan, input.PhuCapCoDinh);
+                var (bhxh, bhyt, bhtn, errorMessage) = await _payrollCalculator.CalculateInsurance(
+                    input.LuongCoBan,
+                    input.PhuCapCoDinh,
+                    input.ThuongCoDinh
+                );
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
                     return BadRequest(errorMessage);
@@ -260,7 +272,8 @@ namespace HR_KD.Controllers.ApiControllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi tính toán bảo hiểm: LuongCoBan={LuongCoBan}, PhuCapCoDinh={PhuCapCoDinh}", input.LuongCoBan, input.PhuCapCoDinh);
+                _logger.LogError(ex, "Lỗi khi tính toán bảo hiểm: LuongCoBan={LuongCoBan}, PhuCapCoDinh={PhuCapCoDinh}, ThuongCoDinh={ThuongCoDinh}",
+                    input.LuongCoBan, input.PhuCapCoDinh, input.ThuongCoDinh);
                 return StatusCode(500, "Có lỗi xảy ra khi tính toán bảo hiểm.");
             }
         }
@@ -270,6 +283,7 @@ namespace HR_KD.Controllers.ApiControllers
     {
         public decimal LuongCoBan { get; set; }
         public decimal? PhuCapCoDinh { get; set; }
+        public decimal? ThuongCoDinh { get; set; }
     }
 
     public class InsuranceCalculationDTO

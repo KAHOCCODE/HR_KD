@@ -417,7 +417,130 @@
             background-color: #ffffff;
             border: 1px solid #e9ecef;
         }
+
+    .leave-dashboard-enhanced {
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        max-width: 650px;
+        margin: 0 auto;
+        border-left: 4px solid #4285f4;
+    }
+
+        .leave-dashboard-enhanced:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        }
+
+    .leave-enhanced-card {
+        padding: 20px;
+    }
+
+        .leave-enhanced-card h6 {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+    .leave-data-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .leave-enhanced-card p {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 12px;
+        color: #555;
+        flex: 1;
+        padding: 0 15px;
+        position: relative;
+    }
+
+        .leave-enhanced-card p:not(:last-child):after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 10%;
+            height: 80%;
+            width: 1px;
+            background-color: #eaeaea;
+        }
+
+    .leave-enhanced-card strong {
+        font-weight: 600;
+        color: #333;
+        background-color: #f8f9fa;
+        padding: 8px 16px;
+        border-radius: 20px;
+        min-width: 80px;
+        text-align: center;
+        margin-top: 10px;
+        font-size: 1.1rem;
+    }
+
+    .leave-enhanced-card .so-ngay-con-lai {
+        color: #4285f4;
+        background-color: #e8f0fe;
+    }
+
+    .leave-enhanced-card .card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+        .leave-enhanced-card .card-header i {
+            background-color: #e8f0fe;
+            color: #4285f4;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .leave-enhanced-card .card-header h5 {
+            margin: 0;
+            color: #333;
+            font-weight: 600;
+        }
+
 </style>
+
+<div class="leave-dashboard-enhanced bg-white mt-4">
+    <div class="leave-enhanced-card">
+        <div class="card-header">
+            <i class="fas fa-calendar-check"></i>
+            <h5>Thông tin nghỉ phép</h5>
+        </div>
+        <h6>Nghỉ phép năm</h6>
+        <div class="leave-data-row">
+            <p>
+                <span>Số ngày phép được cấp:</span>
+                <strong class="so-ngay-phep-duoc-cap">Đang tải...</strong>
+            </p>
+            <p>
+                <span>Số ngày đã sử dụng:</span>
+                <strong class="so-ngay-da-su-dung">Đang tải...</strong>
+            </p>
+            <p>
+                <span>Số ngày còn lại:</span>
+                <strong class="so-ngay-con-lai">Đang tải...</strong>
+            </p>
+        </div>
+    </div>
+</div>
+
 
 <div id="leaveSection" class="dashboard-card bg-white p-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i>Đăng ký nghỉ phép</h5>
@@ -456,28 +579,8 @@
         </div>
     </form>
 </div>
-<div class="dashboard-card bg-white p-4 mt-4">
-    <h5 class="mb-4 text-primary"><i class="fas fa-info-circle me-2"></i>Thông tin nghỉ phép khả dụng</h5>
-    <div class="row">
-        <div class="col-md-12">
-            <div class="leave-info-card">
-                <h6>Nghỉ phép năm</h6>
-                <p>Số ngày còn lại: <strong>Đang tải...</strong></p>
-            </div>
-        </div>
-    </div>
-    <div class="row mt-3">
-        <div class="col-md-12">
-            <div class="leave-notes p-3 bg-light rounded">
-                <p class="small mb-1"><strong>Lưu ý:</strong></p>
-                <ul class="small mb-0">
-                    <li>Luật lao động: Làm ở công ty 5 năm, tăng thêm 1 ngày phép.</li>
-                    <li>Luật Công ty: Cứ 5 năm tăng thêm 1 ngày phép.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+
+
 <div class="leave-history bg-white p-4 mt-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-history me-2"></i>Lịch sử đăng ký nghỉ phép</h5>
     <ul class="nav nav-tabs mb-3" id="leaveHistoryTabs" role="tablist">
@@ -686,6 +789,31 @@
 
     // Document Ready Event Handler
     document.addEventListener("DOMContentLoaded", async function () {
+        console.log("DOM đã sẵn sàng, kiểm tra các phần tử...");
+
+        const elements = [
+            'pendingLeaveBody',
+            'approvedLeaveBody',
+            'rejectedLeaveBody',
+            'pending-tab',
+            'approved-tab',
+            'rejected-tab'
+        ];
+
+        const missingElements = [];
+        elements.forEach(id => {
+            const element = document.getElementById(id);
+            if (!element) {
+                missingElements.push(id);
+                console.error(`Không tìm thấy phần tử với ID: ${id}`);
+            }
+        });
+
+        if (missingElements.length > 0) {
+            console.error(`Thiếu ${missingElements.length} phần tử HTML cần thiết:`, missingElements);
+        } else {
+            console.log("Tất cả phần tử HTML cần thiết đều tồn tại.");
+        }
         const registeredDates = await fetchAlreadyRegisteredDates();
         const holidays = await fetchHolidays();
         const expandedHolidays = calculateHolidayDates(holidays);
@@ -756,6 +884,9 @@
 
                 document.getElementById("selectedDates").textContent =
                     validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
+
+                // Check leave balance and update leave type dropdown
+                updateLeaveTypeDropdown();
             }
         });
 
@@ -769,6 +900,11 @@
 
             if (!formData.selectedDates.length) {
                 Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 ngày nghỉ!', 'error');
+                return;
+            }
+
+            if (availableLeaveBalance === 0 && formData.leaveType !== "2") { // Assuming "2" is the ID for "Nghỉ không lương"
+                Swal.fire('Lỗi', 'Số dư phép năm đã hết! Chỉ có thể chọn Nghỉ không lương.', 'error');
                 return;
             }
 
@@ -872,6 +1008,9 @@
 
                         document.getElementById("selectedDates").textContent =
                             validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
+
+                        // Update leave type dropdown after date selection
+                        updateLeaveTypeDropdown();
                     }
                 });
 
@@ -943,25 +1082,44 @@
         }
 
         function initializeTabs() {
+            console.log("Khởi tạo tabs...");
             const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
-            tabElements.forEach(tabElement => {
+            console.log(`Tìm thấy ${tabElements.length} tab elements`);
+
+            if (tabElements.length === 0) {
+                console.error("Không tìm thấy tab nào. Kiểm tra HTML của bạn.");
+                return;
+            }
+
+            tabElements.forEach((tabElement, index) => {
+                console.log(`Tab ${index + 1}: target = ${tabElement.getAttribute('data-bs-target')}`);
+
                 tabElement.addEventListener('click', function (event) {
                     event.preventDefault();
+                    const targetId = this.getAttribute('data-bs-target');
+                    console.log(`Đã click vào tab với target: ${targetId}`);
+
                     tabElements.forEach(tab => {
                         tab.classList.remove('active');
-                        const tabPane = document.querySelector(tab.getAttribute('data-bs-target'));
+                        const tabPaneId = tab.getAttribute('data-bs-target');
+                        const tabPane = document.querySelector(tabPaneId);
                         if (tabPane) {
                             tabPane.classList.remove('show', 'active');
+                        } else {
+                            console.error(`Không tìm thấy tab pane với ID: ${tabPaneId}`);
                         }
                     });
 
                     this.classList.add('active');
-                    const targetPane = document.querySelector(this.getAttribute('data-bs-target'));
+                    const targetPane = document.querySelector(targetId);
                     if (targetPane) {
                         targetPane.classList.add('show', 'active');
+                        console.log(`Đã kích hoạt tab pane: ${targetId}`);
+                    } else {
+                        console.error(`Không tìm thấy tab pane mục tiêu: ${targetId}`);
                     }
 
-                    const tabId = this.getAttribute('data-bs-target').substring(1);
+                    const tabId = targetId.substring(1);
                     renderTable(tabId);
                 });
             });
@@ -969,9 +1127,13 @@
             if (tabElements.length > 0) {
                 const firstTab = tabElements[0];
                 firstTab.classList.add('active');
-                const firstTabPane = document.querySelector(firstTab.getAttribute('data-bs-target'));
+                const firstTabPaneId = firstTab.getAttribute('data-bs-target');
+                const firstTabPane = document.querySelector(firstTabPaneId);
                 if (firstTabPane) {
                     firstTabPane.classList.add('show', 'active');
+                    console.log(`Đã kích hoạt tab đầu tiên: ${firstTabPaneId}`);
+                } else {
+                    console.error(`Không tìm thấy tab pane đầu tiên: ${firstTabPaneId}`);
                 }
             }
         }
@@ -990,6 +1152,9 @@
                     option.textContent = leaveType.tenLoai;
                     leaveTypeSelect.appendChild(option);
                 });
+
+                // Initialize leave type dropdown based on leave balance
+                updateLeaveTypeDropdown();
             } else {
                 console.error("Lỗi dữ liệu:", result);
                 alert("Dữ liệu không hợp lệ.");
@@ -999,6 +1164,7 @@
             alert("Lỗi hệ thống. Vui lòng thử lại sau.");
         }
 
+        // Số ngày còn lại
         fetch('/api/Leave/SoNgayConLai')
             .then(response => {
                 if (!response.ok) {
@@ -1009,19 +1175,27 @@
             .then(data => {
                 if (data.success) {
                     availableLeaveBalance = data.soNgayConLai;
-                    const soNgayConLaiElement = document.querySelector('.leave-info-card strong');
+                    const soNgayConLaiElement = document.querySelector('.leave-enhanced-card .so-ngay-con-lai');
+                    const soNgayPhepDuocCapElement = document.querySelector('.leave-enhanced-card .so-ngay-phep-duoc-cap');
+                    const soNgayDaSuDungElement = document.querySelector('.leave-enhanced-card .so-ngay-da-su-dung');
                     if (soNgayConLaiElement) {
                         soNgayConLaiElement.textContent = `${data.soNgayConLai} ngày`;
                     }
-                    checkLeaveBalance();
+                    if (soNgayPhepDuocCapElement) {
+                        soNgayPhepDuocCapElement.textContent = `${data.soNgayPhepDuocCap} ngày`;
+                    }
+                    if (soNgayDaSuDungElement) {
+                        soNgayDaSuDungElement.textContent = `${data.soNgayDaSuDung} ngày`;
+                    }
+                    showLeaveBalanceWarnings();
+                    updateLeaveTypeDropdown();
                 } else {
                     console.error('Lỗi:', data.message);
                 }
             })
-            .catch(error => {
-                console.error('Lỗi:', error);
-            });
-
+            .catch(error =>
+                console.error('Lỗi:', error)
+            );
         fetchLeaveHistory();
     });
 
@@ -1035,14 +1209,22 @@
 
     async function fetchLeaveHistory() {
         try {
+            console.log("Đang gọi API lấy lịch sử nghỉ phép...");
+
+            const token = localStorage.getItem('jwtToken');
+            console.log("Token hiện tại:", token ? "Có token" : "Không có token");
+
             const response = await fetch('/api/Leave/GetLeaveHistory', {
                 headers: {
-                    "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                    "Authorization": `Bearer ${token}`
                 }
             });
 
+            console.log("Kết quả API:", response.status, response.statusText);
+
             if (!response.ok) {
                 if (response.status === 401) {
+                    console.error("Lỗi xác thực. Đang chuyển hướng đến trang đăng nhập.");
                     window.location.href = '/login';
                     return;
                 }
@@ -1050,12 +1232,38 @@
             }
 
             const result = await response.json();
+            console.log("Dữ liệu API trả về:", JSON.stringify(result, null, 2));
+
             if (result?.success && Array.isArray(result.leaveHistory)) {
+                console.log(`Nhận được ${result.leaveHistory.length} bản ghi từ API.`);
+
+                // Kiểm tra chi tiết từng bản ghi
+                result.leaveHistory.forEach((item, index) => {
+                    console.log(`Bản ghi ${index + 1}:`, JSON.stringify(item, null, 2));
+                });
+
                 leaveHistory = result.leaveHistory;
+
+                // Kiểm tra các trường dữ liệu quan trọng
+                const sampleRecord = leaveHistory[0];
+                if (sampleRecord) {
+                    console.log("Kiểm tra trường dữ liệu quan trọng:");
+                    console.log("- id:", sampleRecord.id);
+                    console.log("- ngayNghi:", sampleRecord.ngayNghi);
+                    console.log("- trangThai:", sampleRecord.trangThai);
+                    console.log("- tenLoai:", sampleRecord.tenLoai);
+                    console.log("- lyDo:", sampleRecord.lyDo);
+                }
 
                 tabData.pending.filteredData = leaveHistory.filter(item => item.trangThai === "Chờ duyệt");
                 tabData.approved.filteredData = leaveHistory.filter(item => item.trangThai === "Đã duyệt");
                 tabData.rejected.filteredData = leaveHistory.filter(item => item.trangThai === "Từ chối");
+
+                console.log("Dữ liệu sau khi phân loại:", {
+                    "Chờ duyệt": tabData.pending.filteredData.length,
+                    "Đã duyệt": tabData.approved.filteredData.length,
+                    "Từ chối": tabData.rejected.filteredData.length
+                });
 
                 renderTable('pending');
                 renderTable('approved');
@@ -1064,11 +1272,12 @@
                 updateTabBadges();
                 setupPaginationControls();
             } else {
-                displayError("Không có dữ liệu nghỉ phép", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
+                console.error("Lỗi định dạng dữ liệu:", result);
+                displayError("Không có dữ liệu nghỉ phép hoặc định dạng không đúng", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
             }
         } catch (error) {
-            console.error("Lỗi hệ thống:", error);
-            displayError("Lỗi kết nối server", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
+            console.error("Lỗi khi gọi API:", error);
+            displayError("Lỗi kết nối server: " + error.message, ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
         }
     }
 
@@ -1107,72 +1316,107 @@
     }
 
     function renderTable(tabId) {
+        console.log(`Đang render bảng cho tab: ${tabId}`);
+
         const tableBodyId = `${tabId}LeaveBody`;
         const tableBody = document.getElementById(tableBodyId);
-        if (!tableBody) return;
+
+        if (!tableBody) {
+            console.error(`Không tìm thấy phần tử với ID: ${tableBodyId}`);
+            return;
+        }
 
         tableBody.innerHTML = "";
+        console.log(`Đã xóa nội dung bảng ${tableBodyId}`);
 
         const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
+        console.log(`Dữ liệu ${tabId}: ${filteredData.length} mục, trang ${currentPage}, mỗi trang ${itemsPerPage} mục`);
+
         const paginatedData = paginateData(filteredData, currentPage, itemsPerPage);
+        console.log(`Sau phân trang: ${paginatedData.length} mục để hiển thị`);
 
         if (paginatedData.length === 0) {
             let colspan = 6;
             if (tabId === 'approved' || tabId === 'rejected') colspan = 8;
             tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">Không có đơn nào trong danh sách này</td></tr>`;
+            console.log(`Không có dữ liệu để hiển thị cho tab ${tabId}`);
         } else {
-            paginatedData.forEach(item => {
-                const fileDisplayHtml = generateFileDisplayHtml(item.fileDinhKem);
-                const ngayDuyetFormatted = item.ngayDuyet ? formatDate(item.ngayDuyet) : "Chưa duyệt";
-                const trangThaiText = item.trangThai; // Fix: Use item.trangThai directly
+            console.log(`Hiển thị ${paginatedData.length} bản ghi cho tab ${tabId}`);
+            paginatedData.forEach((item, index) => {
+                try {
+                    // Hỗ trợ các biến thể tên trường có thể có
+                    const id = item.id || item.Id || item.maDon || item.MaDon || "";
+                    const tenLoai = item.tenLoai || item.TenLoai || item.loaiNghi || item.LoaiNghi || "Không xác định";
+                    const ngayNghi = item.ngayNghi || item.NgayNghi || item.ngay || item.Ngay || "Không xác định";
+                    const lyDo = item.lyDo || item.LyDo || item.moTa || item.MoTa || "Không có lý do";
+                    const trangThai = item.trangThai || item.TrangThai || "Không xác định";
+                    const fileDinhKem = item.fileDinhKem || item.FileDinhKem || item.files || item.Files || "";
+                    const ngayDuyet = item.ngayDuyet || item.NgayDuyet || "";
+                    const ghiChu = item.ghiChu || item.GhiChu || item.noiDungPhanHoi || item.NoiDungPhanHoi || "Không có ghi chú";
+                    const nguoiDuyetHoTen = item.nguoiDuyetHoTen || item.NguoiDuyetHoTen || item.nguoiDuyet || item.NguoiDuyet || "Chưa có";
 
-                const row = document.createElement("tr");
-                if (tabId === 'pending') {
-                    const cancelButton = `<button class="btn-cancel" data-id="${item.id}">
-                                        <i class="fas fa-times-circle"></i>
-                                        <span>Hủy đơn</span>
-                                    </button>`;
-                    row.innerHTML = `
-                        <td>${item.tenLoai || "Không xác định"}</td>
-                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                        <td>${item.lyDo || "Không có lý do"}</td>
-                        <td><span class="status ${getStatusClass(trangThaiText)}">${trangThaiText}</span></td>
-                        <td>${fileDisplayHtml}</td>
-                        <td>${cancelButton}</td>
-                    `;
-                } else {
-                    row.innerHTML = `
-                        <td>${item.tenLoai || "Không xác định"}</td>
-                        <td>${formatDate(item.ngayNghi) || "Không xác định"}</td>
-                        <td>${item.lyDo || "Không có lý do"}</td>
-                        <td><span class="status ${getStatusClass(trangThaiText)}">${trangThaiText}</span></td>
-                        <td>${fileDisplayHtml}</td>
-                        <td>${ngayDuyetFormatted}</td>
-                        <td>${item.ghiChu || "Không có ghi chú"}</td>
-                        <td>${item.nguoiDuyetHoTen || "Chưa có"}</td>
-                    `;
+                    console.log(`Dữ liệu dòng ${index + 1} của tab ${tabId}:`, {
+                        id, tenLoai, ngayNghi, lyDo, trangThai, fileDinhKem, ngayDuyet, ghiChu, nguoiDuyetHoTen
+                    });
+
+                    const fileDisplayHtml = generateFileDisplayHtml(fileDinhKem);
+                    const ngayDuyetFormatted = ngayDuyet ? formatDate(ngayDuyet) : "Chưa duyệt";
+
+                    const row = document.createElement("tr");
+                    if (tabId === 'pending') {
+                        const cancelButton = `<button class="btn-cancel" data-id="${id}">
+                                            <i class="fas fa-times-circle"></i>
+                                            <span>Hủy đơn</span>
+                                        </button>`;
+                        row.innerHTML = `
+                            <td>${tenLoai}</td>
+                            <td>${formatDate(ngayNghi)}</td>
+                            <td>${lyDo}</td>
+                            <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                            <td>${fileDisplayHtml}</td>
+                            <td>${cancelButton}</td>
+                        `;
+                    } else {
+                        row.innerHTML = `
+                            <td>${tenLoai}</td>
+                            <td>${formatDate(ngayNghi)}</td>
+                            <td>${lyDo}</td>
+                            <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                            <td>${fileDisplayHtml}</td>
+                            <td>${ngayDuyetFormatted}</td>
+                            <td>${ghiChu}</td>
+                            <td>${nguoiDuyetHoTen}</td>
+                        `;
+                    }
+                    tableBody.appendChild(row);
+                } catch (error) {
+                    console.error(`Lỗi khi tạo dòng ${index} cho tab ${tabId}:`, error, item);
                 }
-                tableBody.appendChild(row);
             });
         }
 
-        document.querySelectorAll(`#${tableBodyId} .btn-cancel`).forEach(btn => {
-            btn.addEventListener('click', function () {
-                const leaveId = this.getAttribute('data-id');
-                cancelLeaveRequest(leaveId);
+        try {
+            document.querySelectorAll(`#${tableBodyId} .btn-cancel`).forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const leaveId = this.getAttribute('data-id');
+                    cancelLeaveRequest(leaveId);
+                });
             });
-        });
 
-        document.querySelectorAll(`#${tableBodyId} .file-link`).forEach(link => {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                const filePath = this.getAttribute('data-path');
-                viewFile(filePath);
+            document.querySelectorAll(`#${tableBodyId} .file-link`).forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const filePath = this.getAttribute('data-path');
+                    viewFile(filePath);
+                });
             });
-        });
 
-        initializeDropdowns();
-        updatePaginationControls(tabId);
+            initializeDropdowns();
+            updatePaginationControls(tabId);
+            console.log(`Hoàn thành render tab ${tabId}`);
+        } catch (error) {
+            console.error(`Lỗi khi thiết lập sự kiện cho tab ${tabId}:`, error);
+        }
     }
 
     function generateFileDisplayHtml(fileDinhKem) {
@@ -1335,34 +1579,60 @@
         }
     }
 
-    function checkLeaveBalance() {
-        const submitButton = document.getElementById("submitButton");
-        const leaveForm = document.getElementById("leaveForm");
+    function showLeaveBalanceWarnings() {
         const leaveSection = document.getElementById("leaveSection");
+        const leaveForm = document.getElementById("leaveForm");
+        const existingAlert = document.getElementById("leaveBalanceAlert");
 
-        if (availableLeaveBalance <= 0) {
-            submitButton.disabled = true;
-            submitButton.classList.remove("btn-success");
-            submitButton.classList.add("btn-secondary");
+        // Remove existing alert if any
+        if (existingAlert) {
+            existingAlert.remove();
+        }
 
-            if (!document.getElementById("noLeaveMessage")) {
-                const alertMessage = document.createElement("div");
-                alertMessage.id = "noLeaveMessage";
-                alertMessage.className = "alert alert-warning mt-3";
-                alertMessage.innerHTML = `
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <strong>Thông báo:</strong> Số dư nghỉ phép của bạn đã hết. Không thể gửi yêu cầu nghỉ phép.
-                            `;
-                leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
-            }
+        if (availableLeaveBalance === 0) {
+            const alertMessage = document.createElement("div");
+            alertMessage.id = "leaveBalanceAlert";
+            alertMessage.className = "alert alert-danger mt-3";
+            alertMessage.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương.
+            `;
+            leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
+        } else if (availableLeaveBalance < 5) {
+            const alertMessage = document.createElement("div");
+            alertMessage.id = "leaveBalanceAlert";
+            alertMessage.className = "alert alert-warning mt-3";
+            alertMessage.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Cảnh báo:</strong> Số dư phép năm của bạn chỉ còn ${availableLeaveBalance} ngày.
+            `;
+            leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
+        }
+    }
+
+    function updateLeaveTypeDropdown() {
+        const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+        if (!leaveTypeSelect) return;
+
+        if (availableLeaveBalance === 0) {
+            // Assuming "Nghỉ không lương" has maLoaiNgayNghi = "2"
+            Array.from(leaveTypeSelect.options).forEach(option => {
+                if (option.value && option.value !== "2") {
+                    option.disabled = true;
+                    option.style.opacity = "0.5";
+                } else {
+                    option.disabled = false;
+                    option.style.opacity = "1";
+                }
+            });
+            leaveTypeSelect.value = "2"; // Auto-select "Nghỉ không lương"
         } else {
-            submitButton.disabled = false;
-            submitButton.classList.remove("btn-secondary");
-            submitButton.classList.add("btn-success");
-
-            const alertMessage = document.getElementById("noLeaveMessage");
-            if (alertMessage) {
-                alertMessage.remove();
+            Array.from(leaveTypeSelect.options).forEach(option => {
+                option.disabled = false;
+                option.style.opacity = "1";
+            });
+            if (leaveTypeSelect.value === "") {
+                leaveTypeSelect.value = ""; // Keep default selection if no value selected
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using HR_KD.Data;
+using HR_KD.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,10 +8,12 @@ namespace HR_KD.ApiControllers
     public class LeaveManagerApiController : Controller
     {
         private readonly HrDbContext _context;
+        private readonly PhepNamService _phepNamService;
 
-        public LeaveManagerApiController(HrDbContext context)
+        public LeaveManagerApiController(HrDbContext context, PhepNamService phepNamService)
         {
             _context = context;
+            _phepNamService = phepNamService;
         }
 
         private int? GetMaNvFromClaims()
@@ -143,40 +146,39 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { success = false, message = "Trạng thái không hợp lệ." });
             }
 
-            // Kiểm tra trạng thái cũ để tránh trừ phép nhiều lần nếu cập nhật trùng
-            bool isAlreadyApproved = ngayNghi.MaTrangThai == "NN2";
-            if (newMaTrangThai == "NN2" && !isAlreadyApproved)
+            // Bắt đầu giao dịch để đảm bảo tính toàn vẹn dữ liệu
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                var nam = ngayNghi.NgayNghi1.Year;
-                var sdp = await _context.SoDuPheps
-                    .FirstOrDefaultAsync(x => x.MaNv == ngayNghi.MaNv && x.Nam == nam);
-                if (sdp == null)
+                // Cập nhật trạng thái của ngày nghỉ
+                ngayNghi.MaTrangThai = newMaTrangThai;
+                ngayNghi.NgayDuyet = DateTime.Now;
+                ngayNghi.NguoiDuyetId = currentMaNv; // Lưu ID người duyệt
+
+                // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
+                if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
                 {
-                    return BadRequest(new { success = false, message = "Không tìm thấy số dư phép của nhân viên." });
+                    ngayNghi.GhiChu = request.LyDo;
                 }
-                if (sdp.SoNgayConLai <= 0)
+
+                // Cập nhật đơn nghỉ phép
+                _context.NgayNghis.Update(ngayNghi);
+
+                // Nếu trạng thái là "Đã duyệt", cập nhật SoNgayDaSuDung
+                if (newMaTrangThai == "NN2")
                 {
-                    return BadRequest(new { success = false, message = "Nhân viên không còn ngày nghỉ phép." });
+                    await _phepNamService.UpdateSoNgayDaSuDungAsync(request.MaNgayNghi);
                 }
-                // Trừ 1 ngày phép
-                sdp.SoNgayConLai -= 1;
-                sdp.NgayCapNhat = DateTime.Now;
-                _context.SoDuPheps.Update(sdp);
+
+                // Lưu thay đổi vào database
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
-
-            // Cập nhật trạng thái của ngày nghỉ
-            ngayNghi.MaTrangThai = newMaTrangThai;
-            ngayNghi.NgayDuyet = DateTime.Now;
-            ngayNghi.NguoiDuyetId = currentMaNv;  // Lưu ID người duyệt
-
-            // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
-            if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
+            catch (Exception ex)
             {
-                ngayNghi.GhiChu = request.LyDo;
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { success = false, message = $"Lỗi khi cập nhật trạng thái: {ex.Message}" });
             }
-
-            _context.NgayNghis.Update(ngayNghi);
-            await _context.SaveChangesAsync();
 
             // Lấy tên trạng thái từ bảng TrangThais
             var tenTrangThai = await _context.TrangThais

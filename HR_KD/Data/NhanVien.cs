@@ -59,4 +59,6 @@ public partial class NhanVien
     public virtual ICollection<ThongBao> ThongBaos { get; set; } = new List<ThongBao>();
 
     public virtual ICollection<YeuCauSuaChamCong> YeuCauSuaChamCongs { get; set; } = new List<YeuCauSuaChamCong>();
+    public virtual ICollection<PhepNamNhanVien> PhepNamNhanViens { get; set; } = new List<PhepNamNhanVien>();
+
 }

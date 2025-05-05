@@ -14,6 +14,7 @@ public partial class HrDbContext : DbContext
         : base(options)
     {
     }
+    public virtual DbSet<PhepNamNhanVien> PhepNamNhanViens { get; set; }
     public virtual DbSet<CauHinhPhepNam> CauHinhPhepNams { get; set; }
     public virtual DbSet<ChinhSachPhepNam> ChinhSachPhepNams { get; set; }
     public virtual DbSet<CauHinhPhep_ChinhSach> CauHinhPhep_ChinhSachs { get; set; }
@@ -322,6 +323,7 @@ public partial class HrDbContext : DbContext
             entity.Property(e => e.Sdt)
                 .HasMaxLength(20)
                 .HasColumnName("SDT");
+            entity.Property(e => e.NgayVaoLam).HasColumnType("date");
             entity.Property(e => e.TrinhDoHocVan).HasMaxLength(100);
 
             entity.HasOne(d => d.MaChucVuNavigation).WithMany(p => p.NhanViens)
@@ -542,6 +544,29 @@ public partial class HrDbContext : DbContext
                   .HasConstraintName("FK_CauHinhPhep_ChinhSach_ChinhSachPhepNam");
         });
 
+        modelBuilder.Entity<PhepNamNhanVien>(entity =>
+        {
+            entity.ToTable("PhepNamNhanVien");
+            entity.HasKey(e => new { e.MaNv, e.Nam });
+            entity.Property(e => e.MaNv).HasColumnName("MaNV");
+            entity.Property(e => e.SoNgayPhepDuocCap).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.SoNgayDaSuDung).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.NgayCapNhat).HasColumnType("date");
+            entity.Property(e => e.GhiChu).HasMaxLength(500);
+            entity.Property(e => e.IsReset).HasDefaultValue(false);
+
+            entity.HasOne(e => e.MaNvNavigation)
+         .WithMany(n => n.PhepNamNhanViens)
+         .HasForeignKey(e => e.MaNv)
+         .OnDelete(DeleteBehavior.Restrict)
+         .HasConstraintName("FK_PhepNamNhanVien_NhanVien");
+
+            entity.HasOne(e => e.CauHinhPhepNam)
+                  .WithMany()
+                  .HasForeignKey(e => e.CauHinhPhepNamId)
+                  .OnDelete(DeleteBehavior.Restrict)
+                  .HasConstraintName("FK_PhepNamNhanVien_CauHinhPhepNam");
+        });
         OnModelCreatingPartial(modelBuilder);
     }
 

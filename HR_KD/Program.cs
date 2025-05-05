@@ -49,6 +49,12 @@ builder.Services.AddAuthorization(options =>
 // Cấu hình Entity Framework
 builder.Services.AddDbContext<HrDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Db_HR")));
+builder.Services.AddScoped<PhepNamService>(); // Đăng ký dịch vụ với vòng đời Scoped
+
+builder.Services.AddScoped<YearlyTaskService>(); // Đổi thành Scoped
+builder.Services.AddHostedService<YearlyTaskService>(); // Đảm bảo đăng ký như Hosted Service
+
+
 
 // Thêm Controllers và Views
 builder.Services.AddControllersWithViews();

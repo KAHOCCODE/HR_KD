@@ -194,7 +194,6 @@ namespace HR_KD.ApiControllers
         }
 
 
-
         [HttpGet("SoNgayConLai")]
         public async Task<IActionResult> GetSoNgayConLai()
         {
@@ -211,70 +210,31 @@ namespace HR_KD.ApiControllers
                 return NotFound(new { success = false, message = "Không tìm thấy nhân viên." });
             }
 
-            if (!nhanVien.NgayVaoLam.HasValue)
-            {
-                return BadRequest(new { success = false, message = "Ngày vào làm không hợp lệ." });
-            }
+            var currentYear = DateTime.Now.Year;
 
-            var currentDate = DateTime.Now;
-            var currentYear = currentDate.Year;
-
-            // Tính số năm làm việc
-            var soNamLamViec = currentYear - nhanVien.NgayVaoLam.Value.Year;
-            if (DateOnly.FromDateTime(currentDate) < DateOnly.FromDateTime(new DateTime(currentYear, nhanVien.NgayVaoLam.Value.Month, nhanVien.NgayVaoLam.Value.Day)))
-            {
-                soNamLamViec--;
-            }
-
-            // Số ngày phép mặc định
-            int soNgayPhepMacDinh = 12;
-
-            // Tính số ngày phép bổ sung
-            int soNgayPhepBoSung = 0;
-
-            // Luật Lao động: Làm đủ 5 năm liên tục, tăng 1 ngày phép
-            if (soNamLamViec >= 5)
-            {
-                soNgayPhepBoSung += 1;
-            }
-
-            // Luật công ty: Cứ 5 năm tăng 1 ngày phép
-            int soDot5Nam = soNamLamViec / 5;
-            soNgayPhepBoSung += soDot5Nam;
-
-            // Tổng số ngày phép
-            int tongSoNgayPhep = soNgayPhepMacDinh + soNgayPhepBoSung;
-
-            // Kiểm tra và cập nhật số dư phép cho năm hiện tại
+            // Lấy số dư phép từ bảng SoDuPhep
             var soDuPhep = await _context.SoDuPheps
                 .FirstOrDefaultAsync(sd => sd.MaNv == maNv.Value && sd.Nam == currentYear);
 
-            if (soDuPhep == null)
+            // Lấy số ngày phép được cấp và số ngày đã sử dụng từ bảng PhepNamNhanVien
+            var phepNam = await _context.PhepNamNhanViens
+                .FirstOrDefaultAsync(p => p.MaNv == maNv.Value && p.Nam == currentYear);
+
+            if (soDuPhep == null || phepNam == null)
             {
-                // Tạo mới nếu chưa có bản ghi cho năm hiện tại
-                soDuPhep = new SoDuPhep
-                {
-                    MaNv = maNv.Value,
-                    Nam = currentYear,
-                    SoNgayConLai = tongSoNgayPhep,
-                    NgayCapNhat = currentDate
-                };
-                _context.SoDuPheps.Add(soDuPhep);
-                await _context.SaveChangesAsync();
+                return NotFound(new { success = false, message = "Không tìm thấy dữ liệu phép cho năm hiện tại." });
             }
 
             return Ok(new
             {
                 success = true,
                 soNgayConLai = soDuPhep.SoNgayConLai,
+                soNgayPhepDuocCap = phepNam.SoNgayPhepDuocCap,
+                soNgayDaSuDung = phepNam.SoNgayDaSuDung,
                 maNv = maNv,
-                nam = currentYear,
-                soNamLamViec = soNamLamViec,
-                ngayPhepMacDinh = soNgayPhepMacDinh,
-                ngayPhepBoSung = soNgayPhepBoSung
+                nam = currentYear
             });
         }
-
 
         [HttpGet]
         [Route("GetAlreadyRegisteredDates")]

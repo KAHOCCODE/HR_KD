@@ -333,11 +333,7 @@ public class AttendanceManagerController : ControllerBase
             return Ok(new { success = true, message = "Đã từ chối tăng ca." });
         }
 
-        var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == tangCa.MaNv && cc.NgayLamViec == tangCa.NgayTangCa);
-        if (daTonTai)
-        {
-            return BadRequest(new { success = false, message = "Chấm công đã tồn tại trong bảng chính." });
-        }
+        
 
         tangCa.TrangThai = "TC2";
         tangCa.MaNvDuyet = maNv;

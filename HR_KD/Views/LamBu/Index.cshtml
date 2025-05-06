@@ -12,6 +12,8 @@
     .btn-group .btn { font-size: 0.9rem; }
     .table th, .table td { vertical-align: middle; }
     .dashboard-card { border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .hours-info { margin-top: 0.5rem; }
+    .hours-info span { display: block; }
 </style>
 
 <div class="dashboard-card bg-white p-4">
@@ -23,6 +25,16 @@
             <div class="form-group">
                 <label for="workDateRange" class="form-label fw-bold">Chọn ngày làm bù</label>
                 <input type="text" class="form-control" id="workDateRange" placeholder="Chọn ngày hoặc khoảng ngày">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="_remainingHours" class="form-label fw-bold">Số giờ cần bù: </label>
+                <span id="_remainingHours" class="fw-bold text-primary">Đang tải...</span>
+                <div class="hours-info">
+                    <span id="_tongGioConThieu" class="text-muted">Tổng giờ còn thiếu: Đang tải...</span>
+                    <span id="_tongGioLamBu" class="text-muted">Tổng giờ đã bù: Đang tải...</span>
+                </div>
             </div>
         </div>
     </div>
@@ -154,6 +166,31 @@
         onClose: handleDateRangeClose
     });
 
+    // Fetch remaining hours when the page loads
+    document.addEventListener('DOMContentLoaded', async () => {
+        const maNv = 1; // Replace with actual employee ID (e.g., from session or auth)
+        try {
+            const response = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`);
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
+                document.getElementById('_tongGioConThieu').textContent = `Tổng giờ còn thiếu: ${result.tongGioConThieu.toFixed(2)}h`;
+                document.getElementById('_tongGioLamBu').textContent = `Tổng giờ đã bù: ${result.tongGioLamBu.toFixed(2)}h`;
+            } else {
+                document.getElementById('_remainingHours').textContent = 'Không có dữ liệu';
+                document.getElementById('_tongGioConThieu').textContent = 'Tổng giờ còn thiếu: Không có dữ liệu';
+                document.getElementById('_tongGioLamBu').textContent = 'Tổng giờ đã bù: Không có dữ liệu';
+                Swal.fire('Lỗi!', result.message, 'error');
+            }
+        } catch (error) {
+            document.getElementById('_remainingHours').textContent = 'Lỗi khi tải';
+            document.getElementById('_tongGioConThieu').textContent = 'Tổng giờ còn thiếu: Lỗi khi tải';
+            document.getElementById('_tongGioLamBu').textContent = 'Tổng giờ đã bù: Lỗi khi tải';
+            Swal.fire('Lỗi!', 'Không thể tải dữ liệu giờ cần bù.', 'error');
+        }
+    });
+
     function handleDateRangeClose(selectedDates) {
         selectedWorkDays = [];
         if (selectedDates.length === 2) {
@@ -254,7 +291,7 @@
         const checkIn = document.getElementById('checkInTime');
         const checkOut = document.getElementById('checkOutTime');
         const totalHoursInput = document.getElementById('totalHours');
-        checkIn.class凉classList.remove('invalid-input');
+        checkIn.classList.remove('invalid-input');
         checkOut.classList.remove('invalid-input');
 
         if (checkIn.value && checkOut.value) {
@@ -455,7 +492,7 @@
                             GioVao: date.checkIn,
                             GioRa: date.checkOut,
                             TongGio: date.totalHours,
-                            TrangThai: 'LS1',
+                            TrangThai: 'LB1',
                             GhiChu: date.attendanceNote,
                             MaNV: 1 // Replace with actual employee ID
                         })),
@@ -466,7 +503,7 @@
                             GioVao: date.nightStart,
                             GioRa: date.nightEnd,
                             TongGio: date.nightHours,
-                            TrangThai: 'LBBD',
+                            TrangThai: 'LB1',
                             GhiChu: date.nightNote,
                             MaNV: 1 // Replace with actual employee ID
                         }))

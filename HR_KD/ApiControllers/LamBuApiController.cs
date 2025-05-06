@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace HR_KD.ApiControllers
 {
-    [Route("api/[controller]")]
+    [Route("api/LamBu")]
     [ApiController]
     public class LamBuApiController : ControllerBase
     {
-        private readonly HrDbContext _context; // Replace with your actual DbContext
+        private readonly HrDbContext _context;
 
         public LamBuApiController(HrDbContext context)
         {
@@ -24,6 +24,41 @@ namespace HR_KD.ApiControllers
         public async Task<ActionResult<IEnumerable<LamBu>>> GetLamBu()
         {
             return await _context.LamBus.ToListAsync();
+        }
+
+        // GET: api/LamBu/GetRemainingHours/{maNv}
+        [HttpGet("GetRemainingHours/{maNv}")]
+        public async Task<ActionResult<decimal>> GetRemainingHours(int maNv)
+        {
+            try
+            {
+                var currentDate = DateOnly.FromDateTime(DateTime.Now);
+
+                // Query TongGioThieu for the employee where the current date is within NgayBatDauThieu and NgayKetThucThieu
+                var tongGioThieu = await _context.TongGioThieus
+                    .Where(t => t.MaNv == maNv && t.NgayBatDauThieu <= currentDate && t.NgayKetThucThieu >= currentDate)
+                    .FirstOrDefaultAsync();
+
+                if (tongGioThieu == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy dữ liệu giờ thiếu cho nhân viên." });
+                }
+
+                // Calculate remaining hours
+                var remainingHours = tongGioThieu.TongGioConThieu - tongGioThieu.TongGioLamBu;
+
+                return Ok(new
+                {
+                    success = true,
+                    remainingHours = remainingHours,
+                    tongGioConThieu = tongGioThieu.TongGioConThieu,
+                    tongGioLamBu = tongGioThieu.TongGioLamBu
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = $"Lỗi: {ex.Message}" });
+            }
         }
 
         // POST: api/LamBu/SubmitLamBu
@@ -157,7 +192,7 @@ namespace HR_KD.ApiControllers
                             lamBu.TongGio = (decimal)Math.Round(hours, 2);
                         }
 
-                        lamBu.TrangThai = "LBBD"; // Night compensatory work status
+                        lamBu.TrangThai = "LBBD";
                         _context.LamBus.Add(lamBu);
                     }
                 }

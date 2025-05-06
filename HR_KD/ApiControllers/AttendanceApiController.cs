@@ -36,122 +36,133 @@
              DateOnly end = start.AddDays(6);
              return (start, end);
          }
+        [HttpGet("GetOvertimeRates")]
+        public async Task<IActionResult> GetOvertimeRates()
+        {
+            try
+            {
+                var rates = await _context.TiLeTangCas
+                    .Where(t => t.KichHoat)
+                    .Select(t => new { t.Id, t.TenTiLeTangCa, t.TiLe })
+                    .ToListAsync();
+                return Ok(new { success = true, rates });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
 
-         [HttpPost]
-         [Route("SubmitAttendance")]
-         public async Task<IActionResult> SubmitAttendance(AttendanceDataDTO data)
-         {
-             var maNv = GetMaNvFromClaims();
-             if (!maNv.HasValue)
-             {
-                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
-             }
+        [HttpPost]
+        [Route("SubmitAttendance")]
+        public async Task<IActionResult> SubmitAttendance(AttendanceDataDTO data)
+        {
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
+            }
 
-             if (data == null || (data.attendance == null || !data.attendance.Any()) && (data.overtime == null || !data.overtime.Any()))
-             {
-                 return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
-             }
+            if (data == null || (data.attendance == null || !data.attendance.Any()) && (data.overtime == null || !data.overtime.Any()))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
+            }
 
-             try
-             {
-                   //Validate weekly hours and overtime for attendance
-                 if (data.attendance != null && data.attendance.Any())
-                 {
-                     foreach (var entry in data.attendance)
-                     {
-                         if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
-                         {
-                             return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
-                         }
+            try
+            {
+                if (data.attendance != null && data.attendance.Any())
+                {
+                    foreach (var entry in data.attendance)
+                    {
+                        if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
+                        {
+                            return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
+                        }
 
-                          // Check if already attended
-                         bool daChamCong = await _context.LichSuChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.Ngay == ngayLamViec);
-                         if (daChamCong)
-                         {
-                             return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
-                         }
-                         
-                           //Check if on leave
-                         bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
-                         if (daNghi)
-                         {
-                             return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave" });
-                         }
+                        bool daChamCong = await _context.LichSuChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.Ngay == ngayLamViec);
+                        if (daChamCong)
+                        {
+                            return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
+                        }
 
-                          // Check weekly working hours (max 48 hours)
-                         var (start, end) = GetWeekRange(ngayLamViec);
-                         var weeklyHours = await _context.LichSuChamCongs
-                             .Where(c => c.MaNv == maNv.Value && c.Ngay >= start && c.Ngay <= end)
-                             .SumAsync(c => c.TongGio ?? 0);
-                         if (weeklyHours >= 48)
-                         {
-                             return BadRequest(new { success = false, message = $"Đã đủ 48 giờ làm việc trong tuần bắt đầu từ {start}, không thể chấm công thêm." });
-                         }
+                        bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
+                        if (daNghi)
+                        {
+                            return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave" });
+                        }
 
-                         var chamCong = new LichSuChamCong
-                         {
-                             MaNv = maNv.Value,
-                             Ngay = ngayLamViec,
-                             GioVao = TimeOnly.TryParse(entry.GioVao, out var parsedGioVao) ? parsedGioVao : null,
-                             GioRa = TimeOnly.TryParse(entry.GioRa, out var parsedGioRa) ? parsedGioRa : null,
-                             TongGio = entry.TongGio ?? 0,
-                             TrangThai = entry.TrangThai,
-                             GhiChu = entry.GhiChu
-                         };
-                         _context.LichSuChamCongs.Add(chamCong);
-                     }
-                     await _context.SaveChangesAsync();
-                 }
+                        var (start, end) = GetWeekRange(ngayLamViec);
+                        var weeklyHours = await _context.LichSuChamCongs
+                            .Where(c => c.MaNv == maNv.Value && c.Ngay >= start && c.Ngay <= end)
+                            .SumAsync(c => c.TongGio ?? 0);
+                        if (weeklyHours >= 48)
+                        {
+                            return BadRequest(new { success = false, message = $"Đã đủ 48 giờ làm việc trong tuần bắt đầu từ {start}, không thể chấm công thêm." });
+                        }
 
-                   //Validate weekly overtime hours
-                 if (data.overtime != null && data.overtime.Any())
-                 {
-                     foreach (var entry in data.overtime)
-                     {
-                         if (!DateOnly.TryParse(entry.NgayTangCa, out var ngayTangCa))
-                         {
-                             return BadRequest(new { success = false, message = $"Ngày tăng ca không hợp lệ: {entry.NgayTangCa}" });
-                         }
+                        var chamCong = new LichSuChamCong
+                        {
+                            MaNv = maNv.Value,
+                            Ngay = ngayLamViec,
+                            GioVao = TimeOnly.TryParse(entry.GioVao, out var parsedGioVao) ? parsedGioVao : null,
+                            GioRa = TimeOnly.TryParse(entry.GioRa, out var parsedGioRa) ? parsedGioRa : null,
+                            TongGio = entry.TongGio ?? 0,
+                            TrangThai = entry.TrangThai,
+                            GhiChu = entry.GhiChu
+                        };
+                        _context.LichSuChamCongs.Add(chamCong);
+                    }
+                    await _context.SaveChangesAsync();
+                }
 
-                          // Check weekly overtime hours (max 12 hours)
-                         var (start, end) = GetWeekRange(ngayTangCa);
-                         var weeklyOvertimeHours = await _context.TangCas
-                             .Where(c => c.MaNv == maNv.Value && c.NgayTangCa >= start && c.NgayTangCa <= end)
-                             .SumAsync(c => c.SoGioTangCa);
-                         if (weeklyOvertimeHours >= 12)
-                         {
-                             return BadRequest(new { success = false, message = $"Đã đủ 12 giờ tăng ca trong tuần bắt đầu từ {start}, không thể tăng ca thêm." });
-                         }
+                if (data.overtime != null && data.overtime.Any())
+                {
+                    foreach (var entry in data.overtime)
+                    {
+                        if (!DateOnly.TryParse(entry.NgayTangCa, out var ngayTangCa))
+                        {
+                            return BadRequest(new { success = false, message = $"Ngày tăng ca không hợp lệ: {entry.NgayTangCa}" });
+                        }
 
-                         var tangCa = new TangCa
-                         {
-                             MaNv = maNv.Value,
-                             NgayTangCa = ngayTangCa,
-                             SoGioTangCa = entry.SoGioTangCa,
-                             TyLeTangCa = 1,   //Default overtime rate
-                             TrangThai = "TC1"
-                         };
-                         _context.TangCas.Add(tangCa);
-                     }
-                     await _context.SaveChangesAsync();
-                 }
+                        var (start, end) = GetWeekRange(ngayTangCa);
+                        var weeklyOvertimeHours = await _context.TangCas
+                            .Where(c => c.MaNv == maNv.Value && c.NgayTangCa >= start && c.NgayTangCa <= end)
+                            .SumAsync(c => c.SoGioTangCa);
+                        if (weeklyOvertimeHours >= 12)
+                        {
+                            return BadRequest(new { success = false, message = $"Đã đủ 12 giờ tăng ca trong tuần bắt đầu từ {start}, không thể tăng ca thêm." });
+                        }
 
-                 return Ok(new { success = true, message = "Chấm công thành công." });
-             }
-             catch (Exception ex)
-             {
-                 return StatusCode(500, new
-                 {
-                     success = false,
-                     message = "Lỗi hệ thống.",
-                     error = ex.Message,
-                     stackTrace = ex.StackTrace
-                 });
-             }
-         }
+                        var tangCa = new TangCa
+                        {
+                            MaNv = maNv.Value,
+                            NgayTangCa = ngayTangCa,
+                            SoGioTangCa = entry.SoGioTangCa,
+                            TyLeTangCa = (decimal)(entry.TiLeTangCa / 100.0), // Use the provided TiLeTangCa
+                            GhiChu = entry.GhiChu,
+                            TrangThai = "TC1"
+                        };
+                        _context.TangCas.Add(tangCa);
+                    }
+                    await _context.SaveChangesAsync();
+                }
 
-           //New API to get overtime records
-         [HttpGet]
+                return Ok(new { success = true, message = "Chấm công thành công." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Lỗi hệ thống.",
+                    error = ex.Message,
+                    stackTrace = ex.StackTrace
+                });
+            }
+        }
+
+        //New API to get overtime records
+        [HttpGet]
          [Route("GetOvertimeRecords")]
          public async Task<IActionResult> GetOvertimeRecords(string? ngayTangCa = null)
          {

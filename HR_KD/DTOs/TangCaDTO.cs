@@ -6,5 +6,7 @@
         public decimal SoGioTangCa { get; set; }
         public string GioVaoTangCa { get; set; } // Thêm trường này
         public string GioRaTangCa { get; set; } // Thêm trường này
+        public double TiLeTangCa { get; set; } 
+        public string GhiChu { get; set; }
     }
 }

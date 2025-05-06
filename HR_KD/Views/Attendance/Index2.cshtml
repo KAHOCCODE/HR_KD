@@ -78,6 +78,14 @@
                                 <input type="time" class="form-control" id="otEndTime">
                             </div>
                         </div>
+                        <div class="col-md-12 mt-2">
+                            <div class="form-group">
+                                <label>Tỉ lệ tăng ca</label>
+                                <select class="form-control" id="overtimeRate">
+                                    <option value="">Chọn tỉ lệ tăng ca</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     <div class="btn-group w-100 mt-2">
                         <button class="btn btn-outline-primary" id="ot1h">+1 giờ</button>
@@ -133,8 +141,41 @@
 <script>
     let selectedWorkDays = [];
     let workScheduleData = {};
+    let overtimeRates = [];
 
-    // Initialize date picker
+    async function loadOvertimeRates() {
+        try {
+            const response = await fetch('/api/Attendance/GetOvertimeRates');
+            const result = await response.json();
+            if (result.success) {
+                overtimeRates = result.rates;
+                const select = document.getElementById('overtimeRate');
+                select.innerHTML = '<option value="">Chọn tỉ lệ tăng ca</option>';
+                overtimeRates.forEach(rate => {
+                    const option = document.createElement('option');
+                    option.value = rate.id;
+                    option.textContent = `${rate.tenTiLeTangCa} (Tỉ lệ: ${rate.tiLe})`;
+                    select.appendChild(option);
+                });
+            } else {
+                Swal.fire('Lỗi!', 'Không thể tải tỉ lệ tăng ca', 'error');
+            }
+        } catch (error) {
+            Swal.fire('Lỗi!', 'Có lỗi xảy ra khi tải tỉ lệ tăng ca', 'error');
+        }
+    }
+
+    document.getElementById('overtimeRate').addEventListener('change', function() {
+        const selectedRateId = this.value;
+        const selectedRate = overtimeRates.find(rate => rate.id == selectedRateId);
+        const otNote = document.getElementById('otNote');
+        if (selectedRate) {
+            otNote.value = selectedRate.tenTiLeTangCa + (otNote.value ? ' - ' + otNote.value : '');
+        } else {
+            otNote.value = '';
+        }
+    });
+
     flatpickr("#workDateRange", {
         mode: "range",
         dateFormat: "d/m/Y",
@@ -142,7 +183,7 @@
         locale: {
             firstDayOfWeek: 1 // Monday
         },
-        disable: [date => date.getDay() === 0], // Disable Sundays
+        disable: [date => date.getDay() === 0],
         onClose: handleDateRangeClose
     });
 
@@ -166,7 +207,9 @@
                             overtimeStart: '',
                             overtimeEnd: '',
                             overtimeNote: '',
-                            attendanceNote: ''
+                            attendanceNote: '',
+                            overtimeRateId: null,
+                            overtimeRateTiLe: 1
                         };
                     }
                 }
@@ -187,7 +230,9 @@
                         overtimeStart: '',
                         overtimeEnd: '',
                         overtimeNote: '',
-                        attendanceNote: ''
+                        attendanceNote: '',
+                        overtimeRateId: null,
+                        overtimeRateTiLe: 1
                     };
                 }
             }
@@ -228,7 +273,6 @@
             tbody.appendChild(row);
         });
 
-        // Add event listeners to checkboxes
         document.querySelectorAll('.date-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const date = this.dataset.date;
@@ -237,36 +281,20 @@
         });
     }
 
-    // Hàm tính số giờ làm việc
     function calculateHours(startTime, endTime) {
         if (!startTime || !endTime) return 0;
-
         const start = new Date(`2000-01-01T${startTime}`);
         const end = new Date(`2000-01-01T${endTime}`);
-
-        // Tính số giờ làm việc
         let hours = (end - start) / (1000 * 60 * 60);
-
-        // Kiểm tra nếu giờ ra nhỏ hơn giờ vào (qua ngày)
-        if (hours < 0) {
-            hours += 24;
-        }
-
-        // Trừ 2 tiếng nghỉ nếu làm từ 8 tiếng trở lên
-        if (hours >= 8) {
-            hours -= 2;
-        }
-
-        // Làm tròn đến 2 chữ số thập phân và đảm bảo không âm
+        if (hours < 0) hours += 24;
+        if (hours >= 8) hours -= 2;
         return Math.max(0, parseFloat(hours.toFixed(2)));
     }
 
-    // Hàm cập nhật tổng số giờ
     function updateTotalHours() {
         const checkIn = document.getElementById('checkInTime').value;
         const checkOut = document.getElementById('checkOutTime').value;
         const totalHoursInput = document.getElementById('totalHours');
-
         if (checkIn && checkOut) {
             const hours = calculateHours(checkIn, checkOut);
             totalHoursInput.value = `${hours}h`;
@@ -275,37 +303,31 @@
         }
     }
 
-    // Gắn sự kiện cho các input giờ vào và giờ ra
     document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
     document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
 
-    // Hàm set 8h làm việc
     document.getElementById('set8hBtn').addEventListener('click', () => {
         document.getElementById('checkInTime').value = '08:00';
-        document.getElementById('checkOutTime').value = '18:00'; // 10h (8h làm việc + 2h nghỉ)
+        document.getElementById('checkOutTime').value = '18:00';
         updateTotalHours();
     });
 
-    // Cancel overtime button
     document.getElementById('cancelOT').addEventListener('click', () => {
         document.getElementById('otStartTime').value = '';
         document.getElementById('otEndTime').value = '';
         document.getElementById('otNote').value = '';
+        document.getElementById('overtimeRate').value = '';
     });
 
-    // Overtime buttons
     ['1h', '2h', '3h', '4h'].forEach(hours => {
         document.getElementById(`ot${hours}`).addEventListener('click', () => {
             const overtimeHours = parseInt(hours);
             document.getElementById('otStartTime').value = '18:00';
             const endTime = addHours('18:00', overtimeHours);
-
-            // Check if end time exceeds 10:00 PM
             if (endTime > '22:00') {
                 Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
                 return;
             }
-
             document.getElementById('otEndTime').value = endTime;
             updateOvertime();
         });
@@ -336,31 +358,20 @@
     function updateOvertime() {
         const otStartTime = document.getElementById('otStartTime').value;
         const otEndTime = document.getElementById('otEndTime').value;
-
-        // Calculate hours for validation (raw hours without adjustments)
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
-
-        // Calculate hours for display and storage
-        const otHours = calculateOvertimeHours(otStartTime, otEndTime) || 0;
-
-        // Validate time range
-        const minTime = '18:00'; // 6:00 PM
-        const maxTime = '22:00'; // 10:00 PM
-
+        const minTime = '18:00';
+        const maxTime = '22:00';
         if (otStartTime && (otStartTime < minTime || otStartTime > maxTime)) {
             Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
             document.getElementById('otStartTime').value = '';
             document.getElementById('otEndTime').value = '';
             return;
         }
-
         if (otEndTime && (otEndTime < minTime || otEndTime > maxTime)) {
             Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
             document.getElementById('otEndTime').value = '';
             return;
         }
-
-        // Validate total overtime hours using raw hours
         if (otRawHours > 4) {
             Swal.fire('Lỗi!', 'Số giờ tăng ca không được vượt quá 4 giờ', 'error');
             document.getElementById('otEndTime').value = '';
@@ -368,7 +379,6 @@
         }
     }
 
-    // Select all checkbox
     document.getElementById('selectAll').addEventListener('change', function() {
         const checkboxes = document.querySelectorAll('.date-checkbox');
         checkboxes.forEach(checkbox => {
@@ -378,7 +388,6 @@
         });
     });
 
-    // Submit all button
     document.getElementById('submitAll').addEventListener('click', async () => {
         const selectedDates = Object.entries(workScheduleData)
             .filter(([_, data]) => data.selected)
@@ -389,6 +398,15 @@
 
         if (selectedDates.length === 0) {
             Swal.fire('Lỗi!', 'Vui lòng chọn ít nhất một ngày', 'error');
+            return;
+        }
+
+        // Check if any selected date with overtime hours lacks a valid overtime rate
+        const invalidOvertime = selectedDates.some(date => 
+            date.overtimeHours > 0 && date.overtimeRateTiLe === 1
+        );
+        if (invalidOvertime) {
+            Swal.fire('Lỗi!', 'Vui lòng chọn tỉ lệ tăng ca cho các ngày có giờ tăng ca', 'error');
             return;
         }
 
@@ -414,7 +432,8 @@
                             GioVaoTangCa: date.overtimeStart,
                             GioRaTangCa: date.overtimeEnd,
                             SoGioTangCa: date.overtimeHours,
-                            GhiChu: date.overtimeNote
+                            GhiChu: date.overtimeNote,
+                            TiLeTangCa: date.overtimeRateTiLe
                         }))
                 })
             });
@@ -431,7 +450,6 @@
         }
     });
 
-    // Apply to selected dates button
     document.getElementById('applyToSelected').addEventListener('click', () => {
         const checkIn = document.getElementById('checkInTime').value;
         const checkOut = document.getElementById('checkOutTime').value;
@@ -439,18 +457,23 @@
         const otEndTime = document.getElementById('otEndTime').value;
         const otNote = document.getElementById('otNote').value;
         const attendanceNote = document.getElementById('attendanceNote').value;
+        const overtimeRateId = document.getElementById('overtimeRate').value;
+        const selectedRate = overtimeRates.find(rate => rate.id == overtimeRateId);
 
-        // Calculate hours
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
         const otHours = calculateOvertimeHours(otStartTime, otEndTime) || 0;
 
-        // Validate total overtime hours
         if (otRawHours > 4) {
             Swal.fire('Lỗi!', 'Số giờ tăng ca không được vượt quá 4 giờ', 'error');
             return;
         }
 
-        // Get all selected dates
+        // Check if overtime hours are specified but no overtime rate is selected
+        if (otHours > 0 && !overtimeRateId) {
+            Swal.fire('Lỗi!', 'Vui lòng chọn tỉ lệ tăng ca khi có giờ tăng ca', 'error');
+            return;
+        }
+
         const selectedDates = Object.entries(workScheduleData)
             .filter(([_, data]) => data.selected)
             .map(([date]) => date);
@@ -460,7 +483,6 @@
             return;
         }
 
-        // Update data for all selected dates
         selectedDates.forEach(date => {
             workScheduleData[date] = {
                 ...workScheduleData[date],
@@ -471,14 +493,14 @@
                 overtimeStart: otStartTime,
                 overtimeEnd: otEndTime,
                 overtimeNote: otNote,
-                attendanceNote: attendanceNote
+                attendanceNote: attendanceNote,
+                overtimeRateId: overtimeRateId || null,
+                overtimeRateTiLe: selectedRate ? selectedRate.tiLe : 1
             };
         });
 
-        // Update the table
         updateWorkScheduleTable();
 
-        // Clear input fields
         document.getElementById('checkInTime').value = '';
         document.getElementById('checkOutTime').value = '';
         document.getElementById('totalHours').value = '';
@@ -486,16 +508,17 @@
         document.getElementById('otEndTime').value = '';
         document.getElementById('otNote').value = '';
         document.getElementById('attendanceNote').value = '';
+        document.getElementById('overtimeRate').value = '';
 
-        // Clear selected dates
         selectedDates.forEach(date => {
             workScheduleData[date].selected = false;
         });
         document.getElementById('selectAll').checked = false;
 
-        // Update the table again to reflect cleared selections
         updateWorkScheduleTable();
 
         Swal.fire('Thành công!', 'Đã áp dụng dữ liệu cho các ngày đã chọn', 'success');
     });
+
+    window.addEventListener('load', loadOvertimeRates);
 </script>

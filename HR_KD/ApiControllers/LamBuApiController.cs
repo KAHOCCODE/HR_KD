@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HR_KD.Data;
 using System;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace HR_KD.ApiControllers
 {
+    [Authorize]
     [Route("api/LamBu")]
     [ApiController]
     public class LamBuApiController : ControllerBase
@@ -19,17 +21,37 @@ namespace HR_KD.ApiControllers
             _context = context;
         }
 
+        private int? GetMaNvFromClaims()
+        {
+            var maNvClaim = User.FindFirst("MaNV")?.Value;
+            return int.TryParse(maNvClaim, out int maNv) ? maNv : null;
+        }
+
         // GET: api/LamBu
         [HttpGet]
         public async Task<ActionResult<IEnumerable<LamBu>>> GetLamBu()
         {
-            return await _context.LamBus.ToListAsync();
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Mã nhân viên không hợp lệ." });
+            }
+
+            return await _context.LamBus
+                .Where(lb => lb.MaNV == maNv.Value)
+                .ToListAsync();
         }
 
         // GET: api/LamBu/GetRemainingHours/{maNv}
         [HttpGet("GetRemainingHours/{maNv}")]
         public async Task<ActionResult<decimal>> GetRemainingHours(int maNv)
         {
+            var userMaNv = GetMaNvFromClaims();
+            if (!userMaNv.HasValue || userMaNv.Value != maNv)
+            {
+                return Unauthorized(new { success = false, message = "Không có quyền truy cập dữ liệu của nhân viên này." });
+            }
+
             try
             {
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
@@ -39,9 +61,16 @@ namespace HR_KD.ApiControllers
                     .Where(t => t.MaNv == maNv && t.NgayBatDauThieu <= currentDate && t.NgayKetThucThieu >= currentDate)
                     .FirstOrDefaultAsync();
 
+                // If no record is found, return zeroed values
                 if (tongGioThieu == null)
                 {
-                    return NotFound(new { success = false, message = "Không tìm thấy dữ liệu giờ thiếu cho nhân viên." });
+                    return Ok(new
+                    {
+                        success = true,
+                        remainingHours = 0m,
+                        tongGioConThieu = 0m,
+                        tongGioLamBu = 0m
+                    });
                 }
 
                 // Calculate remaining hours
@@ -65,9 +94,21 @@ namespace HR_KD.ApiControllers
         [HttpPost("SubmitLamBu")]
         public async Task<ActionResult> SubmitLamBu([FromBody] LamBuRequest request)
         {
+            var userMaNv = GetMaNvFromClaims();
+            if (!userMaNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Mã nhân viên không hợp lệ." });
+            }
+
             if (request == null || (request.LamBu == null && request.LamBuBanDem == null) || (!request.LamBu.Any() && !request.LamBuBanDem.Any()))
             {
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
+            }
+
+            if (request.LamBu?.Any(lb => lb.MaNV != userMaNv.Value) == true ||
+                request.LamBuBanDem?.Any(lb => lb.MaNV != userMaNv.Value) == true)
+            {
+                return Unauthorized(new { success = false, message = "Không có quyền gửi dữ liệu cho nhân viên khác." });
             }
 
             try

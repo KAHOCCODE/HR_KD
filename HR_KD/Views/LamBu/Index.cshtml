@@ -1,5 +1,14 @@
 ﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+    if (string.IsNullOrEmpty(maNv))
+    {
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script>
+                    Swal.fire('Lỗi!', 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.', 'error');
+                </script>
+        return;
+    }
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -14,7 +23,21 @@
     .dashboard-card { border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .hours-info { margin-top: 0.5rem; }
     .hours-info span { display: block; }
+    /* Style for disabled controls */
+    input:disabled, textarea:disabled, button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f5f5f5;
+    }
+    .disabled-section {
+        opacity: 0.5;
+        pointer-events: none;
+    }
 </style>
+
+<script>
+    const maNv = '@maNv'; // Pass maNv from claims to JavaScript
+</script>
 
 <div class="dashboard-card bg-white p-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i> Quản lý làm bù</h5>
@@ -40,7 +63,7 @@
     </div>
 
     <!-- Compensatory Work Controls -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="compensatoryControls">
         <!-- Day Compensatory Work Controls (Left) -->
         <div class="col-md-6">
             <div class="card">
@@ -166,9 +189,28 @@
         onClose: handleDateRangeClose
     });
 
+    // Function to disable all controls
+    function disableControls() {
+        // Disable inputs and buttons
+        document.querySelectorAll('#workDateRange, #checkInTime, #checkOutTime, #totalHours, #attendanceNote, #nightStartTime, #nightEndTime, #nightNote, #set8hBtn, #night1h, #night2h, #night3h, #night4h, #cancelNight, #applyToSelected, #submitAll, #selectAll').forEach(element => {
+            element.disabled = true;
+        });
+        // Disable table checkboxes (if any are rendered later)
+        document.querySelectorAll('.date-checkbox').forEach(checkbox => {
+            checkbox.disabled = true;
+        });
+        // Add visual indication to compensatory controls section
+        document.getElementById('compensatoryControls').classList.add('disabled-section');
+        // Disable Flatpickr interaction
+        flatpickr("#workDateRange").disable();
+    }
+
     // Fetch remaining hours when the page loads
     document.addEventListener('DOMContentLoaded', async () => {
-        const maNv = 1; // Replace with actual employee ID (e.g., from session or auth)
+        if (!maNv) {
+            Swal.fire('Lỗi!', 'Mã nhân viên không hợp lệ.', 'error');
+            return;
+        }
         try {
             const response = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`);
             const result = await response.json();
@@ -177,17 +219,27 @@
                 document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
                 document.getElementById('_tongGioConThieu').textContent = `Tổng giờ còn thiếu: ${result.tongGioConThieu.toFixed(2)}h`;
                 document.getElementById('_tongGioLamBu').textContent = `Tổng giờ đã bù: ${result.tongGioLamBu.toFixed(2)}h`;
+
+                // Disable controls if remainingHours is 0
+                if (result.remainingHours === 0) {
+                    disableControls();
+                    Swal.fire('Thông báo', 'Bạn không có giờ cần bù, các chức năng đã bị khóa.', 'info');
+                }
             } else {
-                document.getElementById('_remainingHours').textContent = 'Không có dữ liệu';
-                document.getElementById('_tongGioConThieu').textContent = 'Tổng giờ còn thiếu: Không có dữ liệu';
-                document.getElementById('_tongGioLamBu').textContent = 'Tổng giờ đã bù: Không có dữ liệu';
-                Swal.fire('Lỗi!', result.message, 'error');
+                // Display 0 for all fields and disable controls
+                document.getElementById('_remainingHours').textContent = `0.00h`;
+                document.getElementById('_tongGioConThieu').textContent = `Tổng giờ còn thiếu: 0.00h`;
+                document.getElementById('_tongGioLamBu').textContent = `Tổng giờ đã bù: 0.00h`;
+                disableControls();
+                Swal.fire('Thông báo', 'Không có dữ liệu giờ cần bù, các chức năng đã bị khóa.', 'info');
             }
         } catch (error) {
-            document.getElementById('_remainingHours').textContent = 'Lỗi khi tải';
-            document.getElementById('_tongGioConThieu').textContent = 'Tổng giờ còn thiếu: Lỗi khi tải';
-            document.getElementById('_tongGioLamBu').textContent = 'Tổng giờ đã bù: Lỗi khi tải';
-            Swal.fire('Lỗi!', 'Không thể tải dữ liệu giờ cần bù.', 'error');
+            // Display 0 for all fields and disable controls
+            document.getElementById('_remainingHours').textContent = `0.00h`;
+            document.getElementById('_tongGioConThieu').textContent = `Tổng giờ còn thiếu: 0.00h`;
+            document.getElementById('_tongGioLamBu').textContent = `Tổng giờ đã bù: 0.00h`;
+            disableControls();
+            Swal.fire('Thông báo', 'Không thể tải dữ liệu giờ cần bù, các chức năng đã bị khóa.', 'info');
         }
     });
 
@@ -471,6 +523,11 @@
     });
 
     document.getElementById('submitAll').addEventListener('click', async () => {
+        if (!maNv) {
+            Swal.fire('Lỗi!', 'Mã nhân viên không hợp lệ.', 'error');
+            return;
+        }
+
         const selectedDates = Object.entries(workScheduleData)
             .filter(([_, data]) => data.selected)
             .map(([date, data]) => ({ date, ...data }));
@@ -492,9 +549,9 @@
                             GioVao: date.checkIn,
                             GioRa: date.checkOut,
                             TongGio: date.totalHours,
-                            TrangThai: 'LB1',
+                            TrangThai: 'LS1',
                             GhiChu: date.attendanceNote,
-                            MaNV: 1 // Replace with actual employee ID
+                            MaNV: parseInt(maNv) // Use maNv from claims
                         })),
                     lamBuBanDem: selectedDates
                         .filter(date => date.nightHours > 0)
@@ -505,7 +562,7 @@
                             TongGio: date.nightHours,
                             TrangThai: 'LB1',
                             GhiChu: date.nightNote,
-                            MaNV: 1 // Replace with actual employee ID
+                            MaNV: parseInt(maNv) // Use maNv from claims
                         }))
                 })
             });

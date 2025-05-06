@@ -183,42 +183,68 @@ namespace HR_KD.Controllers
         // --- ThongTinBaoHiem Endpoints ---
 
         [HttpGet("thong-tin-bao-hiem")]
-        public async Task<ActionResult<IEnumerable<ThongTinBaoHiem>>> GetThongTinBaoHiems()
+        public async Task<ActionResult<IEnumerable<ThongTinBaoHiemDto>>> GetThongTinBaoHiems()
         {
-            return await _context.ThongTinBaoHiems.ToListAsync();
+            var records = await _context.ThongTinBaoHiems
+                .Select(t => new ThongTinBaoHiemDto
+                {
+                    Id = t.Id,
+                    LoaiBaoHiem = t.LoaiBaoHiem,
+                    TyLeNguoiLaoDong = t.TyLeNguoiLaoDong,
+                    TyLeNhaTuyenDung = t.TyLeNhaTuyenDung,
+                    NgayHieuLuc = t.NgayHieuLuc,
+                    NgayHetHieuLuc = t.NgayHetHieuLuc,
+                    GhiChu = t.GhiChu
+                })
+                .ToListAsync();
+
+            return Ok(records);
         }
 
         [HttpGet("thong-tin-bao-hiem/{id}")]
-        public async Task<ActionResult<ThongTinBaoHiem>> GetThongTinBaoHiem(int id)
+        public async Task<ActionResult<ThongTinBaoHiemDto>> GetThongTinBaoHiem(int id)
         {
-            var thongTinBaoHiem = await _context.ThongTinBaoHiems
-                .FirstOrDefaultAsync(t => t.Id == id);
-            if (thongTinBaoHiem == null)
+            var record = await _context.ThongTinBaoHiems
+                .Where(t => t.Id == id)
+                .Select(t => new ThongTinBaoHiemDto
+                {
+                    Id = t.Id,
+                    LoaiBaoHiem = t.LoaiBaoHiem,
+                    TyLeNguoiLaoDong = t.TyLeNguoiLaoDong,
+                    TyLeNhaTuyenDung = t.TyLeNhaTuyenDung,
+                    NgayHieuLuc = t.NgayHieuLuc,
+                    NgayHetHieuLuc = t.NgayHetHieuLuc,
+                    GhiChu = t.GhiChu
+                })
+                .FirstOrDefaultAsync();
+
+            if (record == null)
             {
-                return NotFound();
+                return NotFound(new { message = $"Không tìm thấy bản ghi bảo hiểm với ID {id}." });
             }
-            return thongTinBaoHiem;
+
+            return Ok(record);
         }
 
         [HttpPost("thong-tin-bao-hiem")]
-        public async Task<ActionResult<IEnumerable<ThongTinBaoHiem>>> CreateThongTinBaoHiem([FromBody] CreateThongTinBaoHiemDto createDto)
+        public async Task<ActionResult<IEnumerable<ThongTinBaoHiemDto>>> CreateThongTinBaoHiem([FromBody] CreateThongTinBaoHiemDto dto)
         {
-            // Kiểm tra dữ liệu đầu vào
-            if (createDto.TyLeNguoiLaoDongBHXH < 0 || createDto.TyLeNhaTuyenDungBHXH < 0 ||
-                createDto.TyLeNguoiLaoDongBHYT < 0 || createDto.TyLeNhaTuyenDungBHYT < 0 ||
-                createDto.TyLeNguoiLaoDongBHTN < 0 || createDto.TyLeNhaTuyenDungBHTN < 0)
+            // Validate input
+            if (dto.TyLeNguoiLaoDongBHXH < 0 || dto.TyLeNhaTuyenDungBHXH < 0 ||
+                dto.TyLeNguoiLaoDongBHYT < 0 || dto.TyLeNhaTuyenDungBHYT < 0 ||
+                dto.TyLeNguoiLaoDongBHTN < 0 || dto.TyLeNhaTuyenDungBHTN < 0)
             {
-                return BadRequest("Tỷ lệ không được âm.");
+                return BadRequest(new { message = "Tỷ lệ không được âm." });
             }
 
-            if (createDto.NgayHieuLuc == default(DateTime))
+            if (dto.NgayHieuLuc == default)
             {
-                return BadRequest("Ngày hiệu lực không hợp lệ.");
+                return BadRequest(new { message = "Ngày hiệu lực không hợp lệ." });
             }
 
-            if (createDto.NgayHetHieuLuc.HasValue && createDto.NgayHetHieuLuc <= createDto.NgayHieuLuc)
+            if (dto.NgayHetHieuLuc.HasValue && dto.NgayHetHieuLuc <= dto.NgayHieuLuc)
             {
-                return BadRequest("Ngày hết hiệu lực phải lớn hơn ngày hiệu lực.");
+                return BadRequest(new { message = "Ngày hết hiệu lực phải lớn hơn ngày hiệu lực." });
             }
 
             var insuranceTypes = new[] { "BHXH", "BHYT", "BHTN" };
@@ -226,83 +252,179 @@ namespace HR_KD.Controllers
 
             foreach (var type in insuranceTypes)
             {
+                // Check for overlapping date ranges
+                var overlappingRecord = await _context.ThongTinBaoHiems
+                    .FirstOrDefaultAsync(t => t.LoaiBaoHiem == type &&
+                        t.NgayHieuLuc <= dto.NgayHieuLuc &&
+                        (t.NgayHetHieuLuc == null || t.NgayHetHieuLuc >= dto.NgayHieuLuc));
+
+                if (overlappingRecord != null)
+                {
+                    return BadRequest(new { message = $"Ngày hiệu lực trùng với bản ghi hiện có cho {type}." });
+                }
+
+                // Update previous record
                 var previousRecord = await _context.ThongTinBaoHiems
                     .Where(t => t.LoaiBaoHiem == type && t.NgayHetHieuLuc == null)
                     .OrderByDescending(t => t.NgayHieuLuc)
                     .FirstOrDefaultAsync();
 
-                var thongTinBaoHiem = new ThongTinBaoHiem
-                {
-                    LoaiBaoHiem = type,
-                    TyLeNguoiLaoDong = type == "BHXH" ? createDto.TyLeNguoiLaoDongBHXH :
-                                       type == "BHYT" ? createDto.TyLeNguoiLaoDongBHYT :
-                                       createDto.TyLeNguoiLaoDongBHTN,
-                    TyLeNhaTuyenDung = type == "BHXH" ? createDto.TyLeNhaTuyenDungBHXH :
-                                        type == "BHYT" ? createDto.TyLeNhaTuyenDungBHYT :
-                                        createDto.TyLeNhaTuyenDungBHTN,
-                    NgayHieuLuc = createDto.NgayHieuLuc,
-                    NgayHetHieuLuc = createDto.NgayHetHieuLuc,
-                    GhiChu = createDto.GhiChu
-                };
-
-                _context.ThongTinBaoHiems.Add(thongTinBaoHiem);
-                createdRecords.Add(thongTinBaoHiem);
-
                 if (previousRecord != null)
                 {
-                    previousRecord.NgayHetHieuLuc = createDto.NgayHieuLuc;
+                    previousRecord.NgayHetHieuLuc = dto.NgayHieuLuc;
                     _context.Entry(previousRecord).State = EntityState.Modified;
                 }
+
+                // Create new record
+                var newRecord = new ThongTinBaoHiem
+                {
+                    LoaiBaoHiem = type,
+                    TyLeNguoiLaoDong = type == "BHXH" ? dto.TyLeNguoiLaoDongBHXH :
+                                       type == "BHYT" ? dto.TyLeNguoiLaoDongBHYT :
+                                       dto.TyLeNguoiLaoDongBHTN,
+                    TyLeNhaTuyenDung = type == "BHXH" ? dto.TyLeNhaTuyenDungBHXH :
+                                        type == "BHYT" ? dto.TyLeNhaTuyenDungBHYT :
+                                        dto.TyLeNhaTuyenDungBHTN,
+                    NgayHieuLuc = dto.NgayHieuLuc,
+                    NgayHetHieuLuc = dto.NgayHetHieuLuc,
+                    GhiChu = dto.GhiChu
+                };
+
+                _context.ThongTinBaoHiems.Add(newRecord);
+                createdRecords.Add(newRecord);
             }
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi server khi tạo bản ghi.", detail = ex.Message });
+            }
 
-            return CreatedAtAction(nameof(GetThongTinBaoHiem), new { id = createdRecords.First().Id }, createdRecords);
+            var responseDtos = createdRecords.Select(t => new ThongTinBaoHiemDto
+            {
+                Id = t.Id,
+                LoaiBaoHiem = t.LoaiBaoHiem,
+                TyLeNguoiLaoDong = t.TyLeNguoiLaoDong,
+                TyLeNhaTuyenDung = t.TyLeNhaTuyenDung,
+                NgayHieuLuc = t.NgayHieuLuc,
+                NgayHetHieuLuc = t.NgayHetHieuLuc,
+                GhiChu = t.GhiChu
+            }).ToList();
+
+            return CreatedAtAction(nameof(GetThongTinBaoHiem), new { id = responseDtos.First().Id }, responseDtos);
         }
 
         [HttpPut("thong-tin-bao-hiem/{id}")]
-        public async Task<IActionResult> UpdateThongTinBaoHiem(int id, ThongTinBaoHiem thongTinBaoHiem)
+        public async Task<ActionResult<ThongTinBaoHiemDto>> UpdateThongTinBaoHiem(int id, [FromBody] ThongTinBaoHiemDto dto)
         {
-            if (id != thongTinBaoHiem.Id)
+            if (id != dto.Id)
             {
-                return BadRequest("ID không khớp.");
+                return BadRequest(new { message = "ID không khớp." });
+            }
+
+            if (!new[] { "BHXH", "BHYT", "BHTN" }.Contains(dto.LoaiBaoHiem))
+            {
+                return BadRequest(new { message = "Loại bảo hiểm không hợp lệ." });
             }
 
             var existingRecord = await _context.ThongTinBaoHiems
-                .FirstOrDefaultAsync(t => t.Id == id && t.NgayHetHieuLuc == null);
+                .FirstOrDefaultAsync(t => t.Id == id && t.LoaiBaoHiem == dto.LoaiBaoHiem && t.NgayHetHieuLuc == null);
+
             if (existingRecord == null)
             {
-                return BadRequest("Chỉ có thể chỉnh sửa bản ghi mới nhất (chưa có ngày hết hiệu lực).");
+                return BadRequest(new { message = "Chỉ có thể chỉnh sửa bản ghi mới nhất (chưa có ngày hết hiệu lực) của loại bảo hiểm này." });
             }
 
-            if (thongTinBaoHiem.TyLeNguoiLaoDong < 0 || thongTinBaoHiem.TyLeNhaTuyenDung < 0)
+            // Validate input
+            if (dto.TyLeNguoiLaoDong < 0 || dto.TyLeNhaTuyenDung < 0)
             {
-                return BadRequest("Tỷ lệ không được âm.");
+                return BadRequest(new { message = "Tỷ lệ không được âm." });
             }
 
-            if (thongTinBaoHiem.NgayHieuLuc == default(DateTime))
+            if (dto.NgayHieuLuc == default)
             {
-                return BadRequest("Ngày hiệu lực không hợp lệ.");
+                return BadRequest(new { message = "Ngày hiệu lực không hợp lệ." });
             }
 
-            if (thongTinBaoHiem.NgayHetHieuLuc.HasValue && thongTinBaoHiem.NgayHetHieuLuc <= thongTinBaoHiem.NgayHieuLuc)
+            if (dto.NgayHetHieuLuc.HasValue && dto.NgayHetHieuLuc <= dto.NgayHieuLuc)
             {
-                return BadRequest("Ngày hết hiệu lực phải lớn hơn ngày hiệu lực.");
+                return BadRequest(new { message = "Ngày hết hiệu lực phải lớn hơn ngày hiệu lực." });
             }
 
-            _context.Entry(thongTinBaoHiem).State = EntityState.Modified;
+            // Check for overlapping date ranges
+            var overlappingRecord = await _context.ThongTinBaoHiems
+                .FirstOrDefaultAsync(t => t.LoaiBaoHiem == dto.LoaiBaoHiem && t.Id != id &&
+                    t.NgayHieuLuc <= dto.NgayHieuLuc &&
+                    (t.NgayHetHieuLuc == null || t.NgayHetHieuLuc >= dto.NgayHieuLuc));
+
+            if (overlappingRecord != null)
+            {
+                return BadRequest(new { message = $"Ngày hiệu lực trùng với bản ghi hiện có cho {dto.LoaiBaoHiem}." });
+            }
+
+            // Update record
+            existingRecord.TyLeNguoiLaoDong = dto.TyLeNguoiLaoDong;
+            existingRecord.TyLeNhaTuyenDung = dto.TyLeNhaTuyenDung;
+            existingRecord.NgayHieuLuc = dto.NgayHieuLuc;
+            existingRecord.NgayHetHieuLuc = dto.NgayHetHieuLuc;
+            existingRecord.GhiChu = dto.GhiChu;
+
+            _context.Entry(existingRecord).State = EntityState.Modified;
+
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.ThongTinBaoHiems.Any(e => e.Id == id))
+                if (!await _context.ThongTinBaoHiems.AnyAsync(t => t.Id == id))
                 {
-                    return NotFound();
+                    return NotFound(new { message = $"Không tìm thấy bản ghi bảo hiểm với ID {id}." });
                 }
                 throw;
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi server khi cập nhật bản ghi.", detail = ex.Message });
+            }
+
+            var responseDto = new ThongTinBaoHiemDto
+            {
+                Id = existingRecord.Id,
+                LoaiBaoHiem = existingRecord.LoaiBaoHiem,
+                TyLeNguoiLaoDong = existingRecord.TyLeNguoiLaoDong,
+                TyLeNhaTuyenDung = existingRecord.TyLeNhaTuyenDung,
+                NgayHieuLuc = existingRecord.NgayHieuLuc,
+                NgayHetHieuLuc = existingRecord.NgayHetHieuLuc,
+                GhiChu = existingRecord.GhiChu
+            };
+
+            return Ok(responseDto);
+        }
+
+        [HttpDelete("thong-tin-bao-hiem/{id}")]
+        public async Task<IActionResult> DeleteThongTinBaoHiem(int id)
+        {
+            var record = await _context.ThongTinBaoHiems.FindAsync(id);
+            if (record == null)
+            {
+                return NotFound(new { message = $"Không tìm thấy bản ghi bảo hiểm với ID {id}." });
+            }
+
+            _context.ThongTinBaoHiems.Remove(record);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi server khi xóa bản ghi.", detail = ex.Message });
+            }
+
             return NoContent();
         }
 
@@ -394,115 +516,224 @@ namespace HR_KD.Controllers
         // --- GiamTruGiaCanh Endpoints ---
 
         [HttpGet("giam-tru-gia-canh")]
-        public async Task<ActionResult<IEnumerable<GiamTruGiaCanh>>> GetGiamTruGiaCanhs()
+        public async Task<ActionResult<IEnumerable<GiamTruGiaCanhDto>>> GetGiamTruGiaCanhs()
         {
-            return await _context.GiamTruGiaCanhs.ToListAsync();
+            var records = await _context.GiamTruGiaCanhs
+                .Select(g => new GiamTruGiaCanhDto
+                {
+                    Id = g.Id,
+                    MucGiamTruBanThan = g.MucGiamTruBanThan,
+                    MucGiamTruNguoiPhuThuoc = g.MucGiamTruNguoiPhuThuoc,
+                    NgayHieuLuc = g.NgayHieuLuc,
+                    NgayHetHieuLuc = g.NgayHetHieuLuc,
+                    GhiChu = g.GhiChu
+                })
+                .ToListAsync();
+
+            return Ok(records);
         }
 
         [HttpGet("giam-tru-gia-canh/{id}")]
-        public async Task<ActionResult<GiamTruGiaCanh>> GetGiamTruGiaCanh(int id)
+        public async Task<ActionResult<GiamTruGiaCanhDto>> GetGiamTruGiaCanh(int id)
         {
-            var giamTruGiaCanh = await _context.GiamTruGiaCanhs.FindAsync(id);
-            if (giamTruGiaCanh == null)
+            var record = await _context.GiamTruGiaCanhs
+                .Where(g => g.Id == id)
+                .Select(g => new GiamTruGiaCanhDto
+                {
+                    Id = g.Id,
+                    MucGiamTruBanThan = g.MucGiamTruBanThan,
+                    MucGiamTruNguoiPhuThuoc = g.MucGiamTruNguoiPhuThuoc,
+                    NgayHieuLuc = g.NgayHieuLuc,
+                    NgayHetHieuLuc = g.NgayHetHieuLuc,
+                    GhiChu = g.GhiChu
+                })
+                .FirstOrDefaultAsync();
+
+            if (record == null)
             {
-                return NotFound();
+                return NotFound(new { message = $"Không tìm thấy bản ghi giảm trừ gia cảnh với ID {id}." });
             }
-            return giamTruGiaCanh;
+
+            return Ok(record);
         }
 
         [HttpPost("giam-tru-gia-canh")]
-        public async Task<ActionResult<GiamTruGiaCanh>> CreateGiamTruGiaCanh(GiamTruGiaCanh giamTruGiaCanh)
+        public async Task<ActionResult<GiamTruGiaCanhDto>> CreateGiamTruGiaCanh([FromBody] GiamTruGiaCanhDto dto)
         {
-            if (giamTruGiaCanh.MucGiamTruBanThan < 0 || giamTruGiaCanh.MucGiamTruNguoiPhuThuoc < 0)
+            // Validate input
+            if (dto.MucGiamTruBanThan < 0 || dto.MucGiamTruNguoiPhuThuoc < 0)
             {
-                return BadRequest("Mức giảm trừ không được âm.");
+                return BadRequest(new { message = "Mức giảm trừ không được âm." });
             }
 
-            if (giamTruGiaCanh.NgayHieuLuc == default(DateTime))
+            if (dto.NgayHieuLuc == default)
             {
-                return BadRequest("Ngày hiệu lực không hợp lệ.");
+                return BadRequest(new { message = "Ngày hiệu lực không hợp lệ." });
             }
 
-            if (giamTruGiaCanh.NgayHetHieuLuc.HasValue && giamTruGiaCanh.NgayHetHieuLuc <= giamTruGiaCanh.NgayHieuLuc)
+            if (dto.NgayHetHieuLuc.HasValue && dto.NgayHetHieuLuc <= dto.NgayHieuLuc)
             {
-                return BadRequest("Ngày hết hiệu lực phải lớn hơn ngày hiệu lực.");
+                return BadRequest(new { message = "Ngày hết hiệu lực phải lớn hơn ngày hiệu lực." });
             }
 
+            // Check for overlapping date ranges
+            var overlappingRecord = await _context.GiamTruGiaCanhs
+                .FirstOrDefaultAsync(g => g.NgayHieuLuc <= dto.NgayHieuLuc &&
+                    (g.NgayHetHieuLuc == null || g.NgayHetHieuLuc >= dto.NgayHieuLuc));
+
+            if (overlappingRecord != null)
+            {
+                return BadRequest(new { message = "Ngày hiệu lực trùng với bản ghi hiện có." });
+            }
+
+            // Update previous record
             var previousRecord = await _context.GiamTruGiaCanhs
                 .Where(g => g.NgayHetHieuLuc == null)
                 .OrderByDescending(g => g.NgayHieuLuc)
                 .FirstOrDefaultAsync();
 
-            _context.GiamTruGiaCanhs.Add(giamTruGiaCanh);
-            await _context.SaveChangesAsync();
-
             if (previousRecord != null)
             {
-                previousRecord.NgayHetHieuLuc = giamTruGiaCanh.NgayHieuLuc;
+                previousRecord.NgayHetHieuLuc = dto.NgayHieuLuc;
                 _context.Entry(previousRecord).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
             }
 
-            return CreatedAtAction(nameof(GetGiamTruGiaCanh), new { id = giamTruGiaCanh.Id }, giamTruGiaCanh);
+            // Create new record
+            var newRecord = new GiamTruGiaCanh
+            {
+                MucGiamTruBanThan = dto.MucGiamTruBanThan,
+                MucGiamTruNguoiPhuThuoc = dto.MucGiamTruNguoiPhuThuoc,
+                NgayHieuLuc = dto.NgayHieuLuc,
+                NgayHetHieuLuc = dto.NgayHetHieuLuc,
+                GhiChu = dto.GhiChu
+            };
+
+            _context.GiamTruGiaCanhs.Add(newRecord);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi server khi tạo bản ghi.", detail = ex.Message });
+            }
+
+            var responseDto = new GiamTruGiaCanhDto
+            {
+                Id = newRecord.Id,
+                MucGiamTruBanThan = newRecord.MucGiamTruBanThan,
+                MucGiamTruNguoiPhuThuoc = newRecord.MucGiamTruNguoiPhuThuoc,
+                NgayHieuLuc = newRecord.NgayHieuLuc,
+                NgayHetHieuLuc = newRecord.NgayHetHieuLuc,
+                GhiChu = newRecord.GhiChu
+            };
+
+            return CreatedAtAction(nameof(GetGiamTruGiaCanh), new { id = newRecord.Id }, responseDto);
         }
 
         [HttpPut("giam-tru-gia-canh/{id}")]
-        public async Task<IActionResult> UpdateGiamTruGiaCanh(int id, GiamTruGiaCanh giamTruGiaCanh)
+        public async Task<ActionResult<GiamTruGiaCanhDto>> UpdateGiamTruGiaCanh(int id, [FromBody] GiamTruGiaCanhDto dto)
         {
-            if (id != giamTruGiaCanh.Id)
+            if (id != dto.Id)
             {
-                return BadRequest("ID không khớp.");
+                return BadRequest(new { message = "ID không khớp." });
             }
 
             var existingRecord = await _context.GiamTruGiaCanhs
                 .FirstOrDefaultAsync(g => g.Id == id && g.NgayHetHieuLuc == null);
+
             if (existingRecord == null)
             {
-                return BadRequest("Chỉ có thể chỉnh sửa bản ghi mới nhất (chưa có ngày hết hiệu lực).");
+                return BadRequest(new { message = "Chỉ có thể chỉnh sửa bản ghi mới nhất (chưa có ngày hết hiệu lực)." });
             }
 
-            if (giamTruGiaCanh.MucGiamTruBanThan < 0 || giamTruGiaCanh.MucGiamTruNguoiPhuThuoc < 0)
+            // Validate input
+            if (dto.MucGiamTruBanThan < 0 || dto.MucGiamTruNguoiPhuThuoc < 0)
             {
-                return BadRequest("Mức giảm trừ không được âm.");
+                return BadRequest(new { message = "Mức giảm trừ không được âm." });
             }
 
-            if (giamTruGiaCanh.NgayHieuLuc == default(DateTime))
+            if (dto.NgayHieuLuc == default)
             {
-                return BadRequest("Ngày hiệu lực không hợp lệ.");
+                return BadRequest(new { message = "Ngày hiệu lực không hợp lệ." });
             }
 
-            if (giamTruGiaCanh.NgayHetHieuLuc.HasValue && giamTruGiaCanh.NgayHetHieuLuc <= giamTruGiaCanh.NgayHieuLuc)
+            if (dto.NgayHetHieuLuc.HasValue && dto.NgayHetHieuLuc <= dto.NgayHieuLuc)
             {
-                return BadRequest("Ngày hết hiệu lực phải lớn hơn ngày hiệu lực.");
+                return BadRequest(new { message = "Ngày hết hiệu lực phải lớn hơn ngày hiệu lực." });
             }
 
-            _context.Entry(giamTruGiaCanh).State = EntityState.Modified;
+            // Check for overlapping date ranges
+            var overlappingRecord = await _context.GiamTruGiaCanhs
+                .FirstOrDefaultAsync(g => g.Id != id &&
+                    g.NgayHieuLuc <= dto.NgayHieuLuc &&
+                    (g.NgayHetHieuLuc == null || g.NgayHetHieuLuc >= dto.NgayHieuLuc));
+
+            if (overlappingRecord != null)
+            {
+                return BadRequest(new { message = "Ngày hiệu lực trùng với bản ghi hiện có." });
+            }
+
+            // Update record
+            existingRecord.MucGiamTruBanThan = dto.MucGiamTruBanThan;
+            existingRecord.MucGiamTruNguoiPhuThuoc = dto.MucGiamTruNguoiPhuThuoc;
+            existingRecord.NgayHieuLuc = dto.NgayHieuLuc;
+            existingRecord.NgayHetHieuLuc = dto.NgayHetHieuLuc;
+            existingRecord.GhiChu = dto.GhiChu;
+
+            _context.Entry(existingRecord).State = EntityState.Modified;
+
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.GiamTruGiaCanhs.Any(e => e.Id == id))
+                if (!await _context.GiamTruGiaCanhs.AnyAsync(g => g.Id == id))
                 {
-                    return NotFound();
+                    return NotFound(new { message = $"Không tìm thấy bản ghi giảm trừ gia cảnh với ID {id}." });
                 }
                 throw;
             }
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi server khi cập nhật bản ghi.", detail = ex.Message });
+            }
+
+            var responseDto = new GiamTruGiaCanhDto
+            {
+                Id = existingRecord.Id,
+                MucGiamTruBanThan = existingRecord.MucGiamTruBanThan,
+                MucGiamTruNguoiPhuThuoc = existingRecord.MucGiamTruNguoiPhuThuoc,
+                NgayHieuLuc = existingRecord.NgayHieuLuc,
+                NgayHetHieuLuc = existingRecord.NgayHetHieuLuc,
+                GhiChu = existingRecord.GhiChu
+            };
+
+            return Ok(responseDto);
         }
 
         [HttpDelete("giam-tru-gia-canh/{id}")]
         public async Task<IActionResult> DeleteGiamTruGiaCanh(int id)
         {
-            var giamTruGiaCanh = await _context.GiamTruGiaCanhs.FindAsync(id);
-            if (giamTruGiaCanh == null)
+            var record = await _context.GiamTruGiaCanhs.FindAsync(id);
+            if (record == null)
             {
-                return NotFound();
+                return NotFound(new { message = $"Không tìm thấy bản ghi giảm trừ gia cảnh với ID {id}." });
             }
 
-            _context.GiamTruGiaCanhs.Remove(giamTruGiaCanh);
-            await _context.SaveChangesAsync();
+            _context.GiamTruGiaCanhs.Remove(record);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi server khi xóa bản ghi.", detail = ex.Message });
+            }
+
             return NoContent();
         }
     }
@@ -526,6 +757,16 @@ namespace HR_KD.Controllers
         public string LoaiBaoHiem { get; set; }
         public decimal TyLeNguoiLaoDong { get; set; }
         public decimal TyLeNhaTuyenDung { get; set; }
+        public DateTime NgayHieuLuc { get; set; }
+        public DateTime? NgayHetHieuLuc { get; set; }
+        public string GhiChu { get; set; }
+    }
+    // DTOs for GiamTruGiaCanh
+    public class GiamTruGiaCanhDto
+    {
+        public int Id { get; set; }
+        public decimal MucGiamTruBanThan { get; set; }
+        public decimal MucGiamTruNguoiPhuThuoc { get; set; }
         public DateTime NgayHieuLuc { get; set; }
         public DateTime? NgayHetHieuLuc { get; set; }
         public string GhiChu { get; set; }

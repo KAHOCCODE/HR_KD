@@ -20,4 +20,6 @@ public partial class TangCa
     public int MaNvDuyet { get; set; }
 
     public virtual NhanVien MaNvNavigation { get; set; } = null!;
+    public TimeOnly? GioVao { get; set; }
+    public TimeOnly? GioRa { get; set; }
 }

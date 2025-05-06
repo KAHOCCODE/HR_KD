@@ -13,6 +13,10 @@ namespace HR_KD.Controllers
         {
             return View();
         }
+        public IActionResult TangCa()
+        {
+            return View();
+        }
 
 
     }

@@ -2,9 +2,9 @@
  using HR_KD.DTOs;
  using Microsoft.AspNetCore.Mvc;
  using Microsoft.EntityFrameworkCore;
- using System;
- using System.Collections.Generic;
- using System.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
  using System.Threading.Tasks;
 
  namespace HR_KD.ApiControllers
@@ -138,9 +138,12 @@
                             MaNv = maNv.Value,
                             NgayTangCa = ngayTangCa,
                             SoGioTangCa = entry.SoGioTangCa,
-                            TyLeTangCa = (decimal)(entry.TiLeTangCa / 100.0), // Use the provided TiLeTangCa
+                            TyLeTangCa = (decimal)(entry.TiLeTangCa / 100.0),
                             GhiChu = entry.GhiChu,
-                            TrangThai = "TC1"
+                            TrangThai = "TC1",
+                            GioVao = TimeOnly.TryParse(entry.GioVaoTangCa, out var parsedGioVao) ? parsedGioVao : null,
+                            GioRa = TimeOnly.TryParse(entry.GioRaTangCa, out var parsedGioRa) ? parsedGioRa : null,
+                            MaNvDuyet = 0 // Hoặc lấy từ User.Claims nếu có
                         };
                         _context.TangCas.Add(tangCa);
                     }

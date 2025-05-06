@@ -1,5 +1,14 @@
 @{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+    if (string.IsNullOrEmpty(maNv))
+    {
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script>
+                    Swal.fire('Lỗi!', 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.', 'error');
+                </script>
+        return;
+    }
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -9,7 +18,15 @@
 
 <div class="dashboard-card bg-white p-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i> Chấm công nâng cao</h5>
-
+    <!-- Calendar Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="_remainingHours" class="form-label fw-bold">Số giờ cần bù: </label>
+                <span id="_remainingHours" class="fw-bold text-primary">Đang tải...</span>
+            </div>
+        </div>
+    </div>
     <!-- Calendar Section -->
     <div class="row mb-3">
         <div class="col-md-6">
@@ -139,9 +156,29 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    const maNv = '@maNv';
     let selectedWorkDays = [];
     let workScheduleData = {};
     let overtimeRates = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!maNv) {
+            Swal.fire('Lỗi!', 'Mã nhân viên không hợp lệ.', 'error');
+            return;
+        }
+        try {
+            const response = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`);
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
+            } else {
+                document.getElementById('_remainingHours').textContent = `0.00h`;
+            }
+        } catch (error) {
+            document.getElementById('_remainingHours').textContent = `0.00h`;
+        }
+    });
 
     async function loadOvertimeRates() {
         try {
@@ -401,7 +438,6 @@
             return;
         }
 
-        // Check if any selected date with overtime hours lacks a valid overtime rate
         const invalidOvertime = selectedDates.some(date => 
             date.overtimeHours > 0 && date.overtimeRateTiLe === 1
         );
@@ -441,7 +477,13 @@
             const result = await response.json();
             if (result.success) {
                 Swal.fire('Thành công!', 'Lưu dữ liệu thành công', 'success');
+                // Reset bảng ngày làm việc
+                selectedWorkDays = [];
+                workScheduleData = {};
                 updateWorkScheduleTable();
+                // Reset input chọn ngày
+                const datePicker = flatpickr("#workDateRange");
+                datePicker.clear();
             } else {
                 Swal.fire('Lỗi!', result.message, 'error');
             }
@@ -468,7 +510,6 @@
             return;
         }
 
-        // Check if overtime hours are specified but no overtime rate is selected
         if (otHours > 0 && !overtimeRateId) {
             Swal.fire('Lỗi!', 'Vui lòng chọn tỉ lệ tăng ca khi có giờ tăng ca', 'error');
             return;

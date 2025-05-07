@@ -25,8 +25,7 @@ public class LoaiNgayNghiMetadata
     [DisplayName("Tính vào phép năm")]
     public bool TinhVaoPhepNam { get; set; }
 
-    [DisplayName("Tính vào lương")]
-    public bool CoTinhVaoLuong { get; set; }
+
 }
 
 // Áp dụng metadata cho class LoaiNgayNghi
@@ -42,7 +41,7 @@ public partial class LoaiNgayNghi
 
     public bool HuongLuong { get; set; }
     public bool TinhVaoPhepNam { get; set; }
-    public bool CoTinhVaoLuong { get; set; }
+
 
     public virtual ICollection<NgayNghi> NgayNghis { get; set; } = new List<NgayNghi>();
 }

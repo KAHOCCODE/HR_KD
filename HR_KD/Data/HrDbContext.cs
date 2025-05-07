@@ -263,9 +263,6 @@ public partial class HrDbContext : DbContext
                   .IsRequired()
                   .HasDefaultValue(false);
 
-            entity.Property(e => e.CoTinhVaoLuong)
-                  .IsRequired()
-                  .HasDefaultValue(false);
         });
 
         modelBuilder.Entity<LoginHistory>(entity =>

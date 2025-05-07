@@ -50,15 +50,27 @@
                                         Lương Cơ Bản <span class="text-red-500">*</span>
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="LuongCoBan" name="LuongCoBan"
+                                        <input type="text" id="LuongCoBan" name="LuongCoBan"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50 text-gray-900"
-                                               placeholder="Nhập lương cơ bản" required />
+                                               placeholder="Nhập lương cơ bản" list="luongCoBanSuggestions" required max="100000000" />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
                                             VNĐ
                                         </span>
+                                        <datalist id="luongCoBanSuggestions">
+                                            <option value="10000000">10,000,000 VNĐ</option>
+                                            <option value="20000000">20,000,000 VNĐ</option>
+                                            <option value="30000000">30,000,000 VNĐ</option>
+                                            <option value="40000000">40,000,000 VNĐ</option>
+                                            <option value="50000000">50,000,000 VNĐ</option>
+                                            <option value="60000000">60,000,000 VNĐ</option>
+                                            <option value="70000000">70,000,000 VNĐ</option>
+                                            <option value="80000000">80,000,000 VNĐ</option>
+                                            <option value="90000000">90,000,000 VNĐ</option>
+                                            <option value="100000000">100,000,000 VNĐ</option>
+                                        </datalist>
                                     </div>
                                     <p id="minimumWageText" class="mt-1 text-xs text-gray-500">
-                                        Lương cơ bản trước thuế (Tối thiểu: <span id="minimumWageValue">0</span> VNĐ)
+                                        Lương cơ bản trước thuế (Tối thiểu: <span id="minimumWageValue">0</span> VNĐ, Tối đa: 100,000,000 VNĐ)
                                     </p>
                                 </div>
 
@@ -67,7 +79,7 @@
                                         Thưởng Cố Định
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="ThuongCoDinh" name="ThuongCoDinh"
+                                        <input type="text" id="ThuongCoDinh" name="ThuongCoDinh"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="Nhập thưởng cố định" />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
@@ -104,7 +116,7 @@
                                         Phụ Cấp Cố Định
                                     </label>
                                     <div class="mt-1 relative">
-                                        <input type="number" step="0.01" id="PhuCapCoDinh" name="PhuCapCoDinh"
+                                        <input type="text" id="PhuCapCoDinh" name="PhuCapCoDinh"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="Nhập phụ cấp cố định" />
                                         <span class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-sm">
@@ -117,19 +129,19 @@
                                 <div class="grid grid-cols-3 gap-4">
                                     <div>
                                         <label for="BHXH" class="block text-sm font-medium text-gray-700">BHXH</label>
-                                        <input type="number" step="0.01" id="BHXH" name="BHXH"
+                                        <input type="text" id="BHXH" name="BHXH"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="BHXH" readonly />
                                     </div>
                                     <div>
                                         <label for="BHYT" class="block text-sm font-medium text-gray-700">BHYT</label>
-                                        <input type="number" step="0.01" id="BHYT" name="BHYT"
+                                        <input type="text" id="BHYT" name="BHYT"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="BHYT" readonly />
                                     </div>
                                     <div>
                                         <label for="BHTN" class="block text-sm font-medium text-gray-700">BHTN</label>
-                                        <input type="number" step="0.01" id="BHTN" name="BHTN"
+                                        <input type="text" id="BHTN" name="BHTN"
                                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-gray-50"
                                                placeholder="BHTN" readonly />
                                     </div>
@@ -164,7 +176,7 @@
                                 <span id="tongKhauTru" class="font-semibold text-red-600">0 VNĐ</span>
                             </div>
                             <div class="flex justify-between col-span-2 pt-4 border-t">
-                                <span class="text-gray-600 font-semibold">Lương thực lãnh:</span>
+                                <span class="text-gray-600 font-semibold">Lương trước thuế:</span>
                                 <span id="luongThucLanh" class="font-bold text-yellow-700 text-lg">0 VNĐ</span>
                             </div>
                         </div>
@@ -193,14 +205,51 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
     <script>
         $(document).ready(function () {
-            let insuranceRates = { BHXH: 0, BHYT: 0, BHTN: 0 };
+            // Initialize Cleave.js for number formatting
+            new Cleave("#LuongCoBan", {
+                numeral: true,
+                numeralThousandsGroupStyle: "thousand",
+                numeralDecimalScale: 0,
+                delimiter: ","
+            });
+            new Cleave("#PhuCapCoDinh", {
+                numeral: true,
+                numeralThousandsGroupStyle: "thousand",
+                numeralDecimalScale: 0,
+                delimiter: ","
+            });
+            new Cleave("#ThuongCoDinh", {
+                numeral: true,
+                numeralThousandsGroupStyle: "thousand",
+                numeralDecimalScale: 0,
+                delimiter: ","
+            });
+            new Cleave("#BHXH", {
+                numeral: true,
+                numeralThousandsGroupStyle: "thousand",
+                numeralDecimalScale: 0,
+                delimiter: ","
+            });
+            new Cleave("#BHYT", {
+                numeral: true,
+                numeralThousandsGroupStyle: "thousand",
+                numeralDecimalScale: 0,
+                delimiter: ","
+            });
+            new Cleave("#BHTN", {
+                numeral: true,
+                numeralThousandsGroupStyle: "thousand",
+                numeralDecimalScale: 0,
+                delimiter: ","
+            });
 
             // Utility to format today's date as YYYY-MM-DD
             function getTodayDate() {
                 const today = new Date();
-                return today.toISOString().split("T")[0]; // e.g., "2025-04-26"
+                return today.toISOString().split("T")[0]; // e.g., "2025-05-08"
             }
 
             // Currency formatter
@@ -212,13 +261,46 @@
                 }).format(amount);
             }
 
-            // Update insurance fields based on LuongCoBan
+            // Utility to parse Cleave-formatted input
+            function parseCleaveInput(value) {
+                return parseFloat(value.replace(/,/g, "")) || 0;
+            }
+
+            // Update insurance fields by calling API
             function updateInsuranceFields() {
-                let luongCoBan = parseFloat($("#LuongCoBan").val()) || 0;
-                $("#BHXH").val((luongCoBan * (insuranceRates.BHXH / 100)).toFixed(2));
-                $("#BHYT").val((luongCoBan * (insuranceRates.BHYT / 100)).toFixed(2));
-                $("#BHTN").val((luongCoBan * (insuranceRates.BHTN / 100)).toFixed(2));
-                updateSummary();
+                let luongCoBan = parseCleaveInput($("#LuongCoBan").val());
+                let phuCapCoDinh = parseCleaveInput($("#PhuCapCoDinh").val());
+                let thuongCoDinh = parseCleaveInput($("#ThuongCoDinh").val());
+
+                $.ajax({
+                    url: "/api/SalaryApi/calculate-insurance",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        LuongCoBan: luongCoBan,
+                        PhuCapCoDinh: phuCapCoDinh,
+                        ThuongCoDinh: thuongCoDinh
+                    }),
+                    success: function (data) {
+                        $("#BHXH").val(Math.round(data.bhxh));
+                        $("#BHYT").val(Math.round(data.bhyt));
+                        $("#BHTN").val(Math.round(data.bhtn));
+                        updateSummary();
+                    },
+                    error: function (xhr) {
+                        let errorMessage = xhr.responseJSON?.message || "Không thể tính toán bảo hiểm.";
+                        Swal.fire({
+                            icon: "error",
+                            title: "Lỗi",
+                            text: errorMessage,
+                            confirmButtonColor: "#ca8a04"
+                        });
+                        $("#BHXH").val("0");
+                        $("#BHYT").val("0");
+                        $("#BHTN").val("0");
+                        updateSummary();
+                    }
+                });
             }
 
             // Update progress bar
@@ -232,7 +314,7 @@
 
                 let optionalFields = ["PhuCapCoDinh", "ThuongCoDinh", "GhiChu"];
                 optionalFields.forEach(field => {
-                    if ($("#" + field).val() && $("#" + field).val() !== "0") {
+                    if ($("#" + field).val() && parseCleaveInput($("#" + field).val()) !== 0) {
                         filledCount += 0.5;
                     }
                 });
@@ -243,12 +325,12 @@
 
             // Update summary
             function updateSummary() {
-                let luongCoBan = parseFloat($("#LuongCoBan").val()) || 0;
-                let phuCapCoDinh = parseFloat($("#PhuCapCoDinh").val()) || 0;
-                let thuongCoDinh = parseFloat($("#ThuongCoDinh").val()) || 0;
-                let bhxh = parseFloat($("#BHXH").val()) || 0;
-                let bhyt = parseFloat($("#BHYT").val()) || 0;
-                let bhtn = parseFloat($("#BHTN").val()) || 0;
+                let luongCoBan = parseCleaveInput($("#LuongCoBan").val());
+                let phuCapCoDinh = parseCleaveInput($("#PhuCapCoDinh").val());
+                let thuongCoDinh = parseCleaveInput($("#ThuongCoDinh").val());
+                let bhxh = parseCleaveInput($("#BHXH").val());
+                let bhyt = parseCleaveInput($("#BHYT").val());
+                let bhtn = parseCleaveInput($("#BHTN").val());
 
                 let tongThuNhap = luongCoBan + phuCapCoDinh + thuongCoDinh;
                 let tongKhauTru = bhxh + bhyt + bhtn;
@@ -259,9 +341,8 @@
                 $("#luongThucLanh").text(formatCurrency(luongThucLanh));
             }
 
-            // Fetch minimum wage and insurance rates
+            // Fetch minimum wage
             function loadInitialData() {
-                // Fetch active minimum wage
                 $.ajax({
                     url: "/api/PayrollSettingApi/muc-luong-toi-thieu-vung",
                     method: "GET",
@@ -270,7 +351,6 @@
                         if (activeMinimumWage) {
                             $("#minimumWage").val(activeMinimumWage.mucLuongToiThieuThang);
                             $("#minimumWageValue").text(activeMinimumWage.mucLuongToiThieuThang.toLocaleString());
-                            $("#LuongCoBan").attr("min", activeMinimumWage.mucLuongToiThieuThang);
                             updateProgressBar();
                             updateSummary();
                         } else {
@@ -287,29 +367,6 @@
                             icon: "error",
                             title: "Lỗi",
                             text: "Không thể tải mức lương tối thiểu.",
-                            confirmButtonColor: "#ca8a04"
-                        });
-                    }
-                });
-
-                // Fetch insurance rates
-                $.ajax({
-                    url: "/api/PayrollSettingApi/thong-tin-bao-hiem",
-                    method: "GET",
-                    success: function (data) {
-                        data.forEach(item => {
-                            if (!item.ngayHetHieuLuc) {
-                                if (item.loaiBaoHiem === "BHXH") insuranceRates.BHXH = item.tyLeNguoiLaoDong;
-                                if (item.loaiBaoHiem === "BHYT") insuranceRates.BHYT = item.tyLeNguoiLaoDong;
-                                if (item.loaiBaoHiem === "BHTN") insuranceRates.BHTN = item.tyLeNguoiLaoDong;
-                            }
-                        });
-                    },
-                    error: function () {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Lỗi",
-                            text: "Không thể tải tỷ lệ bảo hiểm.",
                             confirmButtonColor: "#ca8a04"
                         });
                     }
@@ -338,11 +395,6 @@
                         $("#ThuongCoDinh").val(data.thuongCoDinh || 0);
                         $("#GhiChu").val(data.ghiChu || "");
 
-                        // Handle insurance fields (will be recalculated)
-                        $("#BHXH").val(0);
-                        $("#BHYT").val(0);
-                        $("#BHTN").val(0);
-
                         // Set date, default to today if invalid
                         let defaultDate = getTodayDate();
                         if (data.ngayApDung && !isNaN(new Date(data.ngayApDung).getTime())) {
@@ -362,7 +414,6 @@
                             onReady: function(selectedDates, dateStr, instance) {
                                 $(instance.input).removeAttr("disabled").removeAttr("readonly");
                                 instance.altInput.setAttribute("placeholder", "dd/mm/yyyy");
-                                // Force set the input value to ensure display
                                 instance.setDate(defaultDate, true);
                             },
                             onOpen: function(selectedDates, dateStr, instance) {
@@ -370,14 +421,14 @@
                             }
                         });
 
-                        // Update insurance fields and summary after loading rates
+                        // Update insurance fields and summary
                         loadInitialData();
                         setTimeout(() => {
                             updateInsuranceFields();
                             updateProgressBar();
                             updateSummary();
                             Swal.close();
-                        }, 500); // Delay to ensure rates are loaded
+                        }, 500);
                     },
                     error: function (xhr) {
                         // Initialize Flatpickr with today's date on error
@@ -427,13 +478,13 @@
             }
 
             // Form input handlers
-            $("#LuongCoBan").on("input change keyup", function() {
+            $("#LuongCoBan, #PhuCapCoDinh, #ThuongCoDinh").on("input change keyup", function() {
                 updateInsuranceFields();
                 updateProgressBar();
                 updateSummary();
             });
 
-            $("input:not(#LuongCoBan), textarea").on("input change keyup", function() {
+            $("input:not(#LuongCoBan, #PhuCapCoDinh, #ThuongCoDinh), textarea").on("input change keyup", function() {
                 updateProgressBar();
                 updateSummary();
             });
@@ -466,8 +517,8 @@
                     }
                 }
 
-                // Validate minimum wage
-                let luongCoBan = parseFloat($("#LuongCoBan").val());
+                // Validate minimum wage and maximum wage
+                let luongCoBan = parseCleaveInput($("#LuongCoBan").val());
                 let minimumWage = parseFloat($("#minimumWage").val());
                 if (luongCoBan < minimumWage) {
                     Swal.fire({
@@ -478,11 +529,20 @@
                     });
                     return;
                 }
+                if (luongCoBan > 100000000) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Lương không hợp lệ",
+                        text: "Lương cơ bản không được vượt quá 100,000,000 VNĐ!",
+                        confirmButtonColor: "#ca8a04"
+                    });
+                    return;
+                }
 
                 // Validate negative values
                 let salaryFields = ["LuongCoBan", "PhuCapCoDinh", "ThuongCoDinh"];
                 for (let field of salaryFields) {
-                    let value = parseFloat($("#" + field).val());
+                    let value = parseCleaveInput($("#" + field).val());
                     if (value < 0) {
                         Swal.fire({
                             icon: "warning",
@@ -498,12 +558,12 @@
                 let salaryData = {
                     MaLuongNV: parseInt($("#MaLuongNV").val()),
                     MaNv: parseInt($("#MaNv").val()),
-                    LuongCoBan: parseFloat($("#LuongCoBan").val()),
-                    PhuCapCoDinh: parseFloat($("#PhuCapCoDinh").val()) || 0,
-                    ThuongCoDinh: parseFloat($("#ThuongCoDinh").val()) || 0,
-                    BHXH: parseFloat($("#BHXH").val()) || 0,
-                    BHYT: parseFloat($("#BHYT").val()) || 0,
-                    BHTN: parseFloat($("#BHTN").val()) || 0,
+                    LuongCoBan: parseCleaveInput($("#LuongCoBan").val()),
+                    PhuCapCoDinh: parseCleaveInput($("#PhuCapCoDinh").val()),
+                    ThuongCoDinh: parseCleaveInput($("#ThuongCoDinh").val()),
+                    BHXH: parseCleaveInput($("#BHXH").val()),
+                    BHYT: parseCleaveInput($("#BHYT").val()),
+                    BHTN: parseCleaveInput($("#BHTN").val()),
                     NgayApDung: $("#NgayApDung").val(),
                     GhiChu: $("#GhiChu").val()
                 };

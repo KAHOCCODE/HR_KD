@@ -878,6 +878,369 @@ public class AttendanceManagerController : ControllerBase
             chamCong.TrangThai = trangThai;
         }
     }
+
+    // 🔹 Lấy danh sách làm bù của nhân viên (Manager)
+    [HttpGet("GetMakeupRecords")]
+    public IActionResult GetMakeupRecords(int maNv)
+    {
+        var makeupRecords = _context.LamBus
+            .Where(lb => lb.MaNV == maNv && (lb.TrangThai == null || lb.TrangThai == "LB1"))
+            .Select(lb => new
+            {
+                lb.MaLamBu,
+                lb.NgayLamViec,
+                lb.GioVao,
+                lb.GioRa,
+                lb.TongGio,
+                TrangThai = lb.TrangThai ?? "LB1",
+                lb.GhiChu,
+                lb.MaNvDuyet
+            })
+            .ToList();
+
+        return Ok(new { success = true, records = makeupRecords });
+    }
+
+    // 🔹 Duyệt hoặc từ chối làm bù (Manager, đơn lẻ)
+    [HttpPost("ApproveMakeup")]
+    public IActionResult ApproveMakeup(ApproveAttendanceRequestDTO request)
+    {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
+        var lamBu = _context.LamBus.FirstOrDefault(lb => lb.MaLamBu == request.MaChamCong);
+        if (lamBu == null)
+        {
+            return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu làm bù." });
+        }
+
+        if (request.TrangThai == "LB4")
+        {
+            lamBu.TrangThai = "LB4";
+            lamBu.GhiChu = request.GhiChu ?? "Không có ghi chú";
+            lamBu.MaNvDuyet = maNv;
+
+            var employee = _context.NhanViens.Find(lamBu.MaNV);
+            if (employee != null)
+            {
+                SendRejectionEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB4", "làm bù", lamBu.GhiChu);
+            }
+
+            _context.SaveChanges();
+            return Ok(new { success = true, message = "Đã từ chối làm bù." });
+        }
+
+        lamBu.TrangThai = "LB2";
+        lamBu.MaNvDuyet = maNv;
+        _context.SaveChanges();
+
+        return Ok(new { success = true, message = "Duyệt làm bù thành công." });
+    }
+
+    // 🔹 Duyệt hoặc từ chối nhiều bản ghi làm bù (Manager)
+    [HttpPost("ApproveMultipleMakeup")]
+    public IActionResult ApproveMultipleMakeup([FromBody] ApproveMultipleAttendanceRequestDTO request)
+    {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
+        using (var transaction = _context.Database.BeginTransaction())
+        {
+            try
+            {
+                var failedRecords = new List<int>();
+                var rejectionDetails = new List<(string Email, string HoTen, DateOnly Ngay, string GhiChu)>();
+
+                foreach (var maLamBu in request.MaChamCongList)
+                {
+                    var lamBu = _context.LamBus.FirstOrDefault(lb => lb.MaLamBu == maLamBu);
+                    if (lamBu == null)
+                    {
+                        failedRecords.Add(maLamBu);
+                        continue;
+                    }
+
+                    if (lamBu.TrangThai != "LB1" && lamBu.TrangThai != null)
+                    {
+                        failedRecords.Add(maLamBu);
+                        continue;
+                    }
+
+                    if (request.TrangThai == "LB4")
+                    {
+                        lamBu.TrangThai = "LB4";
+                        lamBu.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                        lamBu.MaNvDuyet = maNv;
+
+                        var employee = _context.NhanViens.Find(lamBu.MaNV);
+                        if (employee != null)
+                        {
+                            rejectionDetails.Add((employee.Email, employee.HoTen, lamBu.NgayLamViec, lamBu.GhiChu));
+                        }
+                    }
+                    else if (request.TrangThai == "LB2")
+                    {
+                        lamBu.TrangThai = "LB2";
+                        lamBu.MaNvDuyet = maNv;
+                    }
+                }
+
+                _context.SaveChanges();
+
+                if (request.TrangThai == "LB4" && rejectionDetails.Any())
+                {
+                    foreach (var group in rejectionDetails.GroupBy(d => d.Email))
+                    {
+                        var email = group.Key;
+                        var hoTen = group.First().HoTen;
+                        var details = group.Select(d => $"Ngày {d.Ngay:dd/MM/yyyy}: {d.GhiChu}").ToList();
+                        SendBatchRejectionEmail(email, hoTen, "làm bù", details);
+                    }
+                }
+
+                transaction.Commit();
+                var baseMessage = request.TrangThai == "LB2" ? "Duyệt làm bù thành công." : "Đã từ chối làm bù.";
+                var message = failedRecords.Any()
+                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật."
+                    : baseMessage;
+                return Ok(new { success = true, message });
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+    }
+
+    // 🔹 Lấy danh sách làm bù của nhân viên (Director)
+    [HttpGet("GetMakeupRecordsDerector")]
+    public IActionResult GetMakeupRecordsDerector(int maNv)
+    {
+        var makeupRecords = _context.LamBus
+            .Where(lb => lb.MaNV == maNv && (lb.TrangThai == null || lb.TrangThai == "LB2"))
+            .Select(lb => new
+            {
+                lb.MaLamBu,
+                lb.NgayLamViec,
+                lb.GioVao,
+                lb.GioRa,
+                lb.TongGio,
+                TrangThai = lb.TrangThai ?? "LB2",
+                lb.GhiChu,
+                lb.MaNvDuyet
+            })
+            .ToList();
+
+        return Ok(new { success = true, records = makeupRecords });
+    }
+
+    // 🔹 Duyệt hoặc từ chối làm bù (Director, đơn lẻ)
+    [HttpPost("ApproveMakeupDerector")]
+    public IActionResult ApproveMakeupDerector(ApproveAttendanceRequestDTO request)
+    {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
+        var lamBu = _context.LamBus.FirstOrDefault(lb => lb.MaLamBu == request.MaChamCong);
+        if (lamBu == null)
+        {
+            return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu làm bù." });
+        }
+
+        var employee = _context.NhanViens.Find(lamBu.MaNV);
+        if (employee == null)
+        {
+            return BadRequest(new { success = false, message = "Không tìm thấy nhân viên." });
+        }
+
+        if (request.TrangThai == "Đã duyệt")
+        {
+            lamBu.TrangThai = "LB3";
+            lamBu.MaNvDuyet = maNv;
+
+            // Cập nhật số giờ thiếu và giờ làm bù
+            if (lamBu.TongGio.HasValue)
+            {
+                var firstDayOfMonth = new DateOnly(lamBu.NgayLamViec.Year, lamBu.NgayLamViec.Month, 1);
+                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                var tongGioThieu = _context.TongGioThieus
+                    .FirstOrDefault(t => t.MaNv == lamBu.MaNV &&
+                                       t.NgayBatDauThieu == firstDayOfMonth &&
+                                       t.NgayKetThucThieu == lastDayOfMonth);
+
+                if (tongGioThieu == null)
+                {
+                    tongGioThieu = new TongGioThieu
+                    {
+                        MaNv = lamBu.MaNV,
+                        NgayBatDauThieu = firstDayOfMonth,
+                        NgayKetThucThieu = lastDayOfMonth,
+                        TongGioConThieu = 0m,
+                        TongGioLamBu = lamBu.TongGio.Value,
+                        MaNvNavigation = employee
+                    };
+                    _context.TongGioThieus.Add(tongGioThieu);
+                }
+                else
+                {
+                    tongGioThieu.TongGioLamBu += lamBu.TongGio.Value;
+                }
+
+                var gioThieu = _context.GioThieus
+                    .FirstOrDefault(gt => gt.MaNv == lamBu.MaNV && gt.NgayThieu == lamBu.NgayLamViec);
+
+                if (gioThieu != null)
+                {
+                    gioThieu.TongGioThieu = Math.Max(0, gioThieu.TongGioThieu - lamBu.TongGio.Value);
+                    if (gioThieu.TongGioThieu == 0)
+                    {
+                        _context.GioThieus.Remove(gioThieu);
+                    }
+                }
+            }
+
+            SendApprovalEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB3");
+        }
+        else if (request.TrangThai == "Từ chối")
+        {
+            lamBu.TrangThai = "LB4";
+            lamBu.GhiChu = request.GhiChu ?? "Không có ghi chú";
+            lamBu.MaNvDuyet = maNv;
+            SendRejectionEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB4", "làm bù", lamBu.GhiChu);
+        }
+
+        _context.SaveChanges();
+        var message = request.TrangThai == "Đã duyệt" ? "Duyệt làm bù thành công." : "Đã từ chối làm bù.";
+        return Ok(new { success = true, message });
+    }
+
+    // 🔹 Duyệt hoặc từ chối nhiều bản ghi làm bù (Director)
+    [HttpPost("ApproveMultipleMakeupDerector")]
+    public IActionResult ApproveMultipleMakeupDerector([FromBody] ApproveMultipleAttendanceRequestDTO request)
+    {
+        int maNv = (int)GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized("Không tìm thấy mã nhân viên trong claims.");
+
+        using (var transaction = _context.Database.BeginTransaction())
+        {
+            try
+            {
+                var failedRecords = new List<int>();
+                var rejectionDetails = new List<(string Email, string HoTen, DateOnly Ngay, string GhiChu)>();
+
+                foreach (var maLamBu in request.MaChamCongList)
+                {
+                    var lamBu = _context.LamBus.FirstOrDefault(lb => lb.MaLamBu == maLamBu);
+                    if (lamBu == null)
+                    {
+                        failedRecords.Add(maLamBu);
+                        continue;
+                    }
+
+                    if (lamBu.TrangThai != "LB2" && lamBu.TrangThai != null)
+                    {
+                        failedRecords.Add(maLamBu);
+                        continue;
+                    }
+
+                    var employee = _context.NhanViens.Find(lamBu.MaNV);
+                    if (employee == null)
+                    {
+                        failedRecords.Add(maLamBu);
+                        continue;
+                    }
+
+                    if (request.TrangThai == "Từ chối")
+                    {
+                        lamBu.TrangThai = "LB4";
+                        lamBu.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                        lamBu.MaNvDuyet = maNv;
+                        rejectionDetails.Add((employee.Email, employee.HoTen, lamBu.NgayLamViec, lamBu.GhiChu));
+                    }
+                    else if (request.TrangThai == "Đã duyệt")
+                    {
+                        lamBu.TrangThai = "LB3";
+                        lamBu.MaNvDuyet = maNv;
+
+                        // Cập nhật số giờ thiếu và giờ làm bù
+                        if (lamBu.TongGio.HasValue)
+                        {
+                            var firstDayOfMonth = new DateOnly(lamBu.NgayLamViec.Year, lamBu.NgayLamViec.Month, 1);
+                            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                            var tongGioThieu = _context.TongGioThieus
+                                .FirstOrDefault(t => t.MaNv == lamBu.MaNV &&
+                                                   t.NgayBatDauThieu == firstDayOfMonth &&
+                                                   t.NgayKetThucThieu == lastDayOfMonth);
+
+                            if (tongGioThieu == null)
+                            {
+                                tongGioThieu = new TongGioThieu
+                                {
+                                    MaNv = lamBu.MaNV,
+                                    NgayBatDauThieu = firstDayOfMonth,
+                                    NgayKetThucThieu = lastDayOfMonth,
+                                    TongGioConThieu = 0m,
+                                    TongGioLamBu = lamBu.TongGio.Value,
+                                    MaNvNavigation = employee
+                                };
+                                _context.TongGioThieus.Add(tongGioThieu);
+                            }
+                            else
+                            {
+                                tongGioThieu.TongGioLamBu += lamBu.TongGio.Value;
+                            }
+
+                            var gioThieu = _context.GioThieus
+                                .FirstOrDefault(gt => gt.MaNv == lamBu.MaNV && gt.NgayThieu == lamBu.NgayLamViec);
+
+                            if (gioThieu != null)
+                            {
+                                gioThieu.TongGioThieu = Math.Max(0, gioThieu.TongGioThieu - lamBu.TongGio.Value);
+                                if (gioThieu.TongGioThieu == 0)
+                                {
+                                    _context.GioThieus.Remove(gioThieu);
+                                }
+                            }
+                        }
+
+                        SendApprovalEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB3");
+                    }
+                }
+
+                _context.SaveChanges();
+
+                if (request.TrangThai == "Từ chối" && rejectionDetails.Any())
+                {
+                    foreach (var group in rejectionDetails.GroupBy(d => d.Email))
+                    {
+                        var email = group.Key;
+                        var hoTen = group.First().HoTen;
+                        var details = group.Select(d => $"Ngày {d.Ngay:dd/MM/yyyy}: {d.GhiChu}").ToList();
+                        SendBatchRejectionEmail(email, hoTen, "làm bù", details);
+                    }
+                }
+
+                transaction.Commit();
+                var baseMessage = request.TrangThai == "Đã duyệt" ? "Duyệt làm bù thành công." : "Đã từ chối làm bù.";
+                var message = failedRecords.Any()
+                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật."
+                    : baseMessage;
+                return Ok(new { success = true, message });
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+    }
 }
 
 public class ApproveAttendanceRequestDTO

@@ -29,7 +29,8 @@ namespace HR_KD.Data
 
             // Optional: navigation property
             public NhanVien? NhanVien { get; set; }
-        }
-
+            public int MaNvDuyet { get; set; }
     }
+
+ }
 

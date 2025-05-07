@@ -207,7 +207,8 @@
                             <a href="#"><i class="fa fa-clock-o"></i> <span>Chấm công</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
                                 <!-- Accessible to all users -->
-                                <li><a href="~/Attendance/Index2"><i class="fa fa-list"></i> Danh sách chấm công</a></li>
+                                <li><a href="~/Attendance/Index2"><i class="fa fa-list"></i> Chấm công</a></li>
+                                <li><a href="~/LamBu/Index"><i class="fa fa-list"></i> Làm bù</a></li>
                                 <!-- Restricted to EMPLOYEE_MANAGER role -->
                                 @if (User.IsInRole("DIRECTOR"))
                                 { 

@@ -18,12 +18,15 @@
 
 <div class="dashboard-card bg-white p-4">
     <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i> Chấm công nâng cao</h5>
-    <!-- Calendar Section -->
+    <!-- Remaining Hours Section -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="form-group">
                 <label for="_remainingHours" class="form-label fw-bold">Số giờ cần bù: </label>
                 <span id="_remainingHours" class="fw-bold text-primary">Đang tải...</span>
+                <div id="remainingHoursMessage" class="text-danger mt-2" style="display: none;">
+                    Cần làm đủ giờ trước khi tăng ca
+                </div>
             </div>
         </div>
     </div>
@@ -79,7 +82,7 @@
 
         <!-- Overtime Controls (Right) -->
         <div class="col-md-6">
-            <div class="card">
+            <div class="card overtime-card">
                 <div class="card-body">
                     <h6 class="card-title">Tăng ca</h6>
                     <div class="row">
@@ -172,13 +175,29 @@
 
             if (result.success) {
                 document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
+                toggleOvertimeSection(result.remainingHours);
             } else {
                 document.getElementById('_remainingHours').textContent = `0.00h`;
+                toggleOvertimeSection(0);
             }
         } catch (error) {
             document.getElementById('_remainingHours').textContent = `0.00h`;
+            toggleOvertimeSection(0);
         }
     });
+
+    function toggleOvertimeSection(remainingHours) {
+        const overtimeCard = document.querySelector('.overtime-card');
+        const remainingHoursMessage = document.getElementById('remainingHoursMessage');
+
+        if (remainingHours > 0) {
+            overtimeCard.style.display = 'none';
+            remainingHoursMessage.style.display = 'block'; // Hiển thị thông báo
+        } else {
+            overtimeCard.style.display = 'block';
+            remainingHoursMessage.style.display = 'none'; // Ẩn thông báo
+        }
+    }
 
     async function loadOvertimeRates() {
         try {

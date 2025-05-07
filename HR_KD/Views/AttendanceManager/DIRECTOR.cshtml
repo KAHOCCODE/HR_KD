@@ -76,6 +76,32 @@
     </table>
 </div>
 
+<div id="makeupSection" class="dashboard-card bg-white p-4 mt-4">
+    <h5 class="mb-4 text-primary"><i class="fas fa-clock me-2"></i> Bảng Làm Bù</h5>
+
+    <!-- Nút duyệt/từ chối hàng loạt -->
+    <div class="mb-3">
+        <button class="btn btn-success me-2" onclick="approveSelectedMakeup('Đã duyệt')">Duyệt tất cả đã chọn</button>
+        <button class="btn btn-danger" onclick="rejectSelectedMakeup()">Từ chối tất cả đã chọn</button>
+    </div>
+
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="selectAllMakeup" onclick="toggleSelectAll('makeup')"></th>
+                <th>Ngày làm bù</th>
+                <th>Giờ vào</th>
+                <th>Giờ ra</th>
+                <th>Tổng giờ</th>
+                <th>Trạng thái</th>
+                <th>Ghi chú</th>
+                <th>Duyệt</th>
+            </tr>
+        </thead>
+        <tbody id="makeupTableBody"></tbody>
+    </table>
+</div>
+
 <!-- Modal for rejection comment -->
 <div class="modal fade" id="rejectionModal" tabindex="-1" aria-labelledby="rejectionModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -120,10 +146,33 @@
     </div>
 </div>
 
+<!-- Modal for makeup rejection comment -->
+<div class="modal fade" id="makeupRejectionModal" tabindex="-1" aria-labelledby="makeupRejectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="makeupRejectionModalLabel">Nhập lý do từ chối làm bù</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="makeupRejectionComment" class="form-label">Ghi chú:</label>
+                    <textarea class="form-control" id="makeupRejectionComment" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitMakeupRejection()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let trangThaiMap = {};
     let selectedAttendanceIds = [];
     let selectedOvertimeIds = [];
+    let selectedMakeupIds = [];
 
     document.addEventListener("DOMContentLoaded", function () {
         loadTrangThai();
@@ -138,6 +187,7 @@
             if (maNv) {
                 fetchAttendanceRecords(maNv);
                 fetchOvertimeRecords(maNv);
+                fetchMakeupRecords(maNv);
             } else {
                 clearTables();
             }
@@ -160,8 +210,10 @@
     function clearTables() {
         document.getElementById("attendanceTableBody").innerHTML = '';
         document.getElementById("overtimeTableBody").innerHTML = '';
+        document.getElementById("makeupTableBody").innerHTML = '';
         selectedAttendanceIds = [];
         selectedOvertimeIds = [];
+        selectedMakeupIds = [];
     }
 
     // Load bộ lọc
@@ -200,6 +252,7 @@
                     select.value = data[0].maNv;
                     fetchAttendanceRecords(data[0].maNv);
                     fetchOvertimeRecords(data[0].maNv);
+                    fetchMakeupRecords(data[0].maNv);
                 } else {
                     clearTables();
                 }
@@ -224,6 +277,14 @@
                 cb.checked = selectAll.checked;
                 if (cb.checked) {
                     selectedOvertimeIds.push(parseInt(cb.value));
+                }
+            });
+        } else if (type === 'makeup') {
+            selectedMakeupIds = [];
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+                if (cb.checked) {
+                    selectedMakeupIds.push(parseInt(cb.value));
                 }
             });
         }
@@ -481,6 +542,133 @@
                 const selected = document.getElementById("employeeFilter").value;
                 if (selected) {
                     fetchOvertimeRecords(selected);
+                }
+            }
+        });
+    }
+
+    // Makeup work functions
+    function fetchMakeupRecords(maNv) {
+        fetch(`/api/AttendanceManager/GetMakeupRecordsDerector?maNv=${maNv}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    selectedMakeupIds = [];
+                    renderMakeupTable(data.records);
+                }
+            });
+    }
+
+    function renderMakeupTable(records) {
+        const body = document.getElementById("makeupTableBody");
+        body.innerHTML = records.map(r => `
+            <tr>
+                <td><input type="checkbox" value="${r.maLamBu}" onchange="updateSelectedMakeup(${r.maLamBu}, this.checked)"></td>
+                <td>${r.ngayLamViec}</td>
+                <td>${r.gioVao || "-"}</td>
+                <td>${r.gioRa || "-"}</td>
+                <td>${r.tongGio || "-"}</td>
+                <td class="${getStatusClass(r.trangThai)}">${trangThaiMap[r.trangThai] || r.trangThai}</td>
+                <td>${r.ghiChu || "-"}</td>
+                <td>
+                    <button class="btn btn-success btn-sm me-1" onclick="approveMakeup(${r.maLamBu}, 'Đã duyệt')">✔</button>
+                    <button class="btn btn-danger btn-sm" onclick="approveMakeup(${r.maLamBu}, 'Từ chối')">✖</button>
+                </td>
+            </tr>
+        `).join("");
+        document.getElementById("selectAllMakeup").checked = false;
+    }
+
+    function updateSelectedMakeup(maLamBu, isChecked) {
+        if (isChecked) {
+            selectedMakeupIds.push(maLamBu);
+        } else {
+            selectedMakeupIds = selectedMakeupIds.filter(id => id !== maLamBu);
+        }
+    }
+
+    function approveSelectedMakeup(trangThai) {
+        if (selectedMakeupIds.length === 0) {
+            alert("Vui lòng chọn ít nhất một bản ghi để duyệt.");
+            return;
+        }
+        submitMultipleMakeupApproval(selectedMakeupIds, trangThai, "");
+    }
+
+    function rejectSelectedMakeup() {
+        if (selectedMakeupIds.length === 0) {
+            alert("Vui lòng chọn ít nhất một bản ghi để từ chối.");
+            return;
+        }
+        isBatchMakeupRejection = true;
+        $('#makeupRejectionModal').modal('show');
+    }
+
+    let currentMakeupRejectionId = null;
+    let isBatchMakeupRejection = false;
+
+    function approveMakeup(maLamBu, trangThai) {
+        if (trangThai === "Từ chối") {
+            currentMakeupRejectionId = maLamBu;
+            isBatchMakeupRejection = false;
+            $('#makeupRejectionModal').modal('show');
+        } else {
+            submitMakeupApproval(maLamBu, trangThai, "");
+        }
+    }
+
+    function submitMakeupRejection() {
+        const comment = document.getElementById('makeupRejectionComment').value;
+        if (isBatchMakeupRejection) {
+            submitMultipleMakeupApproval(selectedMakeupIds, "Từ chối", comment);
+        } else if (currentMakeupRejectionId) {
+            submitMakeupApproval(currentMakeupRejectionId, "Từ chối", comment);
+        }
+        $('#makeupRejectionModal').modal('hide');
+        document.getElementById('makeupRejectionComment').value = '';
+        currentMakeupRejectionId = null;
+        isBatchMakeupRejection = false;
+    }
+
+    function submitMakeupApproval(maLamBu, trangThai, ghiChu) {
+        fetch("/api/AttendanceManager/ApproveMakeupDerector", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                maChamCong: maLamBu, 
+                trangThai: trangThai,
+                ghiChu: ghiChu
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                const selected = document.getElementById("employeeFilter").value;
+                if (selected) {
+                    fetchMakeupRecords(selected);
+                }
+            }
+        });
+    }
+
+    function submitMultipleMakeupApproval(maLamBuList, trangThai, ghiChu) {
+        fetch("/api/AttendanceManager/ApproveMultipleMakeupDerector", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                maChamCongList: maLamBuList, 
+                trangThai: trangThai,
+                ghiChu: ghiChu
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                const selected = document.getElementById("employeeFilter").value;
+                if (selected) {
+                    fetchMakeupRecords(selected);
                 }
             }
         });

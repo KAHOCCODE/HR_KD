@@ -1,6 +1,7 @@
 ﻿using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,6 +17,27 @@ namespace HR_KD.Services
         }
 
         /// <summary>
+        /// Đặt lại trạng thái IsReset cho các bản ghi của năm trước
+        /// </summary>
+        public async Task ResetIsResetFlagForPreviousYearsAsync(int namHienTai)
+        {
+            // Set IsReset = false cho tất cả các bản ghi từ năm trước
+            var phepNamCu = await _context.PhepNamNhanViens
+                .Where(p => p.Nam < namHienTai && p.IsReset == true)
+                .ToListAsync();
+
+            foreach (var phep in phepNamCu)
+            {
+                phep.IsReset = false;
+                phep.NgayCapNhat = DateTime.Now;
+                phep.GhiChu = $"Đã chuyển IsReset về false khi sang năm {namHienTai}";
+            }
+
+            // Lưu thay đổi
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
         /// Tự động reset và tính toán lại số ngày phép cho tất cả nhân viên vào đầu năm mới.
         /// </summary>
         public async Task AutoResetAndCalculatePhepNamAsync(int nam)
@@ -25,20 +47,38 @@ namespace HR_KD.Services
                 return; // Chỉ chạy vào ngày 1/1, tránh chạy nhầm
 
             var cauHinh = await _context.CauHinhPhepNams
+                .Include(c => c.CauHinhPhep_ChinhSachs)
+                .ThenInclude(cp => cp.ChinhSachPhepNam)
                 .Where(c => c.Nam <= nam)  // Lọc các cấu hình cho năm <= năm hiện tại
                 .OrderByDescending(c => c.Nam)  // Sắp xếp từ năm lớn nhất đến nhỏ nhất
                 .FirstOrDefaultAsync();  // Lấy cấu hình gần nhất
 
+            bool usedPreviousYearConfig = false;
+            int configYear = nam;
+
             if (cauHinh == null)
             {
-                // Nếu không tìm thấy cấu hình phép năm cho năm gần nhất, tạo cấu hình mặc định
+                // Nếu không tìm thấy cấu hình phép năm cho năm nào, tạo cấu hình mặc định
                 cauHinh = new CauHinhPhepNam
                 {
                     Nam = nam,
-                    SoNgayPhepMacDinh = 12  // Giá trị mặc định
+                    SoNgayPhepMacDinh = 12,  // Giá trị mặc định
+                    CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>() // Khởi tạo danh sách rỗng
                 };
                 _context.CauHinhPhepNams.Add(cauHinh);
                 await _context.SaveChangesAsync();
+            }
+            else if (cauHinh.Nam < nam)
+            {
+                // Nếu đang sử dụng cấu hình từ năm trước
+                usedPreviousYearConfig = true;
+                configYear = cauHinh.Nam;
+            }
+
+            // Đảm bảo danh sách chính sách không null
+            if (cauHinh.CauHinhPhep_ChinhSachs == null)
+            {
+                cauHinh.CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>();
             }
 
             // Lấy tất cả nhân viên
@@ -48,7 +88,7 @@ namespace HR_KD.Services
 
             foreach (var nv in nhanViens)
             {
-                // Kiểm tra và tính thâm niên từ DateOnly?
+                // Kiểm tra và tính thâm niên
                 int? thamnien = null;
                 if (nv.NgayVaoLam.HasValue)
                 {
@@ -62,11 +102,17 @@ namespace HR_KD.Services
                 }
 
                 // Tính số ngày phép được cấp
-                decimal soNgayPhepDuocCap = await TinhSoNgayPhepDuocCap(nam, nv, cauHinh, thamnien.Value);
+                decimal soNgayPhepDuocCap = TinhSoNgayPhepDuocCap(nam, nv, cauHinh, thamnien.Value);
 
                 // Kiểm tra và xử lý bản ghi trong PhepNamNhanVien
                 var phepNam = await _context.PhepNamNhanViens
                     .SingleOrDefaultAsync(p => p.MaNv == nv.MaNv && p.Nam == nam);
+
+                string ghiChu = $"Reset và áp dụng cấu hình năm {nam} cho {nv.HoTen ?? "Nhân viên không tên"}";
+                if (usedPreviousYearConfig)
+                {
+                    ghiChu = $"Reset và áp dụng cấu hình từ năm {configYear} cho {nv.HoTen ?? "Nhân viên không tên"} (năm {nam} không có cấu hình riêng)";
+                }
 
                 if (phepNam == null)
                 {
@@ -80,7 +126,7 @@ namespace HR_KD.Services
                         NgayCapNhat = DateTime.Now,
                         CauHinhPhepNamId = cauHinh.Id,
                         IsReset = true,
-                        GhiChu = $"Reset và áp dụng cấu hình năm {nam} cho {nv.HoTen ?? "Nhân viên không tên"}"
+                        GhiChu = ghiChu
                     };
                     _context.PhepNamNhanViens.Add(phepNam);
                 }
@@ -92,7 +138,7 @@ namespace HR_KD.Services
                     phepNam.NgayCapNhat = DateTime.Now;
                     phepNam.CauHinhPhepNamId = cauHinh.Id;
                     phepNam.IsReset = true;
-                    phepNam.GhiChu = $"Reset và cập nhật cấu hình năm {nam} cho {nv.HoTen ?? "Nhân viên không tên"}";
+                    phepNam.GhiChu = ghiChu;
                 }
 
                 // Cập nhật hoặc tạo bản ghi trong SoDuPhep
@@ -139,10 +185,36 @@ namespace HR_KD.Services
             var cauHinh = await _context.CauHinhPhepNams
                 .Include(c => c.CauHinhPhep_ChinhSachs)
                 .ThenInclude(cp => cp.ChinhSachPhepNam)
-                .SingleOrDefaultAsync(c => c.Nam == nam);
+                .Where(c => c.Nam <= nam)
+                .OrderByDescending(c => c.Nam)
+                .FirstOrDefaultAsync();
+
+            bool usedPreviousYearConfig = false;
+            int configYear = nam;
 
             if (cauHinh == null)
-                throw new InvalidOperationException($"Không tìm thấy cấu hình phép năm cho năm {nam}.");
+            {
+                // Nếu không tìm thấy cấu hình cho năm hiện tại, tạo mới
+                cauHinh = new CauHinhPhepNam
+                {
+                    Nam = nam,
+                    SoNgayPhepMacDinh = 12,  // Giá trị mặc định
+                    CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>() // Khởi tạo danh sách rỗng
+                };
+                _context.CauHinhPhepNams.Add(cauHinh);
+                await _context.SaveChangesAsync();
+            }
+            else if (cauHinh.Nam < nam)
+            {
+                usedPreviousYearConfig = true;
+                configYear = cauHinh.Nam;
+            }
+
+            // Đảm bảo danh sách chính sách không null
+            if (cauHinh.CauHinhPhep_ChinhSachs == null)
+            {
+                cauHinh.CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>();
+            }
 
             // Tính thâm niên
             int thamnien = 0;
@@ -153,7 +225,13 @@ namespace HR_KD.Services
             }
 
             // Tính số ngày phép được cấp
-            decimal soNgayPhepDuocCap = await TinhSoNgayPhepDuocCap(nam, nv, cauHinh, thamnien);
+            decimal soNgayPhepDuocCap = TinhSoNgayPhepDuocCap(nam, nv, cauHinh, thamnien);
+
+            string ghiChu = $"Cập nhật phép cho nhân viên mới {nv.HoTen ?? "không rõ"} năm {nam}";
+            if (usedPreviousYearConfig)
+            {
+                ghiChu = $"Cập nhật phép cho nhân viên mới {nv.HoTen ?? "không rõ"} năm {nam} (sử dụng cấu hình năm {configYear})";
+            }
 
             // Tạo bản ghi phép năm
             var phepNam = new PhepNamNhanVien
@@ -165,7 +243,7 @@ namespace HR_KD.Services
                 NgayCapNhat = DateTime.Now,
                 CauHinhPhepNamId = cauHinh.Id,
                 IsReset = true,
-                GhiChu = $"Cập nhật phép cho nhân viên mới {nv.HoTen ?? "không rõ"} năm {nam}"
+                GhiChu = ghiChu
             };
             _context.PhepNamNhanViens.Add(phepNam);
 
@@ -182,19 +260,23 @@ namespace HR_KD.Services
             await _context.SaveChangesAsync();
         }
 
-        private async Task<decimal> TinhSoNgayPhepDuocCap(int nam, NhanVien nv, CauHinhPhepNam cauHinh, int thamnien)
+        private decimal TinhSoNgayPhepDuocCap(int nam, NhanVien nv, CauHinhPhepNam cauHinh, int thamnien)
         {
             decimal soNgayPhep = cauHinh.SoNgayPhepMacDinh;
 
-            // Áp dụng các chính sách thâm niên
-            foreach (var cp in cauHinh.CauHinhPhep_ChinhSachs)
+            // Áp dụng các chính sách thâm niên nếu có
+            if (cauHinh.CauHinhPhep_ChinhSachs != null && cauHinh.CauHinhPhep_ChinhSachs.Any())
             {
-                var chinhSach = cp.ChinhSachPhepNam;
-                if (chinhSach.ConHieuLuc &&
-                    chinhSach.ApDungTuNam <= nam &&
-                    thamnien >= chinhSach.SoNam)
+                foreach (var cp in cauHinh.CauHinhPhep_ChinhSachs)
                 {
-                    soNgayPhep += chinhSach.SoNgayCongThem;
+                    // Kiểm tra null trước khi truy cập thuộc tính
+                    if (cp.ChinhSachPhepNam != null &&
+                        cp.ChinhSachPhepNam.ConHieuLuc &&
+                        cp.ChinhSachPhepNam.ApDungTuNam <= nam &&
+                        thamnien >= cp.ChinhSachPhepNam.SoNam)
+                    {
+                        soNgayPhep += cp.ChinhSachPhepNam.SoNgayCongThem;
+                    }
                 }
             }
 
@@ -226,19 +308,36 @@ namespace HR_KD.Services
             {
                 // Nếu chưa có bản ghi, tạo mới với cấu hình mặc định
                 var cauHinh = await _context.CauHinhPhepNams
+                    .Include(c => c.CauHinhPhep_ChinhSachs)
+                    .ThenInclude(cp => cp.ChinhSachPhepNam)
                     .Where(c => c.Nam <= ngayNghi.NgayNghi1.Year)
                     .OrderByDescending(c => c.Nam)
                     .FirstOrDefaultAsync();
+
+                bool usedPreviousYearConfig = false;
+                int configYear = ngayNghi.NgayNghi1.Year;
 
                 if (cauHinh == null)
                 {
                     cauHinh = new CauHinhPhepNam
                     {
                         Nam = ngayNghi.NgayNghi1.Year,
-                        SoNgayPhepMacDinh = 12 // Giá trị mặc định
+                        SoNgayPhepMacDinh = 12, // Giá trị mặc định
+                        CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>() // Khởi tạo danh sách rỗng
                     };
                     _context.CauHinhPhepNams.Add(cauHinh);
                     await _context.SaveChangesAsync();
+                }
+                else if (cauHinh.Nam < ngayNghi.NgayNghi1.Year)
+                {
+                    usedPreviousYearConfig = true;
+                    configYear = cauHinh.Nam;
+                }
+
+                // Đảm bảo danh sách chính sách không null
+                if (cauHinh.CauHinhPhep_ChinhSachs == null)
+                {
+                    cauHinh.CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>();
                 }
 
                 // Lấy thông tin nhân viên
@@ -257,7 +356,13 @@ namespace HR_KD.Services
                 if (thamnien < 0) thamnien = 0;
 
                 // Tính số ngày phép được cấp
-                decimal soNgayPhepDuocCap = await TinhSoNgayPhepDuocCap(ngayNghi.NgayNghi1.Year, nhanVien, cauHinh, thamnien);
+                decimal soNgayPhepDuocCap = TinhSoNgayPhepDuocCap(ngayNghi.NgayNghi1.Year, nhanVien, cauHinh, thamnien);
+
+                string ghiChu = $"Tạo bản ghi phép năm cho đơn nghỉ phép {maNgayNghi}";
+                if (usedPreviousYearConfig)
+                {
+                    ghiChu = $"Tạo bản ghi phép năm cho đơn nghỉ phép {maNgayNghi} (sử dụng cấu hình năm {configYear})";
+                }
 
                 // Tạo bản ghi mới
                 phepNam = new PhepNamNhanVien
@@ -268,8 +373,8 @@ namespace HR_KD.Services
                     SoNgayDaSuDung = 0,
                     NgayCapNhat = DateTime.Now,
                     CauHinhPhepNamId = cauHinh.Id,
-                    IsReset = false,
-                    GhiChu = $"Tạo bản ghi phép năm cho đơn nghỉ phép {maNgayNghi}"
+                    IsReset = false, // Bản ghi được tạo trong năm không phải từ quá trình reset
+                    GhiChu = ghiChu
                 };
                 _context.PhepNamNhanViens.Add(phepNam);
             }

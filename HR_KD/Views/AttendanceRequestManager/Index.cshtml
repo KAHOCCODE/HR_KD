@@ -1,5 +1,4 @@
-﻿
-@{
+﻿@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
@@ -27,99 +26,48 @@
     #attendanceCalendar {
         background-color: #fff;
     }
+
+    .section-title {
+        color: #0d6efd;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-send-email {
+        width: 100%;
+    }
 </style>
 
-<div id="attendanceSection" class="dashboard-card bg-white p-4 rounded shadow">
-    <h5 class="mb-4 text-primary"><i class="fas fa-fingerprint me-2"></i> Yêu Cầu Chấm Công</h5>
-
-    <!-- Email Reminder Section -->
+<!-- Section 1: Attendance Requests -->
+<div id="attendanceSection" class="dashboard-card bg-white p-4">
+    <h5 class="section-title"><i class="fas fa-fingerprint me-2"></i> Yêu Cầu Chấm Công</h5>
+    
     <div class="row mb-4">
         <div class="col-md-6">
-            <label for="emailWeekPicker" class="form-label fw-bold">Chọn tuần để gửi email nhắc nhở</label>
-            <input type="text" class="form-control" id="emailWeekPicker" placeholder="Chọn tuần">
+            <label for="attendanceWeekPicker" class="form-label fw-bold">Chọn tuần để kiểm tra chấm công</label>
+            <input type="text" class="form-control" id="attendanceWeekPicker" placeholder="Chọn tuần">
         </div>
         <div class="col-md-6 d-flex align-items-end">
-            <button class="btn btn-warning w-100" id="sendReminderEmails"><i class="fas fa-envelope me-2"></i> Gửi Email Nhắc Nhở</button>
+            <button class="btn btn-primary btn-send-email" id="sendAttendanceReminders">
+                <i class="fas fa-envelope me-2"></i> Gửi Email Nhắc Nhở Chấm Công
+            </button>
         </div>
     </div>
 
-    <!-- Filters Section -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <label for="departmentFilter" class="form-label fw-bold">Phòng Ban</label>
-            <select class="form-control" id="departmentFilter">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label for="positionFilter" class="form-label fw-bold">Chức Vụ</label>
-            <select class="form-control" id="positionFilter">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label for="employeeFilter" class="form-label fw-bold">Nhân Viên</label>
-            <select class="form-control" id="employeeFilter">
-                <option value="">Chọn nhân viên</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Date and Calendar Section -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <label for="attendanceDateRange" class="form-label fw-bold">Chọn Ngày Làm Việc</label>
-            <input type="text" class="form-control" id="attendanceDateRange" placeholder="Chọn ngày làm việc">
-            <div class="mt-3">
-                <label class="form-label fw-bold">Các ngày làm việc đã chọn</label>
-                <div id="selectedDates" class="border p-2 rounded"></div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div id="attendanceCalendar" class="border rounded p-2"></div>
-        </div>
-    </div>
-
-    <!-- Time Input Section -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <label for="checkInTime" class="form-label fw-bold">Giờ Check-in</label>
-            <input type="time" class="form-control" id="checkInTime" value="08:00">
-        </div>
-        <div class="col-md-6">
-            <label for="checkOutTime" class="form-label fw-bold">Giờ Check-out</label>
-            <input type="time" class="form-control" id="checkOutTime" value="18:00">
-        </div>
-    </div>
-
-    <!-- Weekly Hours and Note -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <label for="weeklyHours" class="form-label fw-bold">Tổng Số Giờ Làm</label>
-            <input type="text" class="form-control" id="weeklyHours" readonly>
-        </div>
-        <div class="col-md-6">
-            <label for="attendanceNote" class="form-label fw-bold">Ghi Chú</label>
-            <textarea class="form-control" id="attendanceNote" rows="3" placeholder="Nhập ghi chú (nếu có)"></textarea>
-        </div>
-    </div>
-
-    <!-- Submit Button -->
-    <div class="mb-4">
-        <button class="btn btn-primary w-100" id="submitAttendance"><i class="fas fa-check me-2"></i> Gửi Yêu Cầu Chấm Công</button>
-    </div>
-
-    <!-- Attendance Records Table -->
     <div class="table-responsive">
         <table class="table table-bordered table-hover">
             <thead class="table-primary">
                 <tr>
-                    <th>Ngày Làm Việc</th>
-                    <th>Giờ Vào</th>
-                    <th>Giờ Ra</th>
-                    <th>Tổng Giờ</th>
+                    <th>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllAttendance">
+                            <label class="form-check-label" for="selectAllAttendance">Chọn tất cả</label>
+                        </div>
+                    </th>
+                    <th>Mã NV</th>
+                    <th>Họ Tên</th>
+                    <th>Phòng Ban</th>
+                    <th>Ngày Thiếu</th>
                     <th>Trạng Thái</th>
-                    <th>Ghi Chú</th>
                 </tr>
             </thead>
             <tbody id="attendanceTableBody"></tbody>
@@ -127,298 +75,461 @@
     </div>
 </div>
 
+<!-- Section 2: Make-up Work Requests -->
+<div id="makeupSection" class="dashboard-card bg-white p-4">
+    <h5 class="section-title"><i class="fas fa-clock me-2"></i> Yêu Cầu Làm Bù</h5>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <label for="makeupWeekPicker" class="form-label fw-bold">Chọn tuần để kiểm tra giờ làm bù</label>
+            <input type="text" class="form-control" id="makeupWeekPicker" placeholder="Chọn tuần">
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+            <button class="btn btn-warning btn-send-email" id="sendMakeupReminders">
+                <i class="fas fa-envelope me-2"></i> Gửi Email Nhắc Nhở Làm Bù
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllMakeup">
+                            <label class="form-check-label" for="selectAllMakeup">Chọn tất cả</label>
+                        </div>
+                    </th>
+                    <th>Mã NV</th>
+                    <th>Họ Tên</th>
+                    <th>Phòng Ban</th>
+                    <th>Số Giờ Cần Bù</th>
+                    <th>Thời Hạn</th>
+                </tr>
+            </thead>
+            <tbody id="makeupTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 3: Overtime Requests -->
+<div id="overtimeSection" class="dashboard-card bg-white p-4">
+    <h5 class="section-title"><i class="fas fa-business-time me-2"></i> Yêu Cầu Tăng Ca</h5>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label for="overtimeDepartment" class="form-label fw-bold">Phòng Ban</label>
+            <select class="form-control" id="overtimeDepartment">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="overtimePosition" class="form-label fw-bold">Chức Vụ</label>
+            <select class="form-control" id="overtimePosition">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="overtimeEmployee" class="form-label fw-bold">Nhân Viên</label>
+            <select class="form-control" id="overtimeEmployee">
+                <option value="">Chọn nhân viên</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <label for="overtimeWeekPicker" class="form-label fw-bold">Chọn tuần tăng ca</label>
+            <input type="text" class="form-control" id="overtimeWeekPicker" placeholder="Chọn tuần">
+        </div>
+        <div class="col-md-6">
+            <label for="overtimeHours" class="form-label fw-bold">Số giờ tăng ca</label>
+            <input type="number" class="form-control" id="overtimeHours" min="1" max="40" value="1">
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <button class="btn btn-success btn-send-email" id="sendOvertimeRequest">
+                <i class="fas fa-envelope me-2"></i> Gửi Yêu Cầu Tăng Ca
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th>Mã NV</th>
+                    <th>Họ Tên</th>
+                    <th>Phòng Ban</th>
+                    <th>Tuần Tăng Ca</th>
+                    <th>Số Giờ</th>
+                    <th>Trạng Thái</th>
+                </tr>
+            </thead>
+            <tbody id="overtimeTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
 @section Scripts {
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                // DOM Elements
-                const selectedWorkDays = new Set();
-                const departmentFilter = document.getElementById("departmentFilter");
-                const positionFilter = document.getElementById("positionFilter");
-                const employeeFilter = document.getElementById("employeeFilter");
-                const attendanceDateRange = document.getElementById("attendanceDateRange");
-                const emailWeekPicker = document.getElementById("emailWeekPicker");
-                const sendReminderEmailsBtn = document.getElementById("sendReminderEmails");
-                const attendanceTableBody = document.getElementById("attendanceTableBody");
-                const checkInTime = document.getElementById("checkInTime");
-                const checkOutTime = document.getElementById("checkOutTime");
-                const weeklyHours = document.getElementById("weeklyHours");
-                const selectedDatesDiv = document.getElementById("selectedDates");
-                const attendanceNote = document.getElementById("attendanceNote");
-                const submitAttendanceBtn = document.getElementById("submitAttendance");
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Initialize all components
+            initFlatpickrs();
+            initSelects();
+            initEventListeners();
+            initSelectAllCheckboxes();
+        });
 
-                // Initialize
-                init();
+        function initFlatpickrs() {
+            // Initialize all week pickers with week selection mode
+            const weekPickers = ['attendanceWeekPicker', 'makeupWeekPicker', 'overtimeWeekPicker'];
+            weekPickers.forEach(id => {
+                flatpickr(`#${id}`, {
+                    mode: "single",
+                    dateFormat: "Y-m-d",
+                    weekNumbers: true,
+                    onChange: function(selectedDates) {
+                        if (selectedDates.length) {
+                            const selectedDate = new Date(selectedDates[0]);
+                            const startOfWeek = new Date(selectedDate);
+                            startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay() + 1);
+                            const endOfWeek = new Date(startOfWeek);
+                            endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-                function init() {
-                    loadSelectOptions("/api/AttendanceRequestManager/GetDepartmentsManager", departmentFilter, "maPhongBan", "tenPhongBan");
-                    loadSelectOptions("/api/AttendanceRequestManager/GetPositionsManager", positionFilter, "maChucVu", "tenChucVu");
-
-                    departmentFilter.addEventListener("change", loadEmployees);
-                    positionFilter.addEventListener("change", loadEmployees);
-                    employeeFilter.addEventListener("change", () => {
-                        if (employeeFilter.value) {
-                            fetchAttendanceRecords(employeeFilter.value);
-                            calendar.refetchEvents();
-                        } else {
-                            attendanceTableBody.innerHTML = "";
-                            calendar.refetchEvents();
-                        }
-                    });
-
-                    initFlatpickrs();
-                    initCalendar();
-                    initEvents();
-                    updateTotalHours(); // Calculate initial hours based on default times
-                }
-
-                // Load dropdown options
-                function loadSelectOptions(url, selectElement, valueField, textField) {
-                    fetch(url)
-                        .then(res => res.json())
-                        .then(data => {
-                            selectElement.innerHTML = '<option value="">Tất cả</option>';
-                            data.forEach(item => {
-                                const option = document.createElement("option");
-                                option.value = item[valueField];
-                                option.textContent = item[textField];
-                                selectElement.appendChild(option);
-                            });
-                        })
-                        .catch(error => console.error(`Error loading ${textField}:`, error));
-                }
-
-                // Load employees based on filters
-                function loadEmployees() {
-                    const maPhongBan = departmentFilter.value;
-                    const maChucVu = positionFilter.value;
-                    const url = `/api/AttendanceRequestManager/GetEmployeesManager?maPhongBan=${maPhongBan || ''}&maChucVu=${maChucVu || ''}`;
-                    fetch(url)
-                        .then(res => res.json())
-                        .then(data => {
-                            employeeFilter.innerHTML = '<option value="">Chọn nhân viên</option>';
-                            data.forEach(emp => {
-                                const option = document.createElement("option");
-                                option.value = emp.maNv;
-                                option.textContent = emp.hoTen;
-                                employeeFilter.appendChild(option);
-                            });
-                        })
-                        .catch(error => console.error("Error loading employees:", error));
-                }
-
-                // Fetch and render attendance records
-                function fetchAttendanceRecords(maNv) {
-                    fetch(`/api/AttendanceRequestManager/GetAttendanceManagerRecords?maNv=${maNv}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                renderAttendanceTable(data.records);
-                            } else {
-                                attendanceTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Không có dữ liệu</td></tr>';
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error fetching attendance records:", error);
-                            attendanceTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Lỗi tải dữ liệu</td></tr>';
-                        });
-                }
-
-                // Render attendance table
-                function renderAttendanceTable(records) {
-                    attendanceTableBody.innerHTML = records.length ? records.map(record => `
-                        <tr>
-                            <td>${record.ngayLamViec}</td>
-                            <td>${record.gioVao || '-'}</td>
-                            <td>${record.gioRa || '-'}</td>
-                            <td>${record.tongGio || '0'}</td>
-                            <td>${record.trangThai || 'Chưa duyệt'}</td>
-                            <td>${record.ghiChu || '-'}</td>
-                        </tr>
-                    `).join('') : '<tr><td colspan="6" class="text-center">Không có dữ liệu</td></tr>';
-                }
-
-                // Initialize Flatpickr for date pickers
-                function initFlatpickrs() {
-                    flatpickr(attendanceDateRange, {
-                        mode: "multiple",
-                        dateFormat: "Y-m-d",
-                        disable: [date => date.getDay() === 0], // Disable Sundays
-                        locale: { firstDayOfWeek: 1 },
-                        onChange(selectedDates) {
-                            selectedWorkDays.clear();
-                            selectedDates.forEach(date => {
-                                const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                                selectedWorkDays.add(localDate.toISOString().split('T')[0]);
-                            });
-                            selectedDatesDiv.innerHTML = [...selectedWorkDays].map(date => `<div>${date}</div>`).join('');
-                            updateTotalHours();
-                        }
-                    });
-
-                    flatpickr(emailWeekPicker, {
-                        mode: "single",
-                        dateFormat: "Y-m-d",
-                        weekNumbers: true,
-                        onChange(selectedDates) {
-                            if (selectedDates.length) {
-                                const selectedDate = new Date(selectedDates[0]);
-                                const startOfWeek = new Date(selectedDate.setDate(selectedDate.getDate() - selectedDate.getDay() + 1));
-                                const endOfWeek = new Date(startOfWeek);
-                                endOfWeek.setDate(startOfWeek.getDate() + 6);
-                                emailWeekPicker.value = `${startOfWeek.toISOString().split('T')[0]}`;
+                            // Update the respective table based on which picker was changed
+                            if (id === 'attendanceWeekPicker') {
+                                fetchAttendanceData(startOfWeek, endOfWeek);
+                            } else if (id === 'makeupWeekPicker') {
+                                fetchMakeupData(startOfWeek, endOfWeek);
+                            } else if (id === 'overtimeWeekPicker') {
+                                fetchOvertimeData(startOfWeek, endOfWeek);
                             }
                         }
-                    });
-                }
-
-                // Initialize FullCalendar
-                function initCalendar() {
-                    const calendarEl = document.getElementById("attendanceCalendar");
-                    if (!calendarEl) {
-                        console.error("Calendar element not found!");
-                        return;
                     }
-                    calendar = new FullCalendar.Calendar(calendarEl, {
-                        initialView: "dayGridMonth",
-                        locale: "vi",
-                        height: "auto",
-                        events: (fetchInfo, successCallback, failureCallback) => {
-                            if (!employeeFilter.value) return successCallback([]);
-                            fetch(`/api/AttendanceRequestManager/GetAttendanceManagerRecords?maNv=${employeeFilter.value}`)
-                                .then(res => res.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        const events = data.records.map(r => ({
-                                            title: r.trangThai === "Chờ duyệt" ? "Chưa duyệt" : "Đã duyệt",
-                                            start: r.ngayLamViec,
-                                            color: r.trangThai === "Chờ duyệt" ? "#007bff" : "#28a745"
-                                        }));
-                                        successCallback(events);
-                                    } else {
-                                        successCallback([]);
-                                    }
-                                })
-                                .catch(() => successCallback([]));
-                        },
-                        eventClick: function(info) {
-                            Swal.fire({
-                                title: info.event.title,
-                                text: `Ngày: ${info.event.start.toISOString().split('T')[0]}`,
-                                icon: "info"
-                            });
-                        }
+                });
+            });
+        }
+
+        function initSelects() {
+            // Load departments
+            fetch('/api/AttendanceRequestManager/GetDepartmentsManager')
+                .then(res => res.json())
+                .then(data => {
+                    const deptSelect = document.getElementById('overtimeDepartment');
+                    data.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.maPhongBan;
+                        option.textContent = dept.tenPhongBan;
+                        deptSelect.appendChild(option);
                     });
-                    calendar.render();
+                });
+
+            // Load positions
+            fetch('/api/AttendanceRequestManager/GetPositionsManager')
+                .then(res => res.json())
+                .then(data => {
+                    const posSelect = document.getElementById('overtimePosition');
+                    data.forEach(pos => {
+                        const option = document.createElement('option');
+                        option.value = pos.maChucVu;
+                        option.textContent = pos.tenChucVu;
+                        posSelect.appendChild(option);
+                    });
+                });
+
+            // Add event listeners for department and position changes
+            document.getElementById('overtimeDepartment').addEventListener('change', loadEmployees);
+            document.getElementById('overtimePosition').addEventListener('change', loadEmployees);
+        }
+
+        function loadEmployees() {
+            const deptId = document.getElementById('overtimeDepartment').value;
+            const posId = document.getElementById('overtimePosition').value;
+            
+            fetch(`/api/AttendanceRequestManager/GetEmployeesManager?maPhongBan=${deptId}&maChucVu=${posId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const empSelect = document.getElementById('overtimeEmployee');
+                    empSelect.innerHTML = '<option value="">Chọn nhân viên</option>';
+                    data.forEach(emp => {
+                        const option = document.createElement('option');
+                        option.value = emp.maNv;
+                        option.textContent = emp.hoTen;
+                        empSelect.appendChild(option);
+                    });
+                });
+        }
+
+        function initEventListeners() {
+            // Attendance reminder button
+            document.getElementById('sendAttendanceReminders').addEventListener('click', function() {
+                const weekPicker = document.getElementById('attendanceWeekPicker');
+                if (!weekPicker.value) {
+                    Swal.fire('Lỗi!', 'Vui lòng chọn tuần để gửi nhắc nhở.', 'error');
+                    return;
                 }
+                sendAttendanceReminders(weekPicker.value);
+            });
 
-                // Initialize event listeners
-                function initEvents() {
-                    checkInTime.addEventListener("change", updateTotalHours);
-                    checkOutTime.addEventListener("change", updateTotalHours);
-                    submitAttendanceBtn.addEventListener("click", submitAttendanceRequest);
-                    sendReminderEmailsBtn.addEventListener("click", sendReminderEmails);
+            // Makeup reminder button
+            document.getElementById('sendMakeupReminders').addEventListener('click', function() {
+                const weekPicker = document.getElementById('makeupWeekPicker');
+                if (!weekPicker.value) {
+                    Swal.fire('Lỗi!', 'Vui lòng chọn tuần để gửi nhắc nhở.', 'error');
+                    return;
                 }
+                sendMakeupReminders(weekPicker.value);
+            });
 
-                // Calculate daily working hours (subtract 2-hour lunch break)
-                function calculateDailyHours(checkIn, checkOut) {
-                    if (!checkIn || !checkOut) return 0;
-                    const inTime = new Date(`2000-01-01T${checkIn}:00`);
-                    const outTime = new Date(`2000-01-01T${checkOut}:00`);
-                    if (outTime <= inTime) return 0;
-                    const totalHours = (outTime - inTime) / 3600000; // Convert milliseconds to hours
-                    const workingHours = totalHours - 2; // Subtract 2-hour lunch break
-                    return workingHours > 0 ? workingHours.toFixed(2) : 0;
+            // Overtime request button
+            document.getElementById('sendOvertimeRequest').addEventListener('click', function() {
+                const employeeId = document.getElementById('overtimeEmployee').value;
+                const weekPicker = document.getElementById('overtimeWeekPicker');
+                const hours = document.getElementById('overtimeHours').value;
+
+                if (!employeeId || !weekPicker.value || !hours) {
+                    Swal.fire('Lỗi!', 'Vui lòng điền đầy đủ thông tin.', 'error');
+                    return;
                 }
+                sendOvertimeRequest(employeeId, weekPicker.value, hours);
+            });
+        }
 
-                // Update total weekly hours
-                function updateTotalHours() {
-                    const checkIn = checkInTime.value;
-                    const checkOut = checkOutTime.value;
-                    const dailyHours = calculateDailyHours(checkIn, checkOut);
-                    const total = [...selectedWorkDays].reduce((sum) => sum + parseFloat(dailyHours || 0), 0);
-                    weeklyHours.value = total.toFixed(2);
-                }
+        function fetchAttendanceData(startDate, endDate) {
+            fetch(`/api/AttendanceRequestManager/GetMissingAttendance?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('attendanceTableBody');
+                    tbody.innerHTML = data.map(emp => `
+                        <tr>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input attendance-checkbox" type="checkbox" 
+                                           value="${emp.maNv}" data-email="${emp.email}">
+                                </div>
+                            </td>
+                            <td>${emp.maNv}</td>
+                            <td>${emp.hoTen}</td>
+                            <td>${emp.tenPhongBan}</td>
+                            <td>${emp.ngayThieu.join(', ')}</td>
+                            <td>${emp.trangThai}</td>
+                        </tr>
+                    `).join('');
+                });
+        }
 
-                // Reset form after submission
-                function resetForm() {
-                    attendanceDateRange._flatpickr.clear();
-                    selectedDatesDiv.innerHTML = "";
-                    checkInTime.value = "08:00"; // Reset to default
-                    checkOutTime.value = "18:00"; // Reset to default
-                    attendanceNote.value = "";
-                    weeklyHours.value = "";
-                    selectedWorkDays.clear();
-                    updateTotalHours(); // Update hours after reset
-                    if (employeeFilter.value) fetchAttendanceRecords(employeeFilter.value);
-                }
+        function fetchMakeupData(startDate, endDate) {
+            fetch(`/api/AttendanceRequestManager/GetMakeupHours?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('makeupTableBody');
+                    tbody.innerHTML = data.map(emp => `
+                        <tr>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input makeup-checkbox" type="checkbox" 
+                                           value="${emp.maNv}" data-email="${emp.email}">
+                                </div>
+                            </td>
+                            <td>${emp.maNv}</td>
+                            <td>${emp.hoTen}</td>
+                            <td>${emp.tenPhongBan}</td>
+                            <td>${emp.soGioCanBu}</td>
+                            <td>${emp.thoiHan}</td>
+                        </tr>
+                    `).join('');
+                });
+        }
 
-                // Submit attendance request
-                function submitAttendanceRequest() {
-                    const maNv = employeeFilter.value;
-                    if (!maNv) return Swal.fire("Lỗi!", "Vui lòng chọn nhân viên.", "error");
-                    if (!selectedWorkDays.size) return Swal.fire("Lỗi!", "Vui lòng chọn ít nhất một ngày làm việc.", "error");
-                    if (!checkInTime.value || !checkOutTime.value) return Swal.fire("Lỗi!", "Vui lòng nhập giờ check-in và check-out.", "error");
+        function fetchOvertimeData(startDate, endDate) {
+            const employeeId = document.getElementById('overtimeEmployee').value;
+            if (!employeeId) return;
 
-                    const attendanceData = [...selectedWorkDays].map(day => ({
-                        ngayLamViec: day,
-                        gioVaoMoi: checkInTime.value,
-                        gioRaMoi: checkOutTime.value,
-                        tongGio: parseFloat(calculateDailyHours(checkInTime.value, checkOutTime.value)),
-                        lyDo: attendanceNote.value.trim() || null
-                    }));
+            fetch(`/api/AttendanceRequestManager/GetOvertimeRequests?maNv=${employeeId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('overtimeTableBody');
+                    tbody.innerHTML = data.map(req => `
+                        <tr>
+                            <td>${req.maNv}</td>
+                            <td>${req.hoTen}</td>
+                            <td>${req.tenPhongBan}</td>
+                            <td>${req.tuanTangCa}</td>
+                            <td>${req.soGio}</td>
+                            <td>${req.trangThai}</td>
+                        </tr>
+                    `).join('');
+                });
+        }
 
-                    fetch('/api/AttendanceRequestManager/SubmitAttendanceRequest', {
+        function sendAttendanceReminders(startDate) {
+            const selectedEmployees = Array.from(document.querySelectorAll('.attendance-checkbox:checked'))
+                .map(checkbox => ({
+                    maNv: checkbox.value,
+                    email: checkbox.dataset.email
+                }));
+
+            if (selectedEmployees.length === 0) {
+                Swal.fire('Lỗi!', 'Vui lòng chọn ít nhất một nhân viên để gửi nhắc nhở.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Xác nhận',
+                text: `Bạn có chắc muốn gửi email nhắc nhở chấm công cho ${selectedEmployees.length} nhân viên đã chọn?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Gửi',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/api/AttendanceRequestManager/SendAttendanceReminders', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(attendanceData)
-                    })
-                        .then(res => res.json())
-                        .then(data => {
-                            Swal.fire({
-                                icon: data.success ? "success" : "error",
-                                title: data.success ? "Thành công!" : "Lỗi!",
-                                text: data.message || (data.success ? "Yêu cầu chấm công đã được gửi." : "Không thể gửi yêu cầu.")
-                            }).then(() => {
-                                if (data.success) resetForm();
-                            });
+                        body: JSON.stringify({ 
+                            startDate,
+                            selectedEmployees 
                         })
-                        .catch(() => Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error"));
-                }
-
-                // Send reminder emails
-                function sendReminderEmails() {
-                    const startDate = emailWeekPicker.value;
-                    if (!startDate) return Swal.fire("Lỗi!", "Vui lòng chọn tuần để gửi email nhắc nhở.", "error");
-
-                    Swal.fire({
-                        title: "Xác nhận",
-                        text: `Bạn có chắc muốn gửi email nhắc nhở cho tuần bắt đầu từ ${startDate}?`,
-                        icon: "warning",
-                        showCancelButton: true,
-                        confirmButtonText: "Gửi",
-                        cancelButtonText: "Hủy"
-                    }).then(result => {
-                        if (result.isConfirmed) {
-                            fetch('/api/AttendanceRequestManager/SendReminderEmails', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ startDate })
-                            })
-                                .then(res => res.json())
-                                .then(data => {
-                                    Swal.fire({
-                                        icon: data.success ? "success" : "error",
-                                        title: data.success ? "Thành công!" : "Lỗi!",
-                                        text: data.message || (data.success ? "Email đã được gửi thành công." : "Không thể gửi email.")
-                                    });
-                                })
-                                .catch(() => Swal.fire("Lỗi!", "Không thể kết nối đến server.", "error"));
-                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        Swal.fire('Thành công!', data.message, 'success');
+                    })
+                    .catch(() => {
+                        Swal.fire('Lỗi!', 'Không thể gửi email nhắc nhở.', 'error');
                     });
                 }
             });
-        </script>
+        }
+
+        function sendMakeupReminders(startDate) {
+            const selectedEmployees = Array.from(document.querySelectorAll('.makeup-checkbox:checked'))
+                .map(checkbox => ({
+                    maNv: checkbox.value,
+                    email: checkbox.dataset.email
+                }));
+
+            if (selectedEmployees.length === 0) {
+                Swal.fire('Lỗi!', 'Vui lòng chọn ít nhất một nhân viên để gửi nhắc nhở.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Xác nhận',
+                text: `Bạn có chắc muốn gửi email nhắc nhở làm bù cho ${selectedEmployees.length} nhân viên đã chọn?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Gửi',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/api/AttendanceRequestManager/SendMakeupReminders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            startDate,
+                            selectedEmployees 
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        Swal.fire('Thành công!', data.message, 'success');
+                    })
+                    .catch(() => {
+                        Swal.fire('Lỗi!', 'Không thể gửi email nhắc nhở.', 'error');
+                    });
+                }
+            });
+        }
+
+        function sendOvertimeRequest(employeeId, startDate, hours) {
+            Swal.fire({
+                title: 'Xác nhận',
+                text: 'Bạn có chắc muốn gửi yêu cầu tăng ca này?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Gửi',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/api/AttendanceRequestManager/SendOvertimeRequest', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            maNv: employeeId,
+                            startDate,
+                            soGio: hours
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        Swal.fire('Thành công!', data.message, 'success');
+                        // Refresh overtime table
+                        const weekPicker = document.getElementById('overtimeWeekPicker');
+                        if (weekPicker.value) {
+                            const selectedDate = new Date(weekPicker.value);
+                            const startOfWeek = new Date(selectedDate.setDate(selectedDate.getDate() - selectedDate.getDay() + 1));
+                            const endOfWeek = new Date(startOfWeek);
+                            endOfWeek.setDate(startOfWeek.getDate() + 6);
+                            fetchOvertimeData(startOfWeek, endOfWeek);
+                        }
+                    })
+                    .catch(() => {
+                        Swal.fire('Lỗi!', 'Không thể gửi yêu cầu tăng ca.', 'error');
+                    });
+                }
+            });
+        }
+
+        function initSelectAllCheckboxes() {
+            // Select all for attendance table
+            document.getElementById('selectAllAttendance').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.attendance-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+
+            // Select all for makeup table
+            document.getElementById('selectAllMakeup').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.makeup-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+
+            // Update select all checkbox state when individual checkboxes change
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('attendance-checkbox')) {
+                    updateSelectAllState('selectAllAttendance', '.attendance-checkbox');
+                } else if (e.target.classList.contains('makeup-checkbox')) {
+                    updateSelectAllState('selectAllMakeup', '.makeup-checkbox');
+                }
+            });
+        }
+
+        function updateSelectAllState(selectAllId, checkboxClass) {
+            const selectAll = document.getElementById(selectAllId);
+            const checkboxes = document.querySelectorAll(checkboxClass);
+            const checkedCount = document.querySelectorAll(`${checkboxClass}:checked`).length;
+            
+            if (checkedCount === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (checkedCount === checkboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            }
+        }
+    </script>
 }

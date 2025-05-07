@@ -9,6 +9,10 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
 [Route("api/AttendanceRequestManager")]
 [ApiController]
@@ -88,284 +92,375 @@ public class AttendanceRequestManagerApiController : ControllerBase
         return Ok(new { success = true, records });
     }
    
-    // 🔹 Gửi email nhắc nhở chấm công
-
-[HttpPost("SendReminderEmails")]
-public async Task<IActionResult> SendReminderEmails(SendReminderEmailsDTO request)
+    // 🔹 Lấy danh sách nhân viên chưa chấm công đủ trong tuần
+    [HttpGet("GetMissingAttendance")]
+    public IActionResult GetMissingAttendance(DateTime startDate, DateTime endDate)
     {
-        if (string.IsNullOrEmpty(request.StartDate) || !DateOnly.TryParse(request.StartDate, out var startDate))
+        var startOfWeek = DateOnly.FromDateTime(startDate);
+        var endOfWeek = DateOnly.FromDateTime(endDate);
+
+        // Lấy tất cả nhân viên
+        var employees = _context.NhanViens
+            .Include(nv => nv.MaPhongBanNavigation)
+            .ToList();
+
+        var result = new List<object>();
+
+        foreach (var employee in employees)
         {
-            return BadRequest(new { success = false, message = "Ngày bắt đầu không hợp lệ." });
+            // Lấy các ngày làm việc trong tuần (T2-T6)
+            var workDays = new List<DateOnly>();
+            for (var date = startOfWeek; date <= endOfWeek; date = date.AddDays(1))
+            {
+                if (date.DayOfWeek != DayOfWeek.Sunday && date.DayOfWeek != DayOfWeek.Saturday)
+                {
+                    workDays.Add(date);
+                }
+            }
+
+            // Lấy các ngày đã chấm công
+            var attendanceDays = _context.ChamCongs
+                .Where(cc => cc.MaNv == employee.MaNv && 
+                            cc.NgayLamViec >= startOfWeek && 
+                            cc.NgayLamViec <= endOfWeek)
+                .Select(cc => cc.NgayLamViec)
+                .ToList();
+
+            // Tìm các ngày thiếu
+            var missingDays = workDays.Where(day => !attendanceDays.Contains(day)).ToList();
+
+            if (missingDays.Any())
+            {
+                result.Add(new
+                {
+                    maNv = employee.MaNv,
+                    hoTen = employee.HoTen,
+                    tenPhongBan = employee.MaPhongBanNavigation.TenPhongBan,
+                    ngayThieu = missingDays.Select(d => d.ToString("dd/MM/yyyy")).ToList(),
+                    trangThai = "Chưa chấm công đủ"
+                });
+            }
         }
 
+        return Ok(result);
+    }
+
+    // 🔹 Lấy danh sách nhân viên cần làm bù
+    [HttpGet("GetMakeupHours")]
+    public IActionResult GetMakeupHours(DateTime startDate, DateTime endDate)
+    {
+        var startOfWeek = DateOnly.FromDateTime(startDate);
+        var endOfWeek = DateOnly.FromDateTime(endDate);
+
+        var result = _context.TongGioThieus
+            .Include(t => t.MaNvNavigation)
+            .ThenInclude(nv => nv.MaPhongBanNavigation)
+            .Where(t => t.TongGioConThieu > 0)
+            .Select(t => new
+            {
+                maNv = t.MaNv,
+                hoTen = t.MaNvNavigation.HoTen,
+                tenPhongBan = t.MaNvNavigation.MaPhongBanNavigation.TenPhongBan,
+                tongGioThieu = t.TongGioConThieu,
+                tongGioDaBu = t.TongGioLamBu,
+                soGioCanBu = t.TongGioConThieu - t.TongGioLamBu,
+                thoiHan = t.NgayKetThucThieu.ToString("dd/MM/yyyy")
+            })
+            .Where(x => x.soGioCanBu > 0)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    // 🔹 Lấy danh sách yêu cầu tăng ca của nhân viên
+    [HttpGet("GetOvertimeRequests")]
+    public IActionResult GetOvertimeRequests(int maNv, DateTime startDate, DateTime endDate)
+    {
+        var startOfWeek = DateOnly.FromDateTime(startDate);
+        var endOfWeek = DateOnly.FromDateTime(endDate);
+
+        var requests = _context.TangCas
+            .Include(tc => tc.MaNvNavigation)
+            .ThenInclude(nv => nv.MaPhongBanNavigation)
+            .Where(tc => tc.MaNv == maNv && 
+                        tc.NgayTangCa >= startOfWeek && 
+                        tc.NgayTangCa <= endOfWeek)
+            .Select(tc => new
+            {
+                maNv = tc.MaNv,
+                hoTen = tc.MaNvNavigation.HoTen,
+                tenPhongBan = tc.MaNvNavigation.MaPhongBanNavigation.TenPhongBan,
+                tuanTangCa = $"{tc.NgayTangCa:dd/MM/yyyy}",
+                soGio = tc.SoGioTangCa,
+                trangThai = tc.TrangThai
+            })
+            .ToList();
+
+        return Ok(requests);
+    }
+
+    // 🔹 Gửi email nhắc nhở chấm công
+    [HttpPost("SendAttendanceReminders")]
+    public IActionResult SendAttendanceReminders([FromBody] DateRequestDTO request)
+    {
         try
         {
-            // Calculate the week range
+            var startDate = DateOnly.FromDateTime(DateTime.Parse(request.startDate));
             var endDate = startDate.AddDays(6);
-            var workingDays = new List<DateOnly>();
-            for (var date = startDate; date <= endDate; date = date.AddDays(1))
+
+            var missingAttendance = GetMissingAttendance(startDate.ToDateTime(TimeOnly.MinValue), 
+                                                       endDate.ToDateTime(TimeOnly.MinValue));
+            var employees = ((OkObjectResult)missingAttendance).Value as List<object>;
+
+            // Lọc danh sách nhân viên theo danh sách được chọn
+            var selectedEmployees = employees
+                .Where(emp => request.selectedEmployees.Any(se => se.maNv == ((dynamic)emp).maNv))
+                .ToList();
+
+            foreach (var emp in selectedEmployees)
             {
-                if (date.ToDateTime(TimeOnly.MinValue).DayOfWeek != DayOfWeek.Sunday)
-                {
-                    workingDays.Add(date);
-                }
+                var selectedEmp = request.selectedEmployees.First(se => se.maNv == ((dynamic)emp).maNv);
+                SendAttendanceReminderEmail(selectedEmp.email, ((dynamic)emp).hoTen, 
+                                         ((dynamic)emp).ngayThieu as List<string>);
             }
 
-            // Get all employees with email
-            var employees = await _context.NhanViens
-                .Where(nv => !string.IsNullOrEmpty(nv.Email))
-                .Select(nv => new { nv.MaNv, nv.HoTen, nv.Email })
-                .ToListAsync();
+            return Ok(new { success = true, message = $"Đã gửi email nhắc nhở chấm công cho {selectedEmployees.Count} nhân viên." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
 
-            // Get attendance records for the week from LichSuChamCong
-            var attendanceRecords = await _context.LichSuChamCongs
-                .Where(lsc => lsc.Ngay >= startDate && lsc.Ngay <= endDate)
-                .Select(lsc => new { lsc.MaNv, lsc.Ngay })
-                .ToListAsync();
+    // 🔹 Gửi email nhắc nhở làm bù
+    [HttpPost("SendMakeupReminders")]
+    public IActionResult SendMakeupReminders([FromBody] DateRequestDTO request)
+    {
+        try
+        {
+            var startDate = DateOnly.FromDateTime(DateTime.Parse(request.startDate));
+            var endDate = startDate.AddDays(6);
 
-            var employeesToRemind = new List<(int MaNv, string HoTen, string Email)>();
-            foreach (var employee in employees)
+            var makeupHours = GetMakeupHours(startDate.ToDateTime(TimeOnly.MinValue), 
+                                           endDate.ToDateTime(TimeOnly.MinValue));
+            var employees = ((OkObjectResult)makeupHours).Value as List<object>;
+
+            // Lọc danh sách nhân viên theo danh sách được chọn
+            var selectedEmployees = employees
+                .Where(emp => request.selectedEmployees.Any(se => se.maNv == ((dynamic)emp).maNv))
+                .ToList();
+
+            foreach (var emp in selectedEmployees)
             {
-                foreach (var day in workingDays)
-                {
-                    if (!attendanceRecords.Any(ar => ar.MaNv == employee.MaNv && ar.Ngay == day))
-                    {
-                        employeesToRemind.Add((employee.MaNv, employee.HoTen, employee.Email));
-                        break; // Only need one missing day to send reminder
-                    }
-                }
+                var selectedEmp = request.selectedEmployees.First(se => se.maNv == ((dynamic)emp).maNv);
+                SendMakeupReminderEmail(selectedEmp.email, ((dynamic)emp).hoTen, 
+                                      ((dynamic)emp).soGioCanBu, 
+                                      ((dynamic)emp).thoiHan);
             }
 
-            if (!employeesToRemind.Any())
+            return Ok(new { success = true, message = $"Đã gửi email nhắc nhở làm bù cho {selectedEmployees.Count} nhân viên." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
+    // 🔹 Gửi yêu cầu tăng ca
+    [HttpPost("SendOvertimeRequest")]
+    public IActionResult SendOvertimeRequest([FromBody] OvertimeRequestDTO request)
+    {
+        try
+        {
+            var employee = _context.NhanViens.Find(request.maNv);
+            if (employee == null)
             {
-                return Ok(new { success = true, message = "Tất cả nhân viên đã chấm công đầy đủ trong tuần này." });
+                return BadRequest(new { success = false, message = "Không tìm thấy nhân viên." });
             }
 
-            // Retrieve SMTP settings from configuration
-            var smtpServer = _configuration["EmailSettings:SmtpServer"];
-            var port = int.Parse(_configuration["EmailSettings:Port"]);
-            var senderEmail = _configuration["EmailSettings:SenderEmail"];
-            var senderPassword = _configuration["EmailSettings:SenderPassword"];
+            var startDate = DateOnly.FromDateTime(DateTime.Parse(request.startDate));
+            var endDate = startDate.AddDays(6);
 
-            if (string.IsNullOrEmpty(smtpServer) || port == 0 || string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(senderPassword))
+            // Tạo yêu cầu tăng ca
+            var tangCa = new TangCa
             {
-                return StatusCode(500, new { success = false, message = "Cấu hình email không hợp lệ." });
-            }
-
-            // Configure SMTP client
-            using var smtpClient = new SmtpClient(smtpServer)
-            {
-                Port = port,
-                Credentials = new NetworkCredential(senderEmail, senderPassword),
-                EnableSsl = true
+                MaNv = request.maNv,
+                NgayTangCa = startDate,
+                SoGioTangCa = request.soGio,
+                TrangThai = "TC1", // Chờ duyệt
+                MaNvDuyet = GetMaNvFromClaims() ?? 0 // Lấy mã nhân viên duyệt từ claims
             };
 
-            foreach (var employee in employeesToRemind)
-            {
-                var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(senderEmail),
-                    Subject = $"Nhắc Nhở Chấm Công Tuần Từ {startDate:dd/MM/yyyy} Đến {endDate:dd/MM/yyyy}",
-                    Body = $@"<!DOCTYPE html>
-<html lang='vi'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }}
-        .container {{
-            max-width: 600px;
-            margin: 20px auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }}
-        .header {{
-            background: #007bff;
-            color: #fff;
-            padding: 15px;
-            text-align: center;
-            border-radius: 8px 8px 0 0;
-        }}
-        .header h1 {{
-            margin: 0;
-            font-size: 24px;
-        }}
-        .content {{
-            padding: 20px;
-        }}
-        .content p {{
-            margin: 10px 0;
-        }}
-        .date-range {{
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            text-align: center;
-            font-weight: bold;
-            color: #007bff;
-        }}
-        .footer {{
-            text-align: center;
-            padding: 10px;
-            font-size: 12px;
-            color: #777;
-            border-top: 1px solid #eee;
-            margin-top: 20px;
-        }}
-        .button {{
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 10px 0;
-            background: #007bff;
-            color: #fff !important;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-        }}
-        .button:hover {{
-            background: #0056b3;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .container {{
-                margin: 10px;
-                padding: 10px;
-            }}
-            .header h1 {{
-                font-size: 20px;
-            }}
-        }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>Nhắc Nhở Chấm Công</h1>
-        </div>
-        <div class='content'>
-            <p>Kính gửi {employee.HoTen},</p>
-            <p>Chúng tôi xin nhắc nhở bạn vui lòng thực hiện chấm công cho tuần làm việc từ:</p>
-            <div class='date-range'>
-                {startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy}
-            </div>
-            <p>Vui lòng truy cập hệ thống chấm công để cập nhật thông tin đúng hạn.</p>
-            <p style='text-align: center;'>
-                <a href='https://your-attendance-system-url.com' class='button'>Truy Cập Hệ Thống</a>
-            </p>
-            <p>Nếu bạn cần hỗ trợ, vui lòng liên hệ bộ phận nhân sự.</p>
-            <p>Trân trọng,</p>
-            <p>Bộ Phận Nhân Sự</p>
-        </div>
-        <div class='footer'>
-            <p>© {DateTime.Now.Year} Công Ty Của Bạn. Mọi quyền được bảo lưu.</p>
-            <p>Email này được gửi tự động, vui lòng không trả lời trực tiếp.</p>
-        </div>
-    </div>
-</body>
-</html>",
-                    IsBodyHtml = true
-                };
-                mailMessage.To.Add(employee.Email);
+            _context.TangCas.Add(tangCa);
+            _context.SaveChanges();
 
-                try
-                {
-                    await smtpClient.SendMailAsync(mailMessage);
-                }
-                catch (SmtpException smtpEx)
-                {
-                    // Log the error, but continue sending to other employees
-                    Console.WriteLine($"Lỗi gửi email đến {employee.Email}: {smtpEx.Message}");
-                }
-            }
+            // Gửi email thông báo
+            SendOvertimeRequestEmail(employee.Email, employee.HoTen, startDate, request.soGio);
 
-            return Ok(new { success = true, message = $"Đã gửi email nhắc nhở đến {employeesToRemind.Count} nhân viên." });
+            return Ok(new { success = true, message = "Đã gửi yêu cầu tăng ca thành công." });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new
-            {
-                success = false,
-                message = "Lỗi khi gửi email nhắc nhở.",
-                error = ex.Message,
-                stackTrace = ex.StackTrace
-            });
+            return BadRequest(new { success = false, message = ex.Message });
         }
     }
 
-
-    // 🔹 API Chấm công
-    [HttpPost("SubmitAttendanceRequest")]
-    public async Task<IActionResult> SubmitAttendanceRequest(List<YeuCauSuaChamCongDTO> attendanceData)
+    // 🔹 Helper methods for sending emails
+    private void SendAttendanceReminderEmail(string recipientEmail, string employeeName, List<string> missingDays)
     {
-        var maNv = GetMaNvFromClaims();
-        if (!maNv.HasValue)
+        var emailSettings = _configuration.GetSection("EmailSettings");
+        var senderEmail = emailSettings["SenderEmail"];
+        var senderPassword = emailSettings["SenderPassword"];
+        var smtpServer = emailSettings["SmtpServer"];
+        var port = int.Parse(emailSettings["Port"]);
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("HR Department", senderEmail));
+        message.To.Add(new MailboxAddress(employeeName, recipientEmail));
+        message.Subject = "Nhắc nhở chấm công";
+
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background-color: #007bff; color: white; padding: 20px; text-align: center;'>
+                    <h2>Nhắc Nhở Chấm Công</h2>
+                </div>
+                <div style='padding: 20px; background-color: #f8f9fa;'>
+                    <p>Kính gửi <strong>{employeeName}</strong>,</p>
+                    <p>Hệ thống ghi nhận bạn chưa chấm công đủ trong tuần này.</p>
+                    <p>Các ngày cần chấm công:</p>
+                    <ul style='list-style-type: none; padding-left: 0;'>
+                        {string.Join("", missingDays.Select(d => $"<li style='padding: 5px; background-color: #e9ecef; margin-bottom: 5px; border-radius: 3px;'>{d}</li>"))}
+                    </ul>
+                    <p>Vui lòng truy cập hệ thống để chấm công đầy đủ.</p>
+                    <p>Trân trọng,</p>
+                    <p><strong>Phòng Nhân sự</strong></p>
+                </div>
+                <div style='text-align: center; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;'>
+                    <p style='color: #6c757d; font-size: 12px;'>Email này được gửi tự động, vui lòng không trả lời trực tiếp.</p>
+                </div>
+            </div>";
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using (var client = new SmtpClient())
         {
-            return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
-        }
-
-        if (attendanceData == null || !attendanceData.Any())
-        {
-            return BadRequest(new { success = false, message = "Dữ liệu chấm công không hợp lệ." });
-        }
-
-        try
-        {
-            foreach (var entry in attendanceData)
-            {
-                if (!DateOnly.TryParse(entry.NgayLamViec, out var ngayLamViec))
-                {
-                    return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
-                }
-
-                bool daChamCong = await _context.YeuCauSuaChamCongs
-                    .AnyAsync(c => c.MaNv == maNv.Value && c.NgayLamViec == ngayLamViec);
-                if (daChamCong)
-                {
-                    return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã có yêu cầu sửa chấm công ngày {entry.NgayLamViec}." });
-                }
-
-                bool daNghi = await _context.NgayNghis
-                    .AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
-                if (daNghi)
-                {
-                    return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave", stackTrace = "NgayNghi check failed." });
-                }
-
-                var yeuCauSuaChamCong = new YeuCauSuaChamCong
-                {
-                    MaNv = maNv.Value,
-                    NgayLamViec = ngayLamViec,
-                    GioVaoMoi = TimeOnly.TryParse(entry.GioVaoMoi, out var parsedGioVao) ? parsedGioVao : null,
-                    GioRaMoi = TimeOnly.TryParse(entry.GioRaMoi, out var parsedGioRa) ? parsedGioRa : null,
-                    TongGio = entry.TongGio ?? 0,
-                    TrangThai = 0, // Set default status for new requests
-                    LyDo = entry.LyDo
-                };
-                _context.YeuCauSuaChamCongs.Add(yeuCauSuaChamCong);
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok(new { success = true, message = "Yêu cầu sửa chấm công thành công." });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new
-            {
-                success = false,
-                message = "Lỗi hệ thống.",
-                error = ex.Message,
-                stackTrace = ex.StackTrace
-            });
+            client.Connect(smtpServer, port, SecureSocketOptions.StartTls);
+            client.Authenticate(senderEmail, senderPassword);
+            client.Send(message);
+            client.Disconnect(true);
         }
     }
-    
+
+    private void SendMakeupReminderEmail(string recipientEmail, string employeeName, decimal hours, string deadline)
+    {
+        var emailSettings = _configuration.GetSection("EmailSettings");
+        var senderEmail = emailSettings["SenderEmail"];
+        var senderPassword = emailSettings["SenderPassword"];
+        var smtpServer = emailSettings["SmtpServer"];
+        var port = int.Parse(emailSettings["Port"]);
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("HR Department", senderEmail));
+        message.To.Add(new MailboxAddress(employeeName, recipientEmail));
+        message.Subject = "Nhắc nhở làm bù";
+
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background-color: #ffc107; color: white; padding: 20px; text-align: center;'>
+                    <h2>Nhắc Nhở Làm Bù</h2>
+                </div>
+                <div style='padding: 20px; background-color: #f8f9fa;'>
+                    <p>Kính gửi <strong>{employeeName}</strong>,</p>
+                    <p>Hệ thống ghi nhận bạn còn <strong>{hours}</strong> giờ cần làm bù.</p>
+                    <p>Thời hạn làm bù: <strong>{deadline}</strong></p>
+                    <p>Vui lòng truy cập hệ thống để đăng ký làm bù.</p>
+                    <p>Trân trọng,</p>
+                    <p><strong>Phòng Nhân sự</strong></p>
+                </div>
+                <div style='text-align: center; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;'>
+                    <p style='color: #6c757d; font-size: 12px;'>Email này được gửi tự động, vui lòng không trả lời trực tiếp.</p>
+                </div>
+            </div>";
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using (var client = new SmtpClient())
+        {
+            client.Connect(smtpServer, port, SecureSocketOptions.StartTls);
+            client.Authenticate(senderEmail, senderPassword);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
+
+    private void SendOvertimeRequestEmail(string recipientEmail, string employeeName, DateOnly startDate, decimal hours)
+    {
+        var emailSettings = _configuration.GetSection("EmailSettings");
+        var senderEmail = emailSettings["SenderEmail"];
+        var senderPassword = emailSettings["SenderPassword"];
+        var smtpServer = emailSettings["SmtpServer"];
+        var port = int.Parse(emailSettings["Port"]);
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("HR Department", senderEmail));
+        message.To.Add(new MailboxAddress(employeeName, recipientEmail));
+        message.Subject = "Yêu cầu tăng ca";
+
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background-color: #28a745; color: white; padding: 20px; text-align: center;'>
+                    <h2>Yêu Cầu Tăng Ca</h2>
+                </div>
+                <div style='padding: 20px; background-color: #f8f9fa;'>
+                    <p>Kính gửi <strong>{employeeName}</strong>,</p>
+                    <p>Bạn có yêu cầu tăng ca mới:</p>
+                    <ul style='list-style-type: none; padding-left: 0;'>
+                        <li style='padding: 10px; background-color: #e9ecef; margin-bottom: 5px; border-radius: 3px;'>
+                            <strong>Tuần bắt đầu:</strong> {startDate:dd/MM/yyyy}
+                        </li>
+                        <li style='padding: 10px; background-color: #e9ecef; margin-bottom: 5px; border-radius: 3px;'>
+                            <strong>Số giờ tăng ca:</strong> {hours}
+                        </li>
+                    </ul>
+                    <p>Vui lòng truy cập hệ thống để xem chi tiết và phản hồi.</p>
+                    <p>Trân trọng,</p>
+                    <p><strong>Phòng Nhân sự</strong></p>
+                </div>
+                <div style='text-align: center; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;'>
+                    <p style='color: #6c757d; font-size: 12px;'>Email này được gửi tự động, vui lòng không trả lời trực tiếp.</p>
+                </div>
+            </div>";
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using (var client = new SmtpClient())
+        {
+            client.Connect(smtpServer, port, SecureSocketOptions.StartTls);
+            client.Authenticate(senderEmail, senderPassword);
+            client.Send(message);
+            client.Disconnect(true);
+        }
+    }
+}
+
+public class DateRequestDTO
+{
+    public string startDate { get; set; }
+    public List<SelectedEmployeeDTO> selectedEmployees { get; set; }
+}
+
+public class SelectedEmployeeDTO
+{
+    public int maNv { get; set; }
+    public string email { get; set; }
+}
+
+public class OvertimeRequestDTO
+{
+    public int maNv { get; set; }
+    public string startDate { get; set; }
+    public decimal soGio { get; set; }
 }

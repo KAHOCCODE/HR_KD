@@ -153,7 +153,7 @@ namespace HR_KD.ApiControllers
                 // Cập nhật trạng thái của ngày nghỉ
                 ngayNghi.MaTrangThai = newMaTrangThai;
                 ngayNghi.NgayDuyet = DateTime.Now;
-                ngayNghi.NguoiDuyetId = currentMaNv; // Lưu ID người duyệt
+                ngayNghi.NguoiDuyetId = currentMaNv;
 
                 // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
                 if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
@@ -163,6 +163,114 @@ namespace HR_KD.ApiControllers
 
                 // Cập nhật đơn nghỉ phép
                 _context.NgayNghis.Update(ngayNghi);
+
+                // Xử lý chấm công dựa trên trạng thái
+                DateOnly ngayLamViec = ngayNghi.NgayNghi1;
+
+                var chamCong = await _context.ChamCongs
+                    .FirstOrDefaultAsync(cc => cc.MaNv == ngayNghi.MaNv && cc.NgayLamViec == ngayLamViec);
+
+                if (newMaTrangThai == "NN2") // Đã duyệt
+                {
+                    if (chamCong == null)
+                    {
+                        chamCong = new ChamCong
+                        {
+                            MaNv = ngayNghi.MaNv,
+                            NgayLamViec = ngayLamViec,
+                            GioVao = new TimeOnly(8, 0), // 8:00 AM
+                            GioRa = new TimeOnly(20, 0), // 8:00 PM
+                            TongGio = 8m,
+                            TrangThai = "CC5",
+                            MaNvDuyet = currentMaNv.Value
+                        };
+                        _context.ChamCongs.Add(chamCong);
+                    }
+                    else
+                    {
+                        chamCong.GioVao = new TimeOnly(8, 0);
+                        chamCong.GioRa = new TimeOnly(20, 0);
+                        chamCong.TongGio = 8m;
+                        chamCong.TrangThai = "CC5";
+                        chamCong.MaNvDuyet = currentMaNv.Value;
+                        _context.ChamCongs.Update(chamCong);
+                    }
+                }
+                else if (newMaTrangThai == "NN3") // Từ chối
+                {
+                    if (chamCong == null)
+                    {
+                        chamCong = new ChamCong
+                        {
+                            MaNv = ngayNghi.MaNv,
+                            NgayLamViec = ngayLamViec,
+                            GioVao = new TimeOnly(8, 0),
+                            GioRa = new TimeOnly(8, 0),
+                            TongGio = 0m,
+                            TrangThai = "CC6",
+                            MaNvDuyet = currentMaNv.Value
+                        };
+                        _context.ChamCongs.Add(chamCong);
+                    }
+                    else
+                    {
+                        chamCong.GioVao = new TimeOnly(8, 0);
+                        chamCong.GioRa = new TimeOnly(8, 0);
+                        chamCong.TongGio = 0m;
+                        chamCong.TrangThai = "CC6";
+                        chamCong.MaNvDuyet = currentMaNv.Value;
+                        _context.ChamCongs.Update(chamCong);
+                    }
+
+                    // Thêm hoặc cập nhật GioThieu
+                    var gioThieu = await _context.GioThieus
+                        .FirstOrDefaultAsync(gt => gt.MaNv == ngayNghi.MaNv && gt.NgayThieu == ngayLamViec);
+
+                    if (gioThieu == null)
+                    {
+                        gioThieu = new GioThieu
+                        {
+                            MaNv = ngayNghi.MaNv,
+                            NgayThieu = ngayLamViec,
+                            TongGioThieu = 8m,
+                            MaNvNavigation = nhanVien
+                        };
+                        _context.GioThieus.Add(gioThieu);
+                    }
+                    else
+                    {
+                        gioThieu.TongGioThieu = 8m;
+                        _context.GioThieus.Update(gioThieu);
+                    }
+
+                    // Cập nhật TongGioThieu
+                    var firstDayOfMonth = new DateOnly(ngayLamViec.Year, ngayLamViec.Month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                    var tongGioThieu = await _context.TongGioThieus
+                        .FirstOrDefaultAsync(t => t.MaNv == ngayNghi.MaNv &&
+                                                t.NgayBatDauThieu == firstDayOfMonth &&
+                                                t.NgayKetThucThieu == lastDayOfMonth);
+
+                    if (tongGioThieu == null)
+                    {
+                        tongGioThieu = new TongGioThieu
+                        {
+                            MaNv = ngayNghi.MaNv,
+                            NgayBatDauThieu = firstDayOfMonth,
+                            NgayKetThucThieu = lastDayOfMonth,
+                            TongGioConThieu = 8m,
+                            TongGioLamBu = 0m,
+                            MaNvNavigation = nhanVien
+                        };
+                        _context.TongGioThieus.Add(tongGioThieu);
+                    }
+                    else
+                    {
+                        tongGioThieu.TongGioConThieu += 8m;
+                        _context.TongGioThieus.Update(tongGioThieu);
+                    }
+                }
 
                 // Nếu trạng thái là "Đã duyệt", cập nhật SoNgayDaSuDung
                 if (newMaTrangThai == "NN2")

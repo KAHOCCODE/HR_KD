@@ -164,7 +164,7 @@ public class PayrollCalculator
 
         if (giamTruGiaCanh == null)
         {
-            throw new Exception("Không tìm thấy thông tin giảm trừ targia cảnh hợp lệ.");
+            throw new Exception("Không tìm thấy thông tin giảm trừ gia cảnh hợp lệ.");
         }
 
         var employee = await _context.NhanViens

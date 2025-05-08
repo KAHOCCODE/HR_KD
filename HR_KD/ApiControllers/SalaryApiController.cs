@@ -3,6 +3,9 @@ using HR_KD.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HR_KD.Controllers.ApiControllers
 {
@@ -105,6 +108,13 @@ namespace HR_KD.Controllers.ApiControllers
                     return BadRequest($"Lương cơ bản phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {minimumWage:N0} VNĐ.");
                 }
 
+                // Kiểm tra tổng lương đóng bảo hiểm
+                var luongDongBaoHiem = salaryDTO.LuongCoBan + (salaryDTO.PhuCapCoDinh ?? 0) + (salaryDTO.ThuongCoDinh ?? 0);
+                if (luongDongBaoHiem < minimumWage)
+                {
+                    return BadRequest($"Tổng lương đóng bảo hiểm (lương cơ bản + phụ cấp + thưởng) phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {minimumWage:N0} VNĐ.");
+                }
+
                 // Tính toán các khoản bảo hiểm bằng PayrollCalculator
                 (decimal bhxh, decimal bhyt, decimal bhtn, string errorMessage) = await _payrollCalculator.CalculateInsurance(
                     salaryDTO.LuongCoBan,
@@ -157,10 +167,10 @@ namespace HR_KD.Controllers.ApiControllers
             try
             {
                 // Kiểm tra bản ghi lương tồn tại
-                var salary = await _context.ThongTinLuongNVs
+                var existingSalary = await _context.ThongTinLuongNVs
                     .FirstOrDefaultAsync(s => s.MaLuongNV == maLuongNV);
 
-                if (salary == null)
+                if (existingSalary == null)
                 {
                     return NotFound("Không tìm thấy thông tin lương.");
                 }
@@ -183,6 +193,16 @@ namespace HR_KD.Controllers.ApiControllers
                     return BadRequest("Ngày áp dụng không được là ngày trong quá khứ.");
                 }
 
+                // Kiểm tra xem có bản ghi lương nào khác với NgayApDung mới hơn hoặc bằng ngày áp dụng mới
+                var futureSalary = await _context.ThongTinLuongNVs
+                    .Where(s => s.MaNv == salaryDTO.MaNv && s.NgayApDung >= salaryDTO.NgayApDung && s.MaLuongNV != maLuongNV)
+                    .FirstOrDefaultAsync();
+
+                if (futureSalary != null)
+                {
+                    return BadRequest("Đã tồn tại thông tin lương với ngày áp dụng mới hơn hoặc bằng ngày này.");
+                }
+
                 // Lấy thông tin mức lương tối thiểu vùng đang hoạt động
                 var activeMinimumWage = await _context.MucLuongToiThieuVungs
                     .Where(m => m.IsActive)
@@ -198,6 +218,13 @@ namespace HR_KD.Controllers.ApiControllers
                 if (salaryDTO.LuongCoBan < minimumWage)
                 {
                     return BadRequest($"Lương cơ bản phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {minimumWage:N0} VNĐ.");
+                }
+
+                // Kiểm tra tổng lương đóng bảo hiểm
+                var luongDongBaoHiem = salaryDTO.LuongCoBan + (salaryDTO.PhuCapCoDinh ?? 0) + (salaryDTO.ThuongCoDinh ?? 0);
+                if (luongDongBaoHiem < minimumWage)
+                {
+                    return BadRequest($"Tổng lương đóng bảo hiểm (lương cơ bản + phụ cấp + thưởng) phải lớn hơn hoặc bằng mức lương tối thiểu vùng: {minimumWage:N0} VNĐ.");
                 }
 
                 // Tính toán các khoản bảo hiểm bằng PayrollCalculator
@@ -216,20 +243,24 @@ namespace HR_KD.Controllers.ApiControllers
                 salaryDTO.BHYT = bhyt;
                 salaryDTO.BHTN = bhtn;
 
-                // Cập nhật thông tin lương
-                salary.LuongCoBan = salaryDTO.LuongCoBan;
-                salary.PhuCapCoDinh = salaryDTO.PhuCapCoDinh;
-                salary.ThuongCoDinh = salaryDTO.ThuongCoDinh;
-                salary.BHXH = salaryDTO.BHXH;
-                salary.BHYT = salaryDTO.BHYT;
-                salary.BHTN = salaryDTO.BHTN;
-                salary.NgayApDung = salaryDTO.NgayApDung;
-                salary.GhiChu = salaryDTO.GhiChu;
+                // Tạo bản ghi lương mới
+                var newSalary = new ThongTinLuongNV
+                {
+                    MaNv = salaryDTO.MaNv,
+                    LuongCoBan = salaryDTO.LuongCoBan,
+                    PhuCapCoDinh = salaryDTO.PhuCapCoDinh,
+                    ThuongCoDinh = salaryDTO.ThuongCoDinh,
+                    BHXH = salaryDTO.BHXH,
+                    BHYT = salaryDTO.BHYT,
+                    BHTN = salaryDTO.BHTN,
+                    NgayApDung = salaryDTO.NgayApDung,
+                    GhiChu = salaryDTO.GhiChu
+                };
 
-                _context.ThongTinLuongNVs.Update(salary);
+                _context.ThongTinLuongNVs.Add(newSalary);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Đã cập nhật lương cho nhân viên MaNv: {MaNv}, MaLuongNV: {MaLuongNV}", salary.MaNv, maLuongNV);
+                _logger.LogInformation("Đã cập nhật lương cho nhân viên MaNv: {MaNv}, MaLuongNV mới: {MaLuongNV}", newSalary.MaNv, newSalary.MaLuongNV);
 
                 return Ok();
             }

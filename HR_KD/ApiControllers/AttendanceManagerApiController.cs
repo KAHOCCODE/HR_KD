@@ -529,7 +529,7 @@ public class AttendanceManagerController : ControllerBase
 
     // 🔹 Duyệt hoặc từ chối nhiều bản ghi chấm công (Director)
     [HttpPost("ApproveMultipleAttendanceManagerDerector")]
-    public IActionResult ApproveMultipleAttendanceDerector([FromBody] ApproveMultipleAttendanceRequestDTO request)
+    public IActionResult ApproveMultipleAttendanceManagerDerector([FromBody] ApproveMultipleAttendanceRequestDTO request)
     {
         int maNv = (int)GetMaNvFromClaims();
         if (maNv == null)
@@ -543,57 +543,90 @@ public class AttendanceManagerController : ControllerBase
                 var rejectionDetails = new List<(string Email, string HoTen, DateOnly Ngay, string GhiChu)>();
                 const decimal standardHours = 8.0m;
 
-                foreach (var maChamCong in request.MaChamCongList)
+                // Nhóm các chấm công theo nhân viên và tháng
+                var chamCongGroups = request.MaChamCongList
+                    .Select(maChamCong => _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == maChamCong))
+                    .Where(cc => cc != null)
+                    .GroupBy(cc => new { cc.MaNv, Year = cc.NgayLamViec.Year, Month = cc.NgayLamViec.Month });
+
+                foreach (var group in chamCongGroups)
                 {
-                    var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == maChamCong);
-                    if (chamCong == null)
-                    {
-                        failedRecords.Add(maChamCong);
-                        continue;
-                    }
+                    var firstDayOfMonth = new DateOnly(group.Key.Year, group.Key.Month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
 
-                    if (chamCong.TrangThai != "CC2" && chamCong.TrangThai != null)
-                    {
-                        failedRecords.Add(maChamCong);
-                        continue;
-                    }
+                    // Kiểm tra và tạo hoặc cập nhật TongGioThieu
+                    var tongGioThieu = _context.TongGioThieus
+                        .FirstOrDefault(t => t.MaNv == group.Key.MaNv &&
+                                           t.NgayBatDauThieu == firstDayOfMonth &&
+                                           t.NgayKetThucThieu == lastDayOfMonth);
 
-                    var employee = _context.NhanViens.Find(chamCong.MaNv);
-                    if (employee == null)
+                    if (tongGioThieu == null)
                     {
-                        failedRecords.Add(maChamCong);
-                        continue;
-                    }
-
-                    if (request.TrangThai == "Từ chối")
-                    {
-                        chamCong.TrangThai = "CC4";
-                        chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
-                        chamCong.MaNvDuyet = maNv;
-                        rejectionDetails.Add((employee.Email, employee.HoTen, chamCong.NgayLamViec, chamCong.GhiChu));
-                    }
-                    else if (request.TrangThai == "Đã duyệt")
-                    {
-                        chamCong.TrangThai = "CC3";
-                        chamCong.MaNvDuyet = maNv;
-
-                        if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
+                        var employee = _context.NhanViens.Find(group.Key.MaNv);
+                        if (employee != null)
                         {
-                            decimal shortfall = standardHours - chamCong.TongGio.Value;
-
-                            var gioThieu = new GioThieu
+                            tongGioThieu = new TongGioThieu
                             {
-                                NgayThieu = chamCong.NgayLamViec,
-                                TongGioThieu = shortfall,
-                                MaNv = chamCong.MaNv,
+                                MaNv = group.Key.MaNv,
+                                NgayBatDauThieu = firstDayOfMonth,
+                                NgayKetThucThieu = lastDayOfMonth,
+                                TongGioConThieu = 0m,
+                                TongGioLamBu = 0m,
                                 MaNvNavigation = employee
                             };
-                            _context.GioThieus.Add(gioThieu);
+                            _context.TongGioThieus.Add(tongGioThieu);
+                        }
+                    }
 
-                            UpdateTongGioThieu(chamCong.MaNv, chamCong.NgayLamViec, shortfall);
+                    foreach (var chamCong in group)
+                    {
+                        if (chamCong.TrangThai != "CC2" && chamCong.TrangThai != null)
+                        {
+                            failedRecords.Add(chamCong.MaChamCong);
+                            continue;
                         }
 
-                        SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                        var employee = _context.NhanViens.Find(chamCong.MaNv);
+                        if (employee == null)
+                        {
+                            failedRecords.Add(chamCong.MaChamCong);
+                            continue;
+                        }
+
+                        if (request.TrangThai == "Từ chối")
+                        {
+                            chamCong.TrangThai = "CC4";
+                            chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                            chamCong.MaNvDuyet = maNv;
+                            rejectionDetails.Add((employee.Email, employee.HoTen, chamCong.NgayLamViec, chamCong.GhiChu));
+                        }
+                        else if (request.TrangThai == "Đã duyệt")
+                        {
+                            chamCong.TrangThai = "CC3";
+                            chamCong.MaNvDuyet = maNv;
+
+                            if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
+                            {
+                                decimal shortfall = standardHours - chamCong.TongGio.Value;
+
+                                var gioThieu = new GioThieu
+                                {
+                                    NgayThieu = chamCong.NgayLamViec,
+                                    TongGioThieu = shortfall,
+                                    MaNv = chamCong.MaNv,
+                                    MaNvNavigation = employee
+                                };
+                                _context.GioThieus.Add(gioThieu);
+
+                                // Cập nhật TongGioThieu
+                                if (tongGioThieu != null)
+                                {
+                                    tongGioThieu.TongGioConThieu += shortfall;
+                                }
+                            }
+
+                            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                        }
                     }
                 }
 

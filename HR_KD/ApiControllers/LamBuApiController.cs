@@ -113,21 +113,44 @@ namespace HR_KD.ApiControllers
 
             try
             {
+                // Fetch remaining hours
+                var currentDate = DateOnly.FromDateTime(DateTime.Now);
+                var tongGioThieu = await _context.TongGioThieus
+                    .Where(t => t.MaNv == userMaNv.Value && t.NgayBatDauThieu <= currentDate && t.NgayKetThucThieu >= currentDate)
+                    .FirstOrDefaultAsync();
+
+                decimal remainingHours = tongGioThieu?.TongGioConThieu - tongGioThieu?.TongGioLamBu ?? 0;
+
+                // Calculate total submitted hours
+                decimal totalSubmittedHours = 0;
+                if (request.LamBu != null)
+                {
+                    totalSubmittedHours += request.LamBu.Sum(lb => lb.TongGio ?? 0);
+                }
+                if (request.LamBuBanDem != null)
+                {
+                    totalSubmittedHours += request.LamBuBanDem.Sum(lb => lb.TongGio ?? 0);
+                }
+
+                // Check if total submitted hours exceed remaining hours
+                if (totalSubmittedHours > remainingHours)
+                {
+                    return BadRequest(new { success = false, message = $"Tổng giờ làm bù ({totalSubmittedHours}h) không được vượt quá số giờ còn thiếu ({remainingHours}h)." });
+                }
+
                 // Process day compensatory work
                 if (request.LamBu != null)
                 {
                     foreach (var lamBu in request.LamBu)
                     {
-                        // Validate day compensatory work conditions
+                        // Existing validation for day compensatory work
                         var ngayLamViec = lamBu.NgayLamViec;
                         var dayOfWeek = ngayLamViec.ToDateTime(TimeOnly.MinValue).DayOfWeek;
                         var gioVao = lamBu.GioVao;
                         var gioRa = lamBu.GioRa;
 
-                        // Check time restrictions based on day of the week
                         if (dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday)
                         {
-                            // Monday to Friday: 18:00 - 22:00
                             if (gioVao < TimeOnly.Parse("18:00") || gioVao > TimeOnly.Parse("22:00") ||
                                 gioRa < TimeOnly.Parse("18:00") || gioRa > TimeOnly.Parse("22:00"))
                             {
@@ -136,7 +159,6 @@ namespace HR_KD.ApiControllers
                         }
                         else if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
                         {
-                            // Saturday and Sunday: 08:00 - 18:00 or 18:00 - 22:00
                             if ((gioVao < TimeOnly.Parse("08:00") || gioVao > TimeOnly.Parse("18:00") || gioRa < TimeOnly.Parse("08:00") || gioRa > TimeOnly.Parse("18:00")) &&
                                 (gioVao < TimeOnly.Parse("18:00") || gioVao > TimeOnly.Parse("22:00") || gioRa < TimeOnly.Parse("18:00") || gioRa > TimeOnly.Parse("22:00")))
                             {
@@ -148,7 +170,6 @@ namespace HR_KD.ApiControllers
                             return BadRequest(new { success = false, message = $"Không được phép làm bù vào ngày {ngayLamViec}." });
                         }
 
-                        // Check for overtime conflicts
                         var conflictingTangCa = await _context.TangCas
                             .Where(tc => tc.NgayTangCa == ngayLamViec && tc.MaNv == lamBu.MaNV)
                             .ToListAsync();
@@ -160,12 +181,11 @@ namespace HR_KD.ApiControllers
 
                             if ((gioVao >= tangCaStart && gioVao <= tangCaEnd) || (gioRa >= tangCaStart && gioRa <= tangCaEnd) ||
                                 (gioVao <= tangCaStart && gioRa >= tangCaEnd))
-                            {
+                    {
                                 return BadRequest(new { success = false, message = $"Làm bù vào ngày {ngayLamViec} trùng với giờ tăng ca. Vui lòng kiểm tra lại." });
                             }
                         }
 
-                        // Calculate total hours
                         if (gioVao.HasValue && gioRa.HasValue)
                         {
                             var hours = (gioRa.Value - gioVao.Value).TotalHours;
@@ -184,19 +204,17 @@ namespace HR_KD.ApiControllers
                 {
                     foreach (var lamBu in request.LamBuBanDem)
                     {
-                        // Validate night compensatory work conditions
+                        // Existing validation for night compensatory work
                         var ngayLamViec = lamBu.NgayLamViec;
                         var gioVao = lamBu.GioVao;
                         var gioRa = lamBu.GioRa;
 
-                        // Night compensatory work: 18:00 - 22:00
                         if (gioVao < TimeOnly.Parse("18:00") || gioVao > TimeOnly.Parse("22:00") ||
                             gioRa < TimeOnly.Parse("18:00") || gioRa > TimeOnly.Parse("22:00"))
                         {
                             return BadRequest(new { success = false, message = $"Làm bù ban đêm chỉ được phép từ 18:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
                         }
 
-                        // Check for overtime conflicts
                         var conflictingTangCa = await _context.TangCas
                             .Where(tc => tc.NgayTangCa == ngayLamViec && tc.MaNv == lamBu.MaNV)
                             .ToListAsync();
@@ -213,7 +231,6 @@ namespace HR_KD.ApiControllers
                             }
                         }
 
-                        // Check for day compensatory work conflicts
                         var conflictingLamBu = request.LamBu?.Where(lb => lb.NgayLamViec == ngayLamViec && lb.MaNV == lamBu.MaNV).ToList() ?? new List<LamBu>();
                         foreach (var dayLamBu in conflictingLamBu)
                         {
@@ -225,7 +242,6 @@ namespace HR_KD.ApiControllers
                             }
                         }
 
-                        // Calculate total hours
                         if (gioVao.HasValue && gioRa.HasValue)
                         {
                             var hours = (gioRa.Value - gioVao.Value).TotalHours;

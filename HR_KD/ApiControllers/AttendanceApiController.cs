@@ -95,9 +95,9 @@ using System.Linq;
                         var weeklyHours = await _context.LichSuChamCongs
                             .Where(c => c.MaNv == maNv.Value && c.Ngay >= start && c.Ngay <= end)
                             .SumAsync(c => c.TongGio ?? 0);
-                        if (weeklyHours >= 48)
+                        if (weeklyHours >= 40)
                         {
-                            return BadRequest(new { success = false, message = $"Đã đủ 48 giờ làm việc trong tuần bắt đầu từ {start}, không thể chấm công thêm." });
+                            return BadRequest(new { success = false, message = $"Đã đủ 40 giờ làm việc trong tuần bắt đầu từ {start}, không thể chấm công thêm." });
                         }
 
                         var chamCong = new LichSuChamCong
@@ -475,5 +475,7 @@ using System.Linq;
                  return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
              }
          }
+
+        
      }
  }

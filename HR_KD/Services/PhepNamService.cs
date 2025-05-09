@@ -88,6 +88,22 @@ namespace HR_KD.Services
 
             foreach (var nv in nhanViens)
             {
+                // Tính số ngày phép chưa sử dụng từ năm trước
+                decimal soNgayChuaSuDungNamTruoc = 0;
+                var phepNamTruoc = await _context.PhepNamNhanViens
+                    .SingleOrDefaultAsync(p => p.MaNv == nv.MaNv && p.Nam == nam - 1);
+
+                if (phepNamTruoc != null)
+                {
+                    soNgayChuaSuDungNamTruoc = phepNamTruoc.SoNgayPhepDuocCap - phepNamTruoc.SoNgayDaSuDung;
+                    if (soNgayChuaSuDungNamTruoc > 0)
+                    {
+                        phepNamTruoc.SoNgayChuaSuDung = soNgayChuaSuDungNamTruoc;
+                        phepNamTruoc.NgayCapNhat = DateTime.Now;
+                        phepNamTruoc.GhiChu = $"Cập nhật số ngày phép chưa sử dụng khi chuyển sang năm {nam}";
+                    }
+                }
+
                 // Kiểm tra và tính thâm niên
                 int? thamnien = null;
                 if (nv.NgayVaoLam.HasValue)

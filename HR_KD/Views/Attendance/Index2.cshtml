@@ -239,7 +239,6 @@
         locale: {
             firstDayOfWeek: 1 // Monday
         },
-        disable: [date => date.getDay() === 0],
         onClose: handleDateRangeClose
     });
 
@@ -250,31 +249,7 @@
             const endDate = new Date(selectedDates[1]);
 
             while (currentDate <= endDate) {
-                if (currentDate.getDay() >= 1 && currentDate.getDay() <= 6) {
-                    const dateStr = formatDateToYMD(currentDate);
-                    selectedWorkDays.push(dateStr);
-                    if (!workScheduleData[dateStr]) {
-                        workScheduleData[dateStr] = {
-                            selected: false,
-                            checkIn: '',
-                            checkOut: '',
-                            totalHours: 0,
-                            overtimeHours: 0,
-                            overtimeStart: '',
-                            overtimeEnd: '',
-                            overtimeNote: '',
-                            attendanceNote: '',
-                            overtimeRateId: null,
-                            overtimeRateTiLe: 1
-                        };
-                    }
-                }
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-        } else if (selectedDates.length === 1) {
-            const selectedDate = selectedDates[0];
-            if (selectedDate.getDay() !== 0) {
-                const dateStr = formatDateToYMD(selectedDate);
+                const dateStr = formatDateToYMD(currentDate);
                 selectedWorkDays.push(dateStr);
                 if (!workScheduleData[dateStr]) {
                     workScheduleData[dateStr] = {
@@ -291,6 +266,26 @@
                         overtimeRateTiLe: 1
                     };
                 }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        } else if (selectedDates.length === 1) {
+            const selectedDate = selectedDates[0];
+            const dateStr = formatDateToYMD(selectedDate);
+            selectedWorkDays.push(dateStr);
+            if (!workScheduleData[dateStr]) {
+                workScheduleData[dateStr] = {
+                    selected: false,
+                    checkIn: '',
+                    checkOut: '',
+                    totalHours: 0,
+                    overtimeHours: 0,
+                    overtimeStart: '',
+                    overtimeEnd: '',
+                    overtimeNote: '',
+                    attendanceNote: '',
+                    overtimeRateId: null,
+                    overtimeRateTiLe: 1
+                };
             }
         }
         updateWorkScheduleTable();
@@ -417,19 +412,37 @@
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
         const minTime = '18:00';
         const maxTime = '22:00';
+
+        // Lấy ngày được chọn
+        const selectedDate = new Date(selectedWorkDays[0]);
+        const dayOfWeek = selectedDate.getDay(); // 0 = CN, 6 = T7
+
         if (otStartTime && (otStartTime < minTime || otStartTime > maxTime)) {
             Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
             document.getElementById('otStartTime').value = '';
             document.getElementById('otEndTime').value = '';
             return;
         }
+
         if (otEndTime && (otEndTime < minTime || otEndTime > maxTime)) {
             Swal.fire('Lỗi!', 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00', 'error');
             document.getElementById('otEndTime').value = '';
             return;
         }
-        if (otRawHours > 4) {
-            Swal.fire('Lỗi!', 'Số giờ tăng ca không được vượt quá 4 giờ', 'error');
+
+        // Kiểm tra giới hạn tăng ca
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) { // T2-T6
+            if (otRawHours > 4) {
+                Swal.fire('Lỗi!', 'Số giờ tăng ca không được vượt quá 4 giờ trong ngày thường', 'error');
+                document.getElementById('otEndTime').value = '';
+                return;
+            }
+        }
+
+        // Kiểm tra tổng giờ tăng ca trong tuần
+        const weeklyOvertime = calculateWeeklyOvertime(selectedDate, otRawHours);
+        if (weeklyOvertime > 12) {
+            Swal.fire('Lỗi!', 'Tổng số giờ tăng ca trong tuần không được vượt quá 12 giờ', 'error');
             document.getElementById('otEndTime').value = '';
             return;
         }
@@ -457,13 +470,32 @@
             return;
         }
 
-        const invalidOvertime = selectedDates.some(date => 
-            date.overtimeHours > 0 && date.overtimeRateTiLe === 1
-        );
-        if (invalidOvertime) {
-            Swal.fire('Lỗi!', 'Vui lòng chọn tỉ lệ tăng ca cho các ngày có giờ tăng ca', 'error');
-            return;
-        }
+        // Lọc dữ liệu chấm công chỉ cho T2-T6 và có giờ vào/ra
+        const validAttendance = selectedDates
+            .filter(date => {
+                const dayOfWeek = new Date(date.date).getDay();
+                return dayOfWeek >= 1 && dayOfWeek <= 5 && date.checkIn && date.checkOut;
+            })
+            .map(date => ({
+                NgayLamViec: date.date,
+                GioVao: date.checkIn,
+                GioRa: date.checkOut,
+                TongGio: date.totalHours,
+                TrangThai: "LS1",
+                GhiChu: date.attendanceNote || ""
+            }));
+
+        // Lọc dữ liệu tăng ca hợp lệ
+        const validOvertime = selectedDates
+            .filter(date => date.overtimeHours > 0 && date.overtimeStart && date.overtimeEnd && date.overtimeRateId)
+            .map(date => ({
+                NgayTangCa: date.date,
+                GioVaoTangCa: date.overtimeStart,
+                GioRaTangCa: date.overtimeEnd,
+                SoGioTangCa: date.overtimeHours,
+                GhiChu: date.overtimeNote || "",
+                TiLeTangCa: date.overtimeRateTiLe
+            }));
 
         try {
             const response = await fetch('/api/Attendance/SubmitAttendance', {
@@ -472,37 +504,17 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    attendance: selectedDates.map(date => ({
-                        NgayLamViec: date.date,
-                        GioVao: date.checkIn,
-                        GioRa: date.checkOut,
-                        TongGio: date.totalHours,
-                        TrangThai: 'LS1',
-                        GhiChu: date.attendanceNote
-                    })),
-                    overtime: selectedDates
-                        .filter(date => date.overtimeHours > 0)
-                        .map(date => ({
-                            NgayTangCa: date.date,
-                            GioVaoTangCa: date.overtimeStart,
-                            GioRaTangCa: date.overtimeEnd,
-                            SoGioTangCa: date.overtimeHours,
-                            GhiChu: date.overtimeNote,
-                            TiLeTangCa: date.overtimeRateTiLe
-                        }))
+                    attendance: validAttendance,
+                    overtime: validOvertime
                 })
             });
 
             const result = await response.json();
             if (result.success) {
-                Swal.fire('Thành công!', 'Lưu dữ liệu thành công', 'success');
-                // Reset bảng ngày làm việc
-                selectedWorkDays = [];
-                workScheduleData = {};
-                updateWorkScheduleTable();
-                // Reset input chọn ngày
-                const datePicker = flatpickr("#workDateRange");
-                datePicker.clear();
+                Swal.fire('Thành công!', 'Lưu dữ liệu thành công', 'success')
+                .then(() => {
+                    location.reload();
+                });
             } else {
                 Swal.fire('Lỗi!', result.message, 'error');
             }
@@ -524,16 +536,6 @@
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
         const otHours = calculateOvertimeHours(otStartTime, otEndTime) || 0;
 
-        if (otRawHours > 4) {
-            Swal.fire('Lỗi!', 'Số giờ tăng ca không được vượt quá 4 giờ', 'error');
-            return;
-        }
-
-        if (otHours > 0 && !overtimeRateId) {
-            Swal.fire('Lỗi!', 'Vui lòng chọn tỉ lệ tăng ca khi có giờ tăng ca', 'error');
-            return;
-        }
-
         const selectedDates = Object.entries(workScheduleData)
             .filter(([_, data]) => data.selected)
             .map(([date]) => date);
@@ -543,24 +545,43 @@
             return;
         }
 
+        // Kiểm tra và áp dụng chấm công chỉ cho T2-T6
         selectedDates.forEach(date => {
-            workScheduleData[date] = {
-                ...workScheduleData[date],
-                checkIn: checkIn,
-                checkOut: checkOut,
-                totalHours: checkIn && checkOut ? calculateHours(checkIn, checkOut) : 0,
-                overtimeHours: otHours,
-                overtimeStart: otStartTime,
-                overtimeEnd: otEndTime,
-                overtimeNote: otNote,
-                attendanceNote: attendanceNote,
-                overtimeRateId: overtimeRateId || null,
-                overtimeRateTiLe: selectedRate ? selectedRate.tiLe : 1
-            };
+            const currentDate = new Date(date);
+            const dayOfWeek = currentDate.getDay();
+            
+            // Chỉ áp dụng chấm công cho T2-T6
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                workScheduleData[date] = {
+                    ...workScheduleData[date],
+                    checkIn: checkIn,
+                    checkOut: checkOut,
+                    totalHours: checkIn && checkOut ? calculateHours(checkIn, checkOut) : 0,
+                    overtimeHours: otHours,
+                    overtimeStart: otStartTime,
+                    overtimeEnd: otEndTime,
+                    overtimeNote: otNote,
+                    attendanceNote: attendanceNote,
+                    overtimeRateId: overtimeRateId || null,
+                    overtimeRateTiLe: selectedRate ? selectedRate.tiLe : 1
+                };
+            } else {
+                // Chỉ áp dụng tăng ca cho T7 và CN
+                workScheduleData[date] = {
+                    ...workScheduleData[date],
+                    overtimeHours: otHours,
+                    overtimeStart: otStartTime,
+                    overtimeEnd: otEndTime,
+                    overtimeNote: otNote,
+                    overtimeRateId: overtimeRateId || null,
+                    overtimeRateTiLe: selectedRate ? selectedRate.tiLe : 1
+                };
+            }
         });
 
         updateWorkScheduleTable();
 
+        // Reset form
         document.getElementById('checkInTime').value = '';
         document.getElementById('checkOutTime').value = '';
         document.getElementById('totalHours').value = '';
@@ -579,6 +600,32 @@
 
         Swal.fire('Thành công!', 'Đã áp dụng dữ liệu cho các ngày đã chọn', 'success');
     });
+
+    // Thêm hàm kiểm tra tổng giờ tăng ca trong tuần
+    function getWeekNumber(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+        const yearStart = new Date(d.getFullYear(), 0, 1);
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function calculateWeeklyOvertime(date, overtimeHours) {
+        const weekNumber = getWeekNumber(new Date(date));
+        const weekStart = new Date(date);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        let totalWeeklyOvertime = overtimeHours;
+        Object.entries(workScheduleData).forEach(([dateStr, data]) => {
+            const currentDate = new Date(dateStr);
+            if (currentDate >= weekStart && currentDate <= weekEnd && dateStr !== date) {
+                totalWeeklyOvertime += data.overtimeHours || 0;
+            }
+        });
+        return totalWeeklyOvertime;
+    }
 
     window.addEventListener('load', loadOvertimeRates);
 </script>

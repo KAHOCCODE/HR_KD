@@ -19,6 +19,8 @@
         public const string FirstApproved = "CC2"; // Đã duyệt lần 1
         public const string Approved = "CC3"; // Đã duyệt
         public const string Rejected = "CC4"; // Từ chối
+        public const string Paidleave = "CC5"; // Nghỉ phép có lương
+        public const string Unpaidleave = "CC6"; // Nghỉ phép không lương
     }
 
     public static class OvertimeStatus

@@ -174,7 +174,7 @@ namespace HR_KD.ApiControllers
                             lamBu.TongGio = (decimal)Math.Round(hours, 2);
                         }
 
-                        lamBu.TrangThai = "LS1";
+                        lamBu.TrangThai = "LB1";
                         _context.LamBus.Add(lamBu);
                     }
                 }
@@ -233,7 +233,7 @@ namespace HR_KD.ApiControllers
                             lamBu.TongGio = (decimal)Math.Round(hours, 2);
                         }
 
-                        lamBu.TrangThai = "LBBD";
+                        lamBu.TrangThai = "LB1";
                         _context.LamBus.Add(lamBu);
                     }
                 }

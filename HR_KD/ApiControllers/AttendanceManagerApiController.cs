@@ -317,7 +317,16 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu tăng ca." });
         }
 
-        if (request.TrangThai == "TC4")
+        // Kiểm tra giờ thiếu còn lại
+        var firstDayOfMonth = new DateOnly(tangCa.NgayTangCa.Year, tangCa.NgayTangCa.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+        var tongGioThieu = _context.TongGioThieus
+            .FirstOrDefault(t => t.MaNv == tangCa.MaNv &&
+                               t.NgayBatDauThieu == firstDayOfMonth &&
+                               t.NgayKetThucThieu == lastDayOfMonth);
+
+        if (tangCa.TrangThai == "TC4")
         {
             tangCa.TrangThai = "TC4";
             tangCa.GhiChu = request.GhiChu ?? "Không có ghi chú";
@@ -333,7 +342,11 @@ public class AttendanceManagerController : ControllerBase
             return Ok(new { success = true, message = "Đã từ chối tăng ca." });
         }
 
-        
+        // Kiểm tra nếu còn giờ thiếu
+        if (tongGioThieu != null && (tongGioThieu.TongGioConThieu - tongGioThieu.TongGioLamBu) > 0)
+        {
+            return BadRequest(new { success = false, message = "Không thể duyệt tăng ca vì nhân viên còn giờ thiếu chưa được bù." });
+        }
 
         tangCa.TrangThai = "TC2";
         tangCa.MaNvDuyet = maNv;
@@ -372,6 +385,15 @@ public class AttendanceManagerController : ControllerBase
                         continue;
                     }
 
+                    // Kiểm tra giờ thiếu còn lại
+                    var firstDayOfMonth = new DateOnly(tangCa.NgayTangCa.Year, tangCa.NgayTangCa.Month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                    var tongGioThieu = _context.TongGioThieus
+                        .FirstOrDefault(t => t.MaNv == tangCa.MaNv &&
+                                           t.NgayBatDauThieu == firstDayOfMonth &&
+                                           t.NgayKetThucThieu == lastDayOfMonth);
+
                     if (request.TrangThai == "TC4")
                     {
                         tangCa.TrangThai = "TC4";
@@ -386,8 +408,8 @@ public class AttendanceManagerController : ControllerBase
                     }
                     else if (request.TrangThai == "TC2")
                     {
-                        var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == tangCa.MaNv && cc.NgayLamViec == tangCa.NgayTangCa);
-                        if (daTonTai)
+                        // Kiểm tra nếu còn giờ thiếu
+                        if (tongGioThieu != null && (tongGioThieu.TongGioConThieu - tongGioThieu.TongGioLamBu) > 0)
                         {
                             failedRecords.Add(maTangCa);
                             continue;
@@ -414,7 +436,7 @@ public class AttendanceManagerController : ControllerBase
                 transaction.Commit();
                 var baseMessage = request.TrangThai == "TC2" ? "Duyệt tăng ca thành công." : "Đã từ chối tăng ca.";
                 var message = failedRecords.Any()
-                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật."
+                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật do nhân viên còn giờ thiếu chưa được bù."
                     : baseMessage;
                 return Ok(new { success = true, message });
             }
@@ -507,7 +529,7 @@ public class AttendanceManagerController : ControllerBase
 
     // 🔹 Duyệt hoặc từ chối nhiều bản ghi chấm công (Director)
     [HttpPost("ApproveMultipleAttendanceManagerDerector")]
-    public IActionResult ApproveMultipleAttendanceDerector([FromBody] ApproveMultipleAttendanceRequestDTO request)
+    public IActionResult ApproveMultipleAttendanceManagerDerector([FromBody] ApproveMultipleAttendanceRequestDTO request)
     {
         int maNv = (int)GetMaNvFromClaims();
         if (maNv == null)
@@ -521,57 +543,90 @@ public class AttendanceManagerController : ControllerBase
                 var rejectionDetails = new List<(string Email, string HoTen, DateOnly Ngay, string GhiChu)>();
                 const decimal standardHours = 8.0m;
 
-                foreach (var maChamCong in request.MaChamCongList)
+                // Nhóm các chấm công theo nhân viên và tháng
+                var chamCongGroups = request.MaChamCongList
+                    .Select(maChamCong => _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == maChamCong))
+                    .Where(cc => cc != null)
+                    .GroupBy(cc => new { cc.MaNv, Year = cc.NgayLamViec.Year, Month = cc.NgayLamViec.Month });
+
+                foreach (var group in chamCongGroups)
                 {
-                    var chamCong = _context.ChamCongs.FirstOrDefault(cc => cc.MaChamCong == maChamCong);
-                    if (chamCong == null)
-                    {
-                        failedRecords.Add(maChamCong);
-                        continue;
-                    }
+                    var firstDayOfMonth = new DateOnly(group.Key.Year, group.Key.Month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
 
-                    if (chamCong.TrangThai != "CC2" && chamCong.TrangThai != null)
-                    {
-                        failedRecords.Add(maChamCong);
-                        continue;
-                    }
+                    // Kiểm tra và tạo hoặc cập nhật TongGioThieu
+                    var tongGioThieu = _context.TongGioThieus
+                        .FirstOrDefault(t => t.MaNv == group.Key.MaNv &&
+                                           t.NgayBatDauThieu == firstDayOfMonth &&
+                                           t.NgayKetThucThieu == lastDayOfMonth);
 
-                    var employee = _context.NhanViens.Find(chamCong.MaNv);
-                    if (employee == null)
+                    if (tongGioThieu == null)
                     {
-                        failedRecords.Add(maChamCong);
-                        continue;
-                    }
-
-                    if (request.TrangThai == "Từ chối")
-                    {
-                        chamCong.TrangThai = "CC4";
-                        chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
-                        chamCong.MaNvDuyet = maNv;
-                        rejectionDetails.Add((employee.Email, employee.HoTen, chamCong.NgayLamViec, chamCong.GhiChu));
-                    }
-                    else if (request.TrangThai == "Đã duyệt")
-                    {
-                        chamCong.TrangThai = "CC3";
-                        chamCong.MaNvDuyet = maNv;
-
-                        if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
+                        var employee = _context.NhanViens.Find(group.Key.MaNv);
+                        if (employee != null)
                         {
-                            decimal shortfall = standardHours - chamCong.TongGio.Value;
-
-                            var gioThieu = new GioThieu
+                            tongGioThieu = new TongGioThieu
                             {
-                                NgayThieu = chamCong.NgayLamViec,
-                                TongGioThieu = shortfall,
-                                MaNv = chamCong.MaNv,
+                                MaNv = group.Key.MaNv,
+                                NgayBatDauThieu = firstDayOfMonth,
+                                NgayKetThucThieu = lastDayOfMonth,
+                                TongGioConThieu = 0m,
+                                TongGioLamBu = 0m,
                                 MaNvNavigation = employee
                             };
-                            _context.GioThieus.Add(gioThieu);
+                            _context.TongGioThieus.Add(tongGioThieu);
+                        }
+                    }
 
-                            UpdateTongGioThieu(chamCong.MaNv, chamCong.NgayLamViec, shortfall);
+                    foreach (var chamCong in group)
+                    {
+                        if (chamCong.TrangThai != "CC2" && chamCong.TrangThai != null)
+                        {
+                            failedRecords.Add(chamCong.MaChamCong);
+                            continue;
                         }
 
-                        SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                        var employee = _context.NhanViens.Find(chamCong.MaNv);
+                        if (employee == null)
+                        {
+                            failedRecords.Add(chamCong.MaChamCong);
+                            continue;
+                        }
+
+                        if (request.TrangThai == "Từ chối")
+                        {
+                            chamCong.TrangThai = "CC4";
+                            chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                            chamCong.MaNvDuyet = maNv;
+                            rejectionDetails.Add((employee.Email, employee.HoTen, chamCong.NgayLamViec, chamCong.GhiChu));
+                        }
+                        else if (request.TrangThai == "Đã duyệt")
+                        {
+                            chamCong.TrangThai = "CC3";
+                            chamCong.MaNvDuyet = maNv;
+
+                            if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
+                            {
+                                decimal shortfall = standardHours - chamCong.TongGio.Value;
+
+                                var gioThieu = new GioThieu
+                                {
+                                    NgayThieu = chamCong.NgayLamViec,
+                                    TongGioThieu = shortfall,
+                                    MaNv = chamCong.MaNv,
+                                    MaNvNavigation = employee
+                                };
+                                _context.GioThieus.Add(gioThieu);
+
+                                // Cập nhật TongGioThieu
+                                if (tongGioThieu != null)
+                                {
+                                    tongGioThieu.TongGioConThieu += shortfall;
+                                }
+                            }
+
+                            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                        }
                     }
                 }
 
@@ -637,6 +692,15 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy yêu cầu tăng ca." });
         }
 
+        // Kiểm tra giờ thiếu còn lại
+        var firstDayOfMonth = new DateOnly(tangCa.NgayTangCa.Year, tangCa.NgayTangCa.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+        var tongGioThieu = _context.TongGioThieus
+            .FirstOrDefault(t => t.MaNv == tangCa.MaNv &&
+                               t.NgayBatDauThieu == firstDayOfMonth &&
+                               t.NgayKetThucThieu == lastDayOfMonth);
+
         tangCa.TrangThai = request.TrangThai == "Đã duyệt" ? "TC3" : "TC4";
         tangCa.GhiChu = request.TrangThai == "Từ chối" ? (request.GhiChu ?? "Không có ghi chú") : null;
         tangCa.MaNvDuyet = maNv;
@@ -650,6 +714,11 @@ public class AttendanceManagerController : ControllerBase
             }
             else if (request.TrangThai == "Đã duyệt")
             {
+                // Kiểm tra nếu còn giờ thiếu
+                if (tongGioThieu != null && (tongGioThieu.TongGioConThieu - tongGioThieu.TongGioLamBu) > 0)
+                {
+                    return BadRequest(new { success = false, message = "Không thể duyệt tăng ca vì nhân viên còn giờ thiếu chưa được bù." });
+                }
                 SendApprovalEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, "TC3");
             }
         }
@@ -689,6 +758,15 @@ public class AttendanceManagerController : ControllerBase
                         continue;
                     }
 
+                    // Kiểm tra giờ thiếu còn lại
+                    var firstDayOfMonth = new DateOnly(tangCa.NgayTangCa.Year, tangCa.NgayTangCa.Month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                    var tongGioThieu = _context.TongGioThieus
+                        .FirstOrDefault(t => t.MaNv == tangCa.MaNv &&
+                                           t.NgayBatDauThieu == firstDayOfMonth &&
+                                           t.NgayKetThucThieu == lastDayOfMonth);
+
                     if (request.TrangThai == "Từ chối")
                     {
                         tangCa.TrangThai = "TC4";
@@ -703,6 +781,13 @@ public class AttendanceManagerController : ControllerBase
                     }
                     else if (request.TrangThai == "Đã duyệt")
                     {
+                        // Kiểm tra nếu còn giờ thiếu
+                        if (tongGioThieu != null && (tongGioThieu.TongGioConThieu - tongGioThieu.TongGioLamBu) > 0)
+                        {
+                            failedRecords.Add(maTangCa);
+                            continue;
+                        }
+
                         tangCa.TrangThai = "TC3";
                         tangCa.MaNvDuyet = maNv;
 
@@ -730,7 +815,7 @@ public class AttendanceManagerController : ControllerBase
                 transaction.Commit();
                 var baseMessage = request.TrangThai == "Đã duyệt" ? "Duyệt tăng ca thành công." : "Đã từ chối tăng ca.";
                 var message = failedRecords.Any()
-                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật."
+                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật do nhân viên còn giờ thiếu chưa được bù."
                     : baseMessage;
                 return Ok(new { success = true, message });
             }
@@ -783,15 +868,49 @@ public class AttendanceManagerController : ControllerBase
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("HR Department", senderEmail));
         message.To.Add(new MailboxAddress(employeeName, recipientEmail));
-        message.Subject = "Thông báo kết quả duyệt";
+        
+        string subject = "";
+        string type = "";
+        
+        switch (trangThai)
+        {
+            case "TC3":
+                subject = "Thông báo duyệt tăng ca";
+                type = "tăng ca";
+                break;
+            case "LB3":
+                subject = "Thông báo duyệt làm bù";
+                type = "làm bù";
+                break;
+            case "CC3":
+                subject = "Thông báo duyệt chấm công";
+                type = "chấm công";
+                break;
+            default:
+                subject = "Thông báo kết quả duyệt";
+                type = "yêu cầu";
+                break;
+        }
+        
+        message.Subject = subject;
 
         var bodyBuilder = new BodyBuilder();
-        bodyBuilder.HtmlBody = $"<p>Kính gửi {employeeName},</p>" +
-                             $"<p>Thông tin ngày {ngay:dd/MM/yyyy} của bạn đã được duyệt.</p>" +
-                             $"<p>Trạng thái: <b>{trangThai}</b></p>" +
-                             $"<p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>" +
-                             $"<p>Trân trọng,</p>" +
-                             $"<p>Phòng Nhân sự</p>";
+        bodyBuilder.HtmlBody = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='color: #2c3e50; margin: 0;'>{subject}</h2>
+                </div>
+                <p>Kính gửi <strong>{employeeName}</strong>,</p>
+                <p>Phòng Nhân sự trân trọng thông báo:</p>
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;'>
+                    <p>Yêu cầu {type} của bạn vào ngày <strong>{ngay:dd/MM/yyyy}</strong> đã được <span style='color: #28a745; font-weight: bold;'>DUYỆT</span> bởi Ban Giám đốc.</p>
+                </div>
+                <p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>
+                <p>Trân trọng,</p>
+                <p><strong>Phòng Nhân sự</strong></p>
+                <hr style='border: 1px solid #e0e0e0; margin: 20px 0;'>
+                <p style='color: #666; font-size: 12px;'>Đây là email tự động, vui lòng không trả lời email này.</p>
+            </div>";
 
         message.Body = bodyBuilder.ToMessageBody();
 
@@ -815,16 +934,47 @@ public class AttendanceManagerController : ControllerBase
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("HR Department", senderEmail));
         message.To.Add(new MailboxAddress(employeeName, recipientEmail));
-        message.Subject = "Thông báo từ chối yêu cầu";
+        
+        string subject = "";
+        switch (trangThai)
+        {
+            case "TC4":
+                subject = "Thông báo từ chối tăng ca";
+                break;
+            case "LB4":
+                subject = "Thông báo từ chối làm bù";
+                break;
+            case "CC4":
+                subject = "Thông báo từ chối chấm công";
+                break;
+            default:
+                subject = "Thông báo từ chối yêu cầu";
+                break;
+        }
+        
+        message.Subject = subject;
 
         var bodyBuilder = new BodyBuilder();
-        bodyBuilder.HtmlBody = $"<p>Kính gửi {employeeName},</p>" +
-                             $"<p>Yêu cầu {loaiYeuCau} của bạn vào ngày {ngay:dd/MM/yyyy} đã bị từ chối.</p>" +
-                             $"<p>Trạng thái: <b>{trangThai}</b></p>" +
-                             $"<p>Lý do từ chối: <b>{ghiChu}</b></p>" +
-                             $"<p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>" +
-                             $"<p>Trân trọng,</p>" +
-                             $"<p>Phòng Nhân sự</p>";
+        bodyBuilder.HtmlBody = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='color: #2c3e50; margin: 0;'>{subject}</h2>
+                </div>
+                <p>Kính gửi <strong>{employeeName}</strong>,</p>
+                <p>Phòng Nhân sự trân trọng thông báo:</p>
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #dc3545;'>
+                    <p>Yêu cầu {loaiYeuCau} của bạn vào ngày <strong>{ngay:dd/MM/yyyy}</strong> đã bị <span style='color: #dc3545; font-weight: bold;'>TỪ CHỐI</span> bởi Ban Giám đốc.</p>
+                    <div style='margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;'>
+                        <p style='margin: 0;'><strong>Lý do từ chối:</strong></p>
+                        <p style='color: #666; margin: 5px 0 0 0;'>{ghiChu}</p>
+                    </div>
+                </div>
+                <p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>
+                <p>Trân trọng,</p>
+                <p><strong>Phòng Nhân sự</strong></p>
+                <hr style='border: 1px solid #e0e0e0; margin: 20px 0;'>
+                <p style='color: #666; font-size: 12px;'>Đây là email tự động, vui lòng không trả lời email này.</p>
+            </div>";
 
         message.Body = bodyBuilder.ToMessageBody();
 
@@ -848,16 +998,30 @@ public class AttendanceManagerController : ControllerBase
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("HR Department", senderEmail));
         message.To.Add(new MailboxAddress(employeeName, recipientEmail));
-        message.Subject = "Thông báo từ chối yêu cầu hàng loạt";
+        
+        string subject = $"Thông báo từ chối {loaiYeuCau} hàng loạt";
+        message.Subject = subject;
 
         var bodyBuilder = new BodyBuilder();
-        var detailsHtml = string.Join("<br>", details);
-        bodyBuilder.HtmlBody = $"<p>Kính gửi {employeeName},</p>" +
-                             $"<p>Các yêu cầu {loaiYeuCau} của bạn đã bị từ chối:</p>" +
-                             $"<ul>{detailsHtml}</ul>" +
-                             $"<p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>" +
-                             $"<p>Trân trọng,</p>" +
-                             $"<p>Phòng Nhân sự</p>";
+        var detailsHtml = string.Join("", details.Select(d => $"<li style='margin-bottom: 8px;'>{d}</li>"));
+        
+        bodyBuilder.HtmlBody = $@"
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <h2 style='color: #2c3e50; margin: 0;'>{subject}</h2>
+                </div>
+                <p>Kính gửi <strong>{employeeName}</strong>,</p>
+                <p>Phòng Nhân sự trân trọng thông báo:</p>
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #dc3545;'>
+                    <p>Các yêu cầu {loaiYeuCau} của bạn đã bị <span style='color: #dc3545; font-weight: bold;'>TỪ CHỐI</span> bởi Ban Giám đốc:</p>
+                    <ul style='color: #666; margin: 10px 0; padding-left: 20px;'>{detailsHtml}</ul>
+                </div>
+                <p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>
+                <p>Trân trọng,</p>
+                <p><strong>Phòng Nhân sự</strong></p>
+                <hr style='border: 1px solid #e0e0e0; margin: 20px 0;'>
+                <p style='color: #666; font-size: 12px;'>Đây là email tự động, vui lòng không trả lời email này.</p>
+            </div>";
 
         message.Body = bodyBuilder.ToMessageBody();
 
@@ -1230,7 +1394,7 @@ public class AttendanceManagerController : ControllerBase
                 transaction.Commit();
                 var baseMessage = request.TrangThai == "Đã duyệt" ? "Duyệt làm bù thành công." : "Đã từ chối làm bù.";
                 var message = failedRecords.Any()
-                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật."
+                    ? $"{baseMessage} Tuy nhiên, các bản ghi {string.Join(", ", failedRecords)} không được cập nhật do nhân viên còn giờ thiếu chưa được bù."
                     : baseMessage;
                 return Ok(new { success = true, message });
             }

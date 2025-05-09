@@ -26,17 +26,27 @@ public class PayrollCalculator
 
         decimal remainingLeaveDays = 0;
 
-        // Duyệt qua các bản ghi từ năm gần nhất đến xa nhất
-        foreach (var record in leaveRecords)
+        // Kiểm tra năm hiện tại có IsTinhLuong = true không
+        var currentYearRecord = leaveRecords.FirstOrDefault(s => s.Nam == year);
+        if (currentYearRecord == null || !currentYearRecord.IsTinhLuong)
         {
-            // Lấy ngày chưa sử dụng từ năm hiện tại hoặc các năm có IsTinhLuong = false
-            remainingLeaveDays += record.SoNgayChuaSuDung;
+            return 0; // Nếu năm hiện tại không có IsTinhLuong = true, không tính ngày phép
+        }
 
-            // Nếu gặp năm có IsTinhLuong = true (không phải năm hiện tại), dừng lấy các năm trước đó
-            if (record.IsTinhLuong && record.Nam != year)
+        // Nếu năm hiện tại có IsTinhLuong = true, bắt đầu tính từ năm hiện tại
+        remainingLeaveDays += currentYearRecord.SoNgayChuaSuDung;
+
+        // Duyệt qua các năm trước đó
+        foreach (var record in leaveRecords.Where(s => s.Nam < year))
+        {
+            // Nếu gặp năm có IsTinhLuong = true, dừng lấy các năm trước đó
+            if (record.IsTinhLuong)
             {
                 break;
             }
+
+            // Chỉ lấy ngày chưa sử dụng nếu IsTinhLuong = false
+            remainingLeaveDays += record.SoNgayChuaSuDung;
         }
 
         return remainingLeaveDays;

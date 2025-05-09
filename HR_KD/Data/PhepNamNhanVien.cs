@@ -18,13 +18,17 @@ public class PhepNamNhanVien
     [Required]
     public decimal SoNgayDaSuDung { get; set; }
 
+
+    public decimal SoNgayChuaSuDung { get; set; }
+
     [StringLength(500)]
     public string? GhiChu { get; set; }
 
     [Required]
     public int CauHinhPhepNamId { get; set; }
 
-    public bool IsReset { get; set; } = false; 
+    public bool IsReset { get; set; } = false;
+    public bool IsTinhLuong { get; set; }
 
     public virtual CauHinhPhepNam CauHinhPhepNam { get; set; }
 

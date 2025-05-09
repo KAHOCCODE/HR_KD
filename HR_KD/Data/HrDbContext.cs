@@ -550,9 +550,11 @@ public partial class HrDbContext : DbContext
             entity.Property(e => e.MaNv).HasColumnName("MaNV");
             entity.Property(e => e.SoNgayPhepDuocCap).HasColumnType("decimal(5,2)");
             entity.Property(e => e.SoNgayDaSuDung).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.SoNgayChuaSuDung).HasColumnType("decimal(5,2)");
             entity.Property(e => e.NgayCapNhat).HasColumnType("date");
             entity.Property(e => e.GhiChu).HasMaxLength(500);
             entity.Property(e => e.IsReset).HasDefaultValue(false);
+            entity.Property(e => e.IsTinhLuong).HasColumnType("bit").HasDefaultValue(false);
 
             entity.HasOne(e => e.MaNvNavigation)
          .WithMany(n => n.PhepNamNhanViens)

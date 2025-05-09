@@ -22,6 +22,7 @@ namespace HR_KD.ViewModels
 
         // Danh sách để hiển thị tất cả chính sách trong dropdown/checkbox
         public List<ChinhSachPhepNamListItem> DanhSachChinhSach { get; set; } = new List<ChinhSachPhepNamListItem>();
+        public bool IsCurrentYear { get; set; }
     }
 
     public class ChinhSachPhepNamListItem
@@ -45,6 +46,7 @@ namespace HR_KD.ViewModels
         public int Id { get; set; }
         public int Nam { get; set; }
         public int SoNgayPhepMacDinh { get; set; }
+        public bool IsCurrentYear { get; set; }
         public List<string> DanhSachTenChinhSach { get; set; } = new List<string>();
     }
 }

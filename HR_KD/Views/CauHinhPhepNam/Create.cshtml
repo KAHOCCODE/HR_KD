@@ -1,130 +1,131 @@
-﻿@model HR_KD.ViewModels.CauHinhPhepNamViewModel
+﻿    @model HR_KD.ViewModels.CauHinhPhepNamViewModel
 
-@{
-    ViewData["Title"] = "Thêm mới cấu hình phép năm";
-}
+    @{
+        ViewData["Title"] = "Thêm mới cấu hình phép năm";
+        Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="page-title">Thêm mới cấu hình phép năm</h1>
-        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
-            <i class="fas fa-arrow-left"></i> Quay lại
-        </a>
-    </div>
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="page-title">Thêm mới cấu hình phép năm</h1>
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
 
-    <div class="card shadow-sm border-0 mb-4 config-card">
-        <div class="card-header bg-gradient-primary text-white py-3">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-plus-circle fa-2x mr-3"></i>
-                <h5 class="mb-0">Thông tin cấu hình</h5>
+        <div class="card shadow-sm border-0 mb-4 config-card">
+            <div class="card-header bg-gradient-primary text-white py-3">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-plus-circle fa-2x mr-3"></i>
+                    <h5 class="mb-0">Thông tin cấu hình</h5>
+                </div>
+            </div>
+            <div class="card-body bg-light">
+                <form asp-action="Create" id="createForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger fade show" role="alert"></div>
+
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label asp-for="Nam" class="form-label">
+                                    <i class="far fa-calendar-alt text-primary"></i> Năm
+                                </label>
+                                <input asp-for="Nam" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="Nam" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label asp-for="SoNgayPhepMacDinh" class="form-label">
+                                    <i class="far fa-calendar-check text-primary"></i> Số ngày phép mặc định
+                                </label>
+                                <input asp-for="SoNgayPhepMacDinh" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="SoNgayPhepMacDinh" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="policy-section mt-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-list-ul text-primary fa-lg mr-2"></i>
+                            <h5 class="mb-0">Chính sách áp dụng</h5>
+                        </div>
+
+                        <div class="policy-table-container">
+                            <div class="table-responsive">
+                                <table class="table table-hover policy-table">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th style="width: 5%">Chọn</th>
+                                            <th style="width: 25%">Tên chính sách</th>
+                                            <th style="width: 15%">Số năm</th>
+                                            <th style="width: 20%">Số ngày cộng thêm</th>
+                                            <th style="width: 15%">Áp dụng từ năm</th>
+                                            <th style="width: 20%">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < Model.DanhSachChinhSach.Count; i++)
+                                        {
+                                            var chinhSach = Model.DanhSachChinhSach[i];
+                                            <tr class="policy-row @(chinhSach.ConHieuLuc ? "" : "text-muted")">
+                                                <td>
+                                                    <div class="custom-control custom-switch">
+                                                        <input type="checkbox"
+                                                               class="custom-control-input policy-checkbox"
+                                                               id="chinhsach-@chinhSach.Id"
+                                                               name="ChinhSachPhepNamIds"
+                                                               value="@chinhSach.Id"
+                                                        @(chinhSach.IsSelected ? "checked" : "") />
+                                                        <label class="custom-control-label" for="chinhsach-@chinhSach.Id"></label>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <label for="chinhsach-@chinhSach.Id" class="policy-name mb-0">
+                                                        @chinhSach.TenChinhSach
+                                                    </label>
+                                                </td>
+                                                <td>@chinhSach.SoNam</td>
+                                                <td>
+                                                    <span class="badge badge-info rounded-pill px-3 py-2">
+                                                        +@chinhSach.SoNgayCongThem ngày
+                                                    </span>
+                                                </td>
+                                                <td>@chinhSach.ApDungTuNam</td>
+                                                <td>
+                                                    @if (chinhSach.ConHieuLuc)
+                                                    {
+                                                        <span class="badge badge-success rounded-pill px-3 py-2">
+                                                            <i class="fas fa-check-circle mr-1"></i> Còn hiệu lực
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge badge-danger rounded-pill px-3 py-2">
+                                                            <i class="fas fa-times-circle mr-1"></i> Hết hiệu lực
+                                                        </span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions mt-4 d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5">
+                            <i class="fas fa-save mr-2"></i> Lưu cấu hình
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-lg rounded-pill px-5">
+                            <i class="fas fa-times mr-2"></i> Hủy
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
-        <div class="card-body bg-light">
-            <form asp-action="Create" id="createForm">
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger fade show" role="alert"></div>
-
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label asp-for="Nam" class="form-label">
-                                <i class="far fa-calendar-alt text-primary"></i> Năm
-                            </label>
-                            <input asp-for="Nam" class="form-control form-control-lg rounded-pill" />
-                            <span asp-validation-for="Nam" class="text-danger"></span>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label asp-for="SoNgayPhepMacDinh" class="form-label">
-                                <i class="far fa-calendar-check text-primary"></i> Số ngày phép mặc định
-                            </label>
-                            <input asp-for="SoNgayPhepMacDinh" class="form-control form-control-lg rounded-pill" />
-                            <span asp-validation-for="SoNgayPhepMacDinh" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="policy-section mt-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-list-ul text-primary fa-lg mr-2"></i>
-                        <h5 class="mb-0">Chính sách áp dụng</h5>
-                    </div>
-                    
-                    <div class="policy-table-container">
-                        <div class="table-responsive">
-                            <table class="table table-hover policy-table">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th style="width: 5%">Chọn</th>
-                                        <th style="width: 25%">Tên chính sách</th>
-                                        <th style="width: 15%">Số năm</th>
-                                        <th style="width: 20%">Số ngày cộng thêm</th>
-                                        <th style="width: 15%">Áp dụng từ năm</th>
-                                        <th style="width: 20%">Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (int i = 0; i < Model.DanhSachChinhSach.Count; i++)
-                                    {
-                                        var chinhSach = Model.DanhSachChinhSach[i];
-                                        <tr class="policy-row @(chinhSach.ConHieuLuc ? "" : "text-muted")">
-                                            <td>
-                                                <div class="custom-control custom-switch">
-                                                    <input type="checkbox"
-                                                        class="custom-control-input policy-checkbox"
-                                                        id="chinhsach-@chinhSach.Id"
-                                                        name="ChinhSachPhepNamIds"
-                                                        value="@chinhSach.Id"
-                                                        @(chinhSach.IsSelected ? "checked" : "") />
-                                                    <label class="custom-control-label" for="chinhsach-@chinhSach.Id"></label>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <label for="chinhsach-@chinhSach.Id" class="policy-name mb-0">
-                                                    @chinhSach.TenChinhSach
-                                                </label>
-                                            </td>
-                                            <td>@chinhSach.SoNam</td>
-                                            <td>
-                                                <span class="badge badge-info rounded-pill px-3 py-2">
-                                                    +@chinhSach.SoNgayCongThem ngày
-                                                </span>
-                                            </td>
-                                            <td>@chinhSach.ApDungTuNam</td>
-                                            <td>
-                                                @if (chinhSach.ConHieuLuc)
-                                                {
-                                                    <span class="badge badge-success rounded-pill px-3 py-2">
-                                                        <i class="fas fa-check-circle mr-1"></i> Còn hiệu lực
-                                                    </span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge badge-danger rounded-pill px-3 py-2">
-                                                        <i class="fas fa-times-circle mr-1"></i> Hết hiệu lực
-                                                    </span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-actions mt-4 d-flex justify-content-between">
-                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5">
-                        <i class="fas fa-save mr-2"></i> Lưu cấu hình
-                    </button>
-                    <a asp-action="Index" class="btn btn-outline-secondary btn-lg rounded-pill px-5">
-                        <i class="fas fa-times mr-2"></i> Hủy
-                    </a>
-                </div>
-            </form>
-        </div>
     </div>
-</div>
 
 
     <style>
@@ -145,10 +146,10 @@
             transition: all 0.3s ease;
         }
 
-        .config-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
-        }
+            .config-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+            }
 
         /* Gradient header */
         .bg-gradient-primary {
@@ -169,10 +170,10 @@
             transition: all 0.3s ease;
         }
 
-        .form-control:focus {
-            border-color: #3f51b5;
-            box-shadow: 0 0 0 0.2rem rgba(63, 81, 181, 0.25);
-        }
+            .form-control:focus {
+                border-color: #3f51b5;
+                box-shadow: 0 0 0 0.2rem rgba(63, 81, 181, 0.25);
+            }
 
         .form-control-lg {
             font-size: 1rem;
@@ -196,22 +197,22 @@
             margin-bottom: 0;
         }
 
-        .policy-table thead th {
-            border-top: none;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-            color: #495057;
-        }
+            .policy-table thead th {
+                border-top: none;
+                font-weight: 600;
+                text-transform: uppercase;
+                font-size: 0.8rem;
+                letter-spacing: 0.5px;
+                color: #495057;
+            }
 
         .policy-row {
             transition: all 0.2s ease;
         }
 
-        .policy-row:hover {
-            background-color: rgba(63, 81, 181, 0.05);
-        }
+            .policy-row:hover {
+                background-color: rgba(63, 81, 181, 0.05);
+            }
 
         .policy-name {
             font-weight: 500;
@@ -272,12 +273,12 @@
             border-color: #3f51b5;
         }
 
-        .btn-primary:hover, .btn-primary:focus {
-            background-color: #303f9f;
-            border-color: #303f9f;
-            box-shadow: 0 5px 15px rgba(63, 81, 181, 0.4);
-            transform: translateY(-2px);
-        }
+            .btn-primary:hover, .btn-primary:focus {
+                background-color: #303f9f;
+                border-color: #303f9f;
+                box-shadow: 0 5px 15px rgba(63, 81, 181, 0.4);
+                transform: translateY(-2px);
+            }
 
         .btn-outline-secondary:hover {
             box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
@@ -288,48 +289,55 @@
             padding: 12px 30px;
         }
 
-      
     </style>
 
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    @section Scripts {
+        @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+        <script>
+            $(document).ready(function () {
+                // Hiệu ứng làm nổi bật hàng khi checkbox được chọn
+                $('.policy-checkbox').change(function () {
+                    if ($(this).is(':checked')) {
+                        $(this).closest('tr').addClass('table-active');
+                    } else {
+                        $(this).closest('tr').removeClass('table-active');
+                    }
+                });
+
+                // Áp dụng lớp active ban đầu dựa trên trạng thái checkbox
+                $('.policy-checkbox').each(function () {
+                    if ($(this).is(':checked')) {
+                        $(this).closest('tr').addClass('table-active');
+                    }
+                });
+
+                // Kiểm tra biểu mẫu trước khi gửi
+                $('#createForm').submit(function (e) {
+                    // Kiểm tra xem đã chọn ít nhất một chính sách chưa
+                    // (Có thể bỏ qua nếu không cần kiểm tra này)
+                    if ($('.policy-checkbox:checked').length === 0) {
+                        // Hiển thị thông báo nếu muốn nhắc người dùng chọn ít nhất một chính sách
+                        // e.preventDefault();
+                        // alert('Vui lòng chọn ít nhất một chính sách!');
+                    }
+                });
+
+                // Cho phép nhấp vào tên chính sách để chọn/bỏ chọn
+                $('.policy-name').click(function () {
+                    const checkbox = $(this).closest('tr').find('.policy-checkbox');
+                    checkbox.prop('checked', !checkbox.prop('checked')).change();
+                });
+            });
+        </script>
+    <!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add Font Awesome if not already in your layout -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    <!-- Add Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     }
-    <script>
-        $(document).ready(function () {
-            // Hiệu ứng làm nổi bật hàng khi checkbox được chọn
-            $('.policy-checkbox').change(function() {
-                if($(this).is(':checked')) {
-                    $(this).closest('tr').addClass('table-active');
-                } else {
-                    $(this).closest('tr').removeClass('table-active');
-                }
-            });
-
-            // Áp dụng lớp active ban đầu dựa trên trạng thái checkbox
-            $('.policy-checkbox').each(function() {
-                if($(this).is(':checked')) {
-                    $(this).closest('tr').addClass('table-active');
-                }
-            });
-
-            // Kiểm tra biểu mẫu trước khi gửi
-            $('#createForm').submit(function(e) {
-                // Kiểm tra xem đã chọn ít nhất một chính sách chưa
-                // (Có thể bỏ qua nếu không cần kiểm tra này)
-                if($('.policy-checkbox:checked').length === 0) {
-                    // Hiển thị thông báo nếu muốn nhắc người dùng chọn ít nhất một chính sách
-                    // e.preventDefault();
-                    // alert('Vui lòng chọn ít nhất một chính sách!');
-                }
-            });
-
-            // Cho phép nhấp vào tên chính sách để chọn/bỏ chọn
-            $('.policy-name').click(function() {
-                const checkbox = $(this).closest('tr').find('.policy-checkbox');
-                checkbox.prop('checked', !checkbox.prop('checked')).change();
-            });
-        });
-    </script>
-}

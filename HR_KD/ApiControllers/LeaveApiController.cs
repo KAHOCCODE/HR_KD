@@ -298,6 +298,8 @@ namespace HR_KD.ApiControllers
         }
 
 
+
+
         [HttpDelete]
         [Route("CancelLeave/{maNgayNghi}")]
         public async Task<IActionResult> CancelLeave(int maNgayNghi)

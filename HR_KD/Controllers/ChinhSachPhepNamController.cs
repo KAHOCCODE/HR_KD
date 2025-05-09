@@ -42,6 +42,12 @@ namespace HR_KD.Controllers
 
             var totalCount = await query.CountAsync();
 
+            // Lấy danh sách các chính sách đang được sử dụng
+            var usedPolicyIds = await _context.CauHinhPhep_ChinhSachs
+                .Select(x => x.ChinhSachPhepNamId)
+                .Distinct()
+                .ToListAsync();
+
             var items = await query
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
@@ -52,7 +58,8 @@ namespace HR_KD.Controllers
                     SoNam = c.SoNam,
                     SoNgayCongThem = c.SoNgayCongThem,
                     ApDungTuNam = c.ApDungTuNam,
-                    ConHieuLuc = c.ConHieuLuc
+                    ConHieuLuc = c.ConHieuLuc,
+                    DangSuDung = usedPolicyIds.Contains(c.Id)
                 })
                 .ToListAsync();
 
@@ -86,6 +93,7 @@ namespace HR_KD.Controllers
             return query.Where(c => keywords.Any(k =>
                 EF.Functions.Like(c.TenChinhSach.ToLower(), "%" + k + "%")));
         }
+
         // GET: ChinhSachPhepNam/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -102,6 +110,10 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
+            // Kiểm tra xem chính sách này có đang được sử dụng không
+            bool dangSuDung = await _context.CauHinhPhep_ChinhSachs
+                .AnyAsync(x => x.ChinhSachPhepNamId == id);
+
             var viewModel = new ChinhSachPhepNamViewModel
             {
                 Id = chinhSachPhepNam.Id,
@@ -109,7 +121,8 @@ namespace HR_KD.Controllers
                 SoNam = chinhSachPhepNam.SoNam,
                 SoNgayCongThem = chinhSachPhepNam.SoNgayCongThem,
                 ApDungTuNam = chinhSachPhepNam.ApDungTuNam,
-                ConHieuLuc = chinhSachPhepNam.ConHieuLuc
+                ConHieuLuc = chinhSachPhepNam.ConHieuLuc,
+                DangSuDung = dangSuDung
             };
 
             return View(viewModel);
@@ -165,6 +178,16 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
+            // Kiểm tra xem chính sách này có đang được sử dụng không
+            bool dangSuDung = await _context.CauHinhPhep_ChinhSachs
+                .AnyAsync(x => x.ChinhSachPhepNamId == id);
+
+            if (dangSuDung)
+            {
+                TempData["ErrorMessage"] = "Không thể chỉnh sửa chính sách này vì đang được sử dụng trong cấu hình phép năm.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             var viewModel = new ChinhSachPhepNamViewModel
             {
                 Id = chinhSachPhepNam.Id,
@@ -186,6 +209,16 @@ namespace HR_KD.Controllers
             if (id != viewModel.Id)
             {
                 return NotFound();
+            }
+
+            // Kiểm tra lại xem chính sách này có đang được sử dụng không
+            bool dangSuDung = await _context.CauHinhPhep_ChinhSachs
+                .AnyAsync(x => x.ChinhSachPhepNamId == id);
+
+            if (dangSuDung)
+            {
+                TempData["ErrorMessage"] = "Không thể chỉnh sửa chính sách này vì đang được sử dụng trong cấu hình phép năm.";
+                return RedirectToAction(nameof(Details), new { id });
             }
 
             if (ModelState.IsValid)
@@ -239,6 +272,16 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
+            // Kiểm tra xem chính sách này có đang được sử dụng không
+            bool dangSuDung = await _context.CauHinhPhep_ChinhSachs
+                .AnyAsync(x => x.ChinhSachPhepNamId == id);
+
+            if (dangSuDung)
+            {
+                TempData["ErrorMessage"] = "Không thể xóa chính sách này vì đang được sử dụng trong cấu hình phép năm.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             var viewModel = new ChinhSachPhepNamViewModel
             {
                 Id = chinhSachPhepNam.Id,
@@ -246,7 +289,8 @@ namespace HR_KD.Controllers
                 SoNam = chinhSachPhepNam.SoNam,
                 SoNgayCongThem = chinhSachPhepNam.SoNgayCongThem,
                 ApDungTuNam = chinhSachPhepNam.ApDungTuNam,
-                ConHieuLuc = chinhSachPhepNam.ConHieuLuc
+                ConHieuLuc = chinhSachPhepNam.ConHieuLuc,
+                DangSuDung = dangSuDung
             };
 
             return View(viewModel);
@@ -257,6 +301,16 @@ namespace HR_KD.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            // Kiểm tra lại xem chính sách này có đang được sử dụng không
+            bool dangSuDung = await _context.CauHinhPhep_ChinhSachs
+                .AnyAsync(x => x.ChinhSachPhepNamId == id);
+
+            if (dangSuDung)
+            {
+                TempData["ErrorMessage"] = "Không thể xóa chính sách này vì đang được sử dụng trong cấu hình phép năm.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             var chinhSachPhepNam = await _context.ChinhSachPhepNams.FindAsync(id);
 
             if (chinhSachPhepNam != null)
@@ -269,29 +323,16 @@ namespace HR_KD.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        //// Chuyển trạng thái hiệu lực
-        //// Chuyển trạng thái hiệu lực
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]  // Thêm thuộc tính này
-        //public async Task<IActionResult> ToggleStatus(int id)
-        //{
-        //    var chinhSachPhepNam = await _context.ChinhSachPhepNams.FindAsync(id);
+        // Kiểm tra trạng thái sử dụng của chính sách
+        [HttpGet]
+        public async Task<JsonResult> KiemTraDangSuDung(int id)
+        {
+            bool dangSuDung = await _context.CauHinhPhep_ChinhSachs
+                .AnyAsync(x => x.ChinhSachPhepNamId == id);
 
-        //    if (chinhSachPhepNam == null)
-        //    {
-        //        return NotFound();
-        //    }
+            return Json(new { dangSuDung });
+        }
 
-        //    chinhSachPhepNam.ConHieuLuc = !chinhSachPhepNam.ConHieuLuc;
-        //    await _context.SaveChangesAsync();
-
-        //    // Thêm thông báo thành công
-        //    TempData["SuccessMessage"] = chinhSachPhepNam.ConHieuLuc
-        //        ? "Kích hoạt chính sách phép năm thành công"
-        //        : "Vô hiệu hóa chính sách phép năm thành công";
-
-        //    return RedirectToAction(nameof(Index));
-        //}
         private bool ChinhSachPhepNamExists(int id)
         {
             return _context.ChinhSachPhepNams.Any(e => e.Id == id);

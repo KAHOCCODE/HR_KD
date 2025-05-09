@@ -69,7 +69,8 @@ namespace HR_KD.Controllers
                 SoNgayPhepMacDinh = cauHinhPhepNam.SoNgayPhepMacDinh,
                 ChinhSachPhepNamIds = cauHinhPhepNam.CauHinhPhep_ChinhSachs
                     .Select(c => c.ChinhSachPhepNamId)
-                    .ToList()
+                    .ToList(),
+                IsCurrentYear = cauHinhPhepNam.Nam == DateTime.Now.Year
             };
 
             // Lấy tất cả chính sách hiện có
@@ -98,6 +99,15 @@ namespace HR_KD.Controllers
             {
                 Nam = DateTime.Now.Year
             };
+
+            // Kiểm tra xem đã có cấu hình cho năm hiện tại chưa
+            var existingConfig = await _context.CauHinhPhepNams
+                .FirstOrDefaultAsync(c => c.Nam == DateTime.Now.Year);
+
+            if (existingConfig != null)
+            {
+                TempData["Warning"] = $"Đã tồn tại cấu hình cho năm {DateTime.Now.Year}. Bạn không thể tạo thêm cấu hình cho năm hiện tại.";
+            }
 
             // Lấy tất cả chính sách hiện có
             var danhSachChinhSach = await _context.ChinhSachPhepNams
@@ -221,6 +231,13 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
+            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
+            if (cauHinhPhepNam.Nam == DateTime.Now.Year)
+            {
+                TempData["Error"] = "Không thể chỉnh sửa cấu hình của năm hiện tại vì đang được sử dụng.";
+                return RedirectToAction(nameof(Details), new { id = id });
+            }
+
             var viewModel = new CauHinhPhepNamViewModel
             {
                 Id = cauHinhPhepNam.Id,
@@ -258,6 +275,14 @@ namespace HR_KD.Controllers
             if (id != viewModel.Id)
             {
                 return NotFound();
+            }
+
+            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
+            var currentCauHinh = await _context.CauHinhPhepNams.FindAsync(id);
+            if (currentCauHinh != null && currentCauHinh.Nam == DateTime.Now.Year)
+            {
+                TempData["Error"] = "Không thể chỉnh sửa cấu hình của năm hiện tại vì đang được sử dụng.";
+                return RedirectToAction(nameof(Details), new { id = id });
             }
 
             if (ModelState.IsValid)
@@ -375,6 +400,13 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
+            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
+            if (cauHinhPhepNam.Nam == DateTime.Now.Year)
+            {
+                TempData["Error"] = "Không thể xóa cấu hình của năm hiện tại vì đang được sử dụng.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var viewModel = new CauHinhPhepNamItemViewModel
             {
                 Id = cauHinhPhepNam.Id,
@@ -397,16 +429,25 @@ namespace HR_KD.Controllers
                 .Include(c => c.CauHinhPhep_ChinhSachs)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (cauHinhPhepNam != null)
+            if (cauHinhPhepNam == null)
             {
-                // Xóa các liên kết trước
-                _context.CauHinhPhep_ChinhSachs.RemoveRange(cauHinhPhepNam.CauHinhPhep_ChinhSachs);
-
-                // Sau đó xóa cấu hình
-                _context.CauHinhPhepNams.Remove(cauHinhPhepNam);
-
-                await _context.SaveChangesAsync();
+                return NotFound();
             }
+
+            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
+            if (cauHinhPhepNam.Nam == DateTime.Now.Year)
+            {
+                TempData["Error"] = "Không thể xóa cấu hình của năm hiện tại vì đang được sử dụng.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Xóa các liên kết trước
+            _context.CauHinhPhep_ChinhSachs.RemoveRange(cauHinhPhepNam.CauHinhPhep_ChinhSachs);
+
+            // Sau đó xóa cấu hình
+            _context.CauHinhPhepNams.Remove(cauHinhPhepNam);
+
+            await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
@@ -414,6 +455,12 @@ namespace HR_KD.Controllers
         private bool CauHinhPhepNamExists(int id)
         {
             return _context.CauHinhPhepNams.Any(e => e.Id == id);
+        }
+
+        // Kiểm tra xem cấu hình có phải là của năm hiện tại không
+        private bool IsCurrentYearConfig(int nam)
+        {
+            return nam == DateTime.Now.Year;
         }
     }
 }

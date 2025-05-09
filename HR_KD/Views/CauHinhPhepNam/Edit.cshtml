@@ -1,108 +1,379 @@
-﻿@model HR_KD.ViewModels.CauHinhPhepNamViewModel
+﻿
+    @model HR_KD.ViewModels.CauHinhPhepNamViewModel
 
-@{
-    ViewData["Title"] = "Thêm mới cấu hình phép năm";
-}
+    @{
+        ViewData["Title"] = "Thêm mới cấu hình phép năm";
+        Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    }
 
-<div class="container-fluid">
-    <h1 class="mt-4">Thêm mới cấu hình phép năm</h1>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-plus mr-1"></i>
-            Thông tin cấu hình
+    <div class="container-fluid p-0">
+        <!-- Header Section -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card bg-gradient-primary shadow">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h4 class="text-white mb-0">
+                                    <i class="fas fa-plus-circle me-2"></i>Thêm mới cấu hình phép năm
+                                </h4>
+                                <p class="text-white-50 mb-0 small">Thiết lập cấu hình phép năm mới cho nhân viên</p>
+                            </div>
+                            <div>
+                                <a asp-action="Index" class="btn btn-light btn-sm rounded-pill shadow-sm">
+                                    <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form asp-action="Create">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <div class="form-group row">
-                    <label asp-for="Nam" class="col-sm-2 col-form-label">Năm:</label>
-                    <div class="col-sm-4">
-                        <input asp-for="Nam" class="form-control" />
-                        <span asp-validation-for="Nam" class="text-danger"></span>
+        <!-- Main Content -->
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <!-- Info Card -->
+                <div class="card border-0 shadow h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-info-circle me-2"></i>Hướng dẫn
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info bg-light border-info border-start border-4 border-0 rounded-0">
+                            <h6 class="alert-heading"><i class="fas fa-lightbulb me-2"></i>Lưu ý quan trọng</h6>
+                            <hr>
+                            <p class="mb-2">Cấu hình phép năm sẽ được áp dụng cho tất cả nhân viên trong năm đã chọn.</p>
+                            <p class="mb-2">Số ngày phép mặc định sẽ được áp dụng cho nhân viên mới.</p>
+                            <p class="mb-0">Bạn có thể chọn thêm các chính sách phép theo thâm niên để áp dụng.</p>
+                        </div>
+
+                        <div class="mt-4">
+                            <h6 class="text-primary"><i class="fas fa-cogs me-2"></i>Các bước thực hiện</h6>
+                            <ol class="ps-3 text-muted small">
+                                <li class="mb-2">Chọn năm cần cấu hình</li>
+                                <li class="mb-2">Thiết lập số ngày phép mặc định</li>
+                                <li class="mb-2">Chọn các chính sách phép năm áp dụng</li>
+                                <li>Lưu lại cấu hình</li>
+                            </ol>
+                        </div>
+
+                        <div class="alert alert-warning bg-light border-warning border-start border-4 border-0 rounded-0 mt-3">
+                            <p class="mb-0 small"><i class="fas fa-exclamation-triangle me-2"></i>Sau khi cấu hình được tạo và áp dụng, mọi thay đổi sẽ ảnh hưởng đến quyền lợi phép năm của nhân viên.</p>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="form-group row">
-                    <label asp-for="SoNgayPhepMacDinh" class="col-sm-2 col-form-label">Số ngày phép mặc định:</label>
-                    <div class="col-sm-4">
-                        <input asp-for="SoNgayPhepMacDinh" class="form-control" />
-                        <span asp-validation-for="SoNgayPhepMacDinh" class="text-danger"></span>
+            <div class="col-md-8 mb-4">
+                <!-- Form Card -->
+                <div class="card border-0 shadow animate__animated animate__fadeIn">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-edit me-2"></i>Thông tin cấu hình
+                        </h5>
                     </div>
-                </div>
+                    <div class="card-body">
+                        <form asp-action="Create" id="configForm">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
-                <div class="form-group">
-                    <label class="control-label">Chính sách áp dụng:</label>
-                    <div class="table-responsive mt-2">
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>Chọn</th>
-                                    <th>Tên chính sách</th>
-                                    <th>Số năm</th>
-                                    <th>Số ngày cộng thêm</th>
-                                    <th>Áp dụng từ năm</th>
-                                    <th>Trạng thái</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (int i = 0; i < Model.DanhSachChinhSach.Count; i++)
-                                {
-                                    var chinhSach = Model.DanhSachChinhSach[i];
-                                    <tr>
-                                        <td>
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox"
-                                                       class="custom-control-input"
-                                                       id="chinhsach-@chinhSach.Id"
-                                                       name="ChinhSachPhepNamIds"
-                                                       value="@chinhSach.Id"
-                                                @(chinhSach.IsSelected ? "checked" : "") />
-                                                <label class="custom-control-label" for="chinhsach-@chinhSach.Id"></label>
-                                            </div>
-                                        </td>
-                                        <td>@chinhSach.TenChinhSach</td>
-                                        <td>@chinhSach.SoNam</td>
-                                        <td>@chinhSach.SoNgayCongThem</td>
-                                        <td>@chinhSach.ApDungTuNam</td>
-                                        <td>
-                                            @if (chinhSach.ConHieuLuc)
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input asp-for="Nam" class="form-control" id="yearInput" placeholder="2025" min="@DateTime.Now.Year" />
+                                        <label asp-for="Nam">Năm</label>
+                                        <span asp-validation-for="Nam" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input asp-for="SoNgayPhepMacDinh" class="form-control" id="defaultDaysInput" placeholder="12" min="0" />
+                                        <label asp-for="SoNgayPhepMacDinh">Số ngày phép mặc định</label>
+                                        <span asp-validation-for="SoNgayPhepMacDinh" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-cogs me-1"></i>Chính sách áp dụng:
+                                </label>
+                                <div class="table-responsive mt-2">
+                                    <table class="table table-hover table-striped border" id="policyTable" width="100%" cellspacing="0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 5%">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="selectAll">
+                                                        <label class="form-check-label" for="selectAll"></label>
+                                                    </div>
+                                                </th>
+                                                <th style="width: 30%">Tên chính sách</th>
+                                                <th style="width: 15%" class="text-center">Số năm</th>
+                                                <th style="width: 20%" class="text-center">Ngày cộng thêm</th>
+                                                <th style="width: 15%" class="text-center">Áp dụng từ</th>
+                                                <th style="width: 15%" class="text-center">Trạng thái</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (Model.DanhSachChinhSach != null && Model.DanhSachChinhSach.Any())
                                             {
-                                                <span class="badge badge-success">Còn hiệu lực</span>
+                                                @for (int i = 0; i < Model.DanhSachChinhSach.Count; i++)
+                                                {
+                                                    var chinhSach = Model.DanhSachChinhSach[i];
+                                                    <tr class="@(!chinhSach.ConHieuLuc ? "text-muted" : "")">
+                                                        <td>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input policy-check"
+                                                                       type="checkbox"
+                                                                       id="chinhsach-@chinhSach.Id"
+                                                                       name="ChinhSachPhepNamIds"
+                                                                       value="@chinhSach.Id"
+                                                                @(chinhSach.IsSelected ? "checked" : "")
+                                                                @(!chinhSach.ConHieuLuc ? "disabled" : "") />
+                                                                <label class="form-check-label" for="chinhsach-@chinhSach.Id"></label>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <label for="chinhsach-@chinhSach.Id" class="mb-0 cursor-pointer">
+                                                                @chinhSach.TenChinhSach
+                                                            </label>
+                                                        </td>
+                                                        <td class="text-center">@chinhSach.SoNam</td>
+                                                        <td class="text-center">
+                                                            <span class="badge bg-primary rounded-pill">+@chinhSach.SoNgayCongThem ngày</span>
+                                                        </td>
+                                                        <td class="text-center">@chinhSach.ApDungTuNam</td>
+                                                        <td class="text-center">
+                                                            @if (chinhSach.ConHieuLuc)
+                                                            {
+                                                                <span class="badge bg-success rounded-pill px-3">Còn hiệu lực</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-danger rounded-pill px-3">Hết hiệu lực</span>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
                                             }
                                             else
                                             {
-                                                <span class="badge badge-danger">Hết hiệu lực</span>
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-3 text-muted">
+                                                        <i class="fas fa-info-circle me-1"></i> Chưa có chính sách phép năm nào được thiết lập
+                                                    </td>
+                                                </tr>
                                             }
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Summary Card -->
+                            <div class="card bg-light border mb-4">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-calculator me-2"></i>Tóm tắt cấu hình</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="list-group list-group-flush bg-transparent">
+                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
+                                                    <span>Năm áp dụng:</span>
+                                                    <span class="fw-bold" id="summaryYear">-</span>
+                                                </li>
+                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
+                                                    <span>Số ngày phép mặc định:</span>
+                                                    <span class="fw-bold" id="summaryDays">-</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-group list-group-flush bg-transparent">
+                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
+                                                    <span>Chính sách đã chọn:</span>
+                                                    <span class="fw-bold" id="summaryPolicies">0</span>
+                                                </li>
+                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
+                                                    <span>Tối đa có thể cộng thêm:</span>
+                                                    <span class="fw-bold text-success" id="summaryMaxDays">0 ngày</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i> Quay lại
+                                </a>
+
+                                <div>
+                                    <button type="reset" class="btn btn-outline-secondary me-2">
+                                        <i class="fas fa-undo me-1"></i> Đặt lại
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i> Lưu cấu hình
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Lưu
-                    </button>
-                    <a asp-action="Index" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Quay lại danh sách
-                    </a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    <style>
+        /* Custom styles */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            border: none;
+        }
+
+        .card {
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .animate__animated {
+            animation-duration: 0.5s;
+        }
+
+        .form-floating > .form-control:focus ~ label,
+        .form-floating > .form-control:not(:placeholder-shown) ~ label {
+            color: #4e73df;
+        }
+
+        .form-control:focus {
+            border-color: #bac8f3;
+            box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+
+        /* Badge styling */
+        .badge {
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* Custom scrollbar for table */
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+            .table-responsive::-webkit-scrollbar-thumb:hover {
+                background: #a1a1a1;
+            }
+    </style>
+
+    @section Scripts {
+        @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+        <script>
+            $(document).ready(function () {
+                // Initialize tooltips
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                });
+
+                // Select all functionality
+                $("#selectAll").click(function () {
+                    $(".policy-check:not(:disabled)").prop('checked', $(this).prop('checked'));
+                    updateSummary();
+                });
+
+                // Individual checkbox change
+                $(".policy-check").change(function () {
+                    updateSummary();
+                });
+
+                // Form input changes
+                $("#yearInput, #defaultDaysInput").on('input', function () {
+                    updateSummary();
+                });
+
+                // Initialize with current values
+                updateSummary();
+
+                // Form validation before submit
+                $("#configForm").submit(function (e) {
+                    var year = $("#yearInput").val();
+                    var defaultDays = $("#defaultDaysInput").val();
+
+                    if (!year || year < @DateTime.Now.Year) {
+                        alert("Vui lòng nhập năm hợp lệ (từ năm hiện tại trở đi)");
+                        e.preventDefault();
+                        return false;
+                    }
+
+                    if (!defaultDays || defaultDays < 0) {
+                        alert("Vui lòng nhập số ngày phép mặc định hợp lệ");
+                        e.preventDefault();
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                // Reset button handler
+                $("button[type='reset']").click(function () {
+                    setTimeout(function () {
+                        updateSummary();
+                    }, 10);
+                });
+
+                // Function to update summary panel
+                function updateSummary() {
+                    var year = $("#yearInput").val() || "-";
+                    var defaultDays = $("#defaultDaysInput").val() || "-";
+                    var selectedPolicies = $(".policy-check:checked").length;
+
+                    // Calculate max additional days
+                    var maxAdditionalDays = 0;
+                    $(".policy-check:checked").each(function () {
+                        var rowIndex = $(this).closest('tr').index();
+                        var additionalDays = parseInt($("tbody tr").eq(rowIndex).find("td:eq(3) .badge").text());
+                        if (!isNaN(additionalDays)) {
+                            maxAdditionalDays += additionalDays;
+                        }
+                    });
+
+                    $("#summaryYear").text(year);
+                    $("#summaryDays").text(defaultDays !== "-" ? defaultDays + " ngày" : "-");
+                    $("#summaryPolicies").text(selectedPolicies);
+                    $("#summaryMaxDays").text(maxAdditionalDays + " ngày");
+                }
+            });
+        </script>
+        </script>
+        <!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- Add Font Awesome if not already in your layout -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+        <!-- Add Animate.css for animations -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     }
-    <script>
-        $(document).ready(function () {
-            // Thêm mã JavaScript nếu cần
-        });
-    </script>
-}

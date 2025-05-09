@@ -287,6 +287,7 @@ namespace HR_KD.Services
         {
             // Lấy thông tin đơn nghỉ phép
             var ngayNghi = await _context.NgayNghis
+                .Include(n => n.MaLoaiNgayNghiNavigation) // Include LoaiNgayNghi để kiểm tra TinhVaoPhepNam
                 .FirstOrDefaultAsync(n => n.MaNgayNghi == maNgayNghi);
 
             if (ngayNghi == null)
@@ -298,6 +299,12 @@ namespace HR_KD.Services
             if (ngayNghi.MaTrangThai != "NN2")
             {
                 return; // Chỉ xử lý nếu đơn đã được duyệt
+            }
+
+            // Kiểm tra xem loại ngày nghỉ có tính vào phép năm không
+            if (ngayNghi.MaLoaiNgayNghiNavigation == null || !ngayNghi.MaLoaiNgayNghiNavigation.TinhVaoPhepNam)
+            {
+                return; // Không tính vào phép năm, không cần xử lý tiếp
             }
 
             // Lấy bản ghi PhepNamNhanVien của nhân viên cho năm tương ứng
@@ -379,8 +386,11 @@ namespace HR_KD.Services
                 _context.PhepNamNhanViens.Add(phepNam);
             }
 
-            // Cập nhật số ngày đã sử dụng (giả định mỗi đơn là 1 ngày)
-            phepNam.SoNgayDaSuDung += 1;
+            // Tính số ngày nghỉ (giả định mỗi đơn là 1 ngày, có thể điều chỉnh tùy theo logic nghiệp vụ)
+            decimal soNgayNghi = 1; // Cần tính toán chính xác số ngày nghỉ dựa trên đơn
+
+            // Cập nhật số ngày đã sử dụng
+            phepNam.SoNgayDaSuDung += soNgayNghi;
             phepNam.NgayCapNhat = DateTime.Now;
             phepNam.GhiChu = $"Cập nhật số ngày đã sử dụng cho đơn nghỉ phép {maNgayNghi}";
 

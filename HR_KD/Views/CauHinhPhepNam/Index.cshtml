@@ -1,86 +1,394 @@
-﻿@model HR_KD.ViewModels.CauHinhPhepNamListViewModel
-
+﻿```cshtml
+@model HR_KD.ViewModels.CauHinhPhepNamListViewModel
 @{
     ViewData["Title"] = "Danh sách cấu hình phép năm";
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-<div class="container-fluid">
-    <h1 class="mt-4">Danh sách cấu hình phép năm</h1>
-    
-    <p>
-        <a asp-action="Create" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Thêm mới
-        </a>
-    </p>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-table mr-1"></i>
-            Danh sách cấu hình phép năm
+<div class="container-fluid p-0">
+    <!-- Header Section with Dashboard Style -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card bg-gradient-primary shadow-sm">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h4 class="text-white mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>Cấu hình phép năm
+                            </h4>
+                            <p class="text-white-50 mb-0 small">Quản lý cấu hình phép năm cho nhân viên</p>
+                        </div>
+                        <div>
+                            <a asp-action="Create" class="btn btn-light btn-sm rounded-pill shadow-sm">
+                                <i class="fas fa-plus me-1"></i> Thêm mới
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Năm</th>
-                            <th>Số ngày phép mặc định</th>
-                            <th>Chính sách áp dụng</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model.DanhSachCauHinh)
-                        {
-                            <tr>
-                                <td>@item.Nam</td>
-                                <td>@item.SoNgayPhepMacDinh</td>
-                                <td>
-                                    @if (item.DanhSachTenChinhSach != null && item.DanhSachTenChinhSach.Any())
-                                    {
-                                        <ul class="list-unstyled mb-0">
-                                            @foreach (var tenChinhSach in item.DanhSachTenChinhSach)
+    </div>
+
+    <!-- Display TempData messages if present -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Warning"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Stats Cards -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <div class="card border-left-primary shadow-sm h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Tổng cấu hình
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.DanhSachCauHinh.Count()</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-left-success shadow-sm h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Năm hiện tại
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@DateTime.Now.Year</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-left-info shadow-sm h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Cấu hình hiện hành
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @(Model.DanhSachCauHinh.FirstOrDefault(c => c.Nam == DateTime.Now.Year)?.SoNgayPhepMacDinh ?? 0) ngày
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 animate__animated animate__fadeIn">
+                <div class="card-header py-3 bg-white">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-list me-2"></i>Danh sách cấu hình phép năm
+                        </h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped border" id="dataTable" width="100%" cellspacing="0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="text-center" style="width: 10%">
+                                        <i class="far fa-calendar-alt me-1"></i>Năm
+                                    </th>
+                                    <th class="text-center" style="width: 20%">
+                                        <i class="fas fa-calendar-day me-1"></i>Số ngày phép mặc định
+                                    </th>
+                                    <th style="width: 50%">
+                                        <i class="fas fa-cogs me-1"></i>Chính sách áp dụng
+                                    </th>
+                                    <th class="text-center" style="width: 20%">
+                                        <i class="fas fa-tools me-1"></i>Thao tác
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.DanhSachCauHinh)
+                                {
+                                    bool isCurrentYear = item.Nam == DateTime.Now.Year;
+                                    <tr class="@(isCurrentYear ? "table-active" : "")">
+                                        <td class="text-center align-middle fw-bold">
+                                            @item.Nam
+                                            @if (isCurrentYear)
                                             {
-                                                <li><span class="badge badge-info">@tenChinhSach</span></li>
+                                                <span class="badge bg-success ms-1">Hiện tại</span>
                                             }
-                                        </ul>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Không có chính sách</span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="btn-group">
-                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i> Sửa
-                                        </a>
-                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">
-                                            <i class="fas fa-info-circle"></i> Chi tiết
-                                        </a>
-                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash"></i> Xóa
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <span class="badge bg-primary rounded-pill px-3 py-2">@item.SoNgayPhepMacDinh ngày</span>
+                                        </td>
+                                        <td class="align-middle">
+                                            @if (item.DanhSachTenChinhSach != null && item.DanhSachTenChinhSach.Any())
+                                            {
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    @foreach (var tenChinhSach in item.DanhSachTenChinhSach)
+                                                    {
+                                                        <span class="badge bg-info text-dark rounded-pill">@tenChinhSach</span>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Không có chính sách</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group">
+                                                @if (!isCurrentYear)
+                                                {
+                                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Chỉnh sửa">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-primary disabled" data-bs-toggle="tooltip" title="Không thể chỉnh sửa cấu hình năm hiện tại">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                }
+                                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Xem chi tiết">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </a>
+                                                @if (!isCurrentYear)
+                                                {
+                                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Xóa">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-danger disabled" data-bs-toggle="tooltip" title="Không thể xóa cấu hình năm hiện tại">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer small text-muted py-2">
+                    <i class="far fa-clock me-1"></i>Cập nhật lần cuối: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+
+<style>
+    /* Custom styles */
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        border: none;
+    }
+
+    .card {
+        border-radius: 0.5rem;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .animate__animated {
+        animation-duration: 0.5s;
+    }
+
+    .border-left-primary {
+        border-left: 4px solid #4e73df;
+    }
+
+    .border-left-success {
+        border-left: 4px solid #1cc88a;
+    }
+
+    .border-left-info {
+        border-left: 4px solid #36b9cc;
+    }
+
+    .text-gray-300 {
+        color: #dddfeb !important;
+    }
+
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(78, 115, 223, 0.05);
+    }
+
+    .btn-group .btn {
+        margin: 0 2px;
+    }
+
+    /* Badge styling */
+    .badge {
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+
+    /* Year highlight for current year */
+    .table-active {
+        background-color: rgba(78, 115, 223, 0.05);
+    }
+
+    /* Add subtle shadow to table */
+    .table {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    /* Custom scrollbar for table */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+    /* DataTables custom styling */
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #e3e6f0;
+        border-radius: 0.35rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #4e73df;
+        color: white !important;
+        border: none;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: #e2e6f9;
+        color: #4e73df !important;
+        border: none;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        font-size: 0.875rem;
+    }
+</style>
+
 @section Scripts {
+    <!-- Add Bootstrap 5 JS if not included in layout -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add Font Awesome if not included in layout -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    <!-- Add Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
     <script>
+        // Initialize DataTable with Vietnamese language
         $(document).ready(function () {
-            $('#dataTable').DataTable({
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            // Initialize DataTable
+            var table = $('#dataTable').DataTable({
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Vietnamese.json"
                 },
-                "order": [[0, "desc"]]
+                "order": [[0, "desc"]],
+                "pageLength": 10,
+                "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Tất cả"]],
+                "dom": '<"top d-flex justify-content-between align-items-center mb-3"lf>rt<"bottom d-flex justify-content-between align-items-center mt-3"ip><"clear">',
+                "responsive": true,
+                "stateSave": true,
+                "drawCallback": function () {
+                    $('.dataTables_paginate > .pagination').addClass('pagination-sm');
+                }
             });
+
+            // Handle delete button click
+            $('.delete-btn').on('click', function () {
+                var id = $(this).data('id');
+                var year = $(this).data('year');
+
+                $('#deleteId').val(id);
+                $('#deleteYear').text(year);
+                $('#deleteForm').attr('action', '/CauHinhPhepNam/Delete/' + id); // Adjust the URL as needed
+
+                var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                deleteModal.show();
+            });
+
+            // Refresh button functionality
+            $('#refreshBtn').on('click', function () {
+                $(this).addClass('animate__animated animate__rotateIn');
+                setTimeout(function () {
+                    location.reload();
+                }, 500);
+            });
+
+            // Row highlight effect on hover
+            $('#dataTable tbody tr').hover(
+                function () {
+                    $(this).addClass('animate__animated animate__pulse');
+                },
+                function () {
+                    $(this).removeClass('animate__animated animate__pulse');
+                }
+            );
         });
     </script>
 }
+```

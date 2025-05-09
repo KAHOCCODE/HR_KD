@@ -368,6 +368,10 @@
         background-color: #dc3545;
     }
 
+    .canceled-badge {
+        background-color: #6c757d;
+    }
+
     .file-link {
         color: #007bff;
         text-decoration: none;
@@ -599,6 +603,11 @@
                 <i class="fas fa-times-circle me-2"></i>Đơn bị từ chối
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="canceled-tab" data-bs-toggle="tab" data-bs-target="#canceled" type="button" role="tab" aria-controls="canceled" aria-selected="false">
+                <i class="fas fa-ban me-2"></i>Đơn đã hủy
+            </button>
+        </li>
     </ul>
     <div class="tab-content" id="leaveHistoryTabContent">
         <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
@@ -673,6 +682,30 @@
                 </button>
                 <span id="rejectedPageInfo" class="mx-3"></span>
                 <button id="rejectedNextPage" class="btn btn-sm">
+                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                </button>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="canceled" role="tabpanel" aria-labelledby="canceled-tab">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Loại nghỉ</th>
+                        <th>Ngày nghỉ</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>File đính kèm</th>
+                        <th>Ngày hủy</th>
+                    </tr>
+                </thead>
+                <tbody id="canceledLeaveBody"></tbody>
+            </table>
+            <div class="pagination" id="canceledPagination">
+                <button id="canceledPrevPage" class="btn btn-sm">
+                    <i class="fas fa-chevron-left me-1"></i> Trước
+                </button>
+                <span id="canceledPageInfo" class="mx-3"></span>
+                <button id="canceledNextPage" class="btn btn-sm">
                     Sau <i class="fas fa-chevron-right ms-1"></i>
                 </button>
             </div>
@@ -795,9 +828,11 @@
             'pendingLeaveBody',
             'approvedLeaveBody',
             'rejectedLeaveBody',
+            'canceledLeaveBody',
             'pending-tab',
             'approved-tab',
-            'rejected-tab'
+            'rejected-tab',
+            'canceled-tab'
         ];
 
         const missingElements = [];
@@ -1051,10 +1086,10 @@
 
                     const fileInfo = document.createElement('div');
                     fileInfo.innerHTML = `
-                                <i class="fas fa-file me-2"></i>
-                                ${file.name}
-                                <span class="badge bg-secondary rounded-pill">${formatFileSize(file.size)}</span>
-                            `;
+                                    <i class="fas fa-file me-2"></i>
+                                    ${file.name}
+                                    <span class="badge bg-secondary rounded-pill">${formatFileSize(file.size)}</span>
+                                `;
 
                     item.appendChild(fileInfo);
                     list.appendChild(item);
@@ -1204,7 +1239,8 @@
     const tabData = {
         pending: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
         approved: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
-        rejected: { currentPage: 1, itemsPerPage: 5, filteredData: [] }
+        rejected: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
+        canceled: { currentPage: 1, itemsPerPage: 5, filteredData: [] }
     };
 
     async function fetchLeaveHistory() {
@@ -1258,26 +1294,29 @@
                 tabData.pending.filteredData = leaveHistory.filter(item => item.trangThai === "Chờ duyệt");
                 tabData.approved.filteredData = leaveHistory.filter(item => item.trangThai === "Đã duyệt");
                 tabData.rejected.filteredData = leaveHistory.filter(item => item.trangThai === "Từ chối");
+                tabData.canceled.filteredData = leaveHistory.filter(item => item.trangThai === "Đã hủy");
 
                 console.log("Dữ liệu sau khi phân loại:", {
                     "Chờ duyệt": tabData.pending.filteredData.length,
                     "Đã duyệt": tabData.approved.filteredData.length,
-                    "Từ chối": tabData.rejected.filteredData.length
+                    "Từ chối": tabData.rejected.filteredData.length,
+                    "Đã hủy": tabData.canceled.filteredData.length
                 });
 
                 renderTable('pending');
                 renderTable('approved');
                 renderTable('rejected');
+                renderTable('canceled');
 
                 updateTabBadges();
                 setupPaginationControls();
             } else {
                 console.error("Lỗi định dạng dữ liệu:", result);
-                displayError("Không có dữ liệu nghỉ phép hoặc định dạng không đúng", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
+                displayError("Không có dữ liệu nghỉ phép hoặc định dạng không đúng", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody', 'canceledLeaveBody']);
             }
         } catch (error) {
             console.error("Lỗi khi gọi API:", error);
-            displayError("Lỗi kết nối server: " + error.message, ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody']);
+            displayError("Lỗi kết nối server: " + error.message, ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody', 'canceledLeaveBody']);
         }
     }
 
@@ -1285,10 +1324,12 @@
         const pendingCount = tabData.pending.filteredData.length;
         const approvedCount = tabData.approved.filteredData.length;
         const rejectedCount = tabData.rejected.filteredData.length;
+        const canceledCount = tabData.canceled.filteredData.length;
 
         updateBadge('pending-tab', pendingCount, 'pending-badge');
         updateBadge('approved-tab', approvedCount, 'approved-badge');
         updateBadge('rejected-tab', rejectedCount, 'rejected-badge');
+        updateBadge('canceled-tab', canceledCount, 'canceled-badge');
     }
 
     function updateBadge(tabId, count, badgeClass) {
@@ -1337,7 +1378,7 @@
 
         if (paginatedData.length === 0) {
             let colspan = 6;
-            if (tabId === 'approved' || tabId === 'rejected') colspan = 8;
+            if (tabId === 'approved' || tabId === 'rejected' || tabId === 'canceled') colspan = 7;
             tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">Không có đơn nào trong danh sách này</td></tr>`;
             console.log(`Không có dữ liệu để hiển thị cho tab ${tabId}`);
         } else {
@@ -1352,41 +1393,53 @@
                     const trangThai = item.trangThai || item.TrangThai || "Không xác định";
                     const fileDinhKem = item.fileDinhKem || item.FileDinhKem || item.files || item.Files || "";
                     const ngayDuyet = item.ngayDuyet || item.NgayDuyet || "";
+                    const ngayHuy = item.ngayDuyet || item.NgayDuyet || "";
                     const ghiChu = item.ghiChu || item.GhiChu || item.noiDungPhanHoi || item.NoiDungPhanHoi || "Không có ghi chú";
                     const nguoiDuyetHoTen = item.nguoiDuyetHoTen || item.NguoiDuyetHoTen || item.nguoiDuyet || item.NguoiDuyet || "Chưa có";
 
                     console.log(`Dữ liệu dòng ${index + 1} của tab ${tabId}:`, {
-                        id, tenLoai, ngayNghi, lyDo, trangThai, fileDinhKem, ngayDuyet, ghiChu, nguoiDuyetHoTen
+                        id, tenLoai, ngayNghi, lyDo, trangThai, fileDinhKem, ngayDuyet, ngayHuy, ghiChu, nguoiDuyetHoTen
                     });
 
                     const fileDisplayHtml = generateFileDisplayHtml(fileDinhKem);
                     const ngayDuyetFormatted = ngayDuyet ? formatDate(ngayDuyet) : "Chưa duyệt";
+                    const ngayHuyFormatted = ngayHuy ? formatDate(ngayHuy) : "Chưa hủy";
 
                     const row = document.createElement("tr");
                     if (tabId === 'pending') {
                         const cancelButton = `<button class="btn-cancel" data-id="${id}">
-                                            <i class="fas fa-times-circle"></i>
-                                            <span>Hủy đơn</span>
-                                        </button>`;
+                                                <i class="fas fa-times-circle"></i>
+                                                <span>Hủy đơn</span>
+                                            </button>`;
                         row.innerHTML = `
-                            <td>${tenLoai}</td>
-                            <td>${formatDate(ngayNghi)}</td>
-                            <td>${lyDo}</td>
-                            <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                            <td>${fileDisplayHtml}</td>
-                            <td>${cancelButton}</td>
-                        `;
+                                <td>${tenLoai}</td>
+                                <td>${formatDate(ngayNghi)}</td>
+                                <td>${lyDo}</td>
+                                <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                                <td>${fileDisplayHtml}</td>
+                                <td>${cancelButton}</td>
+                            `;
+                    } else if (tabId === 'canceled') {
+                        row.innerHTML = `
+                                <td>${tenLoai}</td>
+                                <td>${formatDate(ngayNghi)}</td>
+                                <td>${lyDo}</td>
+                                <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                                <td>${fileDisplayHtml}</td>
+                                <td>${ngayHuyFormatted}</td>
+                         
+                            `;
                     } else {
                         row.innerHTML = `
-                            <td>${tenLoai}</td>
-                            <td>${formatDate(ngayNghi)}</td>
-                            <td>${lyDo}</td>
-                            <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                            <td>${fileDisplayHtml}</td>
-                            <td>${ngayDuyetFormatted}</td>
-                            <td>${ghiChu}</td>
-                            <td>${nguoiDuyetHoTen}</td>
-                        `;
+                                <td>${tenLoai}</td>
+                                <td>${formatDate(ngayNghi)}</td>
+                                <td>${lyDo}</td>
+                                <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                                <td>${fileDisplayHtml}</td>
+                                <td>${ngayDuyetFormatted}</td>
+                                <td>${ghiChu}</td>
+                                <td>${nguoiDuyetHoTen}</td>
+                            `;
                     }
                     tableBody.appendChild(row);
                 } catch (error) {
@@ -1431,22 +1484,22 @@
 
         if (files.length === 1) {
             return `<a href="#" class="file-link" data-path="/Uploads/${files[0]}">
-                                <i class="fas fa-file me-1"></i>${truncateFileName(files[0])}
-                            </a>`;
+                                    <i class="fas fa-file me-1"></i>${truncateFileName(files[0])}
+                                </a>`;
         } else {
             const uniqueId = `dropdown-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             let fileListHtml = `<div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                                id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="fas fa-paperclip me-1"></i>${files.length} files
-                                        </button>
-                                        <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                                    id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-paperclip me-1"></i>${files.length} files
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
             files.forEach(file => {
                 fileListHtml += `<li>
-                                          <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
-                                            <i class="fas fa-file me-1"></i>${truncateFileName(file)}
-                                          </a>
-                                        </li>`;
+                                              <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
+                                                <i class="fas fa-file me-1"></i>${truncateFileName(file)}
+                                              </a>
+                                            </li>`;
             });
             fileListHtml += `</ul></div>`;
             return fileListHtml;
@@ -1517,12 +1570,19 @@
 
             if (result.isConfirmed) {
                 const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
-                    method: 'DELETE',
+                    method: 'PATCH', // Thay đổi từ DELETE sang PATCH
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
                         'Content-Type': 'application/json'
                     }
                 });
+
+                // Kiểm tra phản hồi trước khi parse JSON
+                if (!response.ok) {
+                    const errorText = await response.text(); // Lấy nội dung lỗi để debug
+                    console.error(`Lỗi API: ${response.status} - ${errorText}`);
+                    throw new Error(`Lỗi: ${response.statusText}`);
+                }
 
                 const data = await response.json();
 
@@ -1574,6 +1634,8 @@
                 return 'bg-success-subtle';
             case 'Từ chối':
                 return 'bg-danger-subtle';
+            case 'Đã hủy':
+                return 'bg-secondary-subtle';
             default:
                 return '';
         }
@@ -1594,18 +1656,18 @@
             alertMessage.id = "leaveBalanceAlert";
             alertMessage.className = "alert alert-danger mt-3";
             alertMessage.innerHTML = `
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương.
-            `;
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương.
+                `;
             leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
         } else if (availableLeaveBalance < 5) {
             const alertMessage = document.createElement("div");
             alertMessage.id = "leaveBalanceAlert";
             alertMessage.className = "alert alert-warning mt-3";
             alertMessage.innerHTML = `
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Cảnh báo:</strong> Số dư phép năm của bạn chỉ còn ${availableLeaveBalance} ngày.
-            `;
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Cảnh báo:</strong> Số dư phép năm của bạn chỉ còn ${availableLeaveBalance} ngày.
+                `;
             leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
         }
     }
@@ -1638,7 +1700,7 @@
     }
 
     function setupPaginationControls() {
-        ['pending', 'approved', 'rejected'].forEach(tabId => {
+        ['pending', 'approved', 'rejected', 'canceled'].forEach(tabId => {
             setupPaginationForTab(tabId);
         });
     }

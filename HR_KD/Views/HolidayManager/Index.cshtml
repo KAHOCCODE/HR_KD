@@ -160,7 +160,32 @@
                     row.insertCell().textContent = holiday.tenNgayLe;
                     row.insertCell().textContent = new Date(holiday.ngayLe1).toLocaleDateString('vi-VN');
                     row.insertCell().textContent = holiday.soNgayNghi || '-';
-                    row.insertCell().textContent = holiday.trangThai;
+                    
+                    // Hiển thị trạng thái ngày lễ
+                    let statusText = '';
+                    switch(holiday.trangThai) {
+                        case 'NL1':
+                            statusText = 'Ngày lễ thường';
+                            break;
+                        case 'NL2':
+                            statusText = 'Ngày lễ cuối tuần';
+                            break;
+                        case 'NL3':
+                            statusText = 'Ngày nghỉ bù';
+                            break;
+                        case 'NL4':
+                            statusText = 'Đã duyệt (có chấm công)';
+                            break;
+                        case 'NL5':
+                            statusText = 'Đã duyệt (không chấm công)';
+                            break;
+                        case 'NL6':
+                            statusText = 'Đã từ chối';
+                            break;
+                        default:
+                            statusText = holiday.trangThai || '-';
+                    }
+                    row.insertCell().textContent = statusText;
                     row.insertCell().textContent = holiday.moTa || '-';
 
                     const actionsCell = row.insertCell();
@@ -180,10 +205,11 @@
                     cancelButton.className = 'btn btn-secondary btn-sm';
                     cancelButton.addEventListener('click', () => cancelHoliday(holiday.maNgayLe));
 
-                    if (holiday.trangThai === 'Đã duyệt' || holiday.trangThai === 'Đã từ chối') {
+                    // Chỉ hiển thị các nút phù hợp với trạng thái hiện tại
+                    if (holiday.trangThai === 'NL4' || holiday.trangThai === 'NL5' || holiday.trangThai === 'NL6') {
                         approveButton.style.display = 'none';
                         rejectButton.style.display = 'none';
-                    } else if (holiday.trangThai === 'Chờ duyệt') {
+                    } else {
                         cancelButton.style.display = 'none';
                     }
 

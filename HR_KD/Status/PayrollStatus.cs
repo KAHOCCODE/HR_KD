@@ -46,4 +46,12 @@
         public const string Approved = "LS3"; // Đã duyệt
         public const string Rejected = "LS4"; // Từ chối
     }
+    // ngày lễ  "NL"
+    public static class HolidayStatus
+    {
+        public const string Pending = "NL1"; // Chờ duyệt
+        public const string Approved = "NL2"; // Đã duyệt
+        public const string ApprovedWeekend = "NL3"; // Đã duyệt cuối tuần
+        public const string Rejected = "NL4"; // Từ chối
+    }
 }

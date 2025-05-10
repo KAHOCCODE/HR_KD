@@ -28,6 +28,7 @@
                 <th>Tên Ngày Lễ</th>
                 <th>Ngày</th>
                 <th>Số Ngày Nghỉ</th>
+                <th>Trạng Thái</th>
                 <th>Mô Tả</th>
                 <th>Thao tác</th>
             </tr>
@@ -221,8 +222,8 @@ function saveFixedHolidaysForYear(year) {
         const currentDate = new Date(fullDate);
         const formattedDate = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
 
-        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6 && !existingHolidays.includes(formattedDate)) {
-            // Ngày lễ không rơi vào cuối tuần và chưa tồn tại
+        // Luôn thêm ngày lễ gốc, kể cả khi rơi vào cuối tuần
+        if (!existingHolidays.includes(formattedDate)) {
             requests.push(
                 fetch('/api/Holidays/Add', {
                     method: 'POST',
@@ -236,27 +237,28 @@ function saveFixedHolidaysForYear(year) {
                 }).then(response => response.json())
             );
             console.log(`Đã lên lịch ${holiday.ten} vào ${formattedDate}.`);
-        } else if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-            // Ngày lễ rơi vào cuối tuần, cần lên lịch lại
-            holidaysToReschedule.push({ holiday, originalDate: formattedDate, isWeekend: true });
-            console.log(`Ngày ${holiday.ten} (${formattedDate}) rơi vào cuối tuần, sẽ lên lịch lại.`);
-        } else {
-            console.log(`Ngày ${holiday.ten} (${formattedDate}) đã tồn tại.`);
+        }
+
+        // Nếu ngày lễ rơi vào cuối tuần, thêm ngày nghỉ bù
+        if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+            holidaysToReschedule.push({ holiday, originalDate: formattedDate });
+            console.log(`Ngày ${holiday.ten} (${formattedDate}) rơi vào cuối tuần, sẽ thêm ngày nghỉ bù.`);
         }
     });
 
-    // Chạy các request cho ngày lễ không rơi vào cuối tuần trước
+    // Chạy các request cho ngày lễ gốc trước
     Promise.all(requests).then(results => {
         const successfulAdds = results.filter(res => res.success !== false).length;
         if (successfulAdds > 0) {
-            console.log(`Đã thêm ${successfulAdds} ngày lễ không trùng cuối tuần.`);
+            console.log(`Đã thêm ${successfulAdds} ngày lễ gốc.`);
         }
 
-        // Xử lý các ngày lễ rơi vào cuối tuần để lên lịch lại
+        // Xử lý các ngày nghỉ bù cho ngày lễ rơi vào cuối tuần
         holidaysToReschedule.forEach(({ holiday, originalDate }) => {
             let rescheduleDate = new Date(originalDate);
             let daysToAdd = 1;
 
+            // Xử lý đặc biệt cho ngày Giải phóng miền Nam
             if (holiday.ten === "Ngày Giải Phóng miền Nam") {
                 const mayFirst = new Date(`${rescheduleDate.getFullYear()}-05-01`);
                 if (mayFirst.getDay() === 1) { // Nếu 1/5 là Thứ Hai
@@ -306,7 +308,7 @@ function saveFixedHolidaysForYear(year) {
         Promise.all(requests.slice(successfulAdds)).then(rescheduledResults => {
             const allResults = [...results, ...rescheduledResults];
             if (allResults.every(res => res.success !== false)) {
-                alert(`Đã thêm ${allResults.length} ngày lễ cố định cho năm ${year} thành công!`);
+                alert(`Đã thêm ${allResults.length} ngày lễ (bao gồm cả ngày lễ gốc và ngày nghỉ bù) cho năm ${year} thành công!`);
                 fetchExistingHolidays().then(() => {
                     initializeDatePicker();
                     fetchHolidays(document.getElementById('yearFilter').value);
@@ -344,11 +346,27 @@ function saveFixedHolidaysForYear(year) {
                     let tableBody = document.getElementById("holidayTableBody");
                     tableBody.innerHTML = "";
                     filteredData.forEach(h => {
+                        let statusText = '';
+                        switch(h.trangThai) {
+                            case 'NL1':
+                                statusText = 'Ngày lễ thường';
+                                break;
+                            case 'NL2':
+                                statusText = 'Ngày lễ cuối tuần';
+                                break;
+                            case 'NL3':
+                                statusText = 'Ngày nghỉ bù';
+                                break;
+                            default:
+                                statusText = h.trangThai || '-';
+                        }
+
                         let row = `<tr>
                                         <td>${h.maNgayLe}</td>
                                         <td>${h.tenNgayLe}</td>
                                         <td>${h.ngayLe1}</td>
                                         <td>${h.soNgayNghi || '-'}</td>
+                                        <td>${statusText}</td>
                                         <td>${h.moTa || '-'}</td>
                                         <td>
                                             <button type="button" class="btn btn-danger btn-sm delete-btn"

@@ -239,6 +239,8 @@
         locale: {
             firstDayOfWeek: 1 // Monday
         },
+        minDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        maxDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
         onClose: handleDateRangeClose
     });
 

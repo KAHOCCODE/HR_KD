@@ -103,7 +103,7 @@ namespace HR_KD.Controllers
                                 GioVao = new TimeOnly(8, 0, 0),
                                 GioRa = new TimeOnly(17, 0, 0),
                                 TongGio = 8.0m,
-                                TrangThai = "Đã duyệt",
+                                TrangThai = "CC3",
                                 GhiChu = $"Ngày lễ: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
                             };
                             _context.ChamCongs.Add(attendance);
@@ -134,7 +134,7 @@ namespace HR_KD.Controllers
                             GioVao = new TimeOnly(8, 0, 0),
                             GioRa = new TimeOnly(17, 0, 0),
                             TongGio = 8.0m,
-                            TrangThai = "Đã duyệt",
+                            TrangThai = "CC3",
                             GhiChu = $"Ngày nghỉ bù: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
                         };
                         _context.ChamCongs.Add(attendance);
@@ -253,7 +253,7 @@ namespace HR_KD.Controllers
                                 GioVao = new TimeOnly(8, 0, 0),
                                 GioRa = new TimeOnly(17, 0, 0),
                                 TongGio = 8.0m,
-                                TrangThai = "Đã duyệt",
+                                TrangThai = "CC3",
                                 GhiChu = $"Ngày lễ: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
                             };
                             _context.ChamCongs.Add(attendance);
@@ -355,6 +355,46 @@ namespace HR_KD.Controllers
                     }
                 }
             }
+        }
+
+        [HttpPost("send-yearly-notification")]
+        public async Task<IActionResult> SendYearlyHolidayNotification()
+        {
+            var currentYear = DateTime.Now.Year;
+            var approvedHolidays = await _context.NgayLes
+                .Where(h => h.NgayLe1.Year == currentYear && 
+                           (h.TrangThai == TrangThai.NL4 || h.TrangThai == TrangThai.NL5))
+                .OrderBy(h => h.NgayLe1)
+                .ToListAsync();
+
+            if (approvedHolidays.Count == 0)
+            {
+                return Ok($"Không có ngày lễ nào đã được duyệt cho năm {currentYear}.");
+            }
+
+            var employeesToSend = await _context.NhanViens
+                .Where(e => !string.IsNullOrEmpty(e.Email))
+                .ToListAsync();
+
+            if (employeesToSend.Count == 0)
+            {
+                return Ok("Không tìm thấy nhân viên nào có email để gửi thông báo.");
+            }
+
+            string subject = $"Thông báo: Lịch nghỉ lễ năm {currentYear}";
+            string body = $"Chào bạn,\n\nDưới đây là lịch nghỉ lễ năm {currentYear} đã được duyệt:\n\n";
+
+            foreach (var holiday in approvedHolidays)
+            {
+                string holidayType = holiday.TrangThai == TrangThai.NL4 ? "Ngày lễ" : "Ngày nghỉ cuối tuần";
+                body += $"{holidayType}: {holiday.TenNgayLe} - {holiday.NgayLe1.ToString("dd/MM/yyyy")}\n";
+            }
+
+            body += "\nTrân trọng,\nBan quản lý.";
+
+            await SendEmailAsync(employeesToSend, subject, body);
+
+            return Ok($"Đã gửi thông báo lịch nghỉ lễ năm {currentYear} cho {employeesToSend.Count} nhân viên.");
         }
     }
 }

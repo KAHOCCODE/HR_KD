@@ -117,8 +117,8 @@ namespace HR_KD.Services
                     thamnien = 0;
                 }
 
-                // Tính số ngày phép được cấp
-                decimal soNgayPhepDuocCap = TinhSoNgayPhepDuocCap(nam, nv, cauHinh, thamnien.Value);
+                // Tính số ngày phép được cấp theo cách mới - tính tích lũy từ năm vào làm
+                decimal soNgayPhepDuocCap = TinhSoNgayPhepTichLuy(nam, nv, cauHinh, thamnien.Value);
 
                 // Kiểm tra và xử lý bản ghi trong PhepNamNhanVien
                 var phepNam = await _context.PhepNamNhanViens
@@ -182,6 +182,79 @@ namespace HR_KD.Services
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Tính số ngày phép được cấp tích lũy theo thâm niên và các chính sách áp dụng
+        /// </summary>
+        private decimal TinhSoNgayPhepTichLuy(int namHienTai, NhanVien nv, CauHinhPhepNam cauHinh, int thamNien)
+        {
+            decimal soNgayPhep = cauHinh.SoNgayPhepMacDinh;
+
+            if (nv.NgayVaoLam.HasValue && cauHinh.CauHinhPhep_ChinhSachs != null && cauHinh.CauHinhPhep_ChinhSachs.Any())
+            {
+                int namVaoLam = nv.NgayVaoLam.Value.Year;
+
+                // Lấy danh sách các chính sách còn hiệu lực
+                var danhSachChinhSach = cauHinh.CauHinhPhep_ChinhSachs
+                    .Where(cp => cp.ChinhSachPhepNam != null &&
+                                cp.ChinhSachPhepNam.ConHieuLuc &&
+                                cp.ChinhSachPhepNam.ApDungTuNam <= namHienTai)
+                    .ToList();
+
+                // Nhóm các chính sách theo SoNam để xác định các mốc tăng ngày phép
+                var nhomChinhSach = danhSachChinhSach
+                    .GroupBy(cp => cp.ChinhSachPhepNam.SoNam)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(cp => cp.ChinhSachPhepNam.SoNgayCongThem)
+                    );
+
+                // Duyệt qua từng mốc năm có áp dụng chính sách
+                foreach (var mocNam in nhomChinhSach.Keys.OrderBy(k => k))
+                {
+                    // Với mỗi mốc năm (vd: 3 năm, 5 năm, 10 năm...)
+                    int soLanDatMoc = 0;
+
+                    // Tính xem nhân viên đã đạt được bao nhiêu lần mốc này
+                    if (thamNien >= mocNam)
+                    {
+                        // Số lần đạt được mốc = tổng thâm niên chia cho mốc năm, làm tròn xuống
+                        soLanDatMoc = thamNien / mocNam;
+                    }
+
+                    // Thêm số ngày phép tương ứng với số lần đạt mốc
+                    soNgayPhep += soLanDatMoc * nhomChinhSach[mocNam];
+                }
+            }
+
+            return soNgayPhep;
+        }
+
+        /// <summary>
+        /// Phương thức tính ngày phép cũ - không tính tích lũy theo các mốc
+        /// </summary>
+        private decimal TinhSoNgayPhepDuocCap(int nam, NhanVien nv, CauHinhPhepNam cauHinh, int thamnien)
+        {
+            decimal soNgayPhep = cauHinh.SoNgayPhepMacDinh;
+
+            // Áp dụng các chính sách thâm niên nếu có
+            if (cauHinh.CauHinhPhep_ChinhSachs != null && cauHinh.CauHinhPhep_ChinhSachs.Any())
+            {
+                foreach (var cp in cauHinh.CauHinhPhep_ChinhSachs)
+                {
+                    // Kiểm tra null trước khi truy cập thuộc tính
+                    if (cp.ChinhSachPhepNam != null &&
+                        cp.ChinhSachPhepNam.ConHieuLuc &&
+                        cp.ChinhSachPhepNam.ApDungTuNam <= nam &&
+                        thamnien >= cp.ChinhSachPhepNam.SoNam)
+                    {
+                        soNgayPhep += cp.ChinhSachPhepNam.SoNgayCongThem;
+                    }
+                }
+            }
+
+            return soNgayPhep;
+        }
+
         public async Task CapNhatPhepChoNhanVienMoiAsync(string maNv, int nam)
         {
             // Tìm nhân viên theo mã (ép kiểu MaNv về string để so sánh)
@@ -240,8 +313,8 @@ namespace HR_KD.Services
                 if (thamnien < 0) thamnien = 0;
             }
 
-            // Tính số ngày phép được cấp
-            decimal soNgayPhepDuocCap = TinhSoNgayPhepDuocCap(nam, nv, cauHinh, thamnien);
+            // Tính số ngày phép được cấp với cách tính mới - tích lũy theo mốc
+            decimal soNgayPhepDuocCap = TinhSoNgayPhepTichLuy(nam, nv, cauHinh, thamnien);
 
             string ghiChu = $"Cập nhật phép cho nhân viên mới {nv.HoTen ?? "không rõ"} năm {nam}";
             if (usedPreviousYearConfig)
@@ -274,29 +347,6 @@ namespace HR_KD.Services
             _context.SoDuPheps.Add(soDuPhep);
 
             await _context.SaveChangesAsync();
-        }
-
-        private decimal TinhSoNgayPhepDuocCap(int nam, NhanVien nv, CauHinhPhepNam cauHinh, int thamnien)
-        {
-            decimal soNgayPhep = cauHinh.SoNgayPhepMacDinh;
-
-            // Áp dụng các chính sách thâm niên nếu có
-            if (cauHinh.CauHinhPhep_ChinhSachs != null && cauHinh.CauHinhPhep_ChinhSachs.Any())
-            {
-                foreach (var cp in cauHinh.CauHinhPhep_ChinhSachs)
-                {
-                    // Kiểm tra null trước khi truy cập thuộc tính
-                    if (cp.ChinhSachPhepNam != null &&
-                        cp.ChinhSachPhepNam.ConHieuLuc &&
-                        cp.ChinhSachPhepNam.ApDungTuNam <= nam &&
-                        thamnien >= cp.ChinhSachPhepNam.SoNam)
-                    {
-                        soNgayPhep += cp.ChinhSachPhepNam.SoNgayCongThem;
-                    }
-                }
-            }
-
-            return soNgayPhep;
         }
 
         public async Task UpdateSoNgayDaSuDungAsync(int maNgayNghi)
@@ -378,8 +428,8 @@ namespace HR_KD.Services
                     : 0;
                 if (thamnien < 0) thamnien = 0;
 
-                // Tính số ngày phép được cấp
-                decimal soNgayPhepDuocCap = TinhSoNgayPhepDuocCap(ngayNghi.NgayNghi1.Year, nhanVien, cauHinh, thamnien);
+                // Tính số ngày phép được cấp với cách tính mới - tích lũy theo mốc
+                decimal soNgayPhepDuocCap = TinhSoNgayPhepTichLuy(ngayNghi.NgayNghi1.Year, nhanVien, cauHinh, thamnien);
 
                 string ghiChu = $"Tạo bản ghi phép năm cho đơn nghỉ phép {maNgayNghi}";
                 if (usedPreviousYearConfig)

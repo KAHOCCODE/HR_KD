@@ -27,9 +27,6 @@
                     <button class="tablinks px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" onclick="openTab(event, 'TangCaTiLe')">
                         Tăng Ca Tỉ Lệ
                     </button>
-                    <button class="tablinks px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" onclick="openTab(event, 'BuGio')">
-                        Bù Giờ
-                    </button>
                     <button class="tablinks px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" onclick="openTab(event, 'LichLamViecVaGioChuan')">
                         Lịch Làm Việc và Giờ Chuẩn
                     </button>
@@ -72,27 +69,7 @@
                             <tr>
                                 <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Tên</th>
                                 <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Tỉ Lệ Tăng Ca (%)</th>
-                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Thao Tác</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="BuGio" class="tabcontent p-4 sm:p-6 hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Bù Giờ</h3>
-                    <button class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm" onclick="openCreateBuGioModal()">
-                        <i class="fas fa-plus mr-1"></i>Tạo Mới
-                    </button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table id="buGioTable" class="min-w-full bg-white border border-gray-200 rounded-lg">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Tên</th>
-                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Tỉ Lệ Bù Giờ (%)</th>
+                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Trạng Thái</th>
                                 <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Thao Tác</th>
                             </tr>
                         </thead>
@@ -228,49 +205,6 @@
     </div>
 </div>
 
-<!-- Create Modal for Bù Giờ -->
-<div id="createBuGioModal" class="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
-    <div class="modal-content bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-gray-800">Tạo Mới Bù Giờ</h2>
-            <span class="close text-gray-500 hover:text-gray-700 cursor-pointer text-2xl" onclick="closeModal('createBuGioModal')">×</span>
-        </div>
-        <form id="createBuGioForm" class="space-y-4">
-            <div>
-                <label for="createBuGioName" class="block text-sm font-medium text-gray-700">Tên:</label>
-                <input type="text" id="createBuGioName" name="tenTiLeTangCa" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required>
-            </div>
-            <div>
-                <label for="createLamBu" class="block text-sm font-medium text-gray-700">Tỉ Lệ Bù Giờ (%):</label>
-                <input type="number" step="0.01" id="createLamBu" name="tiLe" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required>
-            </div>
-            <button type="submit" class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm">Tạo</button>
-        </form>
-    </div>
-</div>
-
-<!-- Edit Modal for Bù Giờ -->
-<div id="editBuGioModal" class="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
-    <div class="modal-content bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold text-gray-800">Chỉnh Sửa Bù Giờ</h2>
-            <span class="close text-gray-500 hover:text-gray-700 cursor-pointer text-2xl" onclick="closeModal('editBuGioModal')">×</span>
-        </div>
-        <form id="editBuGioForm" class="space-y-4">
-            <input type="hidden" id="editBuGioId" name="id">
-            <div>
-                <label for="editBuGioName" class="block text-sm font-medium text-gray-700">Tên:</label>
-                <input type="text" id="editBuGioName" name="tenTiLeTangCa" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required>
-            </div>
-            <div>
-                <label for="editLamBu" class="block text-sm font-medium text-gray-700">Tỉ Lệ Bù Giờ (%):</label>
-                <input type="number" step="0.01" id="editLamBu" name="tiLe" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-sm" required>
-            </div>
-            <button type="submit" class="w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm">Lưu</button>
-        </form>
-    </div>
-</div>
-
 @section Scripts {
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -384,51 +318,31 @@
                             success: function (data) {
                                 $(tableId).empty();
                                 if (data && data.length > 0) {
-                                    var latestRecord = data.sort((a, b) => b.id - a.id)[0];
-                                    html += `<tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-2 text-sm text-gray-600 border-b">${latestRecord.tenTiLeTangCa || 'N/A'}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-600 border-b">${latestRecord.tiLe.toFixed(2)}</td>
-                                        <td class="px-4 py-2 text-sm border-b">
-                                            <button class="inline-flex items-center px-2 py-1 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors text-xs" onclick="openEditTangCaTiLeModal(${latestRecord.id})">
-                                                <i class="fas fa-edit mr-1"></i>Sửa
-                                            </button>
-                                        </td>
-                                    </tr>`;
+                                    data.forEach(function(item) {
+                                        html += `<tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2 text-sm text-gray-600 border-b">${item.tenTiLeTangCa || 'N/A'}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-600 border-b">${item.tiLe.toFixed(2)}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-600 border-b">
+                                                <span class="px-2 py-1 rounded-full text-xs ${item.kichHoat ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                                    ${item.kichHoat ? 'Đã Kích Hoạt' : 'Chưa Kích Hoạt'}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-2 text-sm border-b">
+                                                <button class="inline-flex items-center px-2 py-1 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors text-xs mr-2" onclick="openEditTangCaTiLeModal(${item.id})">
+                                                    <i class="fas fa-edit mr-1"></i>Sửa
+                                                </button>
+                                                <button class="inline-flex items-center px-2 py-1 rounded-lg ${item.kichHoat ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white transition-colors text-xs" onclick="activateTiLeTangCa(${item.id})">
+                                                    <i class="fas ${item.kichHoat ? 'fa-times' : 'fa-check'} mr-1"></i>${item.kichHoat ? 'Hủy Kích Hoạt' : 'Kích Hoạt'}
+                                                </button>
+                                            </td>
+                                        </tr>`;
+                                    });
                                 }
-                                $(tableId).html(html || "<tr><td colspan='3' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Không có dữ liệu</td></tr>");
+                                $(tableId).html(html || "<tr><td colspan='4' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Không có dữ liệu</td></tr>");
                             },
                             error: function (xhr) {
                                 console.error("Error loading data for TangCaTiLe:", xhr);
-                                $(tableId).html("<tr><td colspan='3' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Lỗi tải dữ liệu</td></tr>");
-                            }
-                        });
-                        break;
-
-                    case "BuGio":
-                        apiUrl = "/api/AttendanceSettingApi/GetTiLeTangCa";
-                        tableId = "#buGioTable tbody";
-                        $.ajax({
-                            url: apiUrl,
-                            method: "GET",
-                            success: function (data) {
-                                $(tableId).empty();
-                                if (data && data.length > 0) {
-                                    var latestRecord = data.sort((a, b) => b.id - a.id)[0];
-                                    html += `<tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-2 text-sm text-gray-600 border-b">${latestRecord.tenTiLeTangCa || 'N/A'}</td>
-                                        <td class="px-4 py-2 text-sm text-gray-600 border-b">${latestRecord.tiLe.toFixed(2)}</td>
-                                        <td class="px-4 py-2 text-sm border-b">
-                                            <button class="inline-flex items-center px-2 py-1 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors text-xs" onclick="openEditBuGioModal(${latestRecord.id})">
-                                                <i class="fas fa-edit mr-1"></i>Sửa
-                                            </button>
-                                        </td>
-                                    </tr>`;
-                                }
-                                $(tableId).html(html || "<tr><td colspan='3' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Không có dữ liệu</td></tr>");
-                            },
-                            error: function (xhr) {
-                                console.error("Error loading data for BuGio:", xhr);
-                                $(tableId).html("<tr><td colspan='3' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Lỗi tải dữ liệu</td></tr>");
+                                $(tableId).html("<tr><td colspan='4' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Lỗi tải dữ liệu</td></tr>");
                             }
                         });
                         break;
@@ -657,126 +571,6 @@
                 });
             }
 
-            function openCreateBuGioModal() {
-                $("#createBuGioForm")[0].reset();
-                showModal("createBuGioModal");
-            }
-
-            function openEditBuGioModal(id) {
-                $.ajax({
-                    url: `/api/AttendanceSettingApi/GetTiLeTangCa/${id}`,
-                    method: "GET",
-                    success: function (data) {
-                        $("#editBuGioId").val(data.id);
-                        $("#editBuGioName").val(data.tenTiLeTangCa);
-                        $("#editLamBu").val(data.tiLe);
-                        showModal("editBuGioModal");
-                    },
-                    error: function (xhr) {
-                        console.error("Error fetching BuGio:", xhr);
-                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể tải dữ liệu.", "error");
-                    }
-                });
-            }
-
-            $("#createTangCaTiLeForm").submit(function (e) {
-                e.preventDefault();
-                var data = {
-                    tenTiLeTangCa: $("#createTangCaName").val(),
-                    tiLe: parseFloat($("#createTangCa").val()),
-                    kichHoat: false
-                };
-                $.ajax({
-                    url: "/api/AttendanceSettingApi/CreateTiLeTangCa",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify(data),
-                    success: function () {
-                        Swal.fire("Thành công!", "Tạo mới thành công!", "success");
-                        closeModal("createTangCaTiLeModal");
-                        loadData("TangCaTiLe");
-                    },
-                    error: function (xhr) {
-                        console.error("Error creating TangCaTiLe:", xhr);
-                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể tạo mới dữ liệu.", "error");
-                    }
-                });
-            });
-
-            $("#editTangCaTiLeForm").submit(function (e) {
-                e.preventDefault();
-                var data = {
-                    id: parseInt($("#editTangCaTiLeId").val()),
-                    tenTiLeTangCa: $("#editTangCaName").val(),
-                    tiLe: parseFloat($("#editTangCa").val()),
-                    kichHoat: false
-                };
-                $.ajax({
-                    url: `/api/AttendanceSettingApi/UpdateTiLeTangCa/${data.id}`,
-                    method: "PUT",
-                    contentType: "application/json",
-                    data: JSON.stringify(data),
-                    success: function () {
-                        Swal.fire("Thành công!", "Cập nhật thành công!", "success");
-                        closeModal("editTangCaTiLeModal");
-                        loadData("TangCaTiLe");
-                    },
-                    error: function (xhr) {
-                        console.error("Error updating TangCaTiLe:", xhr);
-                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể cập nhật dữ liệu.", "error");
-                    }
-                });
-            });
-
-            $("#createBuGioForm").submit(function (e) {
-                e.preventDefault();
-                var data = {
-                    tenTiLeTangCa: $("#createBuGioName").val(),
-                    tiLe: parseFloat($("#createLamBu").val()),
-                    kichHoat: false
-                };
-                $.ajax({
-                    url: "/api/AttendanceSettingApi/CreateTiLeTangCa",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify(data),
-                    success: function () {
-                        Swal.fire("Thành công!", "Tạo mới thành công!", "success");
-                        closeModal("createBuGioModal");
-                        loadData("BuGio");
-                    },
-                    error: function (xhr) {
-                        console.error("Error creating BuGio:", xhr);
-                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể tạo mới dữ liệu.", "error");
-                    }
-                });
-            });
-
-            $("#editBuGioForm").submit(function (e) {
-                e.preventDefault();
-                var data = {
-                    id: parseInt($("#editBuGioId").val()),
-                    tenTiLeTangCa: $("#editBuGioName").val(),
-                    tiLe: parseFloat($("#editLamBu").val()),
-                    kichHoat: false
-                };
-                $.ajax({
-                    url: `/api/AttendanceSettingApi/UpdateTiLeTangCa/${data.id}`,
-                    method: "PUT",
-                    contentType: "application/json",
-                    data: JSON.stringify(data),
-                    success: function () {
-                        Swal.fire("Thành công!", "Cập nhật thành công!", "success");
-                        closeModal("editBuGioModal");
-                        loadData("BuGio");
-                    },
-                    error: function (xhr) {
-                        console.error("Error updating BuGio:", xhr);
-                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể cập nhật dữ liệu.", "error");
-                    }
-                });
-            });
-
             // Generate Schedule
             $("#generateSchedule").click(function () {
                 calculateWorkHours();
@@ -796,6 +590,22 @@
             $("#thoiGianVao, #thoiGianRa").on("change", function () {
                 updateWorkHoursInfo();
             });
+
+            // Update the activateTiLeTangCa function
+            function activateTiLeTangCa(id) {
+                $.ajax({
+                    url: `/api/AttendanceSettingApi/ActivateTiLeTangCa/${id}`,
+                    method: "POST",
+                    success: function (data) {
+                        Swal.fire("Thành công!", "Đã cập nhật trạng thái kích hoạt.", "success");
+                        loadData("TangCaTiLe");
+                    },
+                    error: function (xhr) {
+                        console.error("Error toggling TiLeTangCa:", xhr);
+                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể cập nhật trạng thái kích hoạt.", "error");
+                    }
+                });
+            }
 
             // Initialization
             $(document).ready(function () {

@@ -60,18 +60,66 @@ namespace HR_KD.Controllers
         [HttpPost("approve/{id}")]
         public async Task<IActionResult> Approve(int id)
         {
+            // Lấy thông tin người duyệt từ claims
+            var approverMaNV = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+            var approverName = User.Claims.FirstOrDefault(c => c.Type == "TenNV")?.Value;
+
+            if (string.IsNullOrEmpty(approverMaNV))
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy thông tin người duyệt." });
+            }
+
             var holiday = await _context.NgayLes.FindAsync(id);
             if (holiday == null)
             {
                 return NotFound();
             }
 
-            if (holiday.TrangThai != "Đã duyệt")
+            // Kiểm tra trạng thái hiện tại
+            if (holiday.TrangThai == TrangThai.NL4 || holiday.TrangThai == TrangThai.NL5)
             {
-                holiday.TrangThai = "Đã duyệt";
-                await _context.SaveChangesAsync();
+                return Ok($"Ngày lễ ID {id} đã được duyệt trước đó.");
+            }
 
-                // Update attendance
+            // Xử lý duyệt ngày lễ
+            if (holiday.TrangThai == TrangThai.NL1 || holiday.TrangThai == TrangThai.NL2)
+            {
+                // Nếu là ngày lễ thường hoặc ngày lễ cuối tuần
+                if (holiday.TrangThai == TrangThai.NL1)
+                {
+                    holiday.TrangThai = TrangThai.NL4; // Duyệt và tạo chấm công
+                    // Tạo chấm công cho tất cả nhân viên
+                    var allEmployees = await _context.NhanViens.ToListAsync();
+                    foreach (var employee in allEmployees)
+                    {
+                        var existingAttendance = await _context.ChamCongs.FirstOrDefaultAsync(
+                            cc => cc.MaNv == employee.MaNv && cc.NgayLamViec == holiday.NgayLe1);
+                        if (existingAttendance == null)
+                        {
+                            var attendance = new ChamCong
+                            {
+                                MaNv = employee.MaNv,
+                                NgayLamViec = holiday.NgayLe1,
+                                GioVao = new TimeOnly(8, 0, 0),
+                                GioRa = new TimeOnly(17, 0, 0),
+                                TongGio = 8.0m,
+                                TrangThai = "CC3",
+                                GhiChu = $"Ngày lễ: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
+                            };
+                            _context.ChamCongs.Add(attendance);
+                        }
+                    }
+                }
+                else if (holiday.TrangThai == TrangThai.NL2)
+                {
+                    holiday.TrangThai = TrangThai.NL5; // Duyệt nhưng không tạo chấm công
+                }
+            }
+            else if (holiday.TrangThai == TrangThai.NL3)
+            {
+                // Nếu là ngày nghỉ bù, xử lý như ngày lễ thường
+                holiday.TrangThai = TrangThai.NL4;
+                // Tạo chấm công cho tất cả nhân viên
                 var allEmployees = await _context.NhanViens.ToListAsync();
                 foreach (var employee in allEmployees)
                 {
@@ -86,35 +134,46 @@ namespace HR_KD.Controllers
                             GioVao = new TimeOnly(8, 0, 0),
                             GioRa = new TimeOnly(17, 0, 0),
                             TongGio = 8.0m,
-                            TrangThai = "Đã duyệt",
-                            GhiChu = $"Ngày lễ: {holiday.TenNgayLe}"
+                            TrangThai = "CC3",
+                            GhiChu = $"Ngày nghỉ bù: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
                         };
                         _context.ChamCongs.Add(attendance);
                     }
                 }
-                await _context.SaveChangesAsync();
-
-                // Send email notification
-                await SendHolidayApprovalNotification(holiday);
-
-                return Ok($"Ngày lễ ID {id} đã được duyệt và thông báo đã được gửi.");
             }
-            return Ok($"Ngày lễ ID {id} đã được duyệt trước đó.");
+
+            // Cập nhật thông tin người duyệt
+            holiday.MoTa = $"{holiday.MoTa}\nĐược duyệt bởi: {approverName} ({approverMaNV}) vào ngày {DateTime.Now:dd/MM/yyyy HH:mm}";
+
+            await _context.SaveChangesAsync();
+            await SendHolidayApprovalNotification(holiday);
+
+            return Ok($"Ngày lễ ID {id} đã được duyệt bởi {approverName} và thông báo đã được gửi.");
         }
 
         [HttpPost("reject/{id}")]
         public async Task<IActionResult> Reject(int id)
         {
+            // Lấy thông tin người từ chối từ claims
+            var rejecterMaNV = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+            var rejecterName = User.Claims.FirstOrDefault(c => c.Type == "TenNV")?.Value;
+
+            if (string.IsNullOrEmpty(rejecterMaNV))
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy thông tin người từ chối." });
+            }
+
             var holiday = await _context.NgayLes.FindAsync(id);
             if (holiday == null)
             {
                 return NotFound();
             }
 
-            holiday.TrangThai = "Đã từ chối";
+            holiday.TrangThai = TrangThai.NL6; // Đánh dấu là ngày lễ bị từ chối
+            holiday.MoTa = $"{holiday.MoTa}\nBị từ chối bởi: {rejecterName} ({rejecterMaNV}) vào ngày {DateTime.Now:dd/MM/yyyy HH:mm}";
             await _context.SaveChangesAsync();
 
-            return Ok($"Ngày lễ ID {id} đã bị từ chối.");
+            return Ok($"Ngày lễ ID {id} đã bị từ chối bởi {rejecterName}.");
         }
 
         [HttpPost("cancel/{id}")]
@@ -126,8 +185,20 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
-            holiday.TrangThai = "Chờ duyệt";
+            // Khôi phục trạng thái ban đầu dựa vào tên ngày lễ
+            if (holiday.TenNgayLe.Contains("Nghỉ bù"))
+            {
+                holiday.TrangThai = TrangThai.NL3;
+            }
+            else
+            {
+                var dayOfWeek = holiday.NgayLe1.ToDateTime(TimeOnly.MinValue).DayOfWeek;
+                holiday.TrangThai = (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday) 
+                    ? TrangThai.NL2 
+                    : TrangThai.NL1;
+            }
 
+            // Xóa các bản ghi chấm công liên quan
             var relatedAttendances = await _context.ChamCongs
                 .Where(cc => cc.NgayLamViec == holiday.NgayLe1)
                 .ToListAsync();
@@ -135,14 +206,26 @@ namespace HR_KD.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok($"Ngày lễ ID {id} đã được hủy, trạng thái chuyển về 'Chờ duyệt' và tất cả chấm công liên quan đã bị xóa.");
+            return Ok($"Ngày lễ ID {id} đã được hủy và khôi phục về trạng thái ban đầu.");
         }
 
         [HttpPost("approve/year/{year}")]
         public async Task<IActionResult> ApproveAllByYear(int year)
         {
+            // Lấy thông tin người duyệt từ claims
+            var approverMaNV = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+            var approverName = User.Claims.FirstOrDefault(c => c.Type == "TenNV")?.Value;
+
+            if (string.IsNullOrEmpty(approverMaNV))
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy thông tin người duyệt." });
+            }
+
             var holidaysToApprove = await _context.NgayLes
-                .Where(h => h.NgayLe1.Year == year && h.TrangThai != "Đã duyệt")
+                .Where(h => h.NgayLe1.Year == year && 
+                           (h.TrangThai == TrangThai.NL1 || 
+                            h.TrangThai == TrangThai.NL2 || 
+                            h.TrangThai == TrangThai.NL3))
                 .ToListAsync();
 
             if (holidaysToApprove.Count == 0)
@@ -152,34 +235,44 @@ namespace HR_KD.Controllers
 
             foreach (var holiday in holidaysToApprove)
             {
-                holiday.TrangThai = "Đã duyệt";
-
-                var allEmployees = await _context.NhanViens.ToListAsync();
-                foreach (var employee in allEmployees)
+                if (holiday.TrangThai == TrangThai.NL1 || holiday.TrangThai == TrangThai.NL3)
                 {
-                    var existingAttendance = await _context.ChamCongs.FirstOrDefaultAsync(
-                        cc => cc.MaNv == employee.MaNv && cc.NgayLamViec == holiday.NgayLe1);
-                    if (existingAttendance == null)
+                    holiday.TrangThai = TrangThai.NL4;
+                    // Tạo chấm công cho tất cả nhân viên
+                    var allEmployees = await _context.NhanViens.ToListAsync();
+                    foreach (var employee in allEmployees)
                     {
-                        var attendance = new ChamCong
+                        var existingAttendance = await _context.ChamCongs.FirstOrDefaultAsync(
+                            cc => cc.MaNv == employee.MaNv && cc.NgayLamViec == holiday.NgayLe1);
+                        if (existingAttendance == null)
                         {
-                            MaNv = employee.MaNv,
-                            NgayLamViec = holiday.NgayLe1,
-                            GioVao = new TimeOnly(8, 0, 0),
-                            GioRa = new TimeOnly(17, 0, 0),
-                            TongGio = 8.0m,
-                            TrangThai = "Đã duyệt",
-                            GhiChu = $"Ngày lễ: {holiday.TenNgayLe}"
-                        };
-                        _context.ChamCongs.Add(attendance);
+                            var attendance = new ChamCong
+                            {
+                                MaNv = employee.MaNv,
+                                NgayLamViec = holiday.NgayLe1,
+                                GioVao = new TimeOnly(8, 0, 0),
+                                GioRa = new TimeOnly(17, 0, 0),
+                                TongGio = 8.0m,
+                                TrangThai = "CC3",
+                                GhiChu = $"Ngày lễ: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
+                            };
+                            _context.ChamCongs.Add(attendance);
+                        }
                     }
                 }
+                else if (holiday.TrangThai == TrangThai.NL2)
+                {
+                    holiday.TrangThai = TrangThai.NL5;
+                }
+
+                // Cập nhật thông tin người duyệt
+                holiday.MoTa = $"{holiday.MoTa}\nĐược duyệt bởi: {approverName} ({approverMaNV}) vào ngày {DateTime.Now:dd/MM/yyyy HH:mm}";
             }
             await _context.SaveChangesAsync();
 
             await SendBulkHolidayApprovalNotification(holidaysToApprove);
 
-            return Ok($"{holidaysToApprove.Count} ngày lễ trong năm {year} đã được duyệt và thông báo đã được gửi.");
+            return Ok($"{holidaysToApprove.Count} ngày lễ trong năm {year} đã được duyệt bởi {approverName} và thông báo đã được gửi.");
         }
 
         private async Task SendHolidayApprovalNotification(NgayLe holiday)
@@ -262,6 +355,46 @@ namespace HR_KD.Controllers
                     }
                 }
             }
+        }
+
+        [HttpPost("send-yearly-notification")]
+        public async Task<IActionResult> SendYearlyHolidayNotification()
+        {
+            var currentYear = DateTime.Now.Year;
+            var approvedHolidays = await _context.NgayLes
+                .Where(h => h.NgayLe1.Year == currentYear && 
+                           (h.TrangThai == TrangThai.NL4 || h.TrangThai == TrangThai.NL5))
+                .OrderBy(h => h.NgayLe1)
+                .ToListAsync();
+
+            if (approvedHolidays.Count == 0)
+            {
+                return Ok($"Không có ngày lễ nào đã được duyệt cho năm {currentYear}.");
+            }
+
+            var employeesToSend = await _context.NhanViens
+                .Where(e => !string.IsNullOrEmpty(e.Email))
+                .ToListAsync();
+
+            if (employeesToSend.Count == 0)
+            {
+                return Ok("Không tìm thấy nhân viên nào có email để gửi thông báo.");
+            }
+
+            string subject = $"Thông báo: Lịch nghỉ lễ năm {currentYear}";
+            string body = $"Chào bạn,\n\nDưới đây là lịch nghỉ lễ năm {currentYear} đã được duyệt:\n\n";
+
+            foreach (var holiday in approvedHolidays)
+            {
+                string holidayType = holiday.TrangThai == TrangThai.NL4 ? "Ngày lễ" : "Ngày nghỉ cuối tuần";
+                body += $"{holidayType}: {holiday.TenNgayLe} - {holiday.NgayLe1.ToString("dd/MM/yyyy")}\n";
+            }
+
+            body += "\nTrân trọng,\nBan quản lý.";
+
+            await SendEmailAsync(employeesToSend, subject, body);
+
+            return Ok($"Đã gửi thông báo lịch nghỉ lễ năm {currentYear} cho {employeesToSend.Count} nhân viên.");
         }
     }
 }

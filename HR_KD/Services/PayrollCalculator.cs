@@ -15,6 +15,29 @@ public class PayrollCalculator
         _context = context;
     }
 
+    public async Task<decimal> CalculateRemainingLeaveDays(int employeeId, int year)
+    {
+        var leaveRecords = await _context.PhepNamNhanViens
+            .Where(s => s.MaNv == employeeId && s.Nam <= year)
+            .OrderByDescending(s => s.Nam)
+            .Take(3)
+            .ToListAsync();
+
+        decimal remainingLeaveDays = 0;
+
+        foreach (var record in leaveRecords)
+        {
+            remainingLeaveDays += record.SoNgayChuaSuDung;
+
+            if (record.IsTinhLuong && record.Nam != year)
+            {
+                break;
+            }
+        }
+
+        return remainingLeaveDays;
+    }
+
     public async Task<BangLuong> CalculatePayroll(int employeeId, DateTime monthYear, List<ChamCong> attendanceRecords, ThongTinLuongNV salaryInfo)
     {
         var payroll = new BangLuong
@@ -35,7 +58,6 @@ public class PayrollCalculator
 
         decimal tiLeLuong = (decimal)(contract.LoaiHopDong.TiLeLuong ?? 1.0);
 
-        // Get standard hours for the month from GioChuans
         var standardHoursRecord = await _context.GioChuans
             .FirstOrDefaultAsync(g => g.Nam == monthYear.Year && g.KichHoat == true);
 
@@ -61,75 +83,69 @@ public class PayrollCalculator
             _ => 0
         };
 
-        // Calculate actual hours
-        decimal actualHours = attendanceRecords.Sum(a => a.TongGio ?? 0);
+        var validAttendanceRecords = attendanceRecords
+            .Where(a => a.TrangThai == AttendanceStatus.Approved || a.TrangThai == AttendanceStatus.Paidleave)
+            .ToList();
 
-        // Subtract missing hours
-        var missingHours = await _context.GioThieus
-            .Where(g => g.MaNv == employeeId &&
-                       g.NgayThieu.Year == monthYear.Year &&
-                       g.NgayThieu.Month == monthYear.Month)
-            .SumAsync(g => g.TongGioThieu);
-        actualHours -= missingHours;
-
-        // Add makeup hours
-        var makeupHours = await _context.LamBus
-            .Where(l => l.MaNvDuyet == employeeId &&
-                       l.NgayLamViec.Year == monthYear.Year &&
-                       l.NgayLamViec.Month == monthYear.Month &&
-                       l.TrangThai == AttendanceStatus.Approved)
-            .SumAsync(l => l.TongGio ?? 0);
-        actualHours += makeupHours;
-
-        // Get holidays
-        var holidays = await _context.NgayLes
-            .Where(h => h.NgayLe1.Year == monthYear.Year &&
-                        h.NgayLe1.Month == monthYear.Month &&
-                        (h.TrangThai == null || h.TrangThai != "Đã hủy"))
-            .ToListAsync();
-
-        // Get approved leaves and leave type info
-        var approvedLeaves = await _context.NgayNghis
-            .Include(n => n.MaLoaiNgayNghiNavigation)
-            .Where(n => n.MaNv == employeeId &&
-                        n.NgayNghi1.Year == monthYear.Year &&
-                        n.NgayNghi1.Month == monthYear.Month &&
-                        n.MaTrangThai == LeaveStatus.Approved)
-            .ToListAsync();
-
-        // Get remaining leave days
-        var remainingLeave = await _context.SoDuPheps
-            .FirstOrDefaultAsync(s => s.MaNv == employeeId && s.Nam == monthYear.Year);
-
-        var attendanceDates = attendanceRecords.Select(a => a.NgayLamViec).ToHashSet();
-
-        int daysInMonth = DateTime.DaysInMonth(monthYear.Year, monthYear.Month);
-        for (int day = 1; day <= daysInMonth; day++)
+        if (!validAttendanceRecords.Any())
         {
-            var currentDate = new DateOnly(monthYear.Year, monthYear.Month, day);
-            if (attendanceDates.Contains(currentDate))
-                continue;
-
-            bool isHoliday = holidays.Any(h =>
-            {
-                var holidayStart = h.NgayLe1;
-                var holidayEnd = h.NgayLe1.AddDays((h.SoNgayNghi ?? 1) - 1);
-                return currentDate >= holidayStart && currentDate <= holidayEnd;
-            });
-
-            var leave = approvedLeaves.FirstOrDefault(l => l.NgayNghi1 == currentDate);
-            bool isPaidLeave = leave != null && leave.MaLoaiNgayNghiNavigation?.HuongLuong == true;
-            bool hasRemainingLeave = remainingLeave != null && remainingLeave.SoNgayConLai > 0;
-
-            if (isHoliday || (isPaidLeave && hasRemainingLeave))
-            {
-                actualHours += 8;
-            }
+            throw new Exception("Không có bản ghi chấm công nào được duyệt (Approved hoặc Paidleave). Vui lòng yêu cầu quản lý duyệt hoặc không duyệt trạng thái chấm công.");
         }
 
+        // Tính số giờ làm việc thực tế
+        decimal actualHours = validAttendanceRecords.Sum(a => a.TongGio ?? 0);
+        decimal actualDays = validAttendanceRecords.Count; // Số ngày có chấm công hợp lệ (dùng để log và kiểm tra)
+
+        // Lấy cấu hình giờ làm việc mỗi ngày
+        var workingHoursRecord = await _context.ChamCongGioRaVaos
+            .Where(c => c.KichHoat == true)
+            .OrderByDescending(c => c.Id)
+            .FirstOrDefaultAsync();
+
+        if (workingHoursRecord == null)
+        {
+            throw new Exception("Không tìm thấy cấu hình giờ làm việc trong ChamCongGioRaVaos.");
+        }
+
+        decimal dailyWorkingHours = workingHoursRecord.TongGio;
+        decimal standardDays = standardHours / dailyWorkingHours; // Số ngày chuẩn trong tháng (dùng để log)
+
+        // Lấy dữ liệu thiếu/bù theo từng ngày trong tháng
+        var startOfMonth = new DateOnly(monthYear.Year, monthYear.Month, 1);
+        var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+
+        var timeRecords = await _context.TongGioThieus
+            .Where(t => t.MaNv == employeeId &&
+                        t.NgayBatDauThieu >= startOfMonth &&
+                        t.NgayBatDauThieu <= endOfMonth)
+            .ToListAsync();
+
+        decimal missingHours = timeRecords.Sum(t => t.TongGioConThieu);
+        decimal makeupHours = timeRecords.Sum(t => t.TongGioLamBu);
+
+        // Cộng giờ bù vào actualHours
+        actualHours += makeupHours;
+
+        // Ghi log chấm công
+        Console.WriteLine($"[DEBUG] EmployeeId: {employeeId}, MonthYear: {monthYear:yyyy-MM}, StandardDays: {standardDays}, ActualDays: {actualDays}, StandardHours: {standardHours}, ActualHours: {actualHours}, MissingHours: {missingHours}, MakeupHours: {makeupHours}");
+
+        // Tính số ngày phép còn lại
+        decimal remainingLeaveDays = 0;
+        var currentYearLeave = await _context.PhepNamNhanViens
+            .FirstOrDefaultAsync(p => p.MaNv == employeeId && p.Nam == monthYear.Year && p.IsTinhLuong == true);
+
+        if (currentYearLeave != null)
+        {
+            remainingLeaveDays = await CalculateRemainingLeaveDays(employeeId, monthYear.Year);
+        }
+
+        // Cộng giờ phép vào actualHours
+        actualHours += remainingLeaveDays * dailyWorkingHours;
+
+        // Tính lương cơ bản dựa trên số giờ làm việc thực tế
         decimal baseSalary = salaryInfo.LuongCoBan * (actualHours / standardHours) * tiLeLuong;
 
-        // Calculate overtime
+        // Tính lương tăng ca
         decimal hourlyRate = (salaryInfo.LuongCoBan * tiLeLuong) / standardHours;
         var overtimeRecords = await _context.TangCas
             .Where(t => t.MaNv == employeeId &&
@@ -139,10 +155,31 @@ public class PayrollCalculator
             .ToListAsync();
         decimal overtimeSalary = overtimeRecords.Sum(t => (decimal)t.SoGioTangCa * hourlyRate * t.TyLeTangCa);
 
-        decimal grossSalary = baseSalary +
-                            (salaryInfo.PhuCapCoDinh ?? 0) +
-                            (salaryInfo.ThuongCoDinh ?? 0) +
-                            overtimeSalary;
+        // Kiểm tra dữ liệu đầu vào cho PhuCapCoDinh và ThuongCoDinh
+        decimal phuCapCoDinh = salaryInfo.PhuCapCoDinh ?? 0;
+        decimal thuongCoDinh = salaryInfo.ThuongCoDinh ?? 0;
+
+        if (phuCapCoDinh == 0)
+        {
+            Console.WriteLine($"[WARNING] EmployeeId: {employeeId}, PhuCapCoDinh is 0 or null. Expected non-zero value based on payroll data.");
+        }
+        if (thuongCoDinh == 0)
+        {
+            Console.WriteLine($"[WARNING] EmployeeId: {employeeId}, ThuongCoDinh is 0 or null. Expected non-zero value based on payroll data.");
+        }
+
+        // Tính tổng lương gộp
+        decimal grossSalary = baseSalary + phuCapCoDinh + thuongCoDinh + overtimeSalary;
+
+        // Kiểm tra tính hợp lệ của grossSalary
+        decimal expectedGrossSalary = baseSalary + phuCapCoDinh + thuongCoDinh + overtimeSalary;
+        if (grossSalary != expectedGrossSalary)
+        {
+            throw new Exception($"Lỗi tính tổng lương gộp: grossSalary ({grossSalary:N2}) không khớp với giá trị kỳ vọng ({expectedGrossSalary:N2}).");
+        }
+
+        // Ghi log chi tiết các thành phần của grossSalary
+        Console.WriteLine($"[DEBUG] EmployeeId: {employeeId}, MonthYear: {monthYear:yyyy-MM}, BaseSalary: {baseSalary:N2}, PhuCapCoDinh: {phuCapCoDinh:N2}, ThuongCoDinh: {thuongCoDinh:N2}, OvertimeSalary: {overtimeSalary:N2}, GrossSalary: {grossSalary:N2}");
 
         decimal bhxh = salaryInfo.BHXH;
         decimal bhyt = salaryInfo.BHYT;
@@ -182,6 +219,9 @@ public class PayrollCalculator
         decimal giamTruTongCong = mucGiamTruBanThan + (soNguoiPhuThuoc * mucGiamTruNguoiPhuThuoc);
         decimal taxableIncome = grossSalary - bhxh - bhyt - bhtn - giamTruTongCong;
 
+        // Ghi log các giá trị tính thuế
+        Console.WriteLine($"[DEBUG] EmployeeId: {employeeId}, TotalInsurance: {totalInsurance:N2}, GiamTruTongCong: {giamTruTongCong:N2}, TaxableIncome: {taxableIncome:N2}");
+
         decimal personalIncomeTax = 0;
         if (taxableIncome > 0)
         {
@@ -194,11 +234,14 @@ public class PayrollCalculator
             netSalary = 0;
         }
 
+        // Ghi log kết quả
+        Console.WriteLine($"[DEBUG] EmployeeId: {employeeId}, PersonalIncomeTax: {personalIncomeTax:N2}, NetSalary: {netSalary:N2}");
+
         payroll.TongLuong = grossSalary;
         payroll.LuongTangCa = overtimeSalary;
         payroll.PhuCapThem = 0;
         payroll.LuongThem = 0;
-        payroll.ThueTNCN = personalIncomeTax;
+        payroll.ThueTNCN = personalIncomeTax; // Lưu giá trị dương. Xử lý hiển thị âm ở tầng giao diện nếu cần
         payroll.ThucNhan = netSalary;
 
         return payroll;
@@ -250,7 +293,7 @@ public class PayrollCalculator
 
             if (activeMinimumWage == null)
             {
-                return (0, 0, 0, "Không tìm thấy mức lương tối thiểu vùng đang hoạt động.");
+                return (0, 0, 0, "Không có mức lương tối thiểu vùng đang hoạt động.");
             }
 
             var activeBaseSalary = await _context.MucLuongCoSos
@@ -259,7 +302,7 @@ public class PayrollCalculator
 
             if (activeBaseSalary == null)
             {
-                return (0, 0, 0, "Không tìm thấy mức lương cơ sở đang hoạt động.");
+                return (0, 0, 0, "Không có mức lương cơ sở đang hoạt động.");
             }
 
             var insuranceRates = await _context.ThongTinBaoHiems

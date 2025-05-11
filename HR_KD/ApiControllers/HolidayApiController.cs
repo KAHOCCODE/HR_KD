@@ -47,13 +47,31 @@ namespace HR_KD.ApiControllers
                 return BadRequest(new { success = false, message = "Ngày lễ này đã tồn tại trong hệ thống." });
             }
 
+            // Xác định trạng thái ngày lễ
+            string trangThai;
+            var holidayDate = DateOnly.FromDateTime(holidayDto.NgayLe1);
+            var dayOfWeek = holidayDate.ToDateTime(TimeOnly.MinValue).DayOfWeek;
+
+            if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
+            {
+                trangThai = TrangThai.NL2; // Ngày lễ rơi vào cuối tuần
+            }
+            else if (holidayDto.TenNgayLe.Contains("Nghỉ bù"))
+            {
+                trangThai = TrangThai.NL3; // Ngày nghỉ bù
+            }
+            else
+            {
+                trangThai = TrangThai.NL1; // Ngày lễ thường
+            }
+
             var holiday = new NgayLe
             {
                 TenNgayLe = holidayDto.TenNgayLe,
-                NgayLe1 = DateOnly.FromDateTime(holidayDto.NgayLe1),
+                NgayLe1 = holidayDate,
                 SoNgayNghi = holidayDto.SoNgayNghi,
                 MoTa = holidayDto.MoTa,
-                TrangThai = "Chờ duyệt"
+                TrangThai = trangThai
             };
 
             _context.NgayLes.Add(holiday);

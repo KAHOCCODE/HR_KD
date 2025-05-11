@@ -95,9 +95,9 @@ using System.Linq;
                         var weeklyHours = await _context.LichSuChamCongs
                             .Where(c => c.MaNv == maNv.Value && c.Ngay >= start && c.Ngay <= end)
                             .SumAsync(c => c.TongGio ?? 0);
-                        if (weeklyHours >= 48)
+                        if (weeklyHours >= 40)
                         {
-                            return BadRequest(new { success = false, message = $"Đã đủ 48 giờ làm việc trong tuần bắt đầu từ {start}, không thể chấm công thêm." });
+                            return BadRequest(new { success = false, message = $"Đã đủ 40 giờ làm việc trong tuần bắt đầu từ {start}, không thể chấm công thêm." });
                         }
 
                         var chamCong = new LichSuChamCong
@@ -469,6 +469,30 @@ using System.Linq;
                  await _context.SaveChangesAsync();
 
                  return Ok(new { success = true, message = "Yêu cầu chấm công đã bị từ chối và lưu vào NgayNghi." });
+             }
+             catch (Exception ex)
+             {
+                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+             }
+         }
+
+         [HttpGet("GetHolidays")]
+         public async Task<IActionResult> GetHolidays()
+         {
+             try
+             {
+                 var holidays = await _context.NgayLes
+                     .Where(n => n.TrangThai == TrangThai.NL4)
+                     .Select(n => new
+                     {
+                         ngayLe = n.NgayLe1.ToString("yyyy-MM-dd"),
+                         tenNgayLe = n.TenNgayLe,
+                         trangThai = n.TrangThai,
+                         soNgayNghi = n.SoNgayNghi
+                     })
+                     .ToListAsync();
+
+                 return Ok(new { success = true, holidays });
              }
              catch (Exception ex)
              {

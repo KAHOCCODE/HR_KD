@@ -140,12 +140,11 @@ namespace HR_KD.ApiControllers
                 return NotFound("Overtime rate not found");
             }
 
-            foreach (var item in _context.TiLeTangCas)
-            {
-                item.KichHoat = (item.Id == id);
-            }
-
+            // Toggle the activation status for the selected rate
+            rate.KichHoat = !rate.KichHoat;
+            _context.TiLeTangCas.Update(rate);
             await _context.SaveChangesAsync();
+
             return Json(_context.TiLeTangCas.ToList());
         }
 

@@ -1570,16 +1570,15 @@
 
             if (result.isConfirmed) {
                 const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
-                    method: 'PATCH', // Thay đổi từ DELETE sang PATCH
+                    method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
-                // Kiểm tra phản hồi trước khi parse JSON
                 if (!response.ok) {
-                    const errorText = await response.text(); // Lấy nội dung lỗi để debug
+                    const errorText = await response.text();
                     console.error(`Lỗi API: ${response.status} - ${errorText}`);
                     throw new Error(`Lỗi: ${response.statusText}`);
                 }
@@ -1587,27 +1586,28 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    Swal.fire(
-                        'Đã hủy!',
-                        'Đơn nghỉ phép đã được hủy thành công.',
-                        'success'
-                    );
-                    fetchLeaveHistory();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Đã hủy!',
+                        text: 'Đơn nghỉ phép đã được hủy thành công.',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    
+                    // Refresh lại dữ liệu
+                    await fetchLeaveHistory();
                 } else {
-                    Swal.fire(
-                        'Lỗi!',
-                        data.message || 'Không thể hủy đơn nghỉ phép.',
-                        'error'
-                    );
+                    throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
                 }
             }
         } catch (error) {
             console.error('Lỗi khi hủy đơn:', error);
-            Swal.fire(
-                'Lỗi hệ thống',
-                'Đã xảy ra lỗi, vui lòng thử lại sau.',
-                'error'
-            );
+            await Swal.fire({
+                icon: 'error',
+                title: 'Lỗi hệ thống',
+                text: error.message || 'Đã xảy ra lỗi, vui lòng thử lại sau.',
+                confirmButtonText: 'Đóng'
+            });
         }
     }
 

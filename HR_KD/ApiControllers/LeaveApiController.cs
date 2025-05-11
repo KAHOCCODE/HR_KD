@@ -300,7 +300,7 @@ namespace HR_KD.ApiControllers
 
 
 
-        [HttpDelete]
+        [HttpPatch]
         [Route("CancelLeave/{maNgayNghi}")]
         public async Task<IActionResult> CancelLeave(int maNgayNghi)
         {
@@ -328,8 +328,11 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { success = false, message = "Chỉ có thể hủy đơn đang chờ duyệt." });
                 }
 
-                // Xóa đơn nghỉ phép
-                _context.NgayNghis.Remove(leaveRequest);
+                // Cập nhật trạng thái thành "Đã hủy" (NN4)
+                leaveRequest.MaTrangThai = "NN4";
+                leaveRequest.NgayDuyet = DateTime.Now;
+                leaveRequest.GhiChu = "Đơn đã được hủy bởi người đăng ký";
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new { success = true, message = "Hủy đơn nghỉ phép thành công." });

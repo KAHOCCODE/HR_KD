@@ -14,6 +14,7 @@
         public string NguoiTao { get; set; }
         public DateTime NgayTao { get; set; }
         public string TrangThai { get; set; }
+        public string? TenTrangThai { get; set; }
         public string GhiChu { get; set; }
     }
 }

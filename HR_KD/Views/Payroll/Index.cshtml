@@ -5,28 +5,33 @@
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="container py-4">
     <h2 class="text-2xl font-bold mb-4">Quản lý bảng lương theo phòng ban</h2>
 
-    <div class="mb-3">
-        <label class="form-label">Chọn tháng/năm:</label>
-        <div class="d-flex gap-2">
-            <select id="monthSelect" class="form-select w-auto">
-                @for (int i = 1; i <= 12; i++)
-                {
-                    <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">Tháng @i</option>
-                }
-            </select>
-            <select id="yearSelect" class="form-select w-auto">
-                @for (int i = 2020; i <= DateTime.Now.Year + 1; i++)
-                {
-                    <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">@i</option>
-                }
-            </select>
-            <button class="btn btn-primary" onclick="loadPayrollStatus()">Tải dữ liệu</button>
+    <div class="mb-3 d-flex gap-3 align-items-center">
+        <div>
+            <label class="form-label">Chọn tháng/năm:</label>
+            <div class="d-flex gap-2">
+                <select id="monthSelect" class="form-select w-auto">
+                    @for (int i = 1; i <= 12; i++)
+                    {
+                        <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">Tháng @i</option>
+                    }
+                </select>
+                <select id="yearSelect" class="form-select w-auto">
+                    @for (int i = 2020; i <= DateTime.Now.Year + 1; i++)
+                    {
+                        <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">@i</option>
+                    }
+                </select>
+            </div>
         </div>
+        <button class="btn btn-success" onclick="openCreateBulkModal()">
+            <i class="fas fa-plus-circle"></i> Tạo hàng loạt cho tháng <span id="selectedMonthYear"></span>
+        </button>
     </div>
 
     <div id="payrollContainer"></div>
@@ -36,7 +41,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Tạo bảng lương</h5>
+                <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Tạo bảng lương</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -44,8 +49,8 @@
                 <input type="hidden" id="modalMaNv" />
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button class="btn btn-primary" onclick="confirmCreatePayroll()">Tạo</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Hủy</button>
+                <button class="btn btn-primary" onclick="confirmCreatePayroll()"><i class="fas fa-check"></i> Tạo</button>
             </div>
         </div>
     </div>
@@ -55,7 +60,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Chi tiết bảng lương</h5>
+                <h5 class="modal-title"><i class="fas fa-eye"></i> Chi tiết bảng lương</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -66,12 +71,48 @@
     </div>
 </div>
 
+<div class="modal fade" id="createBulkPayrollModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Xác nhận tạo hàng loạt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn tạo bảng lương cho <strong class="text-danger">TẤT CẢ</strong> nhân viên trong tháng <span id="bulkModalMonth"></span> năm <span id="bulkModalYear"></span> không?</p>
+                <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> <strong>Lưu ý:</strong> Thao tác này sẽ tạo bảng lương cho những nhân viên chưa có bảng lương trong tháng đã chọn.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Hủy</button>
+                <button class="btn btn-primary" onclick="confirmCreateBulkPayroll()"><i class="fas fa-check"></i> Xác nhận tạo hàng loạt</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
+        $(document).ready(function () {
+            loadPayrollStatus(); // Tải dữ liệu mặc định khi trang load
+            updateSelectedMonthYear();
+
+            $('#monthSelect, #yearSelect').on('change', function () {
+                loadPayrollStatus();
+                updateSelectedMonthYear();
+            });
+        });
+
+        function updateSelectedMonthYear() {
+            const month = $('#monthSelect').val();
+            const year = $('#yearSelect').val();
+            $('#selectedMonthYear').text(`${month}/${year}`);
+            $('#bulkModalMonth').text(month);
+            $('#bulkModalYear').text(year);
+        }
+
         function loadPayrollStatus() {
             const year = $('#yearSelect').val();
             const month = $('#monthSelect').val();
@@ -80,23 +121,23 @@
                 let html = '';
                 result.forEach(pb => {
                     html += `<div class="bg-white border border-gray-200 rounded p-3 mb-4 shadow-sm">
-                                            <h4 class="text-lg font-semibold mb-3 text-indigo-600">${pb.tenPhongBan}</h4>
-                                            <div class="row">`;
+                                                <h4 class="text-lg font-semibold mb-3 text-indigo-600"><i class="fas fa-users"></i> ${pb.tenPhongBan}</h4>
+                                                <div class="row">`;
 
                     pb.nhanViens.forEach(nv => {
                         html += `<div class="col-md-6 mb-3">
-                                                <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <div class="fw-semibold">${nv.hoTen}</div>
-                                                        <div class="text-muted">${nv.coBangLuong ? 'Đã có bảng lương' : 'Chưa có bảng lương'}</div>
+                                                    <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <div class="fw-semibold">${nv.hoTen}</div>
+                                                            <div class="text-muted">${nv.coBangLuong ? '<i class="fas fa-check-circle text-success"></i> Đã có' : '<i class="fas fa-exclamation-circle text-warning"></i> Chưa có'} bảng lương</div>
+                                                        </div>
+                                                        <div>
+                                                            ${nv.coBangLuong
+                                ? `<button class="btn btn-outline-primary btn-sm" data-payroll-id="${nv.maLuong}" onclick="openPayrollDetail('${nv.maLuong}')"><i class="fas fa-eye"></i> Xem</button>`
+                                : `<button class="btn btn-success btn-sm" onclick="openCreateModal(${nv.maNv}, '${nv.hoTen}')"><i class="fas fa-plus"></i> Tạo</button>`}
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        ${nv.coBangLuong
-                                ? `<button class="btn btn-outline-primary btn-sm" onclick="openPayrollDetail(${nv.maNv})">Xem</button>`
-                                : `<button class="btn btn-success btn-sm" onclick="openCreateModal(${nv.maNv}, '${nv.hoTen}')">Tạo</button>`}
-                                                    </div>
-                                                </div>
-                                            </div>`;
+                                                </div>`;
                     });
 
                     html += `</div></div>`;
@@ -138,24 +179,22 @@
             });
         }
 
-        function openPayrollDetail(maNv) {
-            const year = $('#yearSelect').val();
-            const month = $('#monthSelect').val();
-
-            $.get(`/api/PayrollApi/GetPayrollDetail/${maNv}`, function (data) {
+        function openPayrollDetail(maLuong) {
+            $.get(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, function (data) {
                 const html = `
-                                            <div><strong>Họ tên:</strong> ${data.hoTen}</div>
-                                            <div><strong>Tháng:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
-                                            <hr />
-                                            <div><strong>Lương thêm:</strong> ${data.luongThem?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                            <div><strong>Phụ cấp thêm:</strong> ${data.phuCapThem?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                            <div><strong>Lương tăng ca:</strong> ${data.luongTangCa?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                            <div><strong>Thuế TNCN:</strong> -${data.thueTNCN?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                            <hr />
-                                            <div><strong>Tổng lương:</strong> ${data.tongLuong?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                            <div class="fw-bold text-lg text-success"><strong>Lương thực lãnh:</strong> ${data.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</div>
-                                            ${data.ghiChu ? `<div><strong>Ghi chú:</strong> ${data.ghiChu}</div>` : ''}
-                                        `;
+                                                    <div><strong>Họ tên:</strong> ${data.hoTen}</div>
+                                                    <div><strong>Tháng:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                                                    <div><strong>Trạng thái:</strong> ${data.tenTrangThai}</div>
+                                                    <hr />
+                                                    <div><strong>Lương thêm:</strong> ${data.luongThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                                    <div><strong>Phụ cấp thêm:</strong> ${data.phuCapThem?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                                    <div><strong>Lương tăng ca:</strong> ${data.luongTangCa?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                                    <div><strong>Thuế TNCN:</strong> -${data.thueTNCN?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                                    <hr />
+                                                    <div><strong>Tổng lương:</strong> ${data.tongLuong?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                                    <div class="fw-bold text-lg text-success"><strong>Lương thực lãnh:</strong> ${data.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</div>
+                                                    ${data.ghiChu ? `<div><strong>Ghi chú:</strong> ${data.ghiChu}</div>` : ''}
+                                                `;
 
                 $('#payrollDetailContainer').html(html);
                 const modal = new bootstrap.Modal(document.getElementById('viewPayrollModal'));
@@ -169,9 +208,37 @@
             });
         }
 
-        // Load mặc định khi mở trang
-        $(document).ready(function () {
-            loadPayrollStatus();
-        });
+        function openCreateBulkModal() {
+            const month = $('#monthSelect').val();
+            const year = $('#yearSelect').val();
+            $('#bulkModalMonth').text(month);
+            $('#bulkModalYear').text(year);
+            const modal = new bootstrap.Modal(document.getElementById('createBulkPayrollModal'));
+            modal.show();
+        }
+
+        function confirmCreateBulkPayroll() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+
+            $.post(`/api/PayrollApi/CreateBulkPayroll?year=${year}&month=${month}`, function (response) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createBulkPayrollModal'));
+                modal.hide();
+                loadPayrollStatus();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: response,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }).fail(function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: xhr.responseText
+                });
+            });
+        }
     </script>
 }

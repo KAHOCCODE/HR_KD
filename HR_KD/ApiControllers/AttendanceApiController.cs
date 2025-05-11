@@ -476,6 +476,28 @@ using System.Linq;
              }
          }
 
-        
+         [HttpGet("GetHolidays")]
+         public async Task<IActionResult> GetHolidays()
+         {
+             try
+             {
+                 var holidays = await _context.NgayLes
+                     .Where(n => n.TrangThai == TrangThai.NL4)
+                     .Select(n => new
+                     {
+                         ngayLe = n.NgayLe1.ToString("yyyy-MM-dd"),
+                         tenNgayLe = n.TenNgayLe,
+                         trangThai = n.TrangThai,
+                         soNgayNghi = n.SoNgayNghi
+                     })
+                     .ToListAsync();
+
+                 return Ok(new { success = true, holidays });
+             }
+             catch (Exception ex)
+             {
+                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+             }
+         }
      }
  }

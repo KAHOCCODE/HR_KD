@@ -17,15 +17,13 @@ namespace HR_KD.ApiControllers
         private readonly HrDbContext _context;
         private readonly ILogger<PayrollApiController> _logger;
         private readonly PayrollCalculator _calculator;
-        private Dictionary<string, string> _statusNameMapping; // Dictionary để lưu trữ mã trạng thái - tên trạng thái
+        private Dictionary<string, string> _statusNameMapping;
 
         public PayrollApiController(HrDbContext context, ILogger<PayrollApiController> logger, PayrollCalculator calculator)
         {
             _context = context;
             _logger = logger;
             _calculator = calculator;
-
-            // Tải dữ liệu trạng thái khi controller được tạo
             _statusNameMapping = _context.TrangThais.ToDictionary(t => t.MaTrangThai, t => t.TenTrangThai);
         }
 
@@ -50,7 +48,8 @@ namespace HR_KD.ApiControllers
                     {
                         nv.MaNv,
                         nv.HoTen,
-                        CoBangLuong = bangLuongs.Any(bl => bl.MaNv == nv.MaNv)
+                        CoBangLuong = bangLuongs.Any(bl => bl.MaNv == nv.MaNv),
+                        MaLuong = bangLuongs.FirstOrDefault(bl => bl.MaNv == nv.MaNv)?.MaLuong
                     })
                 });
 
@@ -81,6 +80,7 @@ namespace HR_KD.ApiControllers
                     NguoiTao = existing.NguoiTao,
                     NgayTao = existing.NgayTao,
                     TrangThai = existing.TrangThai,
+                    TenTrangThai = _statusNameMapping.GetValueOrDefault(existing.TrangThai),
                     GhiChu = existing.GhiChu
                 };
                 return Ok(new { exists = true, data = existingDto });
@@ -94,7 +94,7 @@ namespace HR_KD.ApiControllers
 
             if (!chamCongs.Any())
                 return BadRequest("Không có dữ liệu chấm công trong tháng.");
-
+            
             var thongTinLuong = await _context.ThongTinLuongNVs
                 .Where(x => x.MaNv == maNv)
                 .OrderByDescending(x => x.NgayApDung)
@@ -102,6 +102,9 @@ namespace HR_KD.ApiControllers
 
             if (thongTinLuong == null)
                 return BadRequest("Không tìm thấy thông tin lương cho nhân viên.");
+
+            var gioChuan = await _context.GioChuans
+                .FirstOrDefaultAsync(g => g.Nam == year && g.KichHoat == true);
 
             var giamtrugiacanh = await _context.GiamTruGiaCanhs
                 .Where(x => x.NgayHieuLuc <= monthDate && (x.NgayHetHieuLuc == null || x.NgayHetHieuLuc >= monthDate))
@@ -133,9 +136,58 @@ namespace HR_KD.ApiControllers
                 NguoiTao = payroll.NguoiTao,
                 NgayTao = payroll.NgayTao,
                 TrangThai = payroll.TrangThai,
+                TenTrangThai = _statusNameMapping.TryGetValue(payroll.TrangThai, out var name) ? name : payroll.TrangThai,
                 GhiChu = payroll.GhiChu
             };
             return Ok(new { created = true, data = payrollDto });
+        }
+
+        [HttpPost("CreateBulkPayroll")]
+        public async Task<IActionResult> CreateBulkPayroll(int year, int month)
+        {
+            var monthDate = new DateTime(year, month, 1);
+            var nhanViensChuaCoBangLuong = await _context.NhanViens
+                .Where(nv => !_context.BangLuongs.Any(bl => bl.MaNv == nv.MaNv && bl.ThangNam.Year == year && bl.ThangNam.Month == month))
+                .ToListAsync();
+
+            int count = 0;
+            foreach (var nv in nhanViensChuaCoBangLuong)
+            {
+                var chamCongs = await _context.ChamCongs
+                    .Where(c => c.MaNv == nv.MaNv &&
+                                c.NgayLamViec.Year == year &&
+                                c.NgayLamViec.Month == month)
+                    .ToListAsync();
+
+                if (!chamCongs.Any())
+                {
+                    _logger.LogWarning($"Không có dữ liệu chấm công cho nhân viên {nv.MaNv} tháng {month}/{year}.");
+                    continue; // Bỏ qua nếu không có chấm công
+                }
+
+                var thongTinLuong = await _context.ThongTinLuongNVs
+                    .Where(x => x.MaNv == nv.MaNv)
+                    .OrderByDescending(x => x.NgayApDung)
+                    .FirstOrDefaultAsync();
+
+                if (thongTinLuong == null)
+                {
+                    _logger.LogError($"Không tìm thấy thông tin lương cho nhân viên {nv.MaNv}.");
+                    return BadRequest($"Không tìm thấy thông tin lương cho nhân viên {nv.MaNv}.");
+                }
+
+                var payroll = await _calculator.CalculatePayroll(nv.MaNv, monthDate, chamCongs, thongTinLuong);
+                payroll.NguoiTao = User.Identity?.Name ?? "System";
+                payroll.NgayTao = DateTime.Now;
+                payroll.TrangThai = "BL1"; // Trạng thái ban đầu
+
+                _context.BangLuongs.Add(payroll);
+                count++;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok($"Đã tạo {count} bảng lương mới.");
         }
         #endregion
 
@@ -169,7 +221,7 @@ namespace HR_KD.ApiControllers
         }
         #endregion
 
-        #region Bảng lương cá nhân (cho nhân viên)
+        #region Bảng lương cá nhân (cho nhân viên)--> chấp nhận hoặc từ chối bảng lương
         [HttpGet("MyPayroll")]
         public async Task<IActionResult> GetMyPayroll()
         {

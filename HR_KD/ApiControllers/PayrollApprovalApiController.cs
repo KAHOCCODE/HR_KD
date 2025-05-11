@@ -10,10 +10,11 @@ namespace HR_KD.ApiControllers
     public class PayrollApprovalApiController : ControllerBase
     {
         private readonly HrDbContext _context;
-
+        private Dictionary<string, string> _StatusNameMapping;
         public PayrollApprovalApiController(HrDbContext context)
         {
             _context = context;
+            _StatusNameMapping = _context.TrangThais.ToDictionary(t => t.MaTrangThai, t => t.TenTrangThai);
         }
 
         #region API cho Trưởng phòng
@@ -42,7 +43,8 @@ namespace HR_KD.ApiControllers
                 b.MaNv,
                 HoTen = b.MaNvNavigation.HoTen,
                 b.ThucNhan,
-                b.TrangThai
+                b.TrangThai,
+                TenTrangThai = _StatusNameMapping.TryGetValue(b.TrangThai, out var name) ? name : b.TrangThai
             });
 
             return Ok(result);
@@ -88,7 +90,8 @@ namespace HR_KD.ApiControllers
                         b.MaNv,
                         HoTen = b.MaNvNavigation.HoTen,
                         b.ThucNhan,
-                        b.TrangThai
+                        b.TrangThai,
+                        TenTrangThai = _StatusNameMapping.TryGetValue(b.TrangThai, out var name) ? name : b.TrangThai
                     })
                 });
 
@@ -152,7 +155,8 @@ namespace HR_KD.ApiControllers
                 b.MaNv,
                 HoTen = b.MaNvNavigation.HoTen,
                 b.ThucNhan,
-                b.TrangThai
+                b.TrangThai,
+                TenTrangThai = _StatusNameMapping.TryGetValue(b.TrangThai, out var name) ? name : b.TrangThai
             });
 
             return Ok(result);

@@ -11,22 +11,12 @@ namespace HR_KD.Controllers
             return View();
         }
 
-        public IActionResult ByManager()
-        {
-            return View();
-        }
-
         public IActionResult ByAccountant()
         {
             return View();
         }
 
         public IActionResult SendToDirector()
-        {
-            return View();
-        }
-
-        public IActionResult Final()
         {
             return View();
         }

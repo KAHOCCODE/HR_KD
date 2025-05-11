@@ -46,7 +46,7 @@
                             <div><strong class="text-lg text-success">Lương thực lãnh:</strong> ${data.thucNhan?.toLocaleString('vi-VN') ?? 0} VND</div>
                             ${data.ghiChu ? `<div class="mt-2"><strong>Ghi chú:</strong> <span class="text-muted">${data.ghiChu}</span></div>` : ''}
                             <hr class="my-2" />
-                            <div><strong>Trạng thái:</strong> <span class="${getStatusClass(data.trangThai)}">${data.trangThai}</span></div>
+                            <div><strong>Trạng thái:</strong> <span class="${getStatusClass(data.tenTrangThai)}">${data.tenTrangThai}</span></div>
                         `;
                 $('#payrollDetailContainer').html(html);
             }).fail(function (xhr) {

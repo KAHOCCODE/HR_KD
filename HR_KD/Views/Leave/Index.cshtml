@@ -938,7 +938,8 @@
                 return;
             }
 
-            if (availableLeaveBalance === 0 && formData.leaveType !== "2") { // Assuming "2" is the ID for "Nghỉ không lương"
+            // Kiểm tra số dư phép và loại nghỉ
+            if (availableLeaveBalance === 0 && formData.leaveType !== unpaidLeaveTypeId.toString()) {
                 Swal.fire('Lỗi', 'Số dư phép năm đã hết! Chỉ có thể chọn Nghỉ không lương.', 'error');
                 return;
             }

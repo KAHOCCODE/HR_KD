@@ -1405,6 +1405,50 @@ public class AttendanceManagerController : ControllerBase
             }
         }
     }
+
+    [HttpPost("ApproveAllAttendanceForDepartment")]
+    public IActionResult ApproveAllAttendanceForDepartment()
+    {
+        int? maNv = GetMaNvFromClaims();
+        if (maNv == null)
+            return Unauthorized(new { success = false, message = "Không tìm thấy mã nhân viên trong claims." });
+
+        // Lất tất cả nhân viên trong hệ thống
+        var nhanViens = _context.NhanViens.ToList();
+        int totalApproved = 0, totalFailed = 0;
+        var failedRecords = new List<object>();
+        var approvedRecords = new List<object>();
+        foreach (var nv in nhanViens)
+        {
+            // Lấy các bản ghi chấm công chờ duyệt (CC2) đủ 8 tiếng
+            var chamCongs = _context.ChamCongs
+                .Where(cc => cc.MaNv == nv.MaNv && (cc.TrangThai == null || cc.TrangThai == "CC2") && cc.TongGio >= 8)
+                .OrderBy(cc => cc.NgayLamViec)
+                .ToList();
+            // Duyệt từng tuần, không quá 40 tiếng/tuần
+            var chamCongByWeek = chamCongs.GroupBy(cc => System.Globalization.ISOWeek.GetWeekOfYear(cc.NgayLamViec.ToDateTime(TimeOnly.MinValue)));
+            foreach (var weekGroup in chamCongByWeek)
+            {
+                decimal weekTotal = 0;
+                foreach (var cc in weekGroup.OrderBy(x => x.NgayLamViec))
+                {
+                    if (weekTotal + (cc.TongGio ?? 0) > 40)
+                    {
+                        failedRecords.Add(new { cc.MaChamCong, cc.MaNv, cc.NgayLamViec, reason = "Vượt quá 40 tiếng/tuần" });
+                        totalFailed++;
+                        continue;
+                    }
+                    cc.TrangThai = "CC3";
+                    cc.MaNvDuyet = maNv.Value;
+                    weekTotal += cc.TongGio ?? 0;
+                    approvedRecords.Add(new { cc.MaChamCong, cc.MaNv, cc.NgayLamViec });
+                    totalApproved++;
+                }
+            }
+        }
+        _context.SaveChanges();
+        return Ok(new { success = true, totalApproved, totalFailed, approvedRecords, failedRecords });
+    }
 }
 
 public class ApproveAttendanceRequestDTO

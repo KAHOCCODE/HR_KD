@@ -32,6 +32,7 @@
     <div class="mb-3">
         <button class="btn btn-success me-2" onclick="approveSelectedAttendance('Đã duyệt')">Duyệt tất cả đã chọn</button>
         <button class="btn btn-danger" onclick="rejectSelectedAttendance()">Từ chối tất cả đã chọn</button>
+        <button class="btn btn-primary ms-2" id="approveAllBtn" onclick="approveAllAttendanceForDepartment()">Duyệt tổng thể tất cả nhân viên đủ điều kiện</button>
     </div>
 
     <!-- Bảng chấm công -->
@@ -671,6 +672,27 @@
                     fetchMakeupRecords(selected);
                 }
             }
+        });
+    }
+
+    function approveAllAttendanceForDepartment() {
+        const btn = document.getElementById('approveAllBtn');
+        btn.disabled = true;
+        fetch('/api/AttendanceManager/ApproveAllAttendanceForDepartment', {
+            method: 'POST'
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(`Đã duyệt: ${data.totalApproved} bản ghi. Không duyệt: ${data.totalFailed} bản ghi.`);
+            // Có thể reload lại bảng nếu cần
+            const selected = document.getElementById("employeeFilter").value;
+            if (selected) fetchAttendanceRecords(selected);
+        })
+        .catch(err => {
+            alert('Có lỗi xảy ra khi duyệt tổng thể!');
+        })
+        .finally(() => {
+            btn.disabled = false;
         });
     }
 </script>

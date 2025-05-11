@@ -68,10 +68,11 @@ namespace HR_KD.ApiControllers
             return Json(data);
         }
 
-        [HttpPost("ActivateLichLamViec/{id}")]
-        public async Task<IActionResult> ActivateLichLamViec(int id)
+        [HttpPost("ActivateLichLamViec/{tenLich}")]
+        public async Task<IActionResult> ActivateLichLamViec(string tenLich)
         {
-            var schedule = await _context.LichLamViecs.FindAsync(id);
+            var schedule = await _context.LichLamViecs
+                .FirstOrDefaultAsync(x => x.TenLich == tenLich);
             if (schedule == null)
             {
                 return NotFound("Schedule not found");
@@ -79,7 +80,7 @@ namespace HR_KD.ApiControllers
 
             foreach (var item in _context.LichLamViecs)
             {
-                item.KichHoat = (item.Id == id);
+                item.KichHoat = (item.TenLich == tenLich);
             }
 
             await _context.SaveChangesAsync();

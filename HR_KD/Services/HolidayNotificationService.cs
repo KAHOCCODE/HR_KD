@@ -31,7 +31,14 @@ namespace HR_KD.Services
                 try
                 {
                     var now = DateTime.Now;
-                    var nextRun = new DateTime(now.Year + 1, 1, 1, 0, 0, 0);
+                    var nextRun = new DateTime(now.Year, 1, 1, 0, 0, 0);
+                    
+                    // If we're already past January 1st of this year, set next run to January 1st of next year
+                    if (now > nextRun)
+                    {
+                        nextRun = nextRun.AddYears(1);
+                    }
+                    
                     var delay = nextRun - now;
 
                     if (delay.TotalMilliseconds > 0)

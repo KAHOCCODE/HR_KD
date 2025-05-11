@@ -83,19 +83,19 @@
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Lịch Làm Việc Tuần</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                            <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T6</h4>
-                            <button onclick="activateSchedule(2)" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-2">Đang tải...</button>
-                        </div>
-                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                            <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - Nửa T7</h4>
-                            <button onclick="activateSchedule(3)" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-3">Đang tải...</button>
-                        </div>
-                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                            <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T7</h4>
-                            <button onclick="activateSchedule(4)" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-4">Đang tải...</button>
-                        </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T6</h4>
+                        <button onclick="activateSchedule('T2 - T6')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-2">Đang tải...</button>
                     </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - Nửa T7</h4>
+                        <button onclick="activateSchedule('T2 - Nửa T7')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-3">Đang tải...</button>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T7</h4>
+                        <button onclick="activateSchedule('T2 - T7')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-4">Đang tải...</button>
+                    </div>
+                </div>
                 </div>
 
                 <!-- Monthly Standard Hours Section -->
@@ -249,15 +249,15 @@
                 });
             }
 
-            function updateToggleButtons() {
+               function updateToggleButtons() {
                 const buttons = [
-                    { id: 2, element: $("#schedule-2") },
-                    { id: 3, element: $("#schedule-3") },
-                    { id: 4, element: $("#schedule-4") }
+                    { tenLich: "T2 - T6", element: $("#schedule-2") },
+                    { tenLich: "T2 - Nửa T7", element: $("#schedule-3") },
+                    { tenLich: "T2 - T7", element: $("#schedule-4") }
                 ];
 
                 buttons.forEach(btn => {
-                    const schedule = schedules.find(s => s.id === btn.id);
+                    const schedule = schedules.find(s => s.tenLich === btn.tenLich);
                     const isActive = schedule ? schedule.kichHoat : false;
                     btn.element.text(isActive ? "Đã Kích Hoạt" : "Kích Hoạt")
                         .toggleClass("bg-green-500 hover:bg-green-600", isActive)
@@ -266,22 +266,22 @@
                 });
             }
 
-            function activateSchedule(id) {
-                $.ajax({
-                    url: `/api/AttendanceSettingApi/ActivateLichLamViec/${id}`,
-                    method: "POST",
-                    success: function (data) {
-                        schedules = data;
-                        updateToggleButtons();
-                        Swal.fire("Thành công!", "Đã kích hoạt lịch làm việc.", "success");
-                        loadGioChuan(); // Reload GioChuan data after changing the schedule
-                    },
-                    error: function (xhr) {
-                        console.error("Error activating schedule:", xhr);
-                        Swal.fire("Lỗi!", "Không thể kích hoạt lịch làm việc.", "error");
-                    }
-                });
-            }
+               function activateSchedule(scheduleName) {
+                    $.ajax({
+                        url: `/api/AttendanceSettingApi/ActivateLichLamViec/${encodeURIComponent(scheduleName)}`,
+                        method: "POST",
+                        success: function (data) {
+                            schedules = data;
+                            updateToggleButtons();
+                            Swal.fire("Thành công!", "Đã kích hoạt lịch làm việc.", "success");
+                            loadGioChuan(); // Reload GioChuan data after changing the schedule
+                        },
+                        error: function (xhr) {
+                            console.error("Error activating schedule:", xhr);
+                            Swal.fire("Lỗi!", "Không thể kích hoạt lịch làm việc.", "error");
+                        }
+                    });
+                }
 
             // Load Data for Tables
             function loadData(tabName) {
@@ -381,96 +381,93 @@
             }
 
             // Calculate Standard Work Hours
-            function calculateWorkHours() {
-                var activeSchedule = schedules.find(s => s.kichHoat) || { tenLich: "T2 - T6" };
-                if (!activeSchedule) {
-                    Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi tạo lịch.", "error");
-                    return;
+                function calculateWorkHours() {
+        var activeSchedule = schedules.find(s => s.kichHoat) || { tenLich: "T2 - T6" };
+        if (!activeSchedule) {
+            Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi tạo lịch.", "error");
+            return;
+        }
+
+        var year = parseInt($("#selectYear").val());
+        workHoursData = Array(12).fill(0);
+
+        for (var month = 0; month < 12; month++) {
+            var daysInMonth = new Date(year, month + 1, 0).getDate();
+            var sundayCount = 0;
+            var saturdayCount = 0;
+            var weekdayCount = 0;
+
+            for (var day = 1; day <= daysInMonth; day++) {
+                var date = new Date(year, month, day);
+                var dayOfWeek = date.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+
+                if (dayOfWeek === 0) {
+                    sundayCount++;
+                } else if (dayOfWeek === 6) {
+                    saturdayCount++;
+                } else {
+                    weekdayCount++;
                 }
-
-                var year = parseInt($("#selectYear").val());
-                workHoursData = Array(12).fill(0);
-
-                for (var month = 0; month < 12; month++) {
-                    var daysInMonth = new Date(year, month + 1, 0).getDate();
-                    var sundayCount = 0;
-                    var saturdayCount = 0;
-                    var weekdayCount = 0;
-
-                    // Count days in the month
-                    for (var day = 1; day <= daysInMonth; day++) {
-                        var date = new Date(year, month, day);
-                        var dayOfWeek = date.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
-
-                        if (dayOfWeek === 0) {
-                            sundayCount++;
-                        } else if (dayOfWeek === 6) {
-                            saturdayCount++;
-                        } else {
-                            weekdayCount++;
-                        }
-                    }
-
-                    if (activeSchedule.tenLich === "T2 - T6") {
-                        // Option 1: Monday–Friday, 8 hours/day
-                        var workingDays = weekdayCount; // Exclude Saturdays and Sundays
-                        workHoursData[month] = workingDays * 8;
-                    } else if (activeSchedule.tenLich === "T2 - Nửa ngày T7") {
-                        // Option 2: Monday–Friday (8 hours), Saturday (4 hours), exclude Sundays
-                        workHoursData[month] = (weekdayCount * 8) + (saturdayCount * 4);
-                    } else if (activeSchedule.tenLich === "T2 - T7") {
-                        // Option 3: Monday–Saturday (8 hours), exclude Sundays
-                        var workingDays = weekdayCount + saturdayCount;
-                        workHoursData[month] = workingDays * 8;
-                    }
-                }
-
-                var rowHtml = workHoursData.map(hours => `<td class="px-4 py-2 text-sm text-gray-600 border-b text-center">${hours.toFixed(1)}</td>`).join("");
-                $("#workHoursRow").html(rowHtml);
-                Swal.fire("Thành công!", "Đã tạo lịch giờ chuẩn.", "success");
             }
 
-            // Save GioChuan Data
-            function saveGioChuan() {
-                var activeSchedule = schedules.find(s => s.kichHoat);
-                if (!activeSchedule) {
-                    Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi lưu.", "error");
-                    return;
-                }
-
-                var year = parseInt($("#selectYear").val());
-                var data = {
-                    thang1: Math.round(workHoursData[0]),
-                    thang2: Math.round(workHoursData[1]),
-                    thang3: Math.round(workHoursData[2]),
-                    thang4: Math.round(workHoursData[3]),
-                    thang5: Math.round(workHoursData[4]),
-                    thang6: Math.round(workHoursData[5]),
-                    thang7: Math.round(workHoursData[6]),
-                    thang8: Math.round(workHoursData[7]),
-                    thang9: Math.round(workHoursData[8]),
-                    thang10: Math.round(workHoursData[9]),
-                    thang11: Math.round(workHoursData[10]),
-                    thang12: Math.round(workHoursData[11]),
-                    nam: year,
-                    idLichLamViec: activeSchedule.id,
-                    kichHoat: true
-                };
-
-                $.ajax({
-                    url: "/api/AttendanceSettingApi/SaveGioChuan",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify(data),
-                    success: function () {
-                        Swal.fire("Thành công!", "Đã lưu giờ chuẩn.", "success");
-                    },
-                    error: function (xhr) {
-                        console.error("Error saving GioChuan:", xhr);
-                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể lưu dữ liệu.", "error");
-                    }
-                });
+            if (activeSchedule.tenLich === "T2 - T6") {
+                var workingDays = weekdayCount;
+                workHoursData[month] = workingDays * 8;
+            } else if (activeSchedule.tenLich === "T2 - Nửa T7") {
+                workHoursData[month] = (weekdayCount * 8) + (saturdayCount * 4);
+            } else if (activeSchedule.tenLich === "T2 - T7") {
+                var workingDays = weekdayCount + saturdayCount;
+                workHoursData[month] = workingDays * 8;
             }
+        }
+
+        var rowHtml = workHoursData.map(hours => `<td class="px-4 py-2 text-sm text-gray-600 border-b text-center">${hours.toFixed(1)}</td>`).join("");
+        $("#workHoursRow").html(rowHtml);
+        Swal.fire("Thành công!", "Đã tạo lịch giờ chuẩn.", "success");
+    }
+
+    function saveGioChuan() {
+        var activeSchedule = schedules.find(s => s.kichHoat);
+        if (!activeSchedule) {
+            Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi lưu.", "error");
+            return;
+        }
+
+        var year = parseInt($("#selectYear").val());
+        var data = {
+            thang1: Math.round(workHoursData[0]),
+            thang2: Math.round(workHoursData[1]),
+            thang3: Math.round(workHoursData[2]),
+            thang4: Math.round(workHoursData[3]),
+            thang5: Math.round(workHoursData[4]),
+            thang6: Math.round(workHoursData[5]),
+            thang7: Math.round(workHoursData[6]),
+            thang8: Math.round(workHoursData[7]),
+            thang9: Math.round(workHoursData[8]),
+            thang10: Math.round(workHoursData[9]),
+            thang11: Math.round(workHoursData[10]),
+            thang12: Math.round(workHoursData[11]),
+            nam: year,
+            idLichLamViec: activeSchedule.id, // Still using id here for the database reference
+            kichHoat: true
+        };
+
+        $.ajax({
+            url: "/api/AttendanceSettingApi/SaveGioChuan",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function () {
+                Swal.fire("Thành công!", "Đã lưu giờ chuẩn.", "success");
+            },
+            error: function (xhr) {
+                console.error("Error saving GioChuan:", xhr);
+                Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể lưu dữ liệu.", "error");
+            }
+        });
+    }
+
+          
 
             // Update Work Hours Info and Validate
             function updateWorkHoursInfo() {

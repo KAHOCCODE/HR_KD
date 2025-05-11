@@ -1185,6 +1185,12 @@
                     const option = document.createElement("option");
                     option.value = leaveType.maLoaiNgayNghi;
                     option.textContent = leaveType.tenLoai;
+                    
+                    // Kiểm tra và lưu ID của loại nghỉ không lương
+                    if (leaveType.tenLoai.toLowerCase().includes('không lương')) {
+                        unpaidLeaveTypeId = leaveType.maLoaiNgayNghi;
+                    }
+                    
                     leaveTypeSelect.appendChild(option);
                 });
 
@@ -1236,6 +1242,7 @@
 
     let availableLeaveBalance = 0;
     let leaveHistory = [];
+    let unpaidLeaveTypeId = null; // Thêm biến để lưu ID của loại nghỉ không lương
     const tabData = {
         pending: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
         approved: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
@@ -1677,9 +1684,9 @@
         if (!leaveTypeSelect) return;
 
         if (availableLeaveBalance === 0) {
-            // Assuming "Nghỉ không lương" has maLoaiNgayNghi = "2"
+            // Sử dụng unpaidLeaveTypeId thay vì hard code
             Array.from(leaveTypeSelect.options).forEach(option => {
-                if (option.value && option.value !== "2") {
+                if (option.value && option.value !== unpaidLeaveTypeId) {
                     option.disabled = true;
                     option.style.opacity = "0.5";
                 } else {
@@ -1687,7 +1694,7 @@
                     option.style.opacity = "1";
                 }
             });
-            leaveTypeSelect.value = "2"; // Auto-select "Nghỉ không lương"
+            leaveTypeSelect.value = unpaidLeaveTypeId; // Auto-select loại nghỉ không lương
         } else {
             Array.from(leaveTypeSelect.options).forEach(option => {
                 option.disabled = false;

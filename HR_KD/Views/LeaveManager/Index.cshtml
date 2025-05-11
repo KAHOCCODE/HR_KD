@@ -872,39 +872,46 @@
                     return;
                 }
 
-                // Process all approvals concurrently and collect results
-                const updatePromises = maNgayNghiList.map(maNgayNghi =>
-                    updateStatus(maNgayNghi, 'Đã duyệt')
-                        .then(res => ({ success: res.success, message: res.message }))
-                        .catch(error => ({ success: false, message: error.message }))
-                );
-
-                Promise.all(updatePromises)
-                    .then(results => {
-                        const successCount = results.filter(r => r.success).length;
-                        const failureCount = results.length - successCount;
-
-                        let title = 'Thành công';
-                        let text = `Đã duyệt ${successCount} đơn. `;
-                        let icon = 'success';
-
-                        if (failureCount > 0) {
-                            title = 'Kết quả hỗn hợp';
-                            text += `${failureCount} đơn thất bại.`;
-                            icon = 'warning';
-                        }
-
+                // Gọi API duyệt hàng loạt
+                fetch('/LeaveManager/BatchUpdateStatus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        maNgayNghiList: maNgayNghiList,
+                        trangThai: 'Đã duyệt'
+                    })
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
                         Swal.fire({
-                            title: title,
-                            text: text,
-                            icon: icon,
+                            title: 'Thành công',
+                            text: res.message,
+                            icon: 'success',
                             confirmButtonText: 'OK',
-                            timer: 3000, // Show for 3 seconds
+                            timer: 3000,
                             timerProgressBar: true
                         }).then(() => {
                             location.reload();
                         });
+                    } else {
+                        Swal.fire({
+                            title: 'Lỗi',
+                            text: res.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi khi gửi yêu cầu:", error);
+                    Swal.fire({
+                        title: 'Lỗi',
+                        text: 'Có lỗi xảy ra khi gửi yêu cầu.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
                     });
+                });
             });
 
             function fetchLeaveStatistics() {

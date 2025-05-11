@@ -346,11 +346,161 @@ namespace HR_KD.ApiControllers
             });
         }
 
+        [HttpPost]
+        [Route("LeaveManager/BatchUpdateStatus")]
+        public async Task<IActionResult> BatchUpdateStatus([FromBody] BatchUpdateStatusRequest request)
+        {
+            // Lấy mã NV từ claims
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
+            // Lấy thông tin người duyệt
+            var nguoiDuyet = await _context.NhanViens.FirstOrDefaultAsync(nv => nv.MaNv == currentMaNv);
+            if (nguoiDuyet == null)
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy thông tin người duyệt." });
+            }
+
+            // Chuyển đổi trangThai từ frontend sang mã trạng thái trong database
+            string newMaTrangThai;
+            switch (request.TrangThai)
+            {
+                case "Đã duyệt":
+                    newMaTrangThai = "NN2";
+                    break;
+                case "Từ chối":
+                    newMaTrangThai = "NN3";
+                    break;
+                default:
+                    return BadRequest(new { success = false, message = "Trạng thái không hợp lệ." });
+            }
+
+            // Bắt đầu giao dịch
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                foreach (var maNgayNghi in request.MaNgayNghiList)
+                {
+                    var ngayNghi = await _context.NgayNghis.FindAsync(maNgayNghi);
+                    if (ngayNghi == null) continue;
+
+                    // Cập nhật trạng thái của ngày nghỉ
+                    ngayNghi.MaTrangThai = newMaTrangThai;
+                    ngayNghi.NgayDuyet = DateTime.Now;
+                    ngayNghi.NguoiDuyetId = currentMaNv;
+
+                    // Lưu lý do từ chối nếu có
+                    if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
+                    {
+                        ngayNghi.GhiChu = request.LyDo;
+                    }
+
+                    // Cập nhật đơn nghỉ phép
+                    _context.NgayNghis.Update(ngayNghi);
+
+                    // Xử lý chấm công
+                    DateOnly ngayLamViec = ngayNghi.NgayNghi1;
+                    var chamCong = await _context.ChamCongs
+                        .FirstOrDefaultAsync(cc => cc.MaNv == ngayNghi.MaNv && cc.NgayLamViec == ngayLamViec);
+
+                    if (newMaTrangThai == "NN2") // Đã duyệt
+                    {
+                        if (chamCong == null)
+                        {
+                            chamCong = new ChamCong
+                            {
+                                MaNv = ngayNghi.MaNv,
+                                NgayLamViec = ngayLamViec,
+                                GioVao = new TimeOnly(8, 0),
+                                GioRa = new TimeOnly(20, 0),
+                                TongGio = 8m,
+                                TrangThai = "CC5",
+                                MaNvDuyet = currentMaNv.Value
+                            };
+                            _context.ChamCongs.Add(chamCong);
+                        }
+                        else
+                        {
+                            chamCong.GioVao = new TimeOnly(8, 0);
+                            chamCong.GioRa = new TimeOnly(20, 0);
+                            chamCong.TongGio = 8m;
+                            chamCong.TrangThai = "CC5";
+                            chamCong.MaNvDuyet = currentMaNv.Value;
+                            _context.ChamCongs.Update(chamCong);
+                        }
+                    }
+                    else if (newMaTrangThai == "NN3") // Từ chối
+                    {
+                        if (chamCong == null)
+                        {
+                            chamCong = new ChamCong
+                            {
+                                MaNv = ngayNghi.MaNv,
+                                NgayLamViec = ngayLamViec,
+                                GioVao = new TimeOnly(8, 0),
+                                GioRa = new TimeOnly(8, 0),
+                                TongGio = 0m,
+                                TrangThai = "CC6",
+                                MaNvDuyet = currentMaNv.Value
+                            };
+                            _context.ChamCongs.Add(chamCong);
+                        }
+                        else
+                        {
+                            chamCong.GioVao = new TimeOnly(8, 0);
+                            chamCong.GioRa = new TimeOnly(8, 0);
+                            chamCong.TongGio = 0m;
+                            chamCong.TrangThai = "CC6";
+                            chamCong.MaNvDuyet = currentMaNv.Value;
+                            _context.ChamCongs.Update(chamCong);
+                        }
+                    }
+                }
+
+                // Nếu trạng thái là "Đã duyệt", cập nhật SoNgayDaSuDung cho tất cả các đơn
+                if (newMaTrangThai == "NN2")
+                {
+                    await _phepNamService.UpdateSoNgayDaSuDungBatchAsync(request.MaNgayNghiList);
+                }
+
+                // Lưu thay đổi vào database
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Cập nhật trạng thái hàng loạt thành công.",
+                    data = new
+                    {
+                        nguoiDuyet = nguoiDuyet.HoTen,
+                        soLuongDon = request.MaNgayNghiList.Count,
+                        trangThai = request.TrangThai
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { success = false, message = $"Lỗi khi cập nhật trạng thái hàng loạt: {ex.Message}" });
+            }
+        }
+
         public class UpdateStatusRequest
         {
             public int MaNgayNghi { get; set; }
             public string TrangThai { get; set; } // Changed from MaTrangThai
             public DateTime NgayCapNhat { get; set; }
+            public string? LyDo { get; set; }
+        }
+
+        public class BatchUpdateStatusRequest
+        {
+            public List<int> MaNgayNghiList { get; set; }
+            public string TrangThai { get; set; }
             public string? LyDo { get; set; }
         }
     }

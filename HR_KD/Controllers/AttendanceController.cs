@@ -9,14 +9,11 @@ namespace HR_KD.Controllers
         {
             return View();
         }
-        public IActionResult Index2()
+        public IActionResult Attendance()
         {
             return View();
         }
-        public IActionResult TangCa()
-        {
-            return View();
-        }
+        
 
 
     }

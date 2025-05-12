@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách ngày lễ</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f3f4f6;
+        }
+        .table-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+        .table th {
+            background-color: #1e40af;
+            color: white;
+        }
+        .table tbody tr:hover {
+            background-color: #e5e7eb;
+        }
+        .search-box {
+            max-width: 300px;
+        }
+        .no-data {
+            text-align: center;
+            color: #dc2626;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="table-container">
+        <h1 class="text-2xl font-bold text-center text-blue-900 mb-4">Danh Sách Ngày Lễ - Trạng Thái NL4 & NL5</h1>
+
+        <!-- Search, Year Select, and Sort Controls -->
+        <div class="flex justify-between mb-4">
+            <div class="search-box">
+                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm theo tên ngày lễ...">
+            </div>
+            <div class="flex space-x-2">
+                <select id="yearSelect" class="form-select">
+                    <!-- Options will be populated dynamically -->
+                </select>
+                <button id="sortByDate" class="btn btn-primary">Sắp xếp theo ngày</button>
+            </div>
+        </div>
+
+        <!-- Holiday Table -->
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Tên Ngày Lễ</th>
+                    <th>Ngày Lễ</th>
+                    <th>Số Ngày Nghỉ</th>
+                    <th>Mô Tả</th>
+                </tr>
+            </thead>
+            <tbody id="holidayTableBody"></tbody>
+        </table>
+        <p id="noDataMessage" class="no-data hidden">Không tìm thấy ngày lễ.</p>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let holidays = [];
+        let sortAscending = true;
+        let selectedYear = new Date().getFullYear(); // Mặc định là năm hiện tại
+
+        // Fetch holidays from API
+        async function fetchHolidays() {
+            try {
+                const response = await fetch('/api/Holidays/GetAll');
+                if (!response.ok) throw new Error('Lỗi khi tải dữ liệu');
+                holidays = await response.json();
+                populateYearDropdown();
+                filterAndRenderHolidays();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('noDataMessage').textContent = 'Lỗi khi tải dữ liệu. Vui lòng thử lại.';
+                document.getElementById('noDataMessage').classList.remove('hidden');
+            }
+        }
+
+        // Populate year dropdown
+        function populateYearDropdown() {
+            const yearSelect = document.getElementById('yearSelect');
+            const years = [...new Set(holidays.map(h => new Date(h.ngayLe1).getFullYear()))].sort((a, b) => a - b);
+            yearSelect.innerHTML = years.map(year => `<option value="${year}" ${year === selectedYear ? 'selected' : ''}>${year}</option>`).join('');
+        }
+
+        // Filter and render holidays based on selected year and search term
+        function filterAndRenderHolidays() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredHolidays = holidays.filter(h => {
+                const holidayYear = new Date(h.ngayLe1).getFullYear();
+                return holidayYear === selectedYear && h.tenNgayLe.toLowerCase().includes(searchTerm);
+            });
+            renderHolidays(filteredHolidays);
+        }
+
+        // Render holidays to table
+        function renderHolidays(holidayList) {
+            const tbody = document.getElementById('holidayTableBody');
+            tbody.innerHTML = '';
+            if (holidayList.length === 0) {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('noDataMessage').classList.add('hidden');
+            holidayList.forEach(holiday => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${holiday.tenNgayLe}</td>
+                    <td>${new Date(holiday.ngayLe1).toLocaleDateString('vi-VN')}</td>
+                    <td>${holiday.soNgayNghi}</td>
+                    <td>${holiday.moTa || 'Không có mô tả'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function () {
+            filterAndRenderHolidays();
+        });
+
+        // Year selection
+        document.getElementById('yearSelect').addEventListener('change', function (e) {
+            selectedYear = parseInt(e.target.value);
+            filterAndRenderHolidays();
+        });
+
+        // Sort by date
+        document.getElementById('sortByDate').addEventListener('click', function () {
+            sortAscending = !sortAscending;
+            holidays.sort((a, b) => {
+                const dateA = new Date(a.ngayLe1);
+                const dateB = new Date(b.ngayLe1);
+                return sortAscending ? dateA - dateB : dateB - dateA;
+            });
+            filterAndRenderHolidays();
+            this.textContent = `Sắp xếp theo ngày (${sortAscending ? 'Tăng dần' : 'Giảm dần'})`;
+        });
+
+        // Initial fetch
+        fetchHolidays();
+    </script>
+</body>
+</html>

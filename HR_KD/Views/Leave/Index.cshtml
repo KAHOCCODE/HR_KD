@@ -104,13 +104,42 @@
         }
 
     #selectedDates {
-        background-color: #fff;
-        border: 1px solid #ced4da;
-        border-radius: 8px;
-        padding: 10px;
-        font-size: 14px;
-        color: #495057;
+        min-height: 45px;
+        max-height: 150px;
+        background-color: #ffffff;
+        border: 2px solid #e8eaed;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        color: #5f6368;
+        transition: all 0.3s ease;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.5;
     }
+
+        #selectedDates:hover {
+            border-color: #dadce0;
+        }
+
+        #selectedDates::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #selectedDates::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        #selectedDates::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+            #selectedDates::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
 
     .status {
         font-weight: bold;
@@ -423,122 +452,911 @@
         }
 
     .leave-dashboard-enhanced {
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         transition: all 0.3s ease;
-        max-width: 650px;
+        max-width: 800px;
         margin: 0 auto;
-        border-left: 4px solid #4285f4;
+        border-left: 5px solid #4285f4;
+        background: linear-gradient(to right, #ffffff, #f8f9fa);
+        overflow: hidden;
     }
 
         .leave-dashboard-enhanced:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
         }
 
     .leave-enhanced-card {
-        padding: 20px;
+        padding: 25px;
     }
+
+        .leave-enhanced-card .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e8f0fe;
+        }
+
+            .leave-enhanced-card .card-header i {
+                background-color: #e8f0fe;
+                color: #4285f4;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 12px;
+                margin-right: 15px;
+                font-size: 1.2rem;
+                box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+            }
+
+            .leave-enhanced-card .card-header h5 {
+                margin: 0;
+                color: #1a73e8;
+                font-weight: 600;
+                font-size: 1.4rem;
+            }
 
         .leave-enhanced-card h6 {
             font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-            border-bottom: 1px solid #eaeaea;
-            padding-bottom: 12px;
+            color: #5f6368;
+            margin-bottom: 20px;
             font-size: 1.1rem;
             text-align: center;
+            position: relative;
+            padding-bottom: 10px;
         }
+
+            .leave-enhanced-card h6::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 60px;
+                height: 3px;
+                background: linear-gradient(to right, #4285f4, #34a853);
+                border-radius: 3px;
+            }
 
     .leave-data-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 20px;
+        margin-top: 25px;
+        gap: 20px;
     }
 
     .leave-enhanced-card p {
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin-bottom: 12px;
-        color: #555;
+        margin-bottom: 0;
+        color: #5f6368;
         flex: 1;
-        padding: 0 15px;
+        padding: 15px;
         position: relative;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
     }
+
+        .leave-enhanced-card p:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
 
         .leave-enhanced-card p:not(:last-child):after {
             content: "";
             position: absolute;
-            right: 0;
-            top: 10%;
-            height: 80%;
+            right: -10px;
+            top: 20%;
+            height: 60%;
             width: 1px;
-            background-color: #eaeaea;
+            background: linear-gradient(to bottom, transparent, #e0e0e0, transparent);
+        }
+
+        .leave-enhanced-card p span {
+            font-size: 0.9rem;
+            color: #5f6368;
+            margin-bottom: 8px;
+            text-align: center;
         }
 
     .leave-enhanced-card strong {
         font-weight: 600;
-        color: #333;
+        color: #202124;
         background-color: #f8f9fa;
-        padding: 8px 16px;
-        border-radius: 20px;
-        min-width: 80px;
+        padding: 10px 20px;
+        border-radius: 25px;
+        min-width: 100px;
         text-align: center;
-        margin-top: 10px;
-        font-size: 1.1rem;
+        margin-top: 8px;
+        font-size: 1.2rem;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .leave-enhanced-card .so-ngay-con-lai {
+        color: #34a853;
+        background-color: #e6f4ea;
+    }
+
+    .leave-enhanced-card .so-ngay-da-su-dung {
+        color: #ea4335;
+        background-color: #fce8e6;
+    }
+
+    .leave-enhanced-card .so-ngay-phep-duoc-cap {
         color: #4285f4;
         background-color: #e8f0fe;
     }
 
-    .leave-enhanced-card .card-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
+    #leaveSection {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        padding: 2rem;
+        margin-top: 2rem;
+        border: 1px solid rgba(66, 133, 244, 0.1);
+        transition: all 0.3s ease;
     }
 
-        .leave-enhanced-card .card-header i {
-            background-color: #e8f0fe;
-            color: #4285f4;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            margin-right: 10px;
+        #leaveSection:hover {
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+            transform: translateY(-5px);
         }
 
-        .leave-enhanced-card .card-header h5 {
-            margin: 0;
-            color: #333;
+        #leaveSection h5 {
+            color: #1a73e8;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+            #leaveSection h5 i {
+                background: #e8f0fe;
+                padding: 0.75rem;
+                border-radius: 12px;
+                color: #1a73e8;
+                box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+            }
+
+    #leaveForm .form-label {
+        color: #5f6368;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    #leaveForm .form-control,
+    #leaveForm .form-select {
+        border: 2px solid #e8eaed;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        background-color: #ffffff;
+    }
+
+        #leaveForm .form-control:focus,
+        #leaveForm .form-select:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+            background-color: #ffffff;
+        }
+
+        #leaveForm .form-control:hover,
+        #leaveForm .form-select:hover {
+            border-color: #dadce0;
+        }
+
+    #selectedDates {
+        min-height: 45px;
+        max-height: 150px;
+        background-color: #ffffff;
+        border: 2px solid #e8eaed;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        color: #5f6368;
+        transition: all 0.3s ease;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.5;
+    }
+
+        #selectedDates:hover {
+            border-color: #dadce0;
+        }
+
+        #selectedDates::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #selectedDates::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        #selectedDates::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+            #selectedDates::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+
+    #fileAttachments {
+        border: 2px dashed #e8eaed;
+        border-radius: 12px;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        #fileAttachments:hover {
+            border-color: #1a73e8;
+            background-color: #f1f3f4;
+        }
+
+    #selectedFiles {
+        margin-top: 1rem;
+    }
+
+        #selectedFiles .list-group-item {
+            border: 1px solid #e8eaed;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            padding: 0.75rem 1rem;
+            background-color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+            #selectedFiles .list-group-item:hover {
+                background-color: #f8f9fa;
+                transform: translateX(5px);
+            }
+
+        #selectedFiles .badge {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            font-weight: 500;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+        }
+
+    #submitButton {
+        background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #ffffff;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(26, 115, 232, 0.2);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+        width: auto;
+        min-width: 200px;
+        justify-content: center;
+    }
+
+        #submitButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+            background: linear-gradient(135deg, #1557b0 0%, #3367d6 100%);
+        }
+
+        #submitButton:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.2);
+        }
+
+        #submitButton i {
+            font-size: 1rem;
+        }
+
+    .small.text-muted {
+        color: #5f6368 !important;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+
+
+    #leaveBalanceAlert {
+        animation: slideIn 0.3s ease-out;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-top: 1.5rem;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+        #leaveBalanceAlert.alert-danger {
+            background: linear-gradient(to right, #fff5f5, #ffe3e3);
+            border-left: 4px solid #dc3545;
+        }
+
+        #leaveBalanceAlert.alert-warning {
+            background: linear-gradient(to right, #fff9db, #ffec99);
+            border-left: 4px solid #ffc107;
+        }
+
+        #leaveBalanceAlert i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        #leaveBalanceAlert strong {
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+    .leave-type-description {
+        font-size: 0.85rem;
+        color: #5f6368;
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border-left: 3px solid #1a73e8;
+        display: none;
+        transition: all 0.3s ease;
+    }
+
+        .leave-type-description.show {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+
+    .form-select option {
+        padding: 10px;
+    }
+
+        .form-select option:checked {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+
+    .file-upload-container {
+        border: 2px dashed #e8eaed;
+        border-radius: 12px;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .file-upload-container:hover {
+            border-color: #1a73e8;
+            background-color: #f1f3f4;
+        }
+
+        .file-upload-container.dragover {
+            border-color: #1a73e8;
+            background-color: #e8f0fe;
+        }
+
+    .upload-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 1rem;
+    }
+
+        .upload-area.has-files {
+            display: none;
+        }
+
+    .file-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .file-item {
+        background-color: #ffffff;
+        border: 1px solid #e8eaed;
+        border-radius: 8px;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+        .file-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+    .file-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #e8f0fe;
+        border-radius: 8px;
+        color: #1a73e8;
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+    }
+
+    .file-name {
+        font-size: 0.85rem;
+        color: #202124;
+        margin: 0;
+        word-break: break-word;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .file-size {
+        font-size: 0.75rem;
+        color: #5f6368;
+        margin: 0.25rem 0;
+    }
+
+    .remove-file {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: none;
+        border: none;
+        color: #dc3545;
+        padding: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: 4px;
+        opacity: 0;
+    }
+
+    .file-item:hover .remove-file {
+        opacity: 1;
+    }
+
+    .remove-file:hover {
+        background-color: #fff5f5;
+        transform: scale(1.1);
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+        color: #1a73e8;
+        margin-bottom: 1rem;
+    }
+
+    .upload-text {
+        color: #5f6368;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .upload-hint {
+        font-size: 0.85rem;
+        color: #80868b;
+    }
+
+    .file-input-hidden {
+        display: none;
+    }
+
+    .add-files-button {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background-color: #e8f0fe;
+        color: #1a73e8;
+        border: 2px dashed #1a73e8;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        margin-top: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+        .add-files-button:hover {
+            background-color: #1a73e8;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .add-files-button i {
+            font-size: 1.1rem;
+        }
+
+        .add-files-button.show {
+            display: flex;
+        }
+
+    .leave-history-modern {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        padding: 2rem;
+        margin-top: 2rem;
+    }
+
+        .leave-history-modern .history-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f2f5;
+        }
+
+            .leave-history-modern .history-header i {
+                background: #e8f0fe;
+                color: #1a73e8;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 10px;
+                margin-right: 1rem;
+                font-size: 1.2rem;
+            }
+
+            .leave-history-modern .history-header h5 {
+                color: #1a73e8;
+                font-size: 1.4rem;
+                font-weight: 600;
+                margin: 0;
+            }
+
+        .leave-history-modern .nav-tabs {
+            border: none;
+            margin-bottom: 1.5rem;
+            gap: 0.5rem;
+        }
+
+            .leave-history-modern .nav-tabs .nav-link {
+                border: none;
+                padding: 0.75rem 1.25rem;
+                border-radius: 8px;
+                color: #5f6368;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                background: #f8f9fa;
+                margin: 0;
+                position: relative;
+                overflow: hidden;
+            }
+
+                .leave-history-modern .nav-tabs .nav-link:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                }
+
+                .leave-history-modern .nav-tabs .nav-link.active {
+                    color: #ffffff;
+                    font-weight: 600;
+                }
+
+                /* Tab colors for each status */
+                .leave-history-modern .nav-tabs .nav-link[data-bs-target="#pending"] {
+                    background: #fff3e0;
+                    color: #f57c00;
+                }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#pending"]:hover {
+                        background: #ffe0b2;
+                    }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#pending"].active {
+                        background: #f57c00;
+                        color: #ffffff;
+                    }
+
+                .leave-history-modern .nav-tabs .nav-link[data-bs-target="#approved"] {
+                    background: #e8f5e9;
+                    color: #2e7d32;
+                }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#approved"]:hover {
+                        background: #c8e6c9;
+                    }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#approved"].active {
+                        background: #2e7d32;
+                        color: #ffffff;
+                    }
+
+                .leave-history-modern .nav-tabs .nav-link[data-bs-target="#rejected"] {
+                    background: #ffebee;
+                    color: #c62828;
+                }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#rejected"]:hover {
+                        background: #ffcdd2;
+                    }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#rejected"].active {
+                        background: #c62828;
+                        color: #ffffff;
+                    }
+
+                .leave-history-modern .nav-tabs .nav-link[data-bs-target="#canceled"] {
+                    background: #eceff1;
+                    color: #546e7a;
+                }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#canceled"]:hover {
+                        background: #cfd8dc;
+                    }
+
+                    .leave-history-modern .nav-tabs .nav-link[data-bs-target="#canceled"].active {
+                        background: #546e7a;
+                        color: #ffffff;
+                    }
+
+                .leave-history-modern .nav-tabs .nav-link i {
+                    margin-right: 0.5rem;
+                    font-size: 1.1rem;
+                }
+
+        .leave-history-modern .tab-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: inherit;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
             font-weight: 600;
         }
 
+        /* Add subtle animation for tab switching */
+        .leave-history-modern .tab-pane {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+
+
+        .leave-history-modern .history-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.5rem;
+        }
+
+            .leave-history-modern .history-table th {
+                background: #f8f9fa;
+                color: #5f6368;
+                font-weight: 600;
+                padding: 1rem;
+                font-size: 0.9rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .leave-history-modern .history-table td {
+                background: #ffffff;
+                padding: 1rem;
+                vertical-align: middle;
+                border: none;
+                font-size: 0.95rem;
+                color: #202124;
+            }
+
+            .leave-history-modern .history-table tr {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                border-radius: 8px;
+                transition: all 0.3s ease;
+            }
+
+                .leave-history-modern .history-table tr:hover {
+                    transform: none;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                }
+
+        .leave-history-modern .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .leave-history-modern .status-badge i {
+                font-size: 0.9rem;
+            }
+
+        .leave-history-modern .status-pending {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .leave-history-modern .status-approved {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .leave-history-modern .status-rejected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .leave-history-modern .status-canceled {
+            background: #eceff1;
+            color: #546e7a;
+        }
+
+        .leave-history-modern .file-link {
+            color: #1a73e8;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #e8f0fe;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+            .leave-history-modern .file-link:hover {
+                background: #1a73e8;
+                color: #ffffff;
+            }
+
+        .leave-history-modern .pagination-modern {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 1.5rem;
+            gap: 0.5rem;
+        }
+
+            .leave-history-modern .pagination-modern button {
+                background: #ffffff;
+                border: 1px solid #e0e0e0;
+                color: #5f6368;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+                .leave-history-modern .pagination-modern button:hover:not(:disabled) {
+                    background: #e8f0fe;
+                    color: #1a73e8;
+                    border-color: #1a73e8;
+                }
+
+                .leave-history-modern .pagination-modern button:disabled {
+                    background: #f5f5f5;
+                    color: #9e9e9e;
+                    cursor: not-allowed;
+                }
+
+            .leave-history-modern .pagination-modern span {
+                background: #ffffff;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                font-weight: 500;
+                color: #5f6368;
+                border: 1px solid #e0e0e0;
+            }
+
+        .leave-history-modern .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #5f6368;
+        }
+
+            .leave-history-modern .empty-state i {
+                font-size: 3rem;
+                color: #e0e0e0;
+                margin-bottom: 1rem;
+            }
+
+            .leave-history-modern .empty-state p {
+                font-size: 1.1rem;
+                margin: 0;
+            }
+
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        z-index: 1000;
+        min-width: 10rem;
+        padding: 0.5rem 0;
+        margin: 0;
+        font-size: 1rem;
+        color: #212529;
+        text-align: left;
+        list-style: none;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid rgba(0,0,0,.15);
+        border-radius: 0.25rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+        .dropdown-menu.show {
+            display: block;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+
+    .dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 0.25rem 1rem;
+        clear: both;
+        font-weight: 400;
+        color: #212529;
+        text-align: inherit;
+        white-space: nowrap;
+        background-color: transparent;
+        border: 0;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .dropdown-item:hover {
+            color: #1a73e8;
+            text-decoration: none;
+            background-color: #e8f0fe;
+            transform: translateX(5px);
+        }
 </style>
 
 <div class="leave-dashboard-enhanced bg-white mt-4">
     <div class="leave-enhanced-card">
         <div class="card-header">
             <i class="fas fa-calendar-check"></i>
-            <h5>Thông tin nghỉ phép</h5>
+            <h5>Thông tin nghỉ phép năm @DateTime.Now.Year</h5>
         </div>
-        <h6>Nghỉ phép năm</h6>
+        <h6>Quản lý nghỉ phép</h6>
         <div class="leave-data-row">
             <p>
-                <span>Số ngày phép được cấp:</span>
+                <span>Số ngày phép được cấp</span>
                 <strong class="so-ngay-phep-duoc-cap">Đang tải...</strong>
             </p>
             <p>
-                <span>Số ngày đã sử dụng:</span>
+                <span>Số ngày đã sử dụng</span>
                 <strong class="so-ngay-da-su-dung">Đang tải...</strong>
             </p>
             <p>
-                <span>Số ngày còn lại:</span>
+                <span>Số ngày còn lại</span>
                 <strong class="so-ngay-con-lai">Đang tải...</strong>
             </p>
         </div>
@@ -547,37 +1365,62 @@
 
 
 <div id="leaveSection" class="dashboard-card bg-white p-4">
-    <h5 class="mb-4 text-primary"><i class="fas fa-calendar-alt me-2"></i>Đăng ký nghỉ phép</h5>
+    <h5 class="mb-4">
+        <i class="fas fa-calendar-alt"></i>
+        Đăng ký nghỉ phép
+    </h5>
     <form id="leaveForm">
-        <div class="row g-3">
+        <div class="row g-4">
             <div class="col-md-6">
-                <label class="form-label">Loại nghỉ phép</label>
+                <label class="form-label">
+                    <i class="fas fa-tag me-2"></i>Loại nghỉ phép
+                </label>
                 <select id="leaveTypeSelect" class="form-select" name="leaveType" required>
                     <option value="">Chọn loại nghỉ</option>
                 </select>
+                <div id="leaveTypeDescription" class="leave-type-description"></div>
                 <div id="leaveTypeError" class="text-danger mt-2"></div>
             </div>
             <div class="col-md-6">
-                <label class="form-label">Chọn Ngày</label>
+                <label class="form-label">
+                    <i class="fas fa-calendar me-2"></i>Chọn Ngày
+                </label>
                 <input type="text" id="datePicker" class="form-control" placeholder="Chọn ngày..." required>
             </div>
             <div class="col-md-6">
-                <label class="form-label">Ngày đã chọn</label>
-                <div id="selectedDates" class="form-control" style="height: auto; min-height: 38px;"></div>
+                <label class="form-label">
+                    <i class="fas fa-list me-2"></i>Ngày đã chọn
+                </label>
+                <div id="selectedDates" class="form-control"></div>
             </div>
             <div class="col-12">
-                <label class="form-label">Lý do</label>
-                <textarea class="form-control" name="leaveReason" rows="3" placeholder="Nhập lý do..."></textarea>
+                <label class="form-label">
+                    <i class="fas fa-comment me-2"></i>Lý do
+                </label>
+                <textarea class="form-control" name="leaveReason" rows="3" placeholder="Nhập lý do nghỉ phép..."></textarea>
             </div>
             <div class="col-12">
-                <label class="form-label">File đính kèm</label>
-                <input type="file" id="fileAttachments" class="form-control" name="files" multiple>
-                <div class="small text-muted mt-1">Có thể tải lên một hoặc nhiều file</div>
-                <div id="selectedFiles" class="mt-2"></div>
+                <label class="form-label">
+                    <i class="fas fa-paperclip me-2"></i>File đính kèm
+                </label>
+                <div class="file-upload-container" id="fileUploadContainer">
+                    <input type="file" id="fileAttachments" class="file-input-hidden" name="files" multiple>
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <p class="upload-text">Kéo thả file vào đây hoặc click để chọn file</p>
+                        <p class="upload-hint">Có thể tải lên một hoặc nhiều file</p>
+                    </div>
+                    <div id="selectedFiles" class="file-list"></div>
+                    <button type="button" class="add-files-button" id="addMoreFiles">
+                        <i class="fas fa-plus"></i>
+                        Thêm file
+                    </button>
+                </div>
             </div>
             <div class="col-12">
-                <button type="submit" id="submitButton" class="btn btn-success">
-                    <i class="fas fa-paper-plane me-2"></i>Gửi yêu cầu
+                <button type="submit" id="submitButton">
+                    <i class="fas fa-paper-plane"></i>
+                    Gửi yêu cầu
                 </button>
             </div>
         </div>
@@ -585,33 +1428,36 @@
 </div>
 
 
-<div class="leave-history bg-white p-4 mt-4">
-    <h5 class="mb-4 text-primary"><i class="fas fa-history me-2"></i>Lịch sử đăng ký nghỉ phép</h5>
-    <ul class="nav nav-tabs mb-3" id="leaveHistoryTabs" role="tablist">
+<div class="leave-history-modern">
+    <div class="history-header">
+        <i class="fas fa-history"></i>
+        <h5>Lịch sử đăng ký nghỉ phép</h5>
+    </div>
+    <ul class="nav nav-tabs" id="leaveHistoryTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
-                <i class="fas fa-clock me-2"></i>Đơn chờ duyệt
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                <i class="fas fa-clock"></i>Đơn chờ duyệt
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">
-                <i class="fas fa-check-circle me-2"></i>Đơn đã duyệt
+            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab">
+                <i class="fas fa-check-circle"></i>Đơn đã duyệt
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
-                <i class="fas fa-times-circle me-2"></i>Đơn bị từ chối
+            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">
+                <i class="fas fa-times-circle"></i>Đơn bị từ chối
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="canceled-tab" data-bs-toggle="tab" data-bs-target="#canceled" type="button" role="tab" aria-controls="canceled" aria-selected="false">
-                <i class="fas fa-ban me-2"></i>Đơn đã hủy
+            <button class="nav-link" id="canceled-tab" data-bs-toggle="tab" data-bs-target="#canceled" type="button" role="tab">
+                <i class="fas fa-ban"></i>Đơn đã hủy
             </button>
         </li>
     </ul>
     <div class="tab-content" id="leaveHistoryTabContent">
-        <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
-            <table class="table table-bordered">
+        <div class="tab-pane fade show active" id="pending" role="tabpanel">
+            <table class="history-table">
                 <thead>
                     <tr>
                         <th>Loại nghỉ</th>
@@ -624,18 +1470,18 @@
                 </thead>
                 <tbody id="pendingLeaveBody"></tbody>
             </table>
-            <div class="pagination" id="pendingPagination">
-                <button id="pendingPrevPage" class="btn btn-sm">
-                    <i class="fas fa-chevron-left me-1"></i> Trước
+            <div class="pagination-modern" id="pendingPagination">
+                <button id="pendingPrevPage">
+                    <i class="fas fa-chevron-left"></i> Trước
                 </button>
-                <span id="pendingPageInfo" class="mx-3"></span>
-                <button id="pendingNextPage" class="btn btn-sm">
-                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                <span id="pendingPageInfo"></span>
+                <button id="pendingNextPage">
+                    Sau <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>
-        <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
-            <table class="table table-bordered">
+        <div class="tab-pane fade" id="approved" role="tabpanel">
+            <table class="history-table">
                 <thead>
                     <tr>
                         <th>Loại nghỉ</th>
@@ -650,18 +1496,18 @@
                 </thead>
                 <tbody id="approvedLeaveBody"></tbody>
             </table>
-            <div class="pagination" id="approvedPagination">
-                <button id="approvedPrevPage" class="btn btn-sm">
-                    <i class="fas fa-chevron-left me-1"></i> Trước
+            <div class="pagination-modern" id="approvedPagination">
+                <button id="approvedPrevPage">
+                    <i class="fas fa-chevron-left"></i> Trước
                 </button>
-                <span id="approvedPageInfo" class="mx-3"></span>
-                <button id="approvedNextPage" class="btn btn-sm">
-                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                <span id="approvedPageInfo"></span>
+                <button id="approvedNextPage">
+                    Sau <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>
-        <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
-            <table class="table table-bordered">
+        <div class="tab-pane fade" id="rejected" role="tabpanel">
+            <table class="history-table">
                 <thead>
                     <tr>
                         <th>Loại nghỉ</th>
@@ -676,18 +1522,18 @@
                 </thead>
                 <tbody id="rejectedLeaveBody"></tbody>
             </table>
-            <div class="pagination" id="rejectedPagination">
-                <button id="rejectedPrevPage" class="btn btn-sm">
-                    <i class="fas fa-chevron-left me-1"></i> Trước
+            <div class="pagination-modern" id="rejectedPagination">
+                <button id="rejectedPrevPage">
+                    <i class="fas fa-chevron-left"></i> Trước
                 </button>
-                <span id="rejectedPageInfo" class="mx-3"></span>
-                <button id="rejectedNextPage" class="btn btn-sm">
-                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                <span id="rejectedPageInfo"></span>
+                <button id="rejectedNextPage">
+                    Sau <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>
-        <div class="tab-pane fade" id="canceled" role="tabpanel" aria-labelledby="canceled-tab">
-            <table class="table table-bordered">
+        <div class="tab-pane fade" id="canceled" role="tabpanel">
+            <table class="history-table">
                 <thead>
                     <tr>
                         <th>Loại nghỉ</th>
@@ -700,13 +1546,13 @@
                 </thead>
                 <tbody id="canceledLeaveBody"></tbody>
             </table>
-            <div class="pagination" id="canceledPagination">
-                <button id="canceledPrevPage" class="btn btn-sm">
-                    <i class="fas fa-chevron-left me-1"></i> Trước
+            <div class="pagination-modern" id="canceledPagination">
+                <button id="canceledPrevPage">
+                    <i class="fas fa-chevron-left"></i> Trước
                 </button>
-                <span id="canceledPageInfo" class="mx-3"></span>
-                <button id="canceledNextPage" class="btn btn-sm">
-                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                <span id="canceledPageInfo"></span>
+                <button id="canceledNextPage">
+                    Sau <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>
@@ -717,7 +1563,7 @@
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
+@* <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script> *@
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 
 <script>
@@ -859,7 +1705,7 @@
         const getAuthToken = () => localStorage.getItem('jwtToken');
 
         const today = new Date().setHours(0, 0, 0, 0);
-        const datePicker = flatpickr("#datePicker", {
+        let datePicker = flatpickr("#datePicker", {
             mode: "multiple",
             dateFormat: "Y-m-d",
             minDate: "today",
@@ -938,7 +1784,8 @@
                 return;
             }
 
-            if (availableLeaveBalance === 0 && formData.leaveType !== "2") { // Assuming "2" is the ID for "Nghỉ không lương"
+            // Kiểm tra số dư phép và loại nghỉ
+            if (availableLeaveBalance === 0 && formData.leaveType !== unpaidLeaveTypeId.toString()) {
                 Swal.fire('Lỗi', 'Số dư phép năm đã hết! Chỉ có thể chọn Nghỉ không lương.', 'error');
                 return;
             }
@@ -973,6 +1820,18 @@
                     text: 'Đăng ký nghỉ phép thành công!'
                 });
 
+                // Reset form và các trường dữ liệu
+                document.getElementById("leaveForm").reset();
+                document.getElementById("selectedDates").textContent = "";
+                document.getElementById("leaveTypeDescription").classList.remove('show');
+                selectedFilesArray = [];
+                updateSelectedFilesUI();
+
+                // Reset date picker
+                datePicker.clear();
+                datePicker.destroy();
+
+                // Refresh lại dữ liệu
                 const newRegisteredDates = await fetchAlreadyRegisteredDates();
                 const newHolidays = await fetchHolidays();
                 const newExpandedHolidays = calculateHolidayDates(newHolidays);
@@ -982,8 +1841,8 @@
                 expandedHolidays.length = 0;
                 expandedHolidays.push(...newExpandedHolidays);
 
-                datePicker.destroy();
-                flatpickr("#datePicker", {
+                // Reinitialize date picker với dữ liệu mới
+                datePicker = flatpickr("#datePicker", {
                     mode: "multiple",
                     dateFormat: "Y-m-d",
                     minDate: "today",
@@ -1001,7 +1860,6 @@
                         const date = dayElem.dateObj;
                         const dateTime = date.setHours(0, 0, 0, 0);
 
-                        // Xóa thuộc tính title để ngăn tooltip mặc định
                         dayElem.removeAttribute('title');
 
                         if (date.getDay() === 0 || date.getDay() === 6) {
@@ -1044,12 +1902,12 @@
                         document.getElementById("selectedDates").textContent =
                             validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
 
-                        // Update leave type dropdown after date selection
                         updateLeaveTypeDropdown();
                     }
                 });
 
-                fetchLeaveHistory();
+                // Refresh lại lịch sử đăng ký
+                await fetchLeaveHistory();
 
             } catch (error) {
                 console.error('Submit error:', error);
@@ -1061,42 +1919,122 @@
             }
         });
 
-        document.getElementById('fileAttachments')?.addEventListener('change', function (e) {
-            const newFiles = Array.from(this.files);
-            selectedFilesArray = selectedFilesArray.concat(newFiles);
-            updateSelectedFilesUI();
+        document.getElementById('fileUploadContainer')?.addEventListener('click', () => {
+            document.getElementById('fileAttachments').click();
         });
 
+        document.getElementById('fileAttachments')?.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.getElementById('fileUploadContainer').addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            document.getElementById('fileUploadContainer').addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            document.getElementById('fileUploadContainer').addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            document.getElementById('fileUploadContainer').classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            document.getElementById('fileUploadContainer').classList.remove('dragover');
+        }
+
+        document.getElementById('fileUploadContainer').addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            const newFiles = Array.from(files);
+            selectedFilesArray = [...selectedFilesArray, ...newFiles];
+            updateSelectedFilesUI();
+        }
+
+        function removeFile(index) {
+            selectedFilesArray.splice(index, 1);
+            updateSelectedFilesUI();
+        }
+
         function updateSelectedFilesUI() {
-            const fileList = document.getElementById('selectedFiles');
-            fileList.innerHTML = '';
+            const selectedFilesContainer = document.getElementById('selectedFiles');
+            const uploadArea = document.getElementById('uploadArea');
+            const addMoreButton = document.getElementById('addMoreFiles');
+
+            selectedFilesContainer.innerHTML = '';
 
             if (selectedFilesArray.length > 0) {
-                const fileCount = document.createElement('div');
-                fileCount.className = 'mb-2';
-                fileCount.innerHTML = `<strong>Đã chọn ${selectedFilesArray.length} file:</strong>`;
-                fileList.appendChild(fileCount);
+                uploadArea.classList.add('has-files');
+                addMoreButton.classList.add('show');
 
-                const list = document.createElement('ul');
-                list.className = 'list-group';
+                selectedFilesArray.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
 
-                selectedFilesArray.forEach(file => {
-                    const item = document.createElement('li');
-                    item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const fileIcon = document.createElement('div');
+                    fileIcon.className = 'file-icon';
+                    fileIcon.innerHTML = getFileIcon(file.name);
 
-                    const fileInfo = document.createElement('div');
-                    fileInfo.innerHTML = `
-                                    <i class="fas fa-file me-2"></i>
-                                    ${file.name}
-                                    <span class="badge bg-secondary rounded-pill">${formatFileSize(file.size)}</span>
-                                `;
+                    const fileName = document.createElement('p');
+                    fileName.className = 'file-name';
+                    fileName.textContent = file.name;
 
-                    item.appendChild(fileInfo);
-                    list.appendChild(item);
+                    const fileSize = document.createElement('p');
+                    fileSize.className = 'file-size';
+                    fileSize.textContent = formatFileSize(file.size);
+
+                    const removeButton = document.createElement('button');
+                    removeButton.className = 'remove-file';
+                    removeButton.innerHTML = '<i class="fas fa-times"></i>';
+                    removeButton.onclick = (e) => {
+                        e.stopPropagation();
+                        removeFile(index);
+                    };
+
+                    fileItem.appendChild(fileIcon);
+                    fileItem.appendChild(fileName);
+                    fileItem.appendChild(fileSize);
+                    fileItem.appendChild(removeButton);
+
+                    selectedFilesContainer.appendChild(fileItem);
                 });
-
-                fileList.appendChild(list);
+            } else {
+                uploadArea.classList.remove('has-files');
+                addMoreButton.classList.remove('show');
             }
+        }
+
+        function getFileIcon(fileName) {
+            const extension = fileName.split('.').pop().toLowerCase();
+            const iconMap = {
+                'pdf': 'fas fa-file-pdf',
+                'doc': 'fas fa-file-word',
+                'docx': 'fas fa-file-word',
+                'xls': 'fas fa-file-excel',
+                'xlsx': 'fas fa-file-excel',
+                'jpg': 'fas fa-file-image',
+                'jpeg': 'fas fa-file-image',
+                'png': 'fas fa-file-image',
+                'gif': 'fas fa-file-image',
+                'txt': 'fas fa-file-alt',
+                'zip': 'fas fa-file-archive',
+                'rar': 'fas fa-file-archive'
+            };
+
+            return `<i class="${iconMap[extension] || 'fas fa-file'}"></i>`;
         }
 
         function formatFileSize(bytes) {
@@ -1179,13 +2117,34 @@
 
             if (result && result.success && Array.isArray(result.leaveTypes)) {
                 const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+                const leaveTypeDescription = document.getElementById("leaveTypeDescription");
                 leaveTypeSelect.innerHTML = '<option value="">Chọn loại nghỉ</option>';
 
                 result.leaveTypes.forEach(leaveType => {
                     const option = document.createElement("option");
                     option.value = leaveType.maLoaiNgayNghi;
                     option.textContent = leaveType.tenLoai;
+                    option.dataset.description = leaveType.moTa || "Không có mô tả";
+
+                    // Kiểm tra và lưu ID của loại nghỉ không lương
+                    if (leaveType.tenLoai.toLowerCase().includes('không lương')) {
+                        unpaidLeaveTypeId = leaveType.maLoaiNgayNghi;
+                    }
+
                     leaveTypeSelect.appendChild(option);
+                });
+
+                // Add change event listener to show description
+                leaveTypeSelect.addEventListener('change', function () {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const description = selectedOption.dataset.description;
+
+                    if (this.value) {
+                        leaveTypeDescription.textContent = description;
+                        leaveTypeDescription.classList.add('show');
+                    } else {
+                        leaveTypeDescription.classList.remove('show');
+                    }
                 });
 
                 // Initialize leave type dropdown based on leave balance
@@ -1236,6 +2195,7 @@
 
     let availableLeaveBalance = 0;
     let leaveHistory = [];
+    let unpaidLeaveTypeId = null; // Thêm biến để lưu ID của loại nghỉ không lương
     const tabData = {
         pending: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
         approved: { currentPage: 1, itemsPerPage: 5, filteredData: [] },
@@ -1408,38 +2368,38 @@
                     const row = document.createElement("tr");
                     if (tabId === 'pending') {
                         const cancelButton = `<button class="btn-cancel" data-id="${id}">
-                                                <i class="fas fa-times-circle"></i>
-                                                <span>Hủy đơn</span>
-                                            </button>`;
+                                                    <i class="fas fa-times-circle"></i>
+                                                    <span>Hủy đơn</span>
+                                                </button>`;
                         row.innerHTML = `
-                                <td>${tenLoai}</td>
-                                <td>${formatDate(ngayNghi)}</td>
-                                <td>${lyDo}</td>
-                                <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                                <td>${fileDisplayHtml}</td>
-                                <td>${cancelButton}</td>
-                            `;
+                                    <td>${tenLoai}</td>
+                                    <td>${formatDate(ngayNghi)}</td>
+                                    <td>${lyDo}</td>
+                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                                    <td>${fileDisplayHtml}</td>
+                                    <td>${cancelButton}</td>
+                                `;
                     } else if (tabId === 'canceled') {
                         row.innerHTML = `
-                                <td>${tenLoai}</td>
-                                <td>${formatDate(ngayNghi)}</td>
-                                <td>${lyDo}</td>
-                                <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                                <td>${fileDisplayHtml}</td>
-                                <td>${ngayHuyFormatted}</td>
-                         
-                            `;
+                                    <td>${tenLoai}</td>
+                                    <td>${formatDate(ngayNghi)}</td>
+                                    <td>${lyDo}</td>
+                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                                    <td>${fileDisplayHtml}</td>
+                                    <td>${ngayHuyFormatted}</td>
+
+                                `;
                     } else {
                         row.innerHTML = `
-                                <td>${tenLoai}</td>
-                                <td>${formatDate(ngayNghi)}</td>
-                                <td>${lyDo}</td>
-                                <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                                <td>${fileDisplayHtml}</td>
-                                <td>${ngayDuyetFormatted}</td>
-                                <td>${ghiChu}</td>
-                                <td>${nguoiDuyetHoTen}</td>
-                            `;
+                                    <td>${tenLoai}</td>
+                                    <td>${formatDate(ngayNghi)}</td>
+                                    <td>${lyDo}</td>
+                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                                    <td>${fileDisplayHtml}</td>
+                                    <td>${ngayDuyetFormatted}</td>
+                                    <td>${ghiChu}</td>
+                                    <td>${nguoiDuyetHoTen}</td>
+                                `;
                     }
                     tableBody.appendChild(row);
                 } catch (error) {
@@ -1484,22 +2444,22 @@
 
         if (files.length === 1) {
             return `<a href="#" class="file-link" data-path="/Uploads/${files[0]}">
-                                    <i class="fas fa-file me-1"></i>${truncateFileName(files[0])}
-                                </a>`;
+                        <i class="fas fa-file"></i>${truncateFileName(files[0])}
+                                    </a>`;
         } else {
             const uniqueId = `dropdown-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             let fileListHtml = `<div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                                    id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="fas fa-paperclip me-1"></i>${files.length} files
-                                            </button>
-                                            <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
+                                <button class="file-link dropdown-toggle" type="button"
+                                                        id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-paperclip"></i>${files.length} files
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
             files.forEach(file => {
                 fileListHtml += `<li>
-                                              <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
-                                                <i class="fas fa-file me-1"></i>${truncateFileName(file)}
-                                              </a>
-                                            </li>`;
+                                                  <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
+                                    <i class="fas fa-file"></i>${truncateFileName(file)}
+                                                  </a>
+                                                </li>`;
             });
             fileListHtml += `</ul></div>`;
             return fileListHtml;
@@ -1507,19 +2467,60 @@
     }
 
     function initializeDropdowns() {
-        if (typeof bootstrap !== 'undefined') {
-            const dropdownElements = document.querySelectorAll('.dropdown-toggle');
-            dropdownElements.forEach(dropdownToggleEl => {
-                if (!dropdownToggleEl._dropdown) {
-                    new bootstrap.Dropdown(dropdownToggleEl);
+        // Xóa tất cả các event listener cũ
+        document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+            const newToggle = toggle.cloneNode(true);
+            toggle.parentNode.replaceChild(newToggle, toggle);
+        });
+
+        // Thêm event listener mới cho tất cả các dropdown toggle
+        document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Đóng tất cả các dropdown khác
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    if (menu !== this.nextElementSibling) {
+                        menu.classList.remove('show');
+                        menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                // Toggle dropdown hiện tại
+                const dropdownMenu = this.nextElementSibling;
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+                this.setAttribute('aria-expanded', !isExpanded);
+                dropdownMenu.classList.toggle('show');
+            });
+        });
+
+        // Thêm event listener cho document để đóng dropdown khi click ra ngoài
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                    menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+                });
+            }
+        });
+
+        // Thêm event listener cho các file link trong dropdown
+        document.querySelectorAll('.dropdown-item.file-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const filePath = this.getAttribute('data-path');
+                viewFile(filePath);
+
+                // Đóng dropdown sau khi click vào file
+                const dropdownMenu = this.closest('.dropdown-menu');
+                if (dropdownMenu) {
+                    dropdownMenu.classList.remove('show');
+                    dropdownMenu.previousElementSibling.setAttribute('aria-expanded', 'false');
                 }
             });
-        } else {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
-            script.onload = initializeDropdowns;
-            document.head.appendChild(script);
-        }
+        });
     }
 
     function truncateFileName(fileName) {
@@ -1570,16 +2571,15 @@
 
             if (result.isConfirmed) {
                 const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
-                    method: 'PATCH', // Thay đổi từ DELETE sang PATCH
+                    method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
-                // Kiểm tra phản hồi trước khi parse JSON
                 if (!response.ok) {
-                    const errorText = await response.text(); // Lấy nội dung lỗi để debug
+                    const errorText = await response.text();
                     console.error(`Lỗi API: ${response.status} - ${errorText}`);
                     throw new Error(`Lỗi: ${response.statusText}`);
                 }
@@ -1587,27 +2587,28 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    Swal.fire(
-                        'Đã hủy!',
-                        'Đơn nghỉ phép đã được hủy thành công.',
-                        'success'
-                    );
-                    fetchLeaveHistory();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Đã hủy!',
+                        text: 'Đơn nghỉ phép đã được hủy thành công.',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+
+                    // Refresh lại dữ liệu
+                    await fetchLeaveHistory();
                 } else {
-                    Swal.fire(
-                        'Lỗi!',
-                        data.message || 'Không thể hủy đơn nghỉ phép.',
-                        'error'
-                    );
+                    throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
                 }
             }
         } catch (error) {
             console.error('Lỗi khi hủy đơn:', error);
-            Swal.fire(
-                'Lỗi hệ thống',
-                'Đã xảy ra lỗi, vui lòng thử lại sau.',
-                'error'
-            );
+            await Swal.fire({
+                icon: 'error',
+                title: 'Lỗi hệ thống',
+                text: error.message || 'Đã xảy ra lỗi, vui lòng thử lại sau.',
+                confirmButtonText: 'Đóng'
+            });
         }
     }
 
@@ -1629,15 +2630,15 @@
     function getStatusClass(status) {
         switch (status) {
             case 'Chờ duyệt':
-                return 'bg-warning-subtle';
+                return 'status-badge status-pending';
             case 'Đã duyệt':
-                return 'bg-success-subtle';
+                return 'status-badge status-approved';
             case 'Từ chối':
-                return 'bg-danger-subtle';
+                return 'status-badge status-rejected';
             case 'Đã hủy':
-                return 'bg-secondary-subtle';
+                return 'status-badge status-canceled';
             default:
-                return '';
+                return 'status-badge';
         }
     }
 
@@ -1656,18 +2657,18 @@
             alertMessage.id = "leaveBalanceAlert";
             alertMessage.className = "alert alert-danger mt-3";
             alertMessage.innerHTML = `
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương.
-                `;
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương.
+                    `;
             leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
         } else if (availableLeaveBalance < 5) {
             const alertMessage = document.createElement("div");
             alertMessage.id = "leaveBalanceAlert";
             alertMessage.className = "alert alert-warning mt-3";
             alertMessage.innerHTML = `
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Cảnh báo:</strong> Số dư phép năm của bạn chỉ còn ${availableLeaveBalance} ngày.
-                `;
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Cảnh báo:</strong> Số dư phép năm của bạn chỉ còn ${availableLeaveBalance} ngày.
+                    `;
             leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
         }
     }
@@ -1677,9 +2678,9 @@
         if (!leaveTypeSelect) return;
 
         if (availableLeaveBalance === 0) {
-            // Assuming "Nghỉ không lương" has maLoaiNgayNghi = "2"
+            // Disable các option khác, chỉ enable loại nghỉ không lương
             Array.from(leaveTypeSelect.options).forEach(option => {
-                if (option.value && option.value !== "2") {
+                if (option.value && option.value !== unpaidLeaveTypeId.toString()) {
                     option.disabled = true;
                     option.style.opacity = "0.5";
                 } else {
@@ -1687,15 +2688,24 @@
                     option.style.opacity = "1";
                 }
             });
-            leaveTypeSelect.value = "2"; // Auto-select "Nghỉ không lương"
+            // Tự động chọn loại nghỉ không lương
+            leaveTypeSelect.value = unpaidLeaveTypeId;
+            // Hiển thị mô tả nếu có
+            const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+            const description = selectedOption?.dataset?.description;
+            if (description) {
+                document.getElementById("leaveTypeDescription").textContent = description;
+                document.getElementById("leaveTypeDescription").classList.add('show');
+            }
         } else {
+            // Enable tất cả các option
             Array.from(leaveTypeSelect.options).forEach(option => {
                 option.disabled = false;
                 option.style.opacity = "1";
             });
-            if (leaveTypeSelect.value === "") {
-                leaveTypeSelect.value = ""; // Keep default selection if no value selected
-            }
+            // Đặt lại về mặc định "Chọn loại nghỉ"
+            leaveTypeSelect.value = "";
+            document.getElementById("leaveTypeDescription").classList.remove('show');
         }
     }
 
@@ -1761,4 +2771,10 @@
         const endIndex = Math.min(startIndex + itemsPerPage, data.length);
         return data.slice(startIndex, endIndex);
     }
+
+    // Add click handler for the add more button
+    document.getElementById('addMoreFiles').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('fileAttachments').click();
+    });
 </script>

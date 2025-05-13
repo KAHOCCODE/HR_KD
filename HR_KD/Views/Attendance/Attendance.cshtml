@@ -1,4 +1,4 @@
-﻿
+
 @{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
@@ -11,8 +11,6 @@
                         title: 'Lỗi!',
                         text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
                         confirmButtonText: 'OK'
-                    }).then(() => {
-                        window.location.href = '/Login';
                     });
                 </script>
         return;
@@ -24,12 +22,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
-
-<!-- Fallback CSS -->
-<style>
-    .hidden { display: none !important; }
-    #input { display: block !important; }
-</style>
 
 <!-- Main Container -->
 <div class="min-h-screen bg-gray-100 p-6">
@@ -62,8 +54,8 @@
 
         <!-- Tab Content -->
         <div class="tab-content">
-            <!-- Input Tab (Chấm Công Section) -->
-            <div id="input" class="tab-pane">
+            <!-- Input Tab -->
+            <div id="input" class="tab-pane active">
                 <!-- Remaining Hours Card -->
                 <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
                     <h2 class="text-lg font-semibold text-gray-700 mb-4">Thông Tin Giờ Làm Việc</h2>
@@ -182,9 +174,7 @@
                                         <th class="p-3 text-left">Ghi chú</th>
                                     </tr>
                                 </thead>
-                                <tbody id="workScheduleBody">
-                                    <tr><td colspan="6" class="p-3 text-center">Chọn ngày để xem lịch làm việc</td></tr>
-                                </tbody>
+                                <tbody id="workScheduleBody"></tbody>
                             </table>
                         </div>
                     </div>
@@ -208,9 +198,7 @@
                                     <th class="p-3 text-left">Trạng thái</th>
                                 </tr>
                             </thead>
-                            <tbody id="approvedRecords">
-                                <tr><td colspan="7" class="p-3 text-center">Chưa có dữ liệu</td></tr>
-                            </tbody>
+                            <tbody id="approvedRecords"></tbody>
                         </table>
                     </div>
                 </div>
@@ -230,12 +218,10 @@
                                     <th class="p-3 text-left">Giờ ra</th>
                                     <th class="p-3 text-left">Tổng giờ</th>
                                     <th class="p-3 text-left">Ghi chú</th>
-                                    <th class="p-3 text-left">Trạng thái</th>
+                                    <th class="p-3 text-left.ToolbarItemInfo">Trạng thái</th>
                                 </tr>
                             </thead>
-                            <tbody id="pendingRecords">
-                                <tr><td colspan="7" class="p-3 text-center">Chưa có dữ liệu</td></tr>
-                            </tbody>
+                            <tbody id="pendingRecords"></tbody>
                         </table>
                     </div>
                 </div>
@@ -258,9 +244,7 @@
                                     <th class="p-3 text-left">Trạng thái</th>
                                 </tr>
                             </thead>
-                            <tbody id="rejectedRecords">
-                                <tr><td colspan="7" class="p-3 text-center">Chưa có dữ liệu</td></tr>
-                            </tbody>
+                            <tbody id="rejectedRecords"></tbody>
                         </table>
                     </div>
                 </div>
@@ -273,7 +257,6 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 
 <!-- JavaScript Logic -->
 <script>
@@ -285,48 +268,29 @@
     let attendanceStatusData = {};
 
     document.addEventListener('DOMContentLoaded', async () => {
-        console.log('DOM loaded, maNv:', maNv);
         if (!maNv) {
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
                 text: 'Mã nhân viên không hợp lệ.',
                 confirmButtonText: 'OK'
-            }).then(() => {
-                window.location.href = '/Login';
             });
             return;
         }
-
-        // Ensure initial tab is visible
-        const initialTab = document.querySelector('.tab-link[data-tab="input"]');
-        const inputPane = document.getElementById('input');
-        if (initialTab && inputPane) {
-            initialTab.classList.add('text-blue-500', 'border-blue-500');
-            initialTab.classList.remove('text-gray-600');
-            inputPane.classList.remove('hidden');
-            console.log('Initialized input tab as visible');
-        } else {
-            console.error('Initial tab or input pane not found');
-        }
-
         try {
             // Load remaining hours
             const response = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
-            const remainingHoursEl = document.getElementById('_remainingHours');
-            if (result.success && remainingHoursEl) {
-                remainingHoursEl.textContent = `${result.remainingHours.toFixed(2)}h`;
+            if (result.success) {
+                document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
                 toggleOvertimeSection(result.remainingHours);
             } else {
-                if (remainingHoursEl) remainingHoursEl.textContent = `0.00h`;
+                document.getElementById('_remainingHours').textContent = `0.00h`;
                 toggleOvertimeSection(0);
             }
 
             // Load holiday data
             const holidayResponse = await fetch('/api/Attendance/GetHolidays');
-            if (!holidayResponse.ok) throw new Error(`HTTP error! status: ${holidayResponse.status}`);
             const holidayResult = await holidayResponse.json();
             if (holidayResult.success) {
                 holidayData = holidayResult.holidays.reduce((acc, holiday) => {
@@ -335,9 +299,8 @@
                 }, {});
             }
 
-            // Load attendance records
+            // Load attendance records with CC3, CC5, CC6 statuses
             const attendanceResponse = await fetch('/api/Attendance/GetAttendanceCalendarRecords');
-            if (!attendanceResponse.ok) throw new Error(`HTTP error! status: ${attendanceResponse.status}`);
             const attendanceResult = await attendanceResponse.json();
             if (attendanceResult.success) {
                 attendanceStatusData = attendanceResult.records.reduce((acc, record) => {
@@ -345,68 +308,57 @@
                     return acc;
                 }, {});
             }
-
-            // Load overtime rates
-            await loadOvertimeRates();
         } catch (error) {
-            console.error('Error during initialization:', error);
-            const remainingHoursEl = document.getElementById('_remainingHours');
-            if (remainingHoursEl) remainingHoursEl.textContent = `0.00h`;
+            document.getElementById('_remainingHours').textContent = `0.00h`;
             toggleOvertimeSection(0);
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Không thể tải dữ liệu ban đầu. Vui lòng thử lại.',
-                confirmButtonText: 'OK'
-            });
+            console.error('Error loading data:', error);
         }
     });
 
     function toggleOvertimeSection(remainingHours) {
         const overtimeCard = document.querySelector('.overtime-card');
         const remainingHoursMessage = document.getElementById('remainingHoursMessage');
-        if (overtimeCard && remainingHoursMessage) {
-            overtimeCard.style.display = remainingHours > 0 ? 'none' : 'block';
-            remainingHoursMessage.style.display = remainingHours > 0 ? 'block' : 'none';
-        }
+        overtimeCard.style.display = remainingHours > 0 ? 'none' : 'block';
+        remainingHoursMessage.style.display = remainingHours > 0 ? 'block' : 'none';
     }
 
     async function loadOvertimeRates() {
         try {
             const response = await fetch('/api/Attendance/GetOvertimeRates');
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
             if (result.success) {
                 overtimeRates = result.rates;
                 const select = document.getElementById('overtimeRate');
-                if (select) {
-                    select.innerHTML = '<option value="">Chọn tỉ lệ tăng ca</option>';
-                    overtimeRates.forEach(rate => {
-                        const option = document.createElement('option');
-                        option.value = rate.id;
-                        option.textContent = `${rate.tenTiLeTangCa} (Tỉ lệ: ${rate.tiLe})`;
-                        select.appendChild(option);
-                    });
-                }
+                select.innerHTML = '<option value="">Chọn tỉ lệ tăng ca</option>';
+                overtimeRates.forEach(rate => {
+                    const option = document.createElement('option');
+                    option.value = rate.id;
+                    option.textContent = `${rate.tenTiLeTangCa} (Tỉ lệ: ${rate.tiLe})`;
+                    select.appendChild(option);
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể tải tỉ lệ tăng ca',
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
-            console.error('Error loading overtime rates:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Không thể tải tỉ lệ tăng ca.',
+                text: 'Có lỗi xảy ra khi tải tỉ lệ tăng ca',
                 confirmButtonText: 'OK'
             });
         }
     }
 
-    document.getElementById('overtimeRate')?.addEventListener('change', function() {
+    document.getElementById('overtimeRate').addEventListener('change', function() {
         const selectedRateId = this.value;
         const selectedRate = overtimeRates.find(rate => rate.id == selectedRateId);
         const otNote = document.getElementById('otNote');
-        if (otNote && selectedRate) {
-            otNote.value = `${selectedRate.tenTiLeTangCa}${otNote.value ? ' - ' + otNote.value : ''}`;
-        }
+        otNote.value = selectedRate ? `${selectedRate.tenTiLeTangCa}${otNote.value ? ' - ' + otNote.value : ''}` : '';
     });
 
     flatpickr("#workDateRange", {
@@ -431,7 +383,7 @@
                     workScheduleData[dateStr] = {
                         selected: false,
                         checkIn: '',
-                        checkOut: '',
+                       队: '',
                         totalHours: 0,
                         overtimeHours: 0,
                         overtimeStart: '',
@@ -487,12 +439,7 @@
 
     function updateWorkScheduleTable() {
         const tbody = document.getElementById('workScheduleBody');
-        if (!tbody) return;
         tbody.innerHTML = '';
-        if (selectedWorkDays.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center">Chọn ngày để xem lịch làm việc</td></tr>';
-            return;
-        }
         selectedWorkDays.forEach((date, index) => {
             const data = workScheduleData[date];
             const row = document.createElement('tr');
@@ -553,41 +500,31 @@
     }
 
     function updateTotalHours() {
-        const checkIn = document.getElementById('checkInTime')?.value;
-        const checkOut = document.getElementById('checkOutTime')?.value;
+        const checkIn = document.getElementById('checkInTime').value;
+        const checkOut = document.getElementById('checkOutTime').value;
         const totalHoursInput = document.getElementById('totalHours');
-        if (totalHoursInput) {
-            totalHoursInput.value = checkIn && checkOut ? `${calculateHours(checkIn, checkOut)}h` : '';
-        }
+        totalHoursInput.value = checkIn && checkOut ? `${calculateHours(checkIn, checkOut)}h` : '';
     }
 
-    document.getElementById('checkInTime')?.addEventListener('change', updateTotalHours);
-    document.getElementById('checkOutTime')?.addEventListener('change', updateTotalHours);
+    document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
+    document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
 
-    document.getElementById('set8hBtn')?.addEventListener('click', () => {
-        const checkIn = document.getElementById('checkInTime');
-        const checkOut = document.getElementById('checkOutTime');
-        if (checkIn && checkOut) {
-            checkIn.value = '08:00';
-            checkOut.value = '18:00';
-            updateTotalHours();
-        }
+    document.getElementById('set8hBtn').addEventListener('click', () => {
+        document.getElementById('checkInTime').value = '08:00';
+        document.getElementById('checkOutTime').value = '18:00';
+        updateTotalHours();
     });
 
-    document.getElementById('cancelOT')?.addEventListener('click', () => {
-        const otStartTime = document.getElementById('otStartTime');
-        const otEndTime = document.getElementById('otEndTime');
-        const otNote = document.getElementById('otNote');
-        const overtimeRate = document.getElementById('overtimeRate');
-        if (otStartTime) otStartTime.value = '';
-        if (otEndTime) otEndTime.value = '';
-        if (otNote) otNote.value = '';
-        if (overtimeRate) overtimeRate.value = '';
+    document.getElementById('cancelOT').addEventListener('click', () => {
+        document.getElementById('otStartTime').value = '';
+        document.getElementById('otEndTime').value = '';
+        document.getElementById('otNote').value = '';
+        document.getElementById('overtimeRate').value = '';
     });
 
     ['1h', '2h', '3h', '4h', '8h'].forEach(hours => {
-        document.getElementById(`ot${hours}`)?.addEventListener('click', () => {
-            const overtimeHours = parseInt(hours) || 0;
+        document.getElementById(`ot${hours}`).addEventListener('click', () => {
+            const overtimeHours = parseInt(hours);
             const selectedDates = Object.entries(workScheduleData)
                 .filter(([_, data]) => data.selected)
                 .map(([date]) => date);
@@ -596,7 +533,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Vui lòng chọn ít nhất một ngày.',
+                    text: 'Vui lòng chọn ít nhất một ngày',
                     confirmButtonText: 'OK'
                 });
                 return;
@@ -617,60 +554,50 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Không thể áp dụng tăng ca cho các ngày khác loại.',
+                    text: 'Không thể áp dụng tăng ca cho các ngày khác loại',
                     confirmButtonText: 'OK'
                 });
                 return;
             }
 
-            const overtimeRate = document.getElementById('overtimeRate');
-            if (defaultRate && overtimeRate) {
-                overtimeRate.value = defaultRate;
+            if (defaultRate) {
+                document.getElementById('overtimeRate').value = defaultRate;
                 const selectedRate = overtimeRates.find(rate => rate.id == defaultRate);
-                const otNote = document.getElementById('otNote');
-                if (selectedRate && otNote) {
-                    otNote.value = selectedRate.tenTiLeTangCa;
+                if (selectedRate) {
+                    document.getElementById('otNote').value = selectedRate.tenTiLeTangCa;
                 }
             }
 
-            const otStartTime = document.getElementById('otStartTime');
-            const otEndTime = document.getElementById('otEndTime');
             if (hours === '8h') {
-                if (otStartTime && otEndTime) {
-                    otStartTime.value = '08:00';
-                    otEndTime.value = '18:00';
-                }
+                document.getElementById('otStartTime').value = '08:00';
+                document.getElementById('otEndTime').value = '18:00';
             } else {
                 if (allHolidays || allWeekends) {
-                    if (otStartTime && otEndTime) {
-                        otStartTime.value = '08:00';
-                        const endTime = addHours('08:00', overtimeHours);
-                        if (endTime > '18:00') {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi!',
-                                text: 'Giờ tăng ca phải trong khoảng từ 08:00 đến 18:00.',
-                                confirmButtonText: 'OK'
-                            });
-                            return;
-                        }
-                        otEndTime.value = endTime;
+                    document.getElementById('otStartTime').value = '08:00';
+                    const endTime = addHours('08:00', overtimeHours);
+                    if (endTime > '18:00') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: 'Giờ tăng ca phải trong khoảng từ 08:00 đến 18:00',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
                     }
+                    document.getElementById('otEndTime').value = endTime;
                 } else if (allWeekdays) {
-                    if (otStartTime && otEndTime) {
-                        otStartTime.value = '18:00';
-                        const endTime = addHours('18:00', overtimeHours);
-                        if (endTime > '22:00') {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi!',
-                                text: 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00.',
-                                confirmButtonText: 'OK'
-                            });
-                            return;
-                        }
-                        otEndTime.value = endTime;
+                    document.getElementById('otStartTime').value = '18:00';
+                    const endTime = addHours('18:00', overtimeHours);
+                    if (endTime > '22:00') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
                     }
+                    document.getElementById('otEndTime').value = endTime;
                 }
             }
             updateOvertime();
@@ -702,9 +629,9 @@
     }
 
     function updateOvertime() {
-        const otStartTime = document.getElementById('otStartTime')?.value;
-        const otEndTime = document.getElementById('otEndTime')?.value;
-        const otRate = document.getElementById('overtimeRate')?.value;
+        const otStartTime = document.getElementById('otStartTime').value;
+        const otEndTime = document.getElementById('otEndTime').value;
+        const otRate = document.getElementById('overtimeRate').value;
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
         const otHours = calculateOvertimeHours(otStartTime, otEndTime) || 0;
 
@@ -716,7 +643,7 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Vui lòng chọn ít nhất một ngày.',
+                text: 'Vui lòng chọn ít nhất một ngày',
                 confirmButtonText: 'OK'
             });
             return;
@@ -726,7 +653,7 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Vui lòng chọn tỉ lệ tăng ca.',
+                text: 'Vui lòng chọn tỉ lệ tăng ca',
                 confirmButtonText: 'OK'
             });
             return;
@@ -747,21 +674,17 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Không thể áp dụng tăng ca cho các ngày khác loại.',
+                text: 'Không thể áp dụng tăng ca cho các ngày khác loại',
                 confirmButtonText: 'OK'
             });
             return;
         }
 
         if (defaultRate && !otRate) {
-            const overtimeRate = document.getElementById('overtimeRate');
-            if (overtimeRate) {
-                overtimeRate.value = defaultRate;
-                const selectedRate = overtimeRates.find(rate => rate.id == defaultRate);
-                const otNote = document.getElementById('otNote');
-                if (selectedRate && otNote) {
-                    otNote.value = selectedRate.tenTiLeTangCa;
-                }
+            document.getElementById('overtimeRate').value = defaultRate;
+            const selectedRate = overtimeRates.find(rate => rate.id == defaultRate);
+            if (selectedRate) {
+                document.getElementById('otNote').value = selectedRate.tenTiLeTangCa;
             }
         }
 
@@ -770,24 +693,21 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày lễ phải trong khoảng từ 08:00 đến 18:00.',
+                    text: 'Giờ tăng ca trong ngày lễ phải trong khoảng từ 08:00 đến 18:00',
                     confirmButtonText: 'OK'
                 });
-                const otStartTimeEl = document.getElementById('otStartTime');
-                const otEndTimeEl = document.getElementById('otEndTime');
-                if (otStartTimeEl) otStartTimeEl.value = '';
-                if (otEndTimeEl) otEndTimeEl.value = '';
+                document.getElementById('otStartTime').value = '';
+                document.getElementById('otEndTime').value = '';
                 return;
             }
             if (otEndTime && (otEndTime < '08:00' || otEndTime > '18:00')) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày lễ phải trong khoảng từ 08:00 đến 18:00.',
+                    text: 'Giờ tăng ca trong ngày lễ phải trong khoảng từ 08:00 đến 18:00',
                     confirmButtonText: 'OK'
                 });
-                const otEndTimeEl = document.getElementById('otEndTime');
-                if (otEndTimeEl) otEndTimeEl.value = '';
+                document.getElementById('otEndTime').value = '';
                 return;
             }
         } else if (allWeekdays) {
@@ -795,35 +715,31 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày thường phải bắt đầu từ 18:00.',
+                    text: 'Giờ tăng ca trong ngày thường phải bắt đầu từ 18:00',
                     confirmButtonText: 'OK'
                 });
-                const otStartTimeEl = document.getElementById('otStartTime');
-                const otEndTimeEl = document.getElementById('otEndTime');
-                if (otStartTimeEl) otStartTimeEl.value = '';
-                if (otEndTimeEl) otEndTimeEl.value = '';
+                document.getElementById('otStartTime').value = '';
+                document.getElementById('otEndTime').value = '';
                 return;
             }
             if (otEndTime && (otEndTime < '18:00' || otEndTime > '22:00')) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày thường phải kết thúc trước 22:00.',
+                    text: 'Giờ tăng ca trong ngày thường phải kết thúc trước 22:00',
                     confirmButtonText: 'OK'
                 });
-                const otEndTimeEl = document.getElementById('otEndTime');
-                if (otEndTimeEl) otEndTimeEl.value = '';
+                document.getElementById('otEndTime').value = '';
                 return;
             }
             if (otRawHours > 4) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Số giờ tăng ca không được vượt quá 4 giờ trong ngày thường.',
+                    text: 'Số giờ tăng ca không được vượt quá 4 giờ trong ngày thường',
                     confirmButtonText: 'OK'
                 });
-                const otEndTimeEl = document.getElementById('otEndTime');
-                if (otEndTimeEl) otEndTimeEl.value = '';
+                document.getElementById('otEndTime').value = '';
                 return;
             }
         } else if (allWeekends) {
@@ -831,24 +747,21 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày cuối tuần phải trong khoảng từ 08:00 đến 18:00.',
+                    text: 'Giờ tăng ca trong ngày cuối tuần phải trong khoảng từ 08:00 đến 18:00',
                     confirmButtonText: 'OK'
                 });
-                const otStartTimeEl = document.getElementById('otStartTime');
-                const otEndTimeEl = document.getElementById('otEndTime');
-                if (otStartTimeEl) otStartTimeEl.value = '';
-                if (otEndTimeEl) otEndTimeEl.value = '';
+                document.getElementById('otStartTime').value = '';
+                document.getElementById('otEndTime').value = '';
                 return;
             }
             if (otEndTime && (otEndTime < '08:00' || otEndTime > '18:00')) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày cuối tuần phải trong khoảng từ 08:00 đến 18:00.',
+                    text: 'Giờ tăng ca trong ngày cuối tuần phải trong khoảng từ 08:00 đến 18:00',
                     confirmButtonText: 'OK'
                 });
-                const otEndTimeEl = document.getElementById('otEndTime');
-                if (otEndTimeEl) otEndTimeEl.value = '';
+                document.getElementById('otEndTime').value = '';
                 return;
             }
         }
@@ -861,18 +774,17 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Lỗi!',
-                        text: 'Tổng số giờ tăng ca trong tuần không được vượt quá 12 giờ cho trạng thái TC3.',
+                        text: 'Tổng số giờ tăng ca trong tuần không được vượt quá 12 giờ cho trạng thái TC3',
                         confirmButtonText: 'OK'
                     });
-                    const otEndTimeEl = document.getElementById('otEndTime');
-                    if (otEndTimeEl) otEndTimeEl.value = '';
+                    document.getElementById('otEndTime').value = '';
                     return;
                 }
             }
         }
     }
 
-    document.getElementById('selectAll')?.addEventListener('change', function() {
+    document.getElementById('selectAll').addEventListener('change', function() {
         const checkboxes = document.querySelectorAll('.date-checkbox');
         checkboxes.forEach(checkbox => {
             checkbox.checked = this.checked;
@@ -880,7 +792,7 @@
         });
     });
 
-    document.getElementById('submitAll')?.addEventListener('click', async () => {
+    document.getElementById('submitAll').addEventListener('click', async () => {
         const selectedDates = Object.entries(workScheduleData)
             .filter(([_, data]) => data.selected)
             .map(([date, data]) => ({ date, ...data }));
@@ -889,7 +801,7 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Vui lòng chọn ít nhất một ngày.',
+                text: 'Vui lòng chọn ít nhất một ngày',
                 confirmButtonText: 'OK'
             });
             return;
@@ -934,7 +846,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Thành công!',
-                    text: 'Lưu dữ liệu thành công.',
+                    text: 'Lưu dữ liệu thành công',
                     confirmButtonText: 'OK'
                 }).then(() => location.reload());
             } else {
@@ -946,24 +858,23 @@
                 });
             }
         } catch (error) {
-            console.error('Error submitting attendance:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Có lỗi xảy ra khi lưu dữ liệu.',
+                text: 'Có lỗi xảy ra khi lưu dữ liệu',
                 confirmButtonText: 'OK'
             });
         }
     });
 
-    document.getElementById('applyToSelected')?.addEventListener('click', () => {
-        const checkIn = document.getElementById('checkInTime')?.value;
-        const checkOut = document.getElementById('checkOutTime')?.value;
-        const otStartTime = document.getElementById('otStartTime')?.value;
-        const otEndTime = document.getElementById('otEndTime')?.value;
-        const otNote = document.getElementById('otNote')?.value;
-        const attendanceNote = document.getElementById('attendanceNote')?.value;
-        const overtimeRateId = document.getElementById('overtimeRate')?.value;
+    document.getElementById('applyToSelected').addEventListener('click', () => {
+        const checkIn = document.getElementById('checkInTime').value;
+        const checkOut = document.getElementById('checkOutTime').value;
+        const otStartTime = document.getElementById('otStartTime').value;
+        const otEndTime = document.getElementById('otEndTime').value;
+        const otNote = document.getElementById('otNote').value;
+        const attendanceNote = document.getElementById('attendanceNote').value;
+        const overtimeRateId = document.getElementById('overtimeRate').value;
         const selectedRate = overtimeRates.find(rate => rate.id == overtimeRateId);
         const otRawHours = calculateRawHours(otStartTime, otEndTime) || 0;
         const otHours = calculateOvertimeHours(otStartTime, otEndTime) || 0;
@@ -976,7 +887,7 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Vui lòng chọn ít nhất một ngày.',
+                text: 'Vui lòng chọn ít nhất một ngày',
                 confirmButtonText: 'OK'
             });
             return;
@@ -988,7 +899,7 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Vui lòng nhập ít nhất một bộ dữ liệu (giờ làm hoặc giờ tăng ca).',
+                text: 'Vui lòng nhập ít nhất một bộ dữ liệu (giờ làm hoặc giờ tăng ca)',
                 confirmButtonText: 'OK'
             });
             return;
@@ -1029,36 +940,27 @@
         updateWorkScheduleTable();
 
         if (hasAttendanceInput) {
-            const checkInEl = document.getElementById('checkInTime');
-            const checkOutEl = document.getElementById('checkOutTime');
-            const totalHoursEl = document.getElementById('totalHours');
-            const attendanceNoteEl = document.getElementById('attendanceNote');
-            if (checkInEl) checkInEl.value = '';
-            if (checkOutEl) checkOutEl.value = '';
-            if (totalHoursEl) totalHoursEl.value = '';
-            if (attendanceNoteEl) attendanceNoteEl.value = '';
+            document.getElementById('checkInTime').value = '';
+            document.getElementById('checkOutTime').value = '';
+            document.getElementById('totalHours').value = '';
+            document.getElementById('attendanceNote').value = '';
         }
         if (hasOvertimeInput) {
-            const otStartTimeEl = document.getElementById('otStartTime');
-            const otEndTimeEl = document.getElementById('otEndTime');
-            const otNoteEl = document.getElementById('otNote');
-            const overtimeRateEl = document.getElementById('overtimeRate');
-            if (otStartTimeEl) otStartTimeEl.value = '';
-            if (otEndTimeEl) otEndTimeEl.value = '';
-            if (otNoteEl) otNoteEl.value = '';
-            if (overtimeRateEl) overtimeRateEl.value = '';
+            document.getElementById('otStartTime').value = '';
+            document.getElementById('otEndTime').value = '';
+            document.getElementById('otNote').value = '';
+            document.getElementById('overtimeRate').value = '';
         }
 
         selectedDates.forEach(date => workScheduleData[date].selected = false);
-        const selectAllEl = document.getElementById('selectAll');
-        if (selectAllEl) selectAllEl.checked = false;
+        document.getElementById('selectAll').checked = false;
 
         updateWorkScheduleTable();
 
         Swal.fire({
             icon: 'success',
             title: 'Thành công!',
-            text: 'Đã áp dụng dữ liệu cho các ngày đã chọn.',
+            text: 'Đã áp dụng dữ liệu cho các ngày đã chọn',
             confirmButtonText: 'OK'
         });
     });
@@ -1092,9 +994,6 @@
     document.querySelectorAll('.tab-link').forEach(tab => {
         tab.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log('Tab clicked:', this.dataset.tab);
-
-            // Update tab styling
             document.querySelectorAll('.tab-link').forEach(t => {
                 t.classList.remove('text-blue-500', 'border-blue-500');
                 t.classList.add('text-gray-600');
@@ -1102,19 +1001,11 @@
             this.classList.add('text-blue-500', 'border-blue-500');
             this.classList.remove('text-gray-600');
 
-            // Toggle tab panes
             document.querySelectorAll('.tab-pane').forEach(pane => {
                 pane.classList.add('hidden');
             });
-            const targetPane = document.getElementById(this.dataset.tab);
-            if (targetPane) {
-                targetPane.classList.remove('hidden');
-                console.log('Showing pane:', this.dataset.tab);
-            } else {
-                console.error('Pane not found:', this.dataset.tab);
-            }
+            document.getElementById(this.dataset.tab).classList.remove('hidden');
 
-            // Load data for specific tabs
             if (this.dataset.tab === 'approved') {
                 loadApprovedRecords();
             } else if (this.dataset.tab === 'pending') {
@@ -1125,111 +1016,122 @@
         });
     });
 
-    // Load Approved Records
+    // Load Approved Records (CC3, TC3, LB3)
     async function loadApprovedRecords() {
-        const tbody = document.getElementById('approvedRecords');
-        if (!tbody) {
-            console.error('Approved records table body not found');
-            return;
-        }
-        tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Đang tải...</td></tr>';
         try {
-            const response = await fetch(`/api/Attendance/GetApprovedRecords`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const response = await fetch(`/api/Attendance/GetApprovedRecords?maNv=${maNv}`);
             const result = await response.json();
-            tbody.innerHTML = '';
-            if (result.success && result.records?.length) {
+            if (result.success) {
+                const tbody = document.getElementById('approvedRecords');
+                tbody.innerHTML = '';
                 result.records.forEach(record => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td class="p-3">${record.Loai || '-'}</td>
-                        <td class="p-3">${record.Ngay || '-'}</td>
+                        <td class="p-3">${record.Loai}</td>
+                        <td class="p-3">${record.Ngay}</td>
                         <td class="p-3">${record.GioVao || '-'}</td>
                         <td class="p-3">${record.GioRa || '-'}</td>
                         <td class="p-3">${record.TongGio ? record.TongGio.toFixed(2) + 'h' : '-'}</td>
                         <td class="p-3">${record.GhiChu || '-'}</td>
-                        <td class="p-3">${record.TrangThai || '-'}</td>
+                        <td class="p-3">${record.TrangThai}</td>
                     `;
                     tbody.appendChild(row);
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Không có dữ liệu</td></tr>';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể tải danh sách đã duyệt.',
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
-            console.error('Error loading approved records:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Lỗi tải dữ liệu</td></tr>';
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Có lỗi xảy ra khi tải danh sách đã duyệt.',
+                confirmButtonText: 'OK'
+            });
         }
     }
 
-    // Load Pending Records
+    // Load Pending Records (CC1, TC1, LB1)
     async function loadPendingRecords() {
-        const tbody = document.getElementById('pendingRecords');
-        if (!tbody) {
-            console.error('Pending records table body not found');
-            return;
-        }
-        tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Đang tải...</td></tr>';
         try {
-            const response = await fetch(`/api/Attendance/GetPendingRecords`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const response = await fetch(`/api/Attendance/GetPendingRecords?maNv=${maNv}`);
             const result = await response.json();
-            tbody.innerHTML = '';
-            if (result.success && result.records?.length) {
+            if (result.success) {
+                const tbody = document.getElementById('pendingRecords');
+                tbody.innerHTML = '';
                 result.records.forEach(record => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td class="p-3">${record.Loai || '-'}</td>
-                        <td class="p-3">${record.Ngay || '-'}</td>
+                        <td class="p-3">${record.Loai}</td>
+                        <td class="p-3">${record.Ngay}</td>
                         <td class="p-3">${record.GioVao || '-'}</td>
                         <td class="p-3">${record.GioRa || '-'}</td>
                         <td class="p-3">${record.TongGio ? record.TongGio.toFixed(2) + 'h' : '-'}</td>
                         <td class="p-3">${record.GhiChu || '-'}</td>
-                        <td class="p-3">${record.TrangThai || '-'}</td>
+                        <td class="p-3">${record.TrangThai}</td>
                     `;
                     tbody.appendChild(row);
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Không có dữ liệu</td></tr>';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể tải danh sách chờ duyệt.',
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
-            console.error('Error loading pending records:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Lỗi tải dữ liệu</td></tr>';
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Có lỗi xảy ra khi tải danh sách chờ duyệt.',
+                confirmarginsText: 'OK'
+            });
         }
     }
 
-    // Load Rejected Records
+    // Load Rejected Records (CC4, TC4, LB4)
     async function loadRejectedRecords() {
-        const tbody = document.getElementById('rejectedRecords');
-        if (!tbody) {
-            console.error('Rejected records table body not found');
-            return;
-        }
-        tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Đang tải...</td></tr>';
         try {
-            const response = await fetch(`/api/Attendance/GetRejectedRecords`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const response = await fetch(`/api/Attendance/GetRejectedRecords?maNv=${maNv}`);
             const result = await response.json();
-            tbody.innerHTML = '';
-            if (result.success && result.records?.length) {
+            if (result.success) {
+                const tbody = document.getElementById('rejectedRecords');
+                tbody.innerHTML = '';
                 result.records.forEach(record => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td class="p-3">${record.Loai || '-'}</td>
-                        <td class="p-3">${record.Ngay || '-'}</td>
+                        <td class="p-3">${record.Loai}</td>
+                        <td class="p-3">${record.Ngay}</td>
                         <td class="p-3">${record.GioVao || '-'}</td>
                         <td class="p-3">${record.GioRa || '-'}</td>
                         <td class="p-3">${record.TongGio ? record.TongGio.toFixed(2) + 'h' : '-'}</td>
                         <td class="p-3">${record.GhiChu || '-'}</td>
-                        <td class="p-3">${record.TrangThai || '-'}</td>
+                        <td class="p-3">${record.TrangThai}</td>
                     `;
                     tbody.appendChild(row);
                 });
             } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Không có dữ liệu</td></tr>';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể tải danh sách từ chối.',
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
-            console.error('Error loading rejected records:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center">Lỗi tải dữ liệu</td></tr>';
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Có lỗi xảy ra khi tải danh sách từ chối.',
+                confirmButtonText: 'OK'
+            });
         }
     }
+
+    window.addEventListener('load', loadOvertimeRates);
 </script>

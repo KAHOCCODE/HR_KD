@@ -19,6 +19,5 @@
         public bool KichHoat { get; set; } = false;
         public int IdLichLamViec { get; set; }
 
-
     }
 }

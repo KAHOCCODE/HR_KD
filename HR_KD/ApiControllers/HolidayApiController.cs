@@ -83,9 +83,13 @@ namespace HR_KD.ApiControllers
         [HttpGet("GetAll")]
         public IActionResult GetAllHolidays()
         {
-            var holidays = _context.NgayLes.ToList();
+            var holidays = _context.NgayLes
+                .Where(nl => nl.TrangThai == "NL4" || nl.TrangThai == "NL5")
+                .ToList();
+
             return Ok(holidays);
         }
+
 
         [HttpDelete("Delete/{id}")]
         public IActionResult DeleteHoliday(int id)

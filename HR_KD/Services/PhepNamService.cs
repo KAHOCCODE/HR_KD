@@ -487,5 +487,16 @@ namespace HR_KD.Services
             // Lưu thay đổi
             await _context.SaveChangesAsync();
         }
+
+        /// <summary>
+        /// Cập nhật số ngày đã sử dụng cho nhiều đơn nghỉ phép cùng lúc
+        /// </summary>
+        public async Task UpdateSoNgayDaSuDungBatchAsync(List<int> maNgayNghiList)
+        {
+            foreach (var maNgayNghi in maNgayNghiList)
+            {
+                await UpdateSoNgayDaSuDungAsync(maNgayNghi);
+            }
+        }
     }
 }

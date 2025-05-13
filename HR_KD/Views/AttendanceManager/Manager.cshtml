@@ -340,7 +340,7 @@
     }
 
     function fetchAttendanceRecords(maNv) {
-        fetch(`/api/AttendanceManager/GetAttendanceManagerRecordsDerector?maNv=${maNv}`)
+        fetch(`/api/AttendanceManager/GetAttendanceManagerRecords?maNv=${maNv}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -439,7 +439,7 @@
     }
 
     function submitApproval(maChamCong, trangThai, ghiChu) {
-        fetch("/api/AttendanceManager/ApproveAttendanceManagerDerector", {
+        fetch("/api/AttendanceManager/ApproveAttendanceManager", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -464,7 +464,7 @@
     }
 
     function submitMultipleApproval(maChamCongList, trangThai, ghiChu) {
-        fetch("/api/AttendanceManager/ApproveMultipleAttendanceManagerDerector", {
+        fetch("/api/AttendanceManager/ApproveMultipleAttendanceManager", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -489,7 +489,7 @@
     }
 
     function fetchOvertimeRecords(maNv) {
-        fetch(`/api/AttendanceManager/GetOvertimeRecordsDerector?maNv=${maNv}`)
+        fetch(`/api/AttendanceManager/GetOvertimeRecords?maNv=${maNv}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -579,7 +579,7 @@
     }
 
     function submitOvertimeApproval(maTangCa, trangThai, ghiChu) {
-        fetch("/api/AttendanceManager/ApproveOvertimeDerector", {
+        fetch("/api/AttendanceManager/ApproveOvertime", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -604,7 +604,7 @@
     }
 
     function submitMultipleOvertimeApproval(maTangCaList, trangThai, ghiChu) {
-        fetch("/api/AttendanceManager/ApproveMultipleOvertimeDerector", {
+        fetch("/api/AttendanceManager/ApproveMultipleOvertime", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -629,7 +629,7 @@
     }
 
     function fetchMakeupRecords(maNv) {
-        fetch(`/api/AttendanceManager/GetMakeupRecordsDerector?maNv=${maNv}`)
+        fetch(`/api/AttendanceManager/GetMakeupRecords?maNv=${maNv}`)
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -721,7 +721,7 @@
     }
 
     function submitMakeupApproval(maLamBu, trangThai, ghiChu) {
-        fetch("/api/AttendanceManager/ApproveMakeupDerector", {
+        fetch("/api/AttendanceManager/ApproveMakeup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -746,7 +746,7 @@
     }
 
     function submitMultipleMakeupApproval(maLamBuList, trangThai, ghiChu) {
-        fetch("/api/AttendanceManager/ApproveMultipleMakeupDerector", {
+        fetch("/api/AttendanceManager/ApproveMultipleMakeup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 

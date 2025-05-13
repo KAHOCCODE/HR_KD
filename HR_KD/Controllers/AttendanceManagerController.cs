@@ -12,6 +12,10 @@ namespace HR_KD.Controllers
         {
             return View();
         }
+        public IActionResult Manager()
+        {
+            return View();
+        }
     }
 
 }

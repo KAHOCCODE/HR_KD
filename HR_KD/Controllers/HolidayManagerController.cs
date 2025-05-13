@@ -9,6 +9,9 @@ namespace HR_KD.Controllers
         {
             return View();
         }
-        
+        public IActionResult Requests()
+        {
+            return View();
+        }
     }
 }

@@ -65,16 +65,21 @@
         </div>
         <div class="card-body">
             <div class="row mb-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="yearFilter" class="form-label">Chọn năm:</label>
                     <select id="yearFilter" class="form-select" onchange="loadHolidays()">
                         <option value="">Tất cả</option>
                     </select>
                 </div>
-                <div class="col-md-6 d-flex align-items-end">
+                <div class="col-md-4 d-flex align-items-end">
                     <button type="button" class="btn btn-success" onclick="approveAllHolidays()">
                         <i class="fas fa-check-circle me-1"></i>Duyệt tất cả theo năm
                     </button>
+                </div>
+                <div class="col-md-4 d-flex align-items-end justify-content-end">
+                    <a href="/Holiday/Requests" class="btn btn-primary">
+                        <i class="fas fa-list me-1"></i>Xem yêu cầu
+                    </a>
                 </div>
             </div>
 
@@ -123,10 +128,14 @@
 
     function loadHolidayYears() {
         showLoading();
-        fetch('/api/holidaymanager/years')
-            .then(response => response.json())
+        fetch('/api/holidaymanager/years', { headers: { 'Accept': 'application/json' } })
+            .then(response => {
+                if (!response.ok) throw new Error('Không thể tải danh sách năm: ' + response.status);
+                return response.json();
+            })
             .then(years => {
                 const yearFilter = document.getElementById('yearFilter');
+                yearFilter.innerHTML = '<option value="">Tất cả</option>'; // Reset options
                 years.forEach(year => {
                     const option = document.createElement('option');
                     option.value = year;
@@ -138,7 +147,7 @@
             .catch(error => {
                 console.error('Lỗi khi tải danh sách năm:', error);
                 hideLoading();
-                alert('Không thể tải danh sách năm.');
+                alert('Không thể tải danh sách năm: ' + error.message);
             });
     }
 
@@ -150,8 +159,11 @@
             url += `?year=${year}`;
         }
 
-        fetch(url)
-            .then(response => response.json())
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(response => {
+                if (!response.ok) throw new Error('Không thể tải dữ liệu ngày lễ: ' + response.status);
+                return response.json();
+            })
             .then(data => {
                 const tableBody = document.getElementById('holidayTableBody');
                 tableBody.innerHTML = '';
@@ -160,8 +172,7 @@
                     row.insertCell().textContent = holiday.tenNgayLe;
                     row.insertCell().textContent = new Date(holiday.ngayLe1).toLocaleDateString('vi-VN');
                     row.insertCell().textContent = holiday.soNgayNghi || '-';
-                    
-                    // Hiển thị trạng thái ngày lễ
+
                     let statusText = '';
                     switch(holiday.trangThai) {
                         case 'NL1':
@@ -205,7 +216,6 @@
                     cancelButton.className = 'btn btn-secondary btn-sm';
                     cancelButton.addEventListener('click', () => cancelHoliday(holiday.maNgayLe));
 
-                    // Chỉ hiển thị các nút phù hợp với trạng thái hiện tại
                     if (holiday.trangThai === 'NL4' || holiday.trangThai === 'NL5' || holiday.trangThai === 'NL6') {
                         approveButton.style.display = 'none';
                         rejectButton.style.display = 'none';
@@ -218,19 +228,12 @@
                     actionsCell.appendChild(cancelButton);
                 });
 
-                const yearFilter = document.getElementById('yearFilter');
-                for (let i = 0; i < yearFilter.options.length; i++) {
-                    if (yearFilter.options[i].value === year) {
-                        yearFilter.selectedIndex = i;
-                        break;
-                    }
-                }
                 hideLoading();
             })
             .catch(error => {
-                console.error('Lỗi khi gọi API:', error);
+                console.error('Lỗi khi tải dữ liệu ngày lễ:', error);
                 const tableBody = document.getElementById('holidayTableBody');
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Không thể tải dữ liệu ngày lễ.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Không thể tải dữ liệu ngày lễ: ${error.message}</td></tr>`;
                 hideLoading();
             });
     }
@@ -238,21 +241,21 @@
     function approveHoliday(holidayId) {
         showLoading();
         fetch(`/api/holidaymanager/approve/${holidayId}`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
         })
             .then(response => {
-                if (response.ok) {
-                    loadHolidays();
-                    alert('Ngày lễ đã được duyệt và thông báo đã được gửi.');
-                } else {
-                    console.error('Lỗi khi duyệt ngày lễ:', response.status);
-                    alert('Không thể duyệt ngày lễ.');
-                }
+                if (!response.ok) throw new Error('Không thể duyệt ngày lễ: ' + response.status);
+                return response.json();
+            })
+            .then(result => {
+                alert(result.message);
+                loadHolidays();
                 hideLoading();
             })
             .catch(error => {
-                console.error('Lỗi khi gửi yêu cầu duyệt:', error);
-                alert('Đã xảy ra lỗi khi duyệt ngày lễ.');
+                console.error('Lỗi khi duyệt ngày lễ:', error);
+                alert('Đã xảy ra lỗi khi duyệt ngày lễ: ' + error.message);
                 hideLoading();
             });
     }
@@ -260,44 +263,44 @@
     function rejectHoliday(holidayId) {
         showLoading();
         fetch(`/api/holidaymanager/reject/${holidayId}`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
         })
             .then(response => {
-                if (response.ok) {
-                    loadHolidays();
-                    alert('Ngày lễ đã bị từ chối.');
-                } else {
-                    console.error('Lỗi khi từ chối ngày lễ:', response.status);
-                    alert('Không thể từ chối ngày lễ.');
-                }
+                if (!response.ok) throw new Error('Không thể từ chối ngày lễ: ' + response.status);
+                return response.json();
+            })
+            .then(result => {
+                alert(result.message);
+                loadHolidays();
                 hideLoading();
             })
             .catch(error => {
-                console.error('Lỗi khi gửi yêu cầu từ chối:', error);
-                alert('Đã xảy ra lỗi khi từ chối ngày lễ.');
+                console.error('Lỗi khi từ chối ngày lễ:', error);
+                alert('Đã xảy ra lỗi khi từ chối ngày lễ: ' + error.message);
                 hideLoading();
             });
     }
 
     function cancelHoliday(holidayId) {
-        if (confirm('Bạn có chắc chắn muốn hủy ngày lễ này? Trạng thái sẽ chuyển về "Chờ duyệt" và tất cả chấm công liên quan sẽ bị xóa.')) {
+        if (confirm('Bạn có chắc chắn muốn hủy ngày lễ này? Trạng thái sẽ chuyển về trạng thái ban đầu và tất cả chấm công liên quan sẽ bị xóa.')) {
             showLoading();
             fetch(`/api/holidaymanager/cancel/${holidayId}`, {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
             })
                 .then(response => {
-                    if (response.ok) {
-                        loadHolidays();
-                        alert('Ngày lễ đã được hủy, trạng thái chuyển về "Chờ duyệt" và tất cả chấm công liên quan đã bị xóa.');
-                    } else {
-                        console.error('Lỗi khi hủy ngày lễ:', response.status);
-                        alert('Không thể hủy ngày lễ.');
-                    }
+                    if (!response.ok) throw new Error('Không thể hủy ngày lễ: ' + response.status);
+                    return response.json();
+                })
+                .then(result => {
+                    alert(result.message);
+                    loadHolidays();
                     hideLoading();
                 })
                 .catch(error => {
-                    console.error('Lỗi khi gửi yêu cầu hủy:', error);
-                    alert('Đã xảy ra lỗi khi hủy ngày lễ.');
+                    console.error('Lỗi khi hủy ngày lễ:', error);
+                    alert('Đã xảy ra lỗi khi hủy ngày lễ: ' + error.message);
                     hideLoading();
                 });
         }
@@ -306,31 +309,29 @@
     function approveAllHolidays() {
         const yearFilter = document.getElementById('yearFilter');
         const selectedYear = yearFilter.value;
-        let confirmationMessage = 'Bạn có chắc chắn muốn duyệt tất cả các ngày lễ chưa được duyệt';
-        if (selectedYear) {
-            confirmationMessage += ` trong năm ${selectedYear}`;
-        } else {
-            confirmationMessage += ' của tất cả các năm';
+        if (!selectedYear) {
             alert('Vui lòng chọn một năm để duyệt.');
             return;
         }
-        confirmationMessage += '?';
 
-        if (confirm(confirmationMessage)) {
+        if (confirm(`Bạn có chắc chắn muốn duyệt tất cả các ngày lễ chưa được duyệt trong năm ${selectedYear}?`)) {
             showLoading();
-            let apiUrl = `/api/holidaymanager/approve/year/${selectedYear}`;
-            fetch(apiUrl, {
-                method: 'POST'
+            fetch(`/api/holidaymanager/approve/year/${selectedYear}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
             })
-                .then(response => response.text())
-                .then(message => {
-                    alert(message + ' Thông báo đã được gửi.');
+                .then(response => {
+                    if (!response.ok) throw new Error('Không thể duyệt các ngày lễ: ' + response.status);
+                    return response.json();
+                })
+                .then(result => {
+                    alert(result.message);
                     loadHolidays();
                     hideLoading();
                 })
                 .catch(error => {
                     console.error('Lỗi khi duyệt tất cả ngày lễ:', error);
-                    alert('Đã xảy ra lỗi khi duyệt các ngày lễ.');
+                    alert('Đã xảy ra lỗi khi duyệt các ngày lễ: ' + error.message);
                     hideLoading();
                 });
         }

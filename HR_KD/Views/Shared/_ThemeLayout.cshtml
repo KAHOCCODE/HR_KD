@@ -209,6 +209,7 @@
                                 <!-- Accessible to all users -->
                                 <li><a href="~/Attendance/Attendance"><i class="fa fa-list"></i> Chấm công</a></li>
                                 <li><a href="~/LamBu/Index"><i class="fa fa-list"></i> Làm bù</a></li>
+                                <li><a href="~/Attendance"><i class="fa fa-list"></i> Danh sách chấm công</a></li>
                                 <!-- Restricted to EMPLOYEE_MANAGER role -->
                                 @if (User.IsInRole("DIRECTOR"))
                                 { 
@@ -234,6 +235,7 @@
                                 @if (User.IsInRole("DIRECTOR"))
                                 {
                                         <li><a href="~/HolidayManager/Index"><i class="fa fa-file-text"></i> Duyệt ngày lễ</a></li>
+                                        <li><a href="~/HolidayManager/Requests"><i class="fa fa-file-text"></i> Duyệt yêu cầu mở ngày lễ</a></li>
                                 }
                                 else if (User.IsInRole("EMPLOYEE_MANAGER"))
                                 { 

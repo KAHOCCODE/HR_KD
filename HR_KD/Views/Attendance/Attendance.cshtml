@@ -16,7 +16,11 @@
         return;
     }
 }
-
+<style>
+    div.select-box {
+  display: none;
+}
+</style>
 <!-- External Styles -->
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -34,23 +38,6 @@
             <p class="text-gray-600 mt-2">Theo dõi và quản lý thời gian làm việc và tăng ca một cách dễ dàng.</p>
         </div>
 
-        <!-- Tabs -->
-        <div class="mb-6">
-            <ul class="flex border-b border-gray-200">
-                <li class="mr-1">
-                    <a class="tab-link bg-white inline-block py-2 px-4 text-blue-500 font-semibold border-b-2 border-blue-500" href="#input" data-tab="input">Nhập Chấm Công</a>
-                </li>
-                <li class="mr-1">
-                    <a class="tab-link bg-white inline-block py-2 px-4 text-gray-600 font-semibold" href="#approved" data-tab="approved">Đã Duyệt</a>
-                </li>
-                <li class="mr-1">
-                    <a class="tab-link bg-white inline-block py-2 px-4 text-gray-600 font-semibold" href="#pending" data-tab="pending">Chờ Duyệt</a>
-                </li>
-                <li class="mr-1">
-                    <a class="tab-link bg-white inline-block py-2 px-4 text-gray-600 font-semibold" href="#rejected" data-tab="rejected">Từ Chối</a>
-                </li>
-            </ul>
-        </div>
 
         <!-- Tab Content -->
         <div class="tab-content">
@@ -132,7 +119,7 @@
                                         <input type="time" id="otEndTime" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
                                     </div>
                                 </div>
-                                <div>
+                                <div class="select-box">
                                     <label class="text-sm font-medium text-gray-600">Tỉ lệ tăng ca</label>
                                     <select id="overtimeRate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
                                         <option value="">Chọn tỉ lệ tăng ca</option>
@@ -990,148 +977,7 @@
         return totalWeeklyOvertime;
     }
 
-    // Tab Switching Logic
-    document.querySelectorAll('.tab-link').forEach(tab => {
-        tab.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelectorAll('.tab-link').forEach(t => {
-                t.classList.remove('text-blue-500', 'border-blue-500');
-                t.classList.add('text-gray-600');
-            });
-            this.classList.add('text-blue-500', 'border-blue-500');
-            this.classList.remove('text-gray-600');
-
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.add('hidden');
-            });
-            document.getElementById(this.dataset.tab).classList.remove('hidden');
-
-            if (this.dataset.tab === 'approved') {
-                loadApprovedRecords();
-            } else if (this.dataset.tab === 'pending') {
-                loadPendingRecords();
-            } else if (this.dataset.tab === 'rejected') {
-                loadRejectedRecords();
-            }
-        });
-    });
-
-    // Load Approved Records (CC3, TC3, LB3)
-    async function loadApprovedRecords() {
-        try {
-            const response = await fetch(`/api/Attendance/GetApprovedRecords?maNv=${maNv}`);
-            const result = await response.json();
-            if (result.success) {
-                const tbody = document.getElementById('approvedRecords');
-                tbody.innerHTML = '';
-                result.records.forEach(record => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="p-3">${record.Loai}</td>
-                        <td class="p-3">${record.Ngay}</td>
-                        <td class="p-3">${record.GioVao || '-'}</td>
-                        <td class="p-3">${record.GioRa || '-'}</td>
-                        <td class="p-3">${record.TongGio ? record.TongGio.toFixed(2) + 'h' : '-'}</td>
-                        <td class="p-3">${record.GhiChu || '-'}</td>
-                        <td class="p-3">${record.TrangThai}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: 'Không thể tải danh sách đã duyệt.',
-                    confirmButtonText: 'OK'
-                });
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Có lỗi xảy ra khi tải danh sách đã duyệt.',
-                confirmButtonText: 'OK'
-            });
-        }
-    }
-
-    // Load Pending Records (CC1, TC1, LB1)
-    async function loadPendingRecords() {
-        try {
-            const response = await fetch(`/api/Attendance/GetPendingRecords?maNv=${maNv}`);
-            const result = await response.json();
-            if (result.success) {
-                const tbody = document.getElementById('pendingRecords');
-                tbody.innerHTML = '';
-                result.records.forEach(record => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="p-3">${record.Loai}</td>
-                        <td class="p-3">${record.Ngay}</td>
-                        <td class="p-3">${record.GioVao || '-'}</td>
-                        <td class="p-3">${record.GioRa || '-'}</td>
-                        <td class="p-3">${record.TongGio ? record.TongGio.toFixed(2) + 'h' : '-'}</td>
-                        <td class="p-3">${record.GhiChu || '-'}</td>
-                        <td class="p-3">${record.TrangThai}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: 'Không thể tải danh sách chờ duyệt.',
-                    confirmButtonText: 'OK'
-                });
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Có lỗi xảy ra khi tải danh sách chờ duyệt.',
-                confirmarginsText: 'OK'
-            });
-        }
-    }
-
-    // Load Rejected Records (CC4, TC4, LB4)
-    async function loadRejectedRecords() {
-        try {
-            const response = await fetch(`/api/Attendance/GetRejectedRecords?maNv=${maNv}`);
-            const result = await response.json();
-            if (result.success) {
-                const tbody = document.getElementById('rejectedRecords');
-                tbody.innerHTML = '';
-                result.records.forEach(record => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="p-3">${record.Loai}</td>
-                        <td class="p-3">${record.Ngay}</td>
-                        <td class="p-3">${record.GioVao || '-'}</td>
-                        <td class="p-3">${record.GioRa || '-'}</td>
-                        <td class="p-3">${record.TongGio ? record.TongGio.toFixed(2) + 'h' : '-'}</td>
-                        <td class="p-3">${record.GhiChu || '-'}</td>
-                        <td class="p-3">${record.TrangThai}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: 'Không thể tải danh sách từ chối.',
-                    confirmButtonText: 'OK'
-                });
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Có lỗi xảy ra khi tải danh sách từ chối.',
-                confirmButtonText: 'OK'
-            });
-        }
-    }
+   
 
     window.addEventListener('load', loadOvertimeRates);
 </script>

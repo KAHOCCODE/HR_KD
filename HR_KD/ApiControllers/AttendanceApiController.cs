@@ -1,5 +1,4 @@
-﻿
-using HR_KD.Data;
+﻿using HR_KD.Data;
 using HR_KD.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -508,7 +507,7 @@ namespace HR_KD.ApiControllers
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
 
-            var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && (c.TrangThai == "CC3" || c.TrangThai == "CC5" || c.TrangThai == "CC6"));
+            var query = _context.ChamCongs.Where(c => c.MaNv == maNv.Value && (c.TrangThai == "CC3"));
 
             if (!string.IsNullOrEmpty(ngayLamViec) && DateOnly.TryParse(ngayLamViec, out DateOnly ngay))
             {
@@ -532,7 +531,7 @@ namespace HR_KD.ApiControllers
 
         [HttpGet]
         [Route("GetApprovedRecords")]
-        public async Task<IActionResult> GetApprovedRecords()
+        public async Task<IActionResult> GetApprovedRecords(string? startDate = null, string? endDate = null)
         {
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
@@ -542,68 +541,83 @@ namespace HR_KD.ApiControllers
 
             try
             {
-                // Fetch Approved Attendance (CC3)
-                var attendanceRecords = await _context.ChamCongs
+                // Define the base queries with aligned anonymous types
+                var chamCongQuery = _context.ChamCongs
                     .Where(c => c.MaNv == maNv.Value && c.TrangThai == "CC3")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Chấm Công",
-                        Ngay = c.NgayLamViec.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.TongGio,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
-                    })
-                    .ToListAsync();
+                        Ngay = c.NgayLamViec, // DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = c.TongGio, // decimal?
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
 
-                // Fetch Approved Overtime (TC3)
-                var overtimeRecords = await _context.TangCas
+                var tangCaQuery = _context.TangCas
                     .Where(c => c.MaNv == maNv.Value && c.TrangThai == "TC3")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Tăng Ca",
-                        Ngay = c.NgayTangCa.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.SoGioTangCa,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
-                    })
-                    .ToListAsync();
+                        Ngay = c.NgayTangCa, // DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = (decimal?)c.SoGioTangCa, // Cast to decimal? to align types
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
 
-                // Fetch Approved Compensatory Work (LB3)
-                var compensatoryRecords = await _context.LamBus
+                var lamBuQuery = _context.LamBus
                     .Where(c => c.MaNV == maNv.Value && c.TrangThai == "LB3")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Làm Bù",
-                        Ngay = c.NgayLamViec.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.TongGio,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
+                        Ngay = c.NgayLamViec, // DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = c.TongGio, // decimal?
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
+
+                // Combine queries with Union
+                var query = chamCongQuery
+                    .Union(tangCaQuery)
+                    .Union(lamBuQuery);
+
+                // Apply date filtering if provided
+                if (DateOnly.TryParse(startDate, out DateOnly start) && DateOnly.TryParse(endDate, out DateOnly end))
+                {
+                    query = query.Where(r => r.Ngay >= start && r.Ngay <= end);
+                }
+
+                // Project into DTO after Union
+                var records = await query
+                    .OrderBy(r => r.Ngay)
+                    .Select(r => new AttendanceRecordDTO
+                    {
+                        Loai = r.Loai,
+                        Ngay = r.Ngay.ToString("yyyy-MM-dd"),
+                        GioVao = r.GioVao.HasValue ? r.GioVao.Value.ToString("HH:mm") : null,
+                        GioRa = r.GioRa.HasValue ? r.GioRa.Value.ToString("HH:mm") : null,
+                        TongGio = r.TongGio,
+                        GhiChu = r.GhiChu,
+                        TrangThai = r.TrangThai
                     })
                     .ToListAsync();
-
-                var records = attendanceRecords
-                    .Concat(overtimeRecords)
-                    .Concat(compensatoryRecords)
-                    .OrderBy(r => r.Ngay)
-                    .ToList();
 
                 return Ok(new { success = true, records });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message, stackTrace = ex.StackTrace });
             }
         }
 
         [HttpGet]
         [Route("GetPendingRecords")]
-        public async Task<IActionResult> GetPendingRecords()
+        public async Task<IActionResult> GetPendingRecords(string? startDate = null, string? endDate = null)
         {
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
@@ -613,68 +627,83 @@ namespace HR_KD.ApiControllers
 
             try
             {
-                // Fetch Pending Attendance (CC1)
-                var attendanceRecords = await _context.LichSuChamCongs
+                // Define the base queries with aligned anonymous types
+                var chamCongQuery = _context.LichSuChamCongs
                     .Where(c => c.MaNv == maNv.Value && c.TrangThai == "LS1")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Chấm Công",
-                        Ngay = c.Ngay.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.TongGio,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
-                    })
-                    .ToListAsync();
+                        Ngay = c.Ngay, // Ensure DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = c.TongGio, // decimal?
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
 
-                // Fetch Pending Overtime (TC1)
-                var overtimeRecords = await _context.TangCas
+                var tangCaQuery = _context.TangCas
                     .Where(c => c.MaNv == maNv.Value && c.TrangThai == "TC1")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Tăng Ca",
-                        Ngay = c.NgayTangCa.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.SoGioTangCa,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
-                    })
-                    .ToListAsync();
+                        Ngay = c.NgayTangCa, // Ensure DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = (decimal?)c.SoGioTangCa, // Cast to decimal? to align types
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
 
-                // Fetch Pending Compensatory Work (LB1)
-                var compensatoryRecords = await _context.LamBus
+                var lamBuQuery = _context.LamBus
                     .Where(c => c.MaNV == maNv.Value && c.TrangThai == "LB1")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Làm Bù",
-                        Ngay = c.NgayLamViec.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.TongGio,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
+                        Ngay = c.NgayLamViec, // Ensure DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = c.TongGio, // decimal?
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
+
+                // Combine queries with Union
+                var query = chamCongQuery
+                    .Union(tangCaQuery)
+                    .Union(lamBuQuery);
+
+                // Apply date filtering if provided
+                if (DateOnly.TryParse(startDate, out DateOnly start) && DateOnly.TryParse(endDate, out DateOnly end))
+                {
+                    query = query.Where(r => r.Ngay >= start && r.Ngay <= end);
+                }
+
+                // Project into DTO after Union
+                var records = await query
+                    .OrderBy(r => r.Ngay)
+                    .Select(r => new AttendanceRecordDTO
+                    {
+                        Loai = r.Loai,
+                        Ngay = r.Ngay.ToString("yyyy-MM-dd"),
+                        GioVao = r.GioVao.HasValue ? r.GioVao.Value.ToString("HH:mm") : null,
+                        GioRa = r.GioRa.HasValue ? r.GioRa.Value.ToString("HH:mm") : null,
+                        TongGio = r.TongGio,
+                        GhiChu = r.GhiChu,
+                        TrangThai = r.TrangThai
                     })
                     .ToListAsync();
-
-                var records = attendanceRecords
-                    .Concat(overtimeRecords)
-                    .Concat(compensatoryRecords)
-                    .OrderBy(r => r.Ngay)
-                    .ToList();
 
                 return Ok(new { success = true, records });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message, stackTrace = ex.StackTrace });
             }
         }
 
         [HttpGet]
         [Route("GetRejectedRecords")]
-        public async Task<IActionResult> GetRejectedRecords()
+        public async Task<IActionResult> GetRejectedRecords(string? startDate = null, string? endDate = null)
         {
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
@@ -684,62 +713,77 @@ namespace HR_KD.ApiControllers
 
             try
             {
-                // Fetch Rejected Attendance (CC4)
-                var attendanceRecords = await _context.LichSuChamCongs
+                // Define the base queries with aligned anonymous types
+                var chamCongQuery = _context.LichSuChamCongs
                     .Where(c => c.MaNv == maNv.Value && c.TrangThai == "CC4")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Chấm Công",
-                        Ngay = c.Ngay.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.TongGio,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
-                    })
-                    .ToListAsync();
+                        Ngay = c.Ngay, // DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = c.TongGio, // decimal?
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
 
-                // Fetch Rejected Overtime (TC4)
-                var overtimeRecords = await _context.TangCas
+                var tangCaQuery = _context.TangCas
                     .Where(c => c.MaNv == maNv.Value && c.TrangThai == "TC4")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Tăng Ca",
-                        Ngay = c.NgayTangCa.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.SoGioTangCa,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
-                    })
-                    .ToListAsync();
+                        Ngay = c.NgayTangCa, // DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = (decimal?)c.SoGioTangCa, // Cast to decimal? to align types
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
 
-                // Fetch Rejected Compensatory Work (LB4)
-                var compensatoryRecords = await _context.LamBus
+                var lamBuQuery = _context.LamBus
                     .Where(c => c.MaNV == maNv.Value && c.TrangThai == "LB4")
-                    .Select(c => new AttendanceRecordDTO
+                    .Select(c => new
                     {
                         Loai = "Làm Bù",
-                        Ngay = c.NgayLamViec.ToString("yyyy-MM-dd"),
-                        GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
-                        GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
-                        TongGio = c.TongGio,
-                        GhiChu = c.GhiChu,
-                        TrangThai = c.TrangThai
+                        Ngay = c.NgayLamViec, // DateOnly
+                        GioVao = c.GioVao, // TimeOnly?
+                        GioRa = c.GioRa, // TimeOnly?
+                        TongGio = c.TongGio, // decimal?
+                        GhiChu = c.GhiChu ?? "", // string
+                        TrangThai = c.TrangThai // string
+                    });
+
+                // Combine queries with Union
+                var query = chamCongQuery
+                    .Union(tangCaQuery)
+                    .Union(lamBuQuery);
+
+                // Apply date filtering if provided
+                if (DateOnly.TryParse(startDate, out DateOnly start) && DateOnly.TryParse(endDate, out DateOnly end))
+                {
+                    query = query.Where(r => r.Ngay >= start && r.Ngay <= end);
+                }
+
+                // Project into DTO after Union
+                var records = await query
+                    .OrderBy(r => r.Ngay)
+                    .Select(r => new AttendanceRecordDTO
+                    {
+                        Loai = r.Loai,
+                        Ngay = r.Ngay.ToString("yyyy-MM-dd"),
+                        GioVao = r.GioVao.HasValue ? r.GioVao.Value.ToString("HH:mm") : null,
+                        GioRa = r.GioRa.HasValue ? r.GioRa.Value.ToString("HH:mm") : null,
+                        TongGio = r.TongGio,
+                        GhiChu = r.GhiChu,
+                        TrangThai = r.TrangThai
                     })
                     .ToListAsync();
-
-                var records = attendanceRecords
-                    .Concat(overtimeRecords)
-                    .Concat(compensatoryRecords)
-                    .OrderBy(r => r.Ngay)
-                    .ToList();
 
                 return Ok(new { success = true, records });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message, stackTrace = ex.StackTrace });
             }
         }
     }

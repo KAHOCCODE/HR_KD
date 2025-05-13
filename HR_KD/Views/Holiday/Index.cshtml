@@ -3,12 +3,16 @@
 }
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="~/css/holiday.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <div class="container mt-4">
-    <h2 class="text-primary">Quản lý Ngày Lễ</h2>
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="text-primary">Quản lý Ngày Lễ</h2>
+        <button type="button" class="btn btn-warning" id="requestOpenApproval">Gửi Yêu Cầu Mở Duyệt</button>
+    </div>
 
     <div class="alert alert-info" id="holidayPeriodAlert" style="display: none;">
-        <strong>Lưu ý:</strong> Chức năng thêm ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hàng năm.
+        <strong>Lưu ý:</strong> <span id="alertMessage"></span>
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -35,27 +39,8 @@
         </thead>
         <tbody id="holidayTableBody"></tbody>
     </table>
-</div>
 
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Xác nhận xóa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Bạn có chắc chắn muốn xóa ngày lễ này?</p>
-                <p class="text-danger"><strong>Lưu ý:</strong> Tất cả dữ liệu chấm công của nhân viên liên quan đến ngày lễ này cũng sẽ bị xóa.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-danger" id="confirmDelete">Xóa</button>
-            </div>
-        </div>
-    </div>
-</div>
-<form id="holidayForm">
+    <form id="holidayForm">
         <div class="mb-3">
             <label class="form-label">Tên Ngày Lễ</label>
             <input type="text" class="form-control" id="tenNgayLe" required>
@@ -81,77 +66,200 @@
             <button type="button" class="btn btn-success ms-2" id="saveFixedHolidays">Lưu Lễ Có Sẵn</button>
         </div>
     </form>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</div>
 
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa ngày lễ này?</p>
+                <p class="text-danger"><strong>Lưu ý:</strong> Tất cả dữ liệu chấm công của nhân viên liên quan đến ngày lễ này cũng sẽ bị xóa.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Kiểm tra thời gian hiện tại có nằm trong khoảng 1/12-30/12 không
         function isInHolidayPeriod() {
             const today = new Date();
-            const currentMonth = today.getMonth() + 1; // Tháng bắt đầu từ 0
+            const currentMonth = today.getMonth() + 1;
             const currentDay = today.getDate();
-            
             return currentMonth === 12 && currentDay >= 1 && currentDay <= 30;
         }
 
-        // Hiển thị thông báo và disable form nếu không trong khoảng thời gian cho phép
+        // Kiểm tra xem có yêu cầu mở duyệt đang chờ xử lý cho năm cụ thể không
+        function checkPendingRequest(year) {
+            return fetch(`/api/Holidays/CheckOpenApprovalRequest?year=${year}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => data.exists);
+        }
+
+        // Hiển thị thông báo và quản lý trạng thái form/nút
         function checkHolidayPeriod() {
+            const currentYear = new Date().getFullYear();
+            const selectedYear = document.getElementById('yearFilter').value || currentYear;
             const isInPeriod = isInHolidayPeriod();
             const holidayForm = document.getElementById('holidayForm');
             const saveButton = document.getElementById('saveHoliday');
             const saveFixedButton = document.getElementById('saveFixedHolidays');
             const alertElement = document.getElementById('holidayPeriodAlert');
+            const alertMessage = document.getElementById('alertMessage');
             const deleteButtons = document.querySelectorAll('.delete-btn');
 
-            if (!isInPeriod) {
-                // Disable form thêm ngày lễ
-                holidayForm.style.opacity = '0.5';
-                holidayForm.style.pointerEvents = 'none';
-                saveButton.disabled = true;
-                saveFixedButton.disabled = true;
-                
-                // Disable các nút xóa
-                deleteButtons.forEach(button => {
-                    button.disabled = true;
-                    button.style.opacity = '0.5';
-                    button.style.cursor = 'not-allowed';
-                });
-
-                // Hiển thị thông báo
-                alertElement.style.display = 'block';
-            } else {
-                // Enable form thêm ngày lễ
+            if (isInPeriod) {
+                // Trong khoảng 1/12-30/12, mở tất cả chức năng
                 holidayForm.style.opacity = '1';
                 holidayForm.style.pointerEvents = 'auto';
                 saveButton.disabled = false;
                 saveFixedButton.disabled = false;
-                
-                // Enable các nút xóa
                 deleteButtons.forEach(button => {
                     button.disabled = false;
                     button.style.opacity = '1';
                     button.style.cursor = 'pointer';
                 });
-
-                // Ẩn thông báo
                 alertElement.style.display = 'none';
+            } else {
+                // Ngoài khoảng 1/12-30/12, kiểm tra yêu cầu mở duyệt cho năm hiện tại
+                checkPendingRequest(currentYear).then(hasPendingRequest => {
+                    if (hasPendingRequest) {
+                        // Có yêu cầu đang chờ, khóa chức năng
+                        holidayForm.style.opacity = '0.5';
+                        holidayForm.style.pointerEvents = 'none';
+                        saveButton.disabled = true;
+                        saveFixedButton.disabled = true;
+                        deleteButtons.forEach(button => {
+                            button.disabled = true;
+                            button.style.opacity = '0.5';
+                            button.style.cursor = 'not-allowed';
+                        });
+                        alertMessage.textContent = `Có yêu cầu mở duyệt ngày lễ đang chờ xử lý cho năm ${currentYear}. Vui lòng chờ phản hồi từ quản lý.`;
+                        alertElement.style.display = 'block';
+                    } else {
+                        // Không có yêu cầu đang chờ, kiểm tra yêu cầu đã duyệt cho năm hiện tại
+                        fetch(`/api/Holidays/CheckApprovedRequest?year=${currentYear}`, {
+                            method: 'GET',
+                            headers: { 'Content-Type': 'application/json' }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.exists) {
+                                // Có yêu cầu đã duyệt cho năm hiện tại, mở chức năng
+                                holidayForm.style.opacity = '1';
+                                holidayForm.style.pointerEvents = 'auto';
+                                saveButton.disabled = false;
+                                saveFixedButton.disabled = false;
+                                deleteButtons.forEach(button => {
+                                    button.disabled = false;
+                                    button.style.opacity = '1';
+                                    button.style.cursor = 'pointer';
+                                });
+                                alertElement.style.display = 'none';
+                            } else {
+                                // Không có yêu cầu đã duyệt, khóa chức năng
+                                holidayForm.style.opacity = '0.5';
+                                holidayForm.style.pointerEvents = 'none';
+                                saveButton.disabled = true;
+                                saveFixedButton.disabled = true;
+                                deleteButtons.forEach(button => {
+                                    button.disabled = true;
+                                    button.style.opacity = '0.5';
+                                    button.style.cursor = 'not-allowed';
+                                });
+                                alertMessage.textContent = `Chức năng thêm/xóa ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hoặc khi có yêu cầu được duyệt cho năm ${currentYear}.`;
+                                alertElement.style.display = 'block';
+                            }
+                            updateRequestButtonState();
+                        });
+                    }
+                });
             }
         }
 
-        // Gọi hàm kiểm tra khi trang load và sau mỗi lần cập nhật bảng
-        checkHolidayPeriod();
+        // Cập nhật trạng thái nút yêu cầu mở duyệt
+        function updateRequestButtonState() {
+            const isInPeriod = isInHolidayPeriod();
+            const requestButton = document.getElementById('requestOpenApproval');
+            const currentYear = new Date().getFullYear();
+
+            if (isInPeriod) {
+                requestButton.disabled = true;
+                requestButton.style.opacity = '0.5';
+                requestButton.style.cursor = 'not-allowed';
+                requestButton.title = 'Chức năng mở duyệt không khả dụng trong thời gian từ 1/12 đến 30/12';
+            } else {
+                checkPendingRequest(currentYear).then(hasPendingRequest => {
+                    if (hasPendingRequest) {
+                        requestButton.disabled = true;
+                        requestButton.style.opacity = '0.5';
+                        requestButton.style.cursor = 'not-allowed';
+                        requestButton.title = `Đã có yêu cầu mở duyệt đang chờ xử lý cho năm ${currentYear}`;
+                    } else {
+                        requestButton.disabled = false;
+                        requestButton.style.opacity = '1';
+                        requestButton.style.cursor = 'pointer';
+                        requestButton.title = 'Gửi yêu cầu để mở chức năng quản lý ngày lễ';
+                    }
+                });
+            }
+        }
+
+        // Xử lý sự kiện nút gửi yêu cầu mở duyệt
+        document.getElementById('requestOpenApproval').addEventListener('click', function() {
+            const currentYear = new Date().getFullYear();
+            if (isInHolidayPeriod()) {
+                alert("Yêu cầu mở duyệt không khả dụng trong khoảng thời gian từ 1/12 đến 30/12.");
+                return;
+            }
+
+            checkPendingRequest(currentYear).then(exists => {
+                if (exists) {
+                    alert(`Đã có yêu cầu mở duyệt đang chờ xử lý cho năm ${currentYear}. Vui lòng chờ phản hồi từ quản lý.`);
+                } else {
+                    fetch('/api/Holidays/RequestOpenApproval', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            TenYeuCau: "Yêu cầu mở duyệt ngày lễ",
+                            MoTa: `Yêu cầu mở chức năng quản lý ngày lễ năm ${currentYear} ngoài khoảng thời gian 1/12-30/12`
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            alert("Yêu cầu mở duyệt đã được gửi thành công!");
+                            checkHolidayPeriod(); // Refresh UI state
+                        } else {
+                            alert("Lỗi khi gửi yêu cầu: " + (result.message || "Không xác định"));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert("Đã xảy ra lỗi khi gửi yêu cầu!");
+                    });
+                }
+            });
+        });
 
         // Biến lưu ID ngày lễ cần xóa
         let holidayIdToDelete = null;
-
-        // Modal xác nhận xóa
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-
-        // Mảng lưu trữ các ngày lễ đã tồn tại
         let existingHolidays = [];
 
-        // Hàm khởi tạo DatePicker
+        // Khởi tạo DatePicker
         function initializeDatePicker() {
             flatpickr("#holidayDate", {
                 dateFormat: "Y-m-d",
@@ -159,24 +267,18 @@
                     function(date) {
                         let today = new Date();
                         today.setHours(0, 0, 0, 0);
-
-                        // Chỉ chặn ngày trong quá khứ và Chủ Nhật
                         if (date < today || date.getDay() === 0) {
                             return true;
                         }
-
-                        // Chặn các ngày đã tồn tại trong hệ thống
                         const dateString = date.toISOString().split("T")[0];
                         return existingHolidays.includes(dateString);
                     }
                 ],
-                locale: {
-                    firstDayOfWeek: 1 // Đặt Thứ Hai là ngày đầu tuần
-                }
+                locale: { firstDayOfWeek: 1 }
             });
         }
 
-        // Hàm lấy tất cả các ngày lễ đã tồn tại
+        // Lấy danh sách ngày lễ đã tồn tại
         function fetchExistingHolidays() {
             return fetch('/api/Holidays/GetAll')
                 .then(response => response.json())
@@ -186,250 +288,231 @@
                 });
         }
 
-        // Định nghĩa danh sách các ngày lễ lớn cố định
+        // Danh sách ngày lễ cố định
         const fixedHolidays = [
             { ten: "Tết Dương Lịch", ngay: "01-01", soNgayNghi: 1 },
             { ten: "Ngày Quốc Tế Lao Động", ngay: "05-01", soNgayNghi: 1 },
             { ten: "Ngày Giải Phóng miền Nam", ngay: "04-30", soNgayNghi: 1 },
             { ten: "Quốc Khánh", ngay: "09-02", soNgayNghi: 1 }
-            // Bạn có thể thêm các ngày lễ khác vào đây
         ];
 
-        // Hàm thêm các ngày lễ cố định cho năm được chọn từ DatePicker
+        // Lưu ngày lễ cố định
+        function saveFixedHolidaysForYear(year) {
+            const requests = [];
+            const holidaysToReschedule = [];
+
+            fixedHolidays.forEach(holiday => {
+                const fullDate = `${year}-${holiday.ngay}`;
+                const currentDate = new Date(fullDate);
+                const formattedDate = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
+
+                if (!existingHolidays.includes(formattedDate)) {
+                    requests.push(
+                        fetch('/api/Holidays/Add', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                TenNgayLe: holiday.ten,
+                                NgayLe1: formattedDate,
+                                SoNgayNghi: holiday.soNgayNghi,
+                                MoTa: `Ngày lễ ${holiday.ten} của năm ${year}`
+                            })
+                        }).then(response => response.json())
+                    );
+                }
+
+                if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+                    holidaysToReschedule.push({ holiday, originalDate: formattedDate });
+                }
+            });
+
+            Promise.all(requests).then(results => {
+                const successfulAdds = results.filter(res => res.success !== false).length;
+                holidaysToReschedule.forEach(({ holiday, originalDate }) => {
+                    let rescheduleDate = new Date(originalDate);
+                    let daysToAdd = 1;
+
+                    if (holiday.ten === "Ngày Giải Phóng miền Nam") {
+                        const mayFirst = new Date(`${rescheduleDate.getFullYear()}-05-01`);
+                        if (mayFirst.getDay() === 1) {
+                            daysToAdd = 2;
+                        }
+                    }
+
+                    if (new Date(originalDate).getDay() === 6) {
+                        daysToAdd = 2;
+                    }
+
+                    rescheduleDate.setDate(rescheduleDate.getDate() + daysToAdd);
+                    let rescheduledFormattedDate = `${rescheduleDate.getFullYear()}-${(rescheduleDate.getMonth() + 1).toString().padStart(2, '0')}-${rescheduleDate.getDate().toString().padStart(2, '0')}`;
+                    let rescheduleName = holiday.ten;
+                    let rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào cuối tuần`;
+
+                    if (holiday.ten === "Ngày Giải Phóng miền Nam" && daysToAdd === 2) {
+                        rescheduleName = "Ngày Giải Phóng miền Nam (Nghỉ bù)";
+                        rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào cuối tuần và đi liền với Ngày Quốc Tế Lao Động`;
+                    } else if (holiday.ten !== "Ngày Giải Phóng miền Nam") {
+                        rescheduleName = `Nghỉ bù ${holiday.ten}`;
+                    }
+
+                    while (existingHolidays.includes(rescheduledFormattedDate)) {
+                        rescheduleDate.setDate(rescheduleDate.getDate() + 1);
+                        rescheduledFormattedDate = `${rescheduleDate.getFullYear()}-${(rescheduleDate.getMonth() + 1).toString().padStart(2, '0')}-${rescheduleDate.getDate().toString().padStart(2, '0')}`;
+                    }
+
+                    requests.push(
+                        fetch('/api/Holidays/Add', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                TenNgayLe: rescheduleName,
+                                NgayLe1: rescheduledFormattedDate,
+                                SoNgayNghi: holiday.soNgayNghi,
+                                MoTa: rescheduleDescription
+                            })
+                        }).then(response => response.json())
+                    );
+                });
+
+                Promise.all(requests.slice(successfulAdds)).then(rescheduledResults => {
+                    const allResults = [...results, ...rescheduledResults];
+                    if (allResults.every(res => res.success !== false)) {
+                        alert(`Đã thêm ${allResults.length} ngày lễ cho năm ${year} thành công!`);
+                        fetchExistingHolidays().then(() => {
+                            initializeDatePicker();
+                            fetchHolidays(document.getElementById('yearFilter').value);
+                            updateFixedHolidayYearOptions();
+                            window.location.reload();
+                        });
+                    } else {
+                        alert("Có lỗi xảy ra khi thêm một số ngày lễ.");
+                    }
+                });
+            }).catch(error => {
+                console.error("Lỗi khi thêm ngày lễ:", error);
+                alert("Đã xảy ra lỗi khi thêm ngày lễ.");
+            });
+        }
+
+        // Xử lý nút lưu ngày lễ
         document.getElementById("saveHoliday").addEventListener("click", function () {
-            const selectedDate = document.getElementById("holidayDate").value;
-            if (selectedDate) {
-                const selectedYear = new Date(selectedDate).getFullYear();
-                saveFixedHolidaysForYear(selectedYear);
-            } else {
-                alert("Vui lòng chọn ngày lễ trước khi lưu.");
+            const tenNgayLe = document.getElementById("tenNgayLe").value;
+            const holidayDate = document.getElementById("holidayDate").value;
+            const soNgayNghi = document.getElementById("soNgayNghi").value;
+            const moTa = document.getElementById("moTa").value;
+
+            if (!tenNgayLe || !holidayDate) {
+                alert("Vui lòng nhập đầy đủ Tên Ngày Lễ và Ngày Lễ.");
+                return;
             }
+
+            fetch('/api/Holidays/Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    TenNgayLe: tenNgayLe,
+                    NgayLe1: holidayDate,
+                    SoNgayNghi: parseInt(soNgayNghi),
+                    MoTa: moTa
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert("Ngày lễ đã được thêm thành công!");
+                    document.getElementById("holidayForm").reset();
+                    fetchExistingHolidays().then(() => {
+                        initializeDatePicker();
+                        fetchHolidays(document.getElementById('yearFilter').value);
+                    });
+                } else {
+                    alert("Lỗi khi thêm ngày lễ: " + (result.message || "Không xác định"));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Đã xảy ra lỗi khi thêm ngày lễ!");
+            });
         });
 
-        // Hàm thêm các ngày lễ cố định cho năm đã chọn
+        // Xử lý nút lưu lễ có sẵn
         document.getElementById("saveFixedHolidays").addEventListener("click", function () {
             const selectedYear = document.getElementById("fixedHolidayYear").value;
             const yearToSave = selectedYear === "" ? new Date().getFullYear() : parseInt(selectedYear);
             saveFixedHolidaysForYear(yearToSave);
         });
 
-function saveFixedHolidaysForYear(year) {
-    const requests = [];
-    const holidaysToReschedule = [];
-
-    fixedHolidays.forEach(holiday => {
-        const fullDate = `${year}-${holiday.ngay}`;
-        const currentDate = new Date(fullDate);
-        const formattedDate = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
-
-        // Luôn thêm ngày lễ gốc, kể cả khi rơi vào cuối tuần
-        if (!existingHolidays.includes(formattedDate)) {
-            requests.push(
-                fetch('/api/Holidays/Add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        TenNgayLe: holiday.ten,
-                        NgayLe1: formattedDate,
-                        SoNgayNghi: holiday.soNgayNghi,
-                        MoTa: `Ngày lễ ${holiday.ten} của năm ${year}`
-                    })
-                }).then(response => response.json())
-            );
-            console.log(`Đã lên lịch ${holiday.ten} vào ${formattedDate}.`);
-        }
-
-        // Nếu ngày lễ rơi vào cuối tuần, thêm ngày nghỉ bù
-        if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-            holidaysToReschedule.push({ holiday, originalDate: formattedDate });
-            console.log(`Ngày ${holiday.ten} (${formattedDate}) rơi vào cuối tuần, sẽ thêm ngày nghỉ bù.`);
-        }
-    });
-
-    // Chạy các request cho ngày lễ gốc trước
-    Promise.all(requests).then(results => {
-        const successfulAdds = results.filter(res => res.success !== false).length;
-        if (successfulAdds > 0) {
-            console.log(`Đã thêm ${successfulAdds} ngày lễ gốc.`);
-        }
-
-        // Xử lý các ngày nghỉ bù cho ngày lễ rơi vào cuối tuần
-        holidaysToReschedule.forEach(({ holiday, originalDate }) => {
-            let rescheduleDate = new Date(originalDate);
-            let daysToAdd = 1;
-
-            // Xử lý đặc biệt cho ngày Giải phóng miền Nam
-            if (holiday.ten === "Ngày Giải Phóng miền Nam") {
-                const mayFirst = new Date(`${rescheduleDate.getFullYear()}-05-01`);
-                if (mayFirst.getDay() === 1) { // Nếu 1/5 là Thứ Hai
-                    daysToAdd = 2;
-                }
-            }
-
-            // Nếu ngày lễ rơi vào thứ 7, nghỉ bù vào thứ 2
-            if (new Date(originalDate).getDay() === 6) {
-                daysToAdd = 2;
-            }
-
-            rescheduleDate.setDate(rescheduleDate.getDate() + daysToAdd);
-            let rescheduledFormattedDate = `${rescheduleDate.getFullYear()}-${(rescheduleDate.getMonth() + 1).toString().padStart(2, '0')}-${rescheduleDate.getDate().toString().padStart(2, '0')}`;
-            let rescheduleName = holiday.ten;
-            let rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào cuối tuần`;
-
-            if (holiday.ten === "Ngày Giải Phóng miền Nam" && daysToAdd === 2) {
-                rescheduleName = "Ngày Giải Phóng miền Nam (Nghỉ bù)";
-                rescheduleDescription = `Nghỉ bù cho ngày lễ ${holiday.ten} (${originalDate}) rơi vào cuối tuần và đi liền với Ngày Quốc Tế Lao Động`;
-            } else if (holiday.ten !== "Ngày Giải Phóng miền Nam") {
-                rescheduleName = `Nghỉ bù ${holiday.ten}`;
-            }
-
-            // Kiểm tra ngày mới đã tồn tại chưa
-            while (existingHolidays.includes(rescheduledFormattedDate)) {
-                console.log(`Ngày nghỉ bù dự kiến ${rescheduledFormattedDate} đã trùng, dời thêm 1 ngày.`);
-                rescheduleDate.setDate(rescheduleDate.getDate() + 1);
-                rescheduledFormattedDate = `${rescheduleDate.getFullYear()}-${(rescheduleDate.getMonth() + 1).toString().padStart(2, '0')}-${rescheduleDate.getDate().toString().padStart(2, '0')}`;
-            }
-
-            requests.push(
-                fetch('/api/Holidays/Add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        TenNgayLe: rescheduleName,
-                        NgayLe1: rescheduledFormattedDate,
-                        SoNgayNghi: holiday.soNgayNghi,
-                        MoTa: rescheduleDescription
-                    })
-                }).then(response => response.json())
-            );
-            console.log(`Đã lên lịch ${rescheduleName} (nghỉ bù) vào ${rescheduledFormattedDate}.`);
-        });
-
-        Promise.all(requests.slice(successfulAdds)).then(rescheduledResults => {
-            const allResults = [...results, ...rescheduledResults];
-            if (allResults.every(res => res.success !== false)) {
-                alert(`Đã thêm ${allResults.length} ngày lễ (bao gồm cả ngày lễ gốc và ngày nghỉ bù) cho năm ${year} thành công!`);
-                fetchExistingHolidays().then(() => {
-                    initializeDatePicker();
-                    fetchHolidays(document.getElementById('yearFilter').value);
-                    updateFixedHolidayYearOptions();
-                    window.location.reload();
-                });
-            } else {
-                alert("Có lỗi xảy ra khi thêm một số ngày lễ.");
-            }
-        });
-    }).catch(error => {
-        console.error("Lỗi khi thêm ngày lễ:", error);
-        alert("Đã xảy ra lỗi khi thêm ngày lễ.");
-    });
-}
-
+        // Lấy và hiển thị danh sách ngày lễ
         function fetchHolidays(year) {
             fetch('/api/Holidays/GetAll')
                 .then(response => response.json())
                 .then(data => {
-                    // Cập nhật danh sách ngày lễ đã tồn tại
                     existingHolidays = data.map(h => h.ngayLe1);
+                    let filteredData = year ? data.filter(h => h.ngayLe1 && new Date(h.ngayLe1).getFullYear() === parseInt(year)) : data;
 
-                    // Lọc theo năm nếu có chọn năm
-                    let filteredData = data;
-                    if (year) {
-                        filteredData = data.filter(h => {
-                            if (!h.ngayLe1) return false;
-                            const holidayDate = new Date(h.ngayLe1);
-                            return holidayDate.getFullYear() === parseInt(year);
-                        });
-                    }
-
-                    // Hiển thị dữ liệu đã lọc
                     let tableBody = document.getElementById("holidayTableBody");
                     tableBody.innerHTML = "";
                     filteredData.forEach(h => {
-                        let statusText = '';
-                        switch(h.trangThai) {
-                            case 'NL1':
-                                statusText = 'Ngày lễ thường';
-                                break;
-                            case 'NL2':
-                                statusText = 'Ngày lễ cuối tuần';
-                                break;
-                            case 'NL3':
-                                statusText = 'Ngày nghỉ bù';
-                                break;
-                            default:
-                                statusText = h.trangThai || '-';
-                        }
+                        let statusText = h.trangThai === 'NL1' ? 'Ngày lễ thường' : 
+                                         h.trangThai === 'NL2' ? 'Ngày lễ cuối tuần' : 
+                                         h.trangThai === 'NL3' ? 'Ngày nghỉ bù' : 
+                                         h.trangThai || '-';
 
                         let row = `<tr>
-                                        <td>${h.maNgayLe}</td>
-                                        <td>${h.tenNgayLe}</td>
-                                        <td>${h.ngayLe1}</td>
-                                        <td>${h.soNgayNghi || '-'}</td>
-                                        <td>${statusText}</td>
-                                        <td>${h.moTa || '-'}</td>
-                                        <td>
-                                            <button type="button" class="btn btn-danger btn-sm delete-btn"
-                                                    data-id="${h.maNgayLe}" data-name="${h.tenNgayLe}" data-date="${h.ngayLe1}">
-                                                Xóa
-                                            </button>
-                                        </td>
-                                    </tr>`;
+                                    <td>${h.maNgayLe}</td>
+                                    <td>${h.tenNgayLe}</td>
+                                    <td>${h.ngayLe1}</td>
+                                    <td>${h.soNgayNghi || '-'}</td>
+                                    <td>${statusText}</td>
+                                    <td>${h.moTa || '-'}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-sm delete-btn"
+                                                data-id="${h.maNgayLe}" data-name="${h.tenNgayLe}" data-date="${h.ngayLe1}">
+                                            Xóa
+                                        </button>
+                                    </td>
+                                </tr>`;
                         tableBody.innerHTML += row;
                     });
 
-                    // Thêm sự kiện cho các nút xóa
                     document.querySelectorAll('.delete-btn').forEach(button => {
                         button.addEventListener('click', function() {
+                            const currentYear = new Date().getFullYear();
                             if (!isInHolidayPeriod()) {
-                                alert("Chức năng xóa ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hàng năm.");
+                                checkPendingRequest(currentYear).then(hasPendingRequest => {
+                                    if (hasPendingRequest) {
+                                        alert(`Có yêu cầu mở duyệt ngày lễ đang chờ xử lý cho năm ${currentYear}. Vui lòng chờ phản hồi từ quản lý.`);
+                                    } else {
+                                        alert(`Chức năng xóa ngày lễ chỉ được mở trong khoảng thời gian từ 1/12 đến 30/12 hoặc khi có yêu cầu được duyệt cho năm ${currentYear}.`);
+                                    }
+                                });
                                 return;
                             }
 
-                            const id = this.getAttribute('data-id');
-                            const name = this.getAttribute('data-name');
-                            const date = this.getAttribute('data-date');
-
-                            // Lưu ID để sử dụng khi xác nhận xóa
-                            holidayIdToDelete = id;
-
-                            // Hiển thị thông tin ngày lễ trong modal
+                            holidayIdToDelete = this.getAttribute('data-id');
                             document.querySelector('#deleteConfirmModal .modal-body p:first-child').textContent =
-                                `Bạn có chắc chắn muốn xóa ngày lễ "${name}" (${date})?`;
-
-                            // Hiển thị modal xác nhận
+                                `Bạn có chắc chắn muốn xóa ngày lễ "${this.getAttribute('data-name')}" (${this.getAttribute('data-date')})?`;
                             deleteModal.show();
                         });
                     });
 
-                    // Cập nhật danh sách năm trong dropdown bộ lọc
                     updateYearOptions(data);
-
-                    // Kiểm tra lại trạng thái các nút sau khi cập nhật bảng
                     checkHolidayPeriod();
                 });
         }
 
-        // Xử lý sự kiện xác nhận xóa
+        // Xử lý xóa ngày lễ
         document.getElementById('confirmDelete').addEventListener('click', function() {
             if (holidayIdToDelete) {
-                // Gửi yêu cầu xóa lên server
                 fetch(`/api/Holidays/Delete/${holidayIdToDelete}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 })
                 .then(response => response.json())
                 .then(result => {
                     if (result.success) {
-                        // Ẩn modal
                         deleteModal.hide();
-
-                        // Thông báo thành công
                         alert(`Đã xóa ngày lễ và ${result.deletedAttendanceCount} bản ghi chấm công liên quan thành công!`);
-
-                        // Cập nhật lại danh sách
                         fetchExistingHolidays().then(() => {
                             initializeDatePicker();
                             fetchHolidays(document.getElementById('yearFilter').value);
@@ -445,54 +528,33 @@ function saveFixedHolidaysForYear(year) {
             }
         });
 
-        // Hàm cập nhật danh sách năm cho dropdown bộ lọc
+        // Cập nhật danh sách năm cho bộ lọc
         function updateYearOptions(data) {
             const yearSelect = document.getElementById('yearFilter');
-
-            // Chỉ cập nhật options nếu chưa có
             if (yearSelect.options.length <= 1) {
-                // Lấy danh sách các năm từ dữ liệu
-                const years = new Set();
-                data.forEach(h => {
-                    if (h.ngayLe1) {
-                        const year = new Date(h.ngayLe1).getFullYear();
-                        years.add(year);
-                    }
-                });
-
-                // Chuyển Set thành mảng và sắp xếp giảm dần
+                const years = new Set(data.filter(h => h.ngayLe1).map(h => new Date(h.ngayLe1).getFullYear()));
                 const yearArray = [...years].sort((a, b) => b - a);
-
-                // Thêm năm hiện tại nếu chưa có
                 const currentYear = new Date().getFullYear();
                 if (!yearArray.includes(currentYear)) {
                     yearArray.unshift(currentYear);
                 }
-
-                // Thêm các option năm
                 yearArray.forEach(year => {
                     const option = document.createElement('option');
                     option.value = year;
                     option.textContent = year;
                     yearSelect.appendChild(option);
                 });
-
-                // Chọn năm hiện tại làm mặc định
                 yearSelect.value = currentYear;
             }
         }
 
-        // Hàm cập nhật danh sách năm cho dropdown "Lưu Lễ Có Sẵn"
+        // Cập nhật danh sách năm cho lễ có sẵn
         function updateFixedHolidayYearOptions() {
             const fixedHolidayYearSelect = document.getElementById('fixedHolidayYear');
             const currentYear = new Date().getFullYear();
-
-            // Xóa các option cũ (trừ option "Năm nay")
             while (fixedHolidayYearSelect.options.length > 1) {
                 fixedHolidayYearSelect.remove(1);
             }
-
-            // Thêm 5 năm tiếp theo vào dropdown
             for (let i = 1; i <= 5; i++) {
                 const year = currentYear + i;
                 const option = document.createElement('option');
@@ -502,22 +564,16 @@ function saveFixedHolidaysForYear(year) {
             }
         }
 
-        // Thêm event listener cho dropdown năm bộ lọc
+        // Sự kiện thay đổi năm bộ lọc
         document.getElementById('yearFilter').addEventListener('change', function() {
             fetchHolidays(this.value);
         });
 
-        // Khởi tạo ứng dụng - lấy dữ liệu trước khi khởi tạo date picker và dropdown năm
+        // Khởi tạo ứng dụng
         fetchExistingHolidays().then(() => {
-            // Sau khi có dữ liệu về ngày lễ đã tồn tại, khởi tạo date picker
             initializeDatePicker();
-
-            // Khởi tạo dropdown chọn năm cho lễ cố định
             updateFixedHolidayYearOptions();
-
-            // Khởi tạo với năm hiện tại làm mặc định
-            const currentYear = new Date().getFullYear();
-            fetchHolidays(currentYear);
+            fetchHolidays(new Date().getFullYear());
         });
     });
 </script>

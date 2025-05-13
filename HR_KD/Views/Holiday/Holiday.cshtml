@@ -1,5 +1,20 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+    if (string.IsNullOrEmpty(maNv))
+    {
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
+                confirmButtonText: 'OK'
+            });
+        </script>
+        return;
+    }
+}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,6 +54,9 @@
             color: #dc2626;
             font-weight: 500;
         }
+        div.search-box {
+  display: none;
+}
     </style>
 </head>
 <body>

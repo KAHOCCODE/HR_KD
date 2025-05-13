@@ -1,0 +1,239 @@
+﻿@{
+    ViewData["Title"] = "Duyệt yêu cầu";
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
+
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+<!-- Font Awesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    .card-header {
+        background-color: #007bff;
+        color: white;
+        font-weight: bold;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        text-align: center;
+    }
+
+    .table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .spinner-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0"><i class="fas fa-list me-2"></i>Duyệt yêu cầu</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-12 d-flex justify-content-end">
+                    <a href="/Holiday/Management" class="btn btn-primary">
+                        <i class="fas fa-calendar-alt me-1"></i>Quản lý ngày lễ
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Tên Yêu Cầu</th>
+                            <th>Mô Tả</th>
+                            <th>Người Tạo</th>
+                            <th>Ngày Tạo</th>
+                            <th>Trạng Thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div class="spinner-overlay" id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Đang tải...</span>
+    </div>
+</div>
+
+<!-- Bootstrap JS and Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadRequests();
+    });
+
+    function showLoading() {
+        document.getElementById('loadingSpinner').style.display = 'flex';
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+    }
+
+    function loadRequests() {
+        showLoading();
+        fetch('/api/holidaymanager/requests', { headers: { 'Accept': 'application/json' } })
+            .then(response => {
+                if (!response.ok) throw new Error('Không thể tải dữ liệu yêu cầu: ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                const tableBody = document.getElementById('requestTableBody');
+                tableBody.innerHTML = '';
+                data.forEach(request => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = request.tenYeuCau;
+                    row.insertCell().textContent = request.moTa || '-';
+                    row.insertCell().textContent = request.maNvTao || '-';
+                    row.insertCell().textContent = request.ngayTao ? new Date(request.ngayTao).toLocaleString('vi-VN') : '-';
+                    row.insertCell().textContent = request.trangThai ? 'Đã duyệt' : 'Chờ xử lý';
+
+                    const actionsCell = row.insertCell();
+
+                    if (!request.trangThai) {
+                        const approveButton = document.createElement('button');
+                        approveButton.innerHTML = '<i class="fas fa-check"></i> Duyệt';
+                        approveButton.className = 'btn btn-success btn-sm me-1';
+                        approveButton.addEventListener('click', () => approveRequest(request.maYeuCau));
+
+                        const rejectButton = document.createElement('button');
+                        rejectButton.innerHTML = '<i class="fas fa-times"></i> Từ chối';
+                        rejectButton.className = 'btn btn-danger btn-sm';
+                        rejectButton.addEventListener('click', () => rejectRequest(request.maYeuCau));
+
+                        actionsCell.appendChild(approveButton);
+                        actionsCell.appendChild(rejectButton);
+                    } else {
+                        const cancelButton = document.createElement('button');
+                        cancelButton.innerHTML = '<i class="fas fa-undo"></i> Hủy';
+                        cancelButton.className = 'btn btn-secondary btn-sm';
+                        cancelButton.addEventListener('click', () => cancelRequest(request.maYeuCau));
+                        actionsCell.appendChild(cancelButton);
+                    }
+                });
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('Lỗi khi tải danh sách yêu cầu:', error);
+                const tableBody = document.getElementById('requestTableBody');
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-danger">Không thể tải dữ liệu yêu cầu: ${error.message}</td></tr>`;
+                hideLoading();
+            });
+    }
+
+    function approveRequest(requestId) {
+        if (confirm('Bạn có chắc chắn muốn duyệt yêu cầu này?')) {
+            showLoading();
+            fetch(`/api/holidaymanager/requests/approve/${requestId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Không thể duyệt yêu cầu: ' + response.status);
+                    return response.json();
+                })
+                .then(result => {
+                    alert(result.message);
+                    loadRequests();
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Lỗi khi duyệt yêu cầu:', error);
+                    alert('Đã xảy ra lỗi khi duyệt yêu cầu: ' + error.message);
+                    hideLoading();
+                });
+        }
+    }
+
+    function rejectRequest(requestId) {
+        if (confirm('Bạn có chắc chắn muốn từ chối yêu cầu này?')) {
+            showLoading();
+            fetch(`/api/holidaymanager/requests/reject/${requestId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Không thể từ chối yêu cầu: ' + response.status);
+                    return response.json();
+                })
+                .then(result => {
+                    alert(result.message);
+                    loadRequests();
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Lỗi khi từ chối yêu cầu:', error);
+                    alert('Đã xảy ra lỗi khi từ chối yêu cầu: ' + error.message);
+                    hideLoading();
+                });
+        }
+    }
+
+    function cancelRequest(requestId) {
+        if (confirm('Bạn có chắc chắn muốn hủy duyệt yêu cầu này? Trạng thái sẽ trở về "Chờ xử lý".')) {
+            showLoading();
+            fetch(`/api/holidaymanager/requests/cancel/${requestId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Không thể hủy yêu cầu: ' + response.status);
+                    return response.json();
+                })
+                .then(result => {
+                    alert(result.message);
+                    loadRequests();
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Lỗi khi hủy yêu cầu:', error);
+                    alert('Đã xảy ra lỗi khi hủy yêu cầu: ' + error.message);
+                    hideLoading();
+                });
+        }
+    }
+</script>

@@ -362,6 +362,7 @@ namespace HR_KD.ApiControllers
         [HttpPost("CreateEmployee")]
         public IActionResult CreateEmployee([FromForm] CreateEmployeeDTO employeeDto)
         {
+            // Validate model state
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors)
@@ -373,13 +374,13 @@ namespace HR_KD.ApiControllers
             using var transaction = _context.Database.BeginTransaction();
             try
             {
-                // Kiểm tra số điện thoại đã tồn tại chưa
+                // Check if phone number is already used
                 if (_context.TaiKhoans.Any(t => t.Username == employeeDto.Sdt))
                 {
                     return Conflict(new { message = "Số điện thoại đã được sử dụng." });
                 }
 
-                // Kiểm tra phòng ban & chức vụ hợp lệ
+                // Validate department and position
                 if (!_context.PhongBans.Any(p => p.MaPhongBan == employeeDto.MaPhongBan))
                 {
                     return BadRequest(new { message = "Phòng ban không tồn tại." });
@@ -390,7 +391,7 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Chức vụ không tồn tại." });
                 }
 
-                // Tạo nhân viên mới
+                // Create new employee
                 var employee = new NhanVien
                 {
                     HoTen = employeeDto.HoTen,
@@ -411,6 +412,7 @@ namespace HR_KD.ApiControllers
                 _context.SaveChanges();
                 int maNvMoi = employee.MaNv;
 
+                // Assign default roles
                 var defaultRoles = new List<string> { "EMPLOYEE" };
                 var validRoles = _context.QuyenHans
                     .Where(q => defaultRoles.Contains(q.MaQuyenHan))
@@ -423,7 +425,7 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không có quyền hạn hợp lệ để gán cho nhân viên mới." });
                 }
 
-                // Tạo tài khoản
+                // Create account
                 string username = _usernameGen.GenerateUsername(string.IsNullOrEmpty(employeeDto.HoTen) ? "user" : employeeDto.HoTen, maNvMoi);
                 string defaultPassword = "123456";
                 string randomkey = PasswordHelper.GenerateRandomKey();
@@ -439,7 +441,7 @@ namespace HR_KD.ApiControllers
                 _context.TaiKhoans.Add(taiKhoan);
                 _context.SaveChanges();
 
-                // Gán quyền hạn cho tài khoản
+                // Assign roles to account
                 foreach (var role in validRoles)
                 {
                     _context.TaiKhoanQuyenHans.Add(new TaiKhoanQuyenHan
@@ -450,7 +452,47 @@ namespace HR_KD.ApiControllers
                 }
                 _context.SaveChanges();
 
-                // Xử lý ảnh đại diện
+                // Fetch holidays for the year of NgayVaoLam with TrangThai = "NL4"
+                var startDate = employee.NgayVaoLam;
+                if (!startDate.HasValue)
+                {
+                    _logger.LogError("NgayVaoLam is null for employee {MaNv}", maNvMoi);
+                    return BadRequest(new { message = "Ngày vào làm không được để trống." });
+                }
+                var year = startDate.Value.Year;
+                var holidays = _context.NgayLes
+                    .Where(nl => nl.TrangThai == "NL4" && nl.NgayLe1.Year == year)
+                    .ToList();
+
+                // Create attendance records for holiday dates on or after NgayVaoLam
+                foreach (var holiday in holidays)
+                {
+                    int days = holiday.SoNgayNghi.GetValueOrDefault(1); // Default to 1 day if null
+                    for (int i = 0; i < days; i++)
+                    {
+                        var holidayDate = holiday.NgayLe1.AddDays(i);
+                        if (holidayDate >= startDate.Value && !_context.ChamCongs.Any(cc => cc.MaNv == maNvMoi && cc.NgayLamViec == holidayDate))
+                        {
+                            var attendance = new ChamCong
+                            {
+                                MaNv = maNvMoi,
+                                NgayLamViec = holidayDate,
+                                GioVao = new TimeOnly(8, 0), // 8:00 AM
+                                GioRa = new TimeOnly(18, 0), // 6:00 PM
+                                TongGio = 8, // 8 hours
+                                TrangThai = "CC3", // Standard workday
+                                GhiChu = holiday.MoTa ?? "",
+                                MaNvDuyet = 1 // TODO: Replace with logic to determine approver (e.g., manager's MaNv)
+                            };
+
+                            _context.ChamCongs.Add(attendance);
+                            _logger.LogInformation("Created attendance record for MaNv {MaNv} on holiday {NgayLamViec} ({TenNgayLe})", maNvMoi, holidayDate, holiday.TenNgayLe);
+                        }
+                    }
+                }
+                _context.SaveChanges();
+
+                // Handle avatar upload
                 if (employeeDto.AvatarUrl != null)
                 {
                     try
@@ -478,62 +520,62 @@ namespace HR_KD.ApiControllers
                     }
                 }
 
-                // Gửi email thông báo
+                // Send email notification
                 try
                 {
                     string subject = "Thông tin tài khoản nhân viên";
                     string body = $@"
-            <table width='100%' cellpadding='0' cellspacing='0' style='font-family:Segoe UI, sans-serif; background: #f4f4f4; padding: 30px;'>
-                <tr>
-                    <td align='center'>
-                        <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05);'>
-                            <tr>
-                                <td style='background-color: #004080; padding: 20px 0; text-align: center;'>
-                                    <img src='' alt='Company Logo' height='50' />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style='padding: 30px;'>
-                                    <h2 style='color: #004080;'>Chào {employeeDto.HoTen},</h2>
-                                    <p>Chúc mừng bạn đã trở thành một phần của công ty 🎉.</p>
-                                    <p>Dưới đây là thông tin tài khoản để bạn có thể đăng nhập vào hệ thống:</p>
+    <table width='100%' cellpadding='0' cellspacing='0' style='font-family:Segoe UI, sans-serif; background: #f4f4f4; padding: 30px;'>
+        <tr>
+            <td align='center'>
+                <table width='600' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05);'>
+                    <tr>
+                        <td style='background-color: #004080; padding: 20px 0; text-align: center;'>
+                            <img src='' alt='Company Logo' height='50' />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='padding: 30px;'>
+                            <h2 style='color: #004080;'>Chào {employeeDto.HoTen},</h2>
+                            <p>Chúc mừng bạn đã trở thành một phần của công ty 🎉.</p>
+                            <p>Dưới đây là thông tin tài khoản để bạn có thể đăng nhập vào hệ thống:</p>
 
-                                    <table cellpadding='8' cellspacing='0' width='100%' style='margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;'>
-                                        <tr style='background-color: #f0f0f0;'>
-                                            <th align='left'>Tài khoản</th>
-                                            <th align='left'>Mật khẩu tạm thời</th>
-                                        </tr>
-                                        <tr>
-                                            <td>{taiKhoan.Username}</td>
-                                            <td>{defaultPassword}</td>
-                                        </tr>
-                                    </table>
+                            <table cellpadding='8' cellspacing='0' width='100%' style='margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;'>
+                                <tr style='background-color: #f0f0f0;'>
+                                    <th align='left'>Tài khoản</th>
+                                    <th align='left'>Mật khẩu tạm thời</th>
+                                </tr>
+                                <tr>
+                                    <td>{taiKhoan.Username}</td>
+                                    <td>{defaultPassword}</td>
+                                </tr>
+                            </table>
 
-                                    <p style='margin-top: 20px; color: #888;'>
-                                        * Vui lòng đăng nhập vào hệ thống và đổi mật khẩu để đảm bảo an toàn.
-                                    </p>
+                            <p style='margin-top: 20px; color: #888;'>
+                                * Vui lòng đăng nhập vào hệ thống và đổi mật khẩu để đảm bảo an toàn.
+                            </p>
 
-                                    <div style='text-align:center; margin: 30px 0;'>
-                                        <a href='' 
-                                            style='display:inline-block; background-color:#004080; color:white; padding:12px 20px; text-decoration:none; border-radius:5px; font-weight:bold;'>
-                                            Đăng nhập ngay
-                                        </a>
-                                    </div>
+                            <div style='text-align:center; margin: 30px 0;'>
+                                <a href='' 
+                                    style='display:inline-block; background-color:#004080; color:white; padding:12px 20px; text-decoration:none; border-radius:5px; font-weight:bold;'>
+                                    Đăng nhập ngay
+                                </a>
+                            </div>
 
-                                    <p style='font-size: 13px; color: #999; text-align: center;'>
-                                        Nếu bạn có bất kỳ câu hỏi nào, hãy liên hệ với bộ phận IT để được hỗ trợ.
-                                    </p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style='background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
-                                    © 2025 Công ty ABC | <a href='https://yourcompanydomain.com' style='color:#004080;'>Trang chủ</a>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>";
+                            <p style='font-size: 13px; color: #999; text-align: center;'>
+                                Nếu bạn có bất kỳ câu hỏi nào, hãy liên hệ với bộ phận IT để được hỗ trợ.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #777;'>
+                            © 2025 Công ty ABC | <a href='https://yourcompanydomain.com' style='color:#004080;'>Trang chủ</a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>";
 
                     _emailService.SendEmail(employeeDto.Email, subject, body);
                 }
@@ -544,7 +586,7 @@ namespace HR_KD.ApiControllers
 
                 transaction.Commit();
 
-                // Tạo DTO để trả về
+                // Create response DTO
                 var responseDto = new
                 {
                     MaNv = employee.MaNv,

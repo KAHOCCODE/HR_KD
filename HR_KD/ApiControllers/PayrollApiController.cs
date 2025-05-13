@@ -157,33 +157,77 @@ namespace HR_KD.ApiControllers
 
         #region xem chi tiết bảng lương (cho tất cả các cấp)
         [HttpGet("GetPayrollDetail/{maLuong}")]
-        // Keep it open or restrict based on requirement, e.g., [Authorize]
         public async Task<IActionResult> GetPayrollDetail(int maLuong)
         {
             var payroll = await _context.BangLuongs
-                .Include(x => x.MaNvNavigation)
-                .FirstOrDefaultAsync(x => x.MaLuong == maLuong);
+                .Include(p => p.MaNvNavigation)
+                    .ThenInclude(nv => nv.MaPhongBanNavigation)
+                .Include(p => p.MaNvNavigation.MaChucVuNavigation)
+                .FirstOrDefaultAsync(p => p.MaLuong == maLuong);
 
             if (payroll == null)
                 return NotFound("Không tìm thấy bảng lương.");
 
-            // You might want to add authorization here to ensure the user has permission to view this specific payroll (e.g., is the employee, their manager, accountant, or director)
+            var nv = payroll.MaNvNavigation;
+
+            var thongTinLuong = await _context.ThongTinLuongNVs
+                .Where(x => x.MaNv == nv.MaNv)
+                .OrderByDescending(x => x.NgayApDung)
+                .FirstOrDefaultAsync();
+
+            var hopDong = await _context.HopDongLaoDongs
+                .Include(h => h.LoaiHopDong)
+                .Where(h => h.MaNv == nv.MaNv && h.IsActive)
+                .OrderByDescending(h => h.NgayBatDau)
+                .FirstOrDefaultAsync();
+
+            var taiKhoan = await _context.TaiKhoanNganHangs
+                .Where(t => t.MaNv == nv.MaNv)
+                .FirstOrDefaultAsync();
 
             return Ok(new
             {
                 payroll.MaLuong,
                 payroll.MaNv,
-                HoTen = payroll.MaNvNavigation?.HoTen,
+                HoTen = nv?.HoTen,
+                GioiTinh = nv?.GioiTinh == true ? "Nam" : "Nữ",
+                PhongBan = nv?.MaPhongBanNavigation?.TenPhongBan ?? "N/A",
+                ChucVu = nv?.MaChucVuNavigation?.TenChucVu ?? "N/A",
+                LoaiHopDong = hopDong?.LoaiHopDong?.TenLoaiHopDong ?? "Không có",
                 payroll.ThangNam,
-                payroll.TongLuong,
-                payroll.LuongThem,
-                payroll.PhuCapThem,
-                payroll.LuongTangCa,
-                payroll.ThueTNCN,
+                // B. THU NHẬP
+                ThuNhap = new
+                {
+                    LuongCoBan = thongTinLuong?.LuongCoBan ?? 0,
+                    PhuCapCoDinh = thongTinLuong?.PhuCapCoDinh ?? 0,
+                    ThuongCoDinh = thongTinLuong?.ThuongCoDinh ?? 0,
+                    PhuCapThem = payroll.PhuCapThem,
+                    LuongThem = payroll.LuongThem,
+                    LuongTangCa = payroll.LuongTangCa,
+                    TongLuong = payroll.TongLuong ?? 0
+                },
+                // C. KHẤU TRỪ
+                KhauTru = new
+                {
+                    BHXH = thongTinLuong?.BHXH ?? 0,
+                    BHYT = thongTinLuong?.BHYT ?? 0,
+                    BHTN = thongTinLuong?.BHTN ?? 0,
+                    ThueTNCN = payroll.ThueTNCN
+                },
+                // D. THỰC LÃNH
                 payroll.ThucNhan,
+                // E. THÔNG TIN TÀI KHOẢN
+                TaiKhoanNganHang = taiKhoan != null ? new
+                {
+                    taiKhoan.TenNganHang,
+                    taiKhoan.ChiNhanh,
+                    taiKhoan.SoTaiKhoan
+                } : null,
+                // F. GHI CHÚ
+                payroll.GhiChu,
                 payroll.TrangThai,
                 TenTrangThai = _statusNameMapping.TryGetValue(payroll.TrangThai, out var name) ? name : payroll.TrangThai,
-                payroll.GhiChu
+                NgayIn = DateTime.Now
             });
         }
         #endregion

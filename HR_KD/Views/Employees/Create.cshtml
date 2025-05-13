@@ -323,7 +323,7 @@
             });
 
             // Load danh sách phòng ban
-            $.get("/api/PhongBanApi", function (data) {
+            $.get("/api/PhongBanApi/GetPhongBans", function (data) {
                 let dropdown = $("#MaPhongBan");
                 dropdown.html('<option value="">-- Chọn phòng ban --</option>');
                 data.forEach(item => {

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,7 @@ builder.Services.AddScoped<IAuthorizationHandler, ManageSubordinateHandler>();
 builder.Services.AddScoped<ExcelTemplateService>();
 builder.Services.AddScoped<UsernameGeneratorService>();
 builder.Services.AddScoped<PayrollCalculator>();
+builder.Services.AddScoped<PayrollReportService>();
 
 // Cấu hình Authentication 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -60,6 +62,8 @@ builder.Services.AddHostedService<HolidayNotificationService>();
 
 // Thêm Controllers và Views
 builder.Services.AddControllersWithViews();
+
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var app = builder.Build();
 

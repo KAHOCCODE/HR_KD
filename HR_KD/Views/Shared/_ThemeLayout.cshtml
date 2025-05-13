@@ -259,7 +259,7 @@
                             <ul style="display: none;">
 
                                 @* Chung cho tất cả: Bảng lương cá nhân *@
-                                <li><a href="~/Payroll/MyPayroll"><i class="fa fa-wallet"></i> Bảng lương cá nhân</a></li>
+                                <li><a href="~/PayrollEmployee/MyPayroll"><i class="fa fa-wallet"></i> Bảng lương cá nhân</a></li>
 
                                 @* Menu theo vai trò *@
                                 @if (isManager || isAccountant || isDirector)
@@ -269,24 +269,17 @@
 
                                 @if (isManager || isDirector)
                                 {
-                                    <li><a href="~/PayrollApproval/DepartmentReview"><i class="fa fa-eye"></i> Rà soát bảng lương</a></li>
-                                    <li><a href="~/PayrollApproval/ByManager"><i class="fa fa-user-check"></i> Gửi kế toán</a></li>
+                                    <li><a href="~/PayrollManager/DepartmentReview"><i class="fa fa-eye"></i> Rà soát bảng lương trong phòng ban</a></li>
                                 }
 
                                 @if (isAccountant || isDirector)
                                 {
-                                    <li><a href="~/PayrollApproval/ByAccountant"><i class="fa fa-file-invoice-dollar"></i> Duyệt kế toán</a></li>
-                                    <li><a href="~/PayrollApproval/SendToDirector"><i class="fa fa-paper-plane"></i> Gửi giám đốc</a></li>
+                                    <li><a href="~/PayrollAccountant/ByAccountant"><i class="fa fa-file-invoice-dollar"></i> Kế toán duyệt bảng lương kế toán</a></li>
+                                    <li><a href="~/PayrollDirector/DirectorReview"><i class="fa fa-paper-plane"></i>Giám đốc duyệt bảng lương</a></li>
                                 }
 
-                                @if (isDirector)
-                                {
-                                    <li><a href="~/PayrollApproval/Final"><i class="fa fa-user-tie"></i> Duyệt cuối cùng</a></li>
-                                }
-
-                                @* Chức năng thống kê, quản lý ngày phép – chung *@
+                                @* Chức năng thống kê – chung *@
                                 <li><a href="~/SalaryStatistics/Index"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
-                                <li><a href="~/LeaveManager/Index"><i class="fa fa-calendar-times"></i> Quản lý ngày phép</a></li>
                             </ul>
                         </li>
                         <li class="submenu">

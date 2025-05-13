@@ -1,0 +1,335 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Duyệt bảng lương (Giám đốc)";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="container py-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-list-alt mr-2"></i> Duyệt bảng lương</h2>
+
+    <div class="mb-4 bg-white shadow rounded-md p-4 flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+            <label class="block text-gray-700 text-sm font-bold mb-0">Chọn tháng/năm:</label>
+            <select id="monthSelect" class="shadow appearance-none border rounded w-auto py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Month ? "selected" : null)">Tháng @i</option>
+                }
+            </select>
+            <select id="yearSelect" class="shadow appearance-none border rounded w-auto py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                @for (int i = 2020; i <= DateTime.Now.Year + 1; i++)
+                {
+                    <option value="@i" selected="@(i == DateTime.Now.Year ? "selected" : null)">@i</option>
+                }
+            </select>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" onclick="loadPayrollsForDirector()">
+                <i class="fas fa-search mr-2"></i> Tải dữ liệu
+            </button>
+        </div>
+    </div>
+
+    <div id="payrollsForDirectorContainer">
+    </div>
+    <div class="mt-6 flex justify-end space-x-3">
+        <button id="finalApproveButton" class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-800 text-white text-lg font-semibold rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" onclick="finalApproveAndSend(false)">
+            <i class="fas fa-file-export mr-2"></i> Duyệt các mục đã chọn
+        </button>
+        <button id="finalApproveAllButton" class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-800 text-white text-lg font-semibold rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" onclick="finalApproveAndSend(true)">
+            <i class="fas fa-file-export mr-2"></i> Duyệt và gửi tất cả
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="payrollDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-indigo-100 border-b border-indigo-200">
+                <h5 class="modal-title text-indigo-700 font-semibold"><i class="fas fa-file-alt mr-2"></i> Chi tiết bảng lương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="payrollDetailContent" class="space-y-3 text-gray-700">
+                </div>
+            </div>
+            <div class="modal-footer bg-gray-100 border-t border-gray-200 p-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times mr-2"></i> Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="returnReasonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-yellow-100 border-b border-yellow-200">
+                <h5 class="modal-title text-yellow-700 font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i> Lý do trả về</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <textarea class="form-control" id="returnReason" rows="3" placeholder="Nhập lý do trả về" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                <input type="hidden" id="selectedPayrollIds" />
+            </div>
+            <div class="modal-footer bg-gray-100 border-t border-gray-200 p-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times mr-2"></i> Hủy</button>
+                <button type="button" class="btn btn-warning" onclick="confirmReturnToAccountant()"><i class="fas fa-undo mr-2"></i> Trả về</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            loadPayrollsForDirector();
+            $('#monthSelect, #yearSelect').on('change', loadPayrollsForDirector);
+        });
+
+        function loadPayrollsForDirector() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+
+            $.get(`/api/PayrollDirectorApi/GetPayrolls?year=${year}&month=${month}&selectAll=true`, function (data) {
+                let html = '';
+                if (data && data.length > 0) {
+                    let departments = {};
+                    data.forEach(payroll => {
+                        const departmentName = payroll.maPhongBanNavigation?.tenPhongBan || "Chưa xác định"; // Phòng ban có thể null
+                        if (!departments[departmentName]) {
+                            departments[departmentName] = {
+                                name: departmentName,
+                                payrolls: []
+                            };
+                        }
+                        departments[departmentName].payrolls.push(payroll);
+                    });
+
+                    for (const departmentName in departments) {
+                        const department = departments[departmentName];
+                        html += `<div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+                                                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                                    <h3 class="text-lg font-semibold text-gray-700"><i class="fas fa-building mr-2"></i> ${department.name}</h3>
+                                                </div>
+                                                <div class="overflow-x-auto">
+                                                    <table class="min-w-full leading-normal">
+                                                        <thead class="bg-gray-100">
+                                                            <tr>
+                                                                <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                                    <input type="checkbox" id="checkAll-${department.name.replace(/\s+/g, '')}" onclick="toggleCheckboxes(this, '${department.name.replace(/\s+/g, '')}')">
+                                                                </th>
+                                                                <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mã NV</th>
+                                                                <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ tên</th>
+                                                                <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thực nhận</th>
+                                                                <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
+                                                                <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hành động</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>`;
+                        department.payrolls.forEach(payroll => {
+                            const statusClass = getTailwindStatusClass(payroll.trangThai);
+                            html += `<tr>
+                                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                                    <input type="checkbox" class="payroll-checkbox ${department.name.replace(/\s+/g, '')}" value="${payroll.maLuong}">
+                                                                </td>
+                                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.maNv}</td>
+                                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.hoTen}</td>
+                                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.thucNhan ? formatCurrency(payroll.thucNhan) : ''}</td>
+                                                                <td class="px-5 py-5 border-b border-gray-200 text-sm"><span class="${statusClass}">${payroll.tenTrangThai}</span></td>
+                                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                                    <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2" onclick="viewPayrollDetail(${payroll.maLuong})">
+                                                                        <i class="fas fa-eye mr-2"></i> Chi tiết
+                                                                    </button>
+                                                                    <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 mr-2" onclick="approveByDirector([${payroll.maLuong}])">
+                                                                        <i class="fas fa-check mr-2"></i> Duyệt
+                                                                    </button>
+                                                                    <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="openReturnModal([${payroll.maLuong}])">
+                                                                        <i class="fas fa-undo mr-2"></i> Trả về
+                                                                    </button>
+                                                                </td>
+                                                            </tr>`;
+                        });
+                        html += `</tbody>
+                                                    </table>
+                                                </div>
+                                            </div>`;
+                    }
+                } else {
+                    html += '<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">' +
+                        '<strong class="font-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Chú ý!</strong>' +
+                        '<span class="block sm:inline">Không có bảng lương nào chờ duyệt.</span>' +
+                        '</div>';
+                }
+                $('#payrollsForDirectorContainer').html(html);
+            }).fail(function (xhr) {
+                $('#payrollsForDirectorContainer').html(`<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                                                <strong class="font-bold"><i class="fas fa-times-circle mr-2"></i> Lỗi!</strong>
+                                                                <span class="block sm:inline">Lỗi khi tải bảng lương: ${xhr.responseText}</span>
+                                                            </div>`);
+                console.error("Lỗi tải bảng lương cho giám đốc:", xhr);
+            });
+        }
+
+        function viewPayrollDetail(maLuong) {
+            $.get(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, function (data) {
+                const html = `
+                                                    <div class="mb-3"><strong>Tháng:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                                                    <hr class="my-3 border-gray-300">
+                                                    <div class="mb-2"><strong>Lương thêm:</strong> ${formatCurrency(data.luongThem)}</div>
+                                                    <div class="mb-2"><strong>Phụ cấp thêm:</strong> ${formatCurrency(data.phuCapThem)}</div>
+                                                    <div class="mb-2"><strong>Lương tăng ca:</strong> ${formatCurrency(data.luongTangCa)}</div>
+                                                    <div class="mb-2"><strong>Thuế TNCN:</strong> <span class="text-red-600">-${formatCurrency(data.thueTNCN)}</span></div>
+                                                    <hr class="my-3 border-gray-300">
+                                                    <div class="mb-2"><strong class="text-lg">Tổng lương:</strong> ${formatCurrency(data.tongLuong)}</div>
+                                                    <div class="mb-2"><strong class="text-lg text-green-600">Thực nhận:</strong> ${formatCurrency(data.thucNhan)}</div>
+                                                    ${data.ghiChu ? `<div class="mt-3"><strong class="text-gray-700">Ghi chú:</strong> <p class="italic">${data.ghiChu}</p></div>` : ''}
+                                                `;
+                $('#payrollDetailContent').html(html);
+                const modal = new bootstrap.Modal(document.getElementById('payrollDetailModal'));
+                modal.show();
+            }).fail(function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: xhr.responseText
+                });
+            });
+        }
+
+        function approveByDirector(maLuongList) {
+            Swal.fire({
+                title: 'Duyệt bảng lương?',
+                text: 'Bạn có chắc chắn muốn duyệt các bảng lương này?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Duyệt',
+                cancelButtonText: 'Hủy',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/api/PayrollDirectorApi/FinalApprove`,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(maLuongList),
+                        success: function (response) {
+                            Swal.fire('Thành công!', response, 'success').then(() => {
+                                loadPayrollsForDirector();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('Lỗi!', xhr.responseText, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function openReturnModal(maLuongList) {
+            $('#selectedPayrollIds').val(JSON.stringify(maLuongList));
+            const modal = new bootstrap.Modal(document.getElementById('returnReasonModal'));
+            modal.show();
+        }
+
+        function confirmReturnToAccountant() {
+            const maLuongList = JSON.parse($('#selectedPayrollIds').val());
+            const lyDo = $('#returnReason').val();
+            if (lyDo.trim() === '') {
+                Swal.fire('Cảnh báo!', 'Vui lòng nhập lý do trả về.', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: `/api/PayrollDirectorApi/ReturnToAccountant?lyDo=${encodeURIComponent(lyDo)}`,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(maLuongList),
+                success: function (response) {
+                    Swal.fire('Thành công!', response, 'success').then(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('returnReasonModal'));
+                        modal.hide();
+                        loadPayrollsForDirector();
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi!', xhr.responseText, 'error');
+                }
+            });
+        }
+
+        function finalApproveAndSend(all = false) {
+            let maLuongList = [];
+            if (!all) {
+                maLuongList = $('.payroll-checkbox:checked').map(function () {
+                    return parseInt(this.value);
+                }).get();
+                if (maLuongList.length === 0) {
+                    Swal.fire('Cảnh báo!', 'Vui lòng chọn các bảng lương để duyệt và gửi.', 'warning');
+                    return;
+                }
+            }
+
+            Swal.fire({
+                title: 'Duyệt và gửi bảng lương?',
+                text: all
+                    ? 'Bạn có chắc chắn muốn duyệt và gửi TẤT CẢ bảng lương?'
+                    : 'Bạn có chắc chắn muốn duyệt và gửi CÁC BẢNG LƯƠNG ĐÃ CHỌN?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Duyệt và gửi',
+                cancelButtonText: 'Hủy',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const year = $('#yearSelect').val();
+                    const month = $('#monthSelect').val();
+                    $.ajax({
+                        url: `/api/PayrollDirectorApi/SendToEmployees?year=${year}&month=${month}`,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: all ? JSON.stringify([]) : JSON.stringify(maLuongList), // Gửi rỗng nếu duyệt tất cả
+                        success: function (response) {
+                            Swal.fire('Thành công!', response, 'success').then(() => {
+                                loadPayrollsForDirector();
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire('Lỗi!', xhr.responseText, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function getTailwindStatusClass(status) {
+            switch (status) {
+                case 'BL1': return 'inline-block px-2 py-1 font-semibold text-gray-600 leading-tight rounded-full bg-gray-100';
+                case 'BL1A': return 'inline-block px-2 py-1 font-semibold text-blue-600 leading-tight rounded-full bg-blue-100';
+                case 'BL1R': return 'inline-block px-2 py-1 font-semibold text-yellow-700 leading-tight rounded-full bg-yellow-100';
+                case 'BL2': return 'inline-block px-2 py-1 font-semibold text-indigo-600 leading-tight rounded-full bg-indigo-100';
+                case 'BL2R': return 'inline-block px-2 py-1 font-semibold text-yellow-700 leading-tight rounded-full bg-yellow-100';
+                case 'BL3': return 'inline-block px-2 py-1 font-semibold text-green-600 leading-tight rounded-full bg-green-100';
+                case 'BL3R': return 'inline-block px-2 py-1 font-semibold text-yellow-700 leading-tight rounded-full bg-yellow-100';
+                case 'BL4': return 'inline-block px-2 py-1 font-semibold text-white leading-tight rounded-full bg-gradient-to-r from-green-400 to-blue-500';
+                case 'BL5': return 'inline-block px-2 py-1 font-semibold text-gray-700 leading-tight rounded-full bg-gray-200 border border-gray-300';
+                default: return 'inline-block px-2 py-1 font-semibold text-gray-700 leading-tight rounded-full bg-gray-200 border border-gray-300';
+            }
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function toggleCheckboxes(checkbox, departmentName) {
+            const checkboxes = document.getElementsByClassName(departmentName);
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = checkbox.checked;
+            }
+        }
+    </script>
+}

@@ -11,7 +11,7 @@ public class EmailService
         _config = config;
     }
 
-    public void SendEmail(string toEmail, string subject, string body)
+    public void SendEmail(string toEmail, string subject, string body, byte[]? attachmentBytes = null, string? attachmentName = null)
     {
         var smtpServer = _config["EmailSettings:SmtpServer"];
         var port = int.Parse(_config["EmailSettings:Port"]);
@@ -35,6 +35,13 @@ public class EmailService
         };
 
         mailMessage.To.Add(toEmail);
+
+        if (attachmentBytes != null && attachmentName != null)
+        {
+            var attachment = new Attachment(new MemoryStream(attachmentBytes), attachmentName);
+            mailMessage.Attachments.Add(attachment);
+        }
+
         smtpClient.Send(mailMessage);
     }
 }

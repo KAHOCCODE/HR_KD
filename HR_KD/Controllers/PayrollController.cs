@@ -13,16 +13,8 @@ namespace HR_KD.Controllers
             _context = context;
         }
 
-        #region view bảng lương theo phòng ban 
+        #region view bảng lương theo phòng ban / trạng thái chung
         public IActionResult Index()
-        {
-            return View();
-        }
-        #endregion
-
-        #region view bảng lương nhân viên 
-        [Authorize(Roles = "EMPLOYEE")]
-        public IActionResult MyPayroll()
         {
             return View();
         }

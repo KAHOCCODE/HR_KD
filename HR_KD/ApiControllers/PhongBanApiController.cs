@@ -15,7 +15,7 @@ namespace HR_KD.ApiControllers
             _context = context;
         }
 
-        [HttpGet]
+        [HttpGet("GetPhongBans")]
         public IActionResult GetPhongBans()
         {
             var phongBans = _context.PhongBans

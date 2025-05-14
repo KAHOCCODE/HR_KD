@@ -1,0 +1,102 @@
+﻿@model dynamic
+
+<div class="modal fade" id="payrollDetailModal" tabindex="-1" aria-labelledby="payrollDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-indigo-100 border-b border-indigo-200">
+                <h5 class="modal-title text-indigo-700 font-semibold" id="payrollDetailModalLabel">
+                    <i class="fas fa-file-alt mr-2"></i> Chi tiết bảng lương
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="payrollDetailContent" class="space-y-3 text-gray-700"></div>
+                <div class="mt-4 flex justify-end space-x-2" id="actionButtons"></div>
+            </div>
+            <div class="modal-footer bg-gray-100 border-t border-gray-200 p-3">
+                @if (ViewBag.ShowDownloadPdf == true)
+                {
+                    <a id="downloadPdfButton" href="" class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md mr-2" target="_blank" style="display: none;">
+                        <i class="fas fa-download mr-2"></i> Tải PDF
+                    </a>
+                    <button id="viewPayrollBtn" class="inline-flex items-center px-3 py-2 bg-info hover:bg-info-700 text-white text-sm rounded-md mr-2" style="display: none;">
+                        <i class="fas fa-file-pdf mr-2"></i> Xem PDF
+                    </button>
+                }
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times mr-2"></i> Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showPayrollDetail(maLuong, showDownloadPdf = false) {
+        $.get(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, function (data) {
+            const html = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h6 class="font-semibold text-indigo-600 mb-2">Thông tin nhân viên</h6>
+                        <div class="mb-2"><strong>Mã lương:</strong> ${data.maLuong}</div>
+                        <div class="mb-2"><strong>Mã NV:</strong> ${data.maNv}</div>
+                        <div class="mb-2"><strong>Họ tên:</strong> ${data.hoTen}</div>
+                        <div class="mb-2"><strong>Giới tính:</strong> ${data.gioiTinh}</div>
+                        <div class="mb-2"><strong>Phòng ban:</strong> ${data.phongBan}</div>
+                        <div class="mb-2"><strong>Chức vụ:</strong> ${data.chucVu}</div>
+                        <div class="mb-2"><strong>Loại hợp đồng:</strong> ${data.loaiHopDong}</div>
+                        <div class="mb-2"><strong>Tháng lương:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                    </div>
+                    <div>
+                        <h6 class="font-semibold text-indigo-600 mb-2">Thu nhập</h6>
+                        <div class="mb-2"><strong>Lương cơ bản:</strong> ${formatCurrency(data.thuNhap.luongCoBan)}</div>
+                        <div class="mb-2"><strong>Phụ cấp cố định:</strong> ${formatCurrency(data.thuNhap.phuCapCoDinh)}</div>
+                        <div class="mb-2"><strong>Thưởng cố định:</strong> ${formatCurrency(data.thuNhap.thuongCoDinh)}</div>
+                        <div class="mb-2"><strong>Phụ cấp thêm:</strong> ${formatCurrency(data.thuNhap.phuCapThem)}</div>
+                        <div class="mb-2"><strong>Lương thêm:</strong> ${formatCurrency(data.thuNhap.luongThem)}</div>
+                        <div class="mb-2"><strong>Lương tăng ca:</strong> ${formatCurrency(data.thuNhap.luongTangCa)}</div>
+                        <div class="mb-2"><strong>Tổng lương:</strong> ${formatCurrency(data.thuNhap.tongLuong)}</div>
+                    </div>
+                    <div>
+                        <h6 class="font-semibold text-indigo-600 mb-2">Khấu trừ</h6>
+                        <div class="mb-2"><strong>BHXH:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhxh)}</span></div>
+                        <div class="mb-2"><strong>BHYT:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhyt)}</span></div>
+                        <div class="mb-2"><strong>BHTN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhtn)}</span></div>
+                        <div class="mb-2"><strong>Thuế TNCN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.thueTNCN)}</span></div>
+                    </div>
+                    <div>
+                        <h6 class="font-semibold text-indigo-600 mb-2">Thực nhận & Tài khoản</h6>
+                        <div class="mb-2"><strong>Thực nhận:</strong> <span class="text-green-600">${formatCurrency(data.thucNhan)}</span></div>
+                        ${data.taiKhoanNganHang ? `
+                        <div class="mb-2"><strong>Ngân hàng:</strong> ${data.taiKhoanNganHang.tenNganHang}</div>
+                        <div class="mb-2"><strong>Chi nhánh:</strong> ${data.taiKhoanNganHang.chiNhanh}</div>
+                        <div class="mb-2"><strong>Số tài khoản:</strong> ${data.taiKhoanNganHang.soTaiKhoan}</div>
+                        ` : '<div class="mb-2"><strong>Tài khoản:</strong> Chưa có thông tin</div>'}
+                    </div>
+                </div>
+                ${data.ghiChu ? `<div class="mt-4"><strong>Ghi chú:</strong> <p class="italic">${data.ghiChu}</p></div>` : ''}
+                <div class="mt-4"><strong>Trạng thái:</strong> ${data.tenTrangThai}</div>
+            `;
+            $('#payrollDetailContent').html(html);
+            if (showDownloadPdf) {
+                $('#downloadPdfButton').attr('href', `/api/PayrollEmployeeApi/CreatePayrollDetailReport/${data.maLuong}`);
+                $('#downloadPdfButton').show();
+            } else {
+                $('#downloadPdfButton').hide();
+            }
+            const modal = new bootstrap.Modal(document.getElementById('payrollDetailModal'));
+            modal.show();
+        }).fail(function (xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: xhr.responseText
+            });
+            console.error("Lỗi tải chi tiết bảng lương:", xhr);
+        });
+    }
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+</script>

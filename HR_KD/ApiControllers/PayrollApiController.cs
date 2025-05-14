@@ -142,7 +142,7 @@ namespace HR_KD.ApiControllers
                 var payroll = await _calculator.CalculatePayroll(nv.MaNv, monthDate, chamCongs, thongTinLuong);
                 payroll.NguoiTao = User.Identity?.Name ?? "System";
                 payroll.NgayTao = DateTime.Now;
-                payroll.TrangThai = PayrollStatus.Created; // Initial status
+                payroll.TrangThai = "BL1"; // Initial status
 
                 _context.BangLuongs.Add(payroll);
                 count++;

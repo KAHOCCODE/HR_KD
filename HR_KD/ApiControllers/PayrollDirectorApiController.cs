@@ -27,13 +27,16 @@ namespace HR_KD.ApiControllers
         }
 
         #region API cho Giám đốc
+
+        // Lấy danh sách bảng lương từ BL3 trở lên
         [HttpGet("GetPayrolls")]
         public async Task<IActionResult> GetPayrolls(int year, int month)
         {
             var bangLuongs = await _context.BangLuongs
                 .Include(b => b.MaNvNavigation)
                 .ThenInclude(nv => nv.MaPhongBanNavigation)
-                .Where(b => b.ThangNam.Year == year && b.ThangNam.Month == month && b.TrangThai == "BL3") 
+                .Where(b => b.ThangNam.Year == year && b.ThangNam.Month == month &&
+                            (b.TrangThai == "BL3" || b.TrangThai == "BL4" || b.TrangThai == "BL5"))
                 .ToListAsync();
 
             var result = bangLuongs.Select(b => new
@@ -43,78 +46,79 @@ namespace HR_KD.ApiControllers
                 HoTen = b.MaNvNavigation.HoTen,
                 b.ThucNhan,
                 b.TrangThai,
-                TenTrangThai = _statusNameMapping.TryGetValue(b.TrangThai, out var name) ? name : b.TrangThai
+                TenTrangThai = _statusNameMapping.TryGetValue(b.TrangThai, out var name) ? name : b.TrangThai,
+                NguoiDuyetGD = b.NguoiDuyetGD,
+                NgayDuyetGD = b.NgayDuyetGD,
+                NguoiGuiNV = b.NguoiGuiNV,
+                NgayGuiNV = b.NgayGuiNV
             });
 
             return Ok(result);
         }
 
+        // Duyệt từng bảng lương (BL3 => BL4)
         [HttpPost("FinalApprove")]
         public async Task<IActionResult> FinalApprove([FromBody] int[] maLuongList)
         {
             var luongs = await _context.BangLuongs
-               .Where(b => maLuongList.Contains(b.MaLuong) && b.TrangThai == "BL3") 
-               .ToListAsync();
+                .Where(b => maLuongList.Contains(b.MaLuong) && b.TrangThai == "BL3")
+                .ToListAsync();
 
             if (luongs.Count != maLuongList.Length)
-                return BadRequest("One or more payrolls are not in the appropriate state for final approval.");
+                return BadRequest("Một số bảng lương không ở trạng thái BL3 để duyệt.");
 
             var currentUser = User.Identity?.Name;
             var currentTime = DateTime.Now;
 
             foreach (var b in luongs)
             {
-                b.TrangThai = "BL4"; // BL4: Finally Approved by Director
-                b.NguoiDuyetGD = currentUser; // Assuming you have a field for Director approver
-                b.NgayDuyetGD = currentTime; // Assuming you have a field for Director approval date
+                b.TrangThai = "BL4"; // Giám đốc duyệt
+                b.NguoiDuyetGD = currentUser;
+                b.NgayDuyetGD = currentTime;
             }
 
             await _context.SaveChangesAsync();
-            // Consider adding logging here
-            return Ok("Payrolls finally approved by Director successfully.");
+            return Ok("Đã duyệt các bảng lương thành công.");
         }
 
+        // Trả lại kế toán
         [HttpPost("ReturnToAccountant")]
         public async Task<IActionResult> ReturnToAccountant([FromBody] int[] maLuongList, [FromQuery] string lyDo)
         {
             if (string.IsNullOrWhiteSpace(lyDo))
-                return BadRequest("Reason for return is required.");
+                return BadRequest("Lý do trả về là bắt buộc.");
 
             var luongs = await _context.BangLuongs
-                .Where(b => maLuongList.Contains(b.MaLuong) && b.TrangThai == "BL3") // Only return if in "Accountant Approved" state
+                .Where(b => maLuongList.Contains(b.MaLuong) && b.TrangThai == "BL3")
                 .ToListAsync();
 
             if (luongs.Count != maLuongList.Length)
-                return BadRequest("One or more payrolls are not in the appropriate state to be returned.");
+                return BadRequest("Một số bảng lương không ở trạng thái phù hợp để trả về.");
 
             var currentUser = User.Identity?.Name;
             var currentTime = DateTime.Now;
 
             foreach (var b in luongs)
             {
-                b.TrangThai = "BL3R"; // BL3R: Returned by Director
+                b.TrangThai = "BL3R"; // Trả về kế toán
                 b.GhiChu = lyDo;
-                b.NguoiTraVeGD = currentUser; // Assuming you have a field for Director returner
-                b.NgayTraVeTuGD = currentTime; // Assuming you have a field for Director return date
+                b.NguoiTraVeGD = currentUser;
+                b.NgayTraVeTuGD = currentTime;
             }
 
             await _context.SaveChangesAsync();
-            // Consider adding logging here
-            return Ok("Payrolls returned to Accountant successfully.");
+            return Ok("Đã trả về cho kế toán thành công.");
         }
 
-        #region API để gửi bảng lương cho nhân viên (sau khi giám đốc duyệt)
+        // Gửi tất cả cho nhân viên (BL4 hoặc BL3 được duyệt trực tiếp ➜ BL5)
         [HttpPost("SendToEmployees")]
         public async Task<IActionResult> SendToEmployees([FromBody] int[] maLuongList)
         {
             var luongs = await _context.BangLuongs
-               .Where(b => maLuongList.Contains(b.MaLuong) && b.TrangThai == "BL4")
-               .Include(b => b.MaNvNavigation)
-                   .ThenInclude(nv => nv.MaPhongBanNavigation)
-               .ToListAsync();
-
-            if (luongs.Count != maLuongList.Length)
-                return BadRequest("Một hoặc nhiều bảng lương không ở trạng thái 'Đã duyệt giám đốc' (BL4).");
+                .Where(b => maLuongList.Contains(b.MaLuong) && (b.TrangThai == "BL3" || b.TrangThai == "BL4"))
+                .Include(b => b.MaNvNavigation)
+                    .ThenInclude(nv => nv.MaPhongBanNavigation)
+                .ToListAsync();
 
             var currentUser = User.Identity?.Name;
             var currentTime = DateTime.Now;
@@ -124,6 +128,14 @@ namespace HR_KD.ApiControllers
             {
                 try
                 {
+                    // Nếu chưa được giám đốc duyệt (BL3), cập nhật duyệt trước khi gửi
+                    if (payroll.TrangThai == "BL3")
+                    {
+                        payroll.TrangThai = "BL4";
+                        payroll.NguoiDuyetGD = currentUser;
+                        payroll.NgayDuyetGD = currentTime;
+                    }
+
                     var pdfBytes = await _reportService.GeneratePayrollPdf(payroll.MaLuong);
 
                     var nv = payroll.MaNvNavigation;
@@ -136,31 +148,29 @@ namespace HR_KD.ApiControllers
                     var subject = $"[BẢNG LƯƠNG] Tháng {payroll.ThangNam:MM/yyyy}";
                     var body = $"Xin chào <b>{nv.HoTen}</b>,<br><br>" +
                                $"Bảng lương tháng <b>{payroll.ThangNam:MM/yyyy}</b> của bạn đã được phê duyệt và đính kèm trong email này.<br>" +
-                               $"Vui lòng kiểm tra kỹ và phản hồi nếu có thắc mắc trước hạn quy định.<br><br>" +
-                               $"Trân trọng.";
+                               $"Vui lòng kiểm tra kỹ và phản hồi nếu có thắc mắc trước hạn quy định.<br><br>Trân trọng.";
 
                     _emailService.SendEmail(nv.Email, subject, body, pdfBytes, $"BangLuong_{payroll.MaLuong}.pdf");
 
-                    // Cập nhật trạng thái sau khi gửi
+                    // Cập nhật trạng thái gửi mail
                     payroll.TrangThai = "BL5";
                     payroll.NgayGuiNV = currentTime;
                     payroll.NguoiGuiNV = currentUser;
                 }
                 catch (Exception ex)
                 {
-                    errors.Add($"Lỗi gửi cho nhân viên {payroll.MaNv}: {ex.Message}");
+                    errors.Add($"Lỗi gửi bảng lương {payroll.MaLuong}: {ex.Message}");
                 }
             }
 
             await _context.SaveChangesAsync();
 
             if (errors.Any())
-                return Ok(new { message = "Một số bảng lương đã gửi nhưng có lỗi:", errors });
+                return Ok(new { message = "Một số bảng lương gặp lỗi khi gửi:", errors });
 
             return Ok("Tất cả bảng lương đã được gửi thành công.");
         }
 
-        #endregion
         #endregion
     }
 }

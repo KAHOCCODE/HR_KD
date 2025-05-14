@@ -37,6 +37,7 @@
     <div id="payrollContainer"></div>
 </div>
 
+<!-- Modal tạo bảng lương -->
 <div class="modal fade" id="createPayrollModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -56,116 +57,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="viewPayrollModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-eye"></i> Chi tiết bảng lương</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="payrollDetailContainer" class="space-y-3 text-gray-700">
-                    <table class="table table-bordered table-sm">
-                        <tbody>
-                            <tr>
-                                <th scope="row"><i class="fas fa-user mr-1"></i> Họ tên</th>
-                                <td id="detailHoTen"></td>
-                                <th scope="row"><i class="fas fa-id-card mr-1"></i> Mã NV</th>
-                                <td id="detailMaNv"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-venus-mars mr-1"></i> Giới tính</th>
-                                <td id="detailGioiTinh"></td>
-                                <th scope="row"><i class="fas fa-building mr-1"></i> Phòng ban</th>
-                                <td id="detailPhongBan"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-briefcase mr-1"></i> Chức vụ</th>
-                                <td id="detailChucVu"></td>
-                                <th scope="row"><i class="fas fa-file-contract mr-1"></i> Loại HĐ</th>
-                                <td id="detailLoaiHopDong"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-calendar-alt mr-1"></i> Tháng</th>
-                                <td colspan="3" id="detailThangNam"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-info-circle mr-1"></i> Trạng thái</th>
-                                <td colspan="3" id="detailTenTrangThai"></td>
-                            </tr>
-                            <tr>
-                                <th class="table-info" colspan="4"><i class="fas fa-coins mr-1"></i> B. THU NHẬP</th>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-arrow-right mr-1"></i> Lương cơ bản</th>
-                                <td id="detailLuongCoBan"></td>
-                                <th scope="row"><i class="fas fa-arrow-right mr-1"></i> Phụ cấp cố định</th>
-                                <td id="detailPhuCapCoDinh"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-arrow-right mr-1"></i> Thưởng cố định</th>
-                                <td id="detailThuongCoDinh"></td>
-                                <th scope="row"><i class="fas fa-plus mr-1 text-success"></i> Phụ cấp thêm</th>
-                                <td class="text-success" id="detailPhuCapThem"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-plus mr-1 text-success"></i> Lương thêm</th>
-                                <td class="text-success" id="detailLuongThem"></td>
-                                <th scope="row"><i class="fas fa-arrow-up mr-1 text-primary"></i> Tăng ca</th>
-                                <td class="text-primary" id="detailLuongTangCa"></td>
-                            </tr>
-                            <tr>
-                                <th class="table-info" colspan="2"><i class="fas fa-calculator mr-1"></i> Tổng lương</th>
-                                <td class="table-info fw-bold text-end" colspan="2" id="detailTongLuong"></td>
-                            </tr>
-                            <tr>
-                                <th class="table-danger" colspan="4"><i class="fas fa-minus-circle mr-1"></i> C. KHẤU TRỪ</th>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-minus mr-1 text-danger"></i> BHXH</th>
-                                <td class="text-danger" id="detailBHXH"></td>
-                                <th scope="row"><i class="fas fa-minus mr-1 text-danger"></i> BHYT</th>
-                                <td class="text-danger" id="detailBHYT"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-minus mr-1 text-danger"></i> BHTN</th>
-                                <td class="text-danger" id="detailBHTN"></td>
-                                <th scope="row"><i class="fas fa-minus mr-1 text-danger"></i> Thuế TNCN</th>
-                                <td class="text-danger" id="detailThueTNCN"></td>
-                            </tr>
-                            <tr>
-                                <th class="table-success" colspan="2"><i class="fas fa-money-bill-wave mr-1 text-success"></i> D. LƯƠNG THỰC NHẬN</th>
-                                <td class="table-success fw-bold text-end text-lg" colspan="2" id="detailThucNhan"></td>
-                            </tr>
-                            <tr id="taiKhoanNganHangSection" class="collapse">
-                                <th class="table-primary" colspan="4"><i class="fas fa-university mr-1 text-primary"></i> E. THÔNG TIN TÀI KHOẢN</th>
-                            </tr>
-                            <tr id="nganHangRow" class="collapse">
-                                <th scope="row"><i class="fas fa-building mr-1"></i> Ngân hàng</th>
-                                <td id="detailTenNganHang"></td>
-                                <th scope="row"><i class="fas fa-code-branch mr-1"></i> Chi nhánh</th>
-                                <td id="detailChiNhanh"></td>
-                            </tr>
-                            <tr id="soTaiKhoanRow" class="collapse">
-                                <th scope="row"><i class="fas fa-hashtag mr-1"></i> Số tài khoản</th>
-                                <td colspan="3" id="detailSoTaiKhoan"></td>
-                            </tr>
-                            <tr id="ghiChuSection" class="collapse">
-                                <th class="table-warning" scope="row"><i class="fas fa-sticky-note mr-1 text-warning"></i> Ghi chú</th>
-                                <td colspan="3" id="detailGhiChu"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><i class="fas fa-calendar-check mr-1"></i> Ngày in</th>
-                                <td colspan="3" id="detailNgayIn"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+<!-- Modal tạo hàng loạt -->
 <div class="modal fade" id="createBulkPayrollModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -184,6 +76,9 @@
         </div>
     </div>
 </div>
+
+<!-- Tích hợp partial view cho chi tiết bảng lương -->
+@await Html.PartialAsync("_PayrollDetailModal", new { ShowDownloadPdf = true })
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -216,29 +111,35 @@
                 let html = '';
                 result.forEach(pb => {
                     html += `<div class="bg-white border border-gray-200 rounded p-3 mb-4 shadow-sm">
-                                                <h4 class="text-lg font-semibold mb-3 text-indigo-600"><i class="fas fa-users"></i> ${pb.tenPhongBan}</h4>
-                                                <div class="row">`;
+                                        <h4 class="text-lg font-semibold mb-3 text-indigo-600"><i class="fas fa-users"></i> ${pb.tenPhongBan}</h4>
+                                        <div class="row">`;
 
                     pb.nhanViens.forEach(nv => {
                         html += `<div class="col-md-6 mb-3">
-                                                    <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <div class="fw-semibold">${nv.hoTen}</div>
-                                                            <div class="text-muted">${nv.coBangLuong ? '<i class="fas fa-check-circle text-success"></i> Đã có' : '<i class="fas fa-exclamation-circle text-warning"></i> Chưa có'} bảng lương</div>
-                                                        </div>
-                                                        <div>
-                                                            ${nv.coBangLuong
-                                ? `<button class="btn btn-outline-primary btn-sm" data-payroll-id="${nv.maLuong}" onclick="openPayrollDetail('${nv.maLuong}')"><i class="fas fa-eye"></i> Xem</button>`
+                                            <div class="p-3 border rounded shadow-sm d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="fw-semibold">${nv.hoTen}</div>
+                                                    <div class="text-muted">${nv.coBangLuong ? '<i class="fas fa-check-circle text-success"></i> Đã có' : '<i class="fas fa-exclamation-circle text-warning"></i> Chưa có'} bảng lương</div>
+                                                </div>
+                                                <div>
+                                                    ${nv.coBangLuong
+                                ? `<button class="btn btn-outline-primary btn-sm" data-payroll-id="${nv.maLuong}" onclick="showPayrollDetail(${nv.maLuong}, true)"><i class="fas fa-eye"></i> Xem</button>`
                                 : `<button class="btn btn-success btn-sm" onclick="openCreateModal(${nv.maNv}, '${nv.hoTen}')"><i class="fas fa-plus"></i> Tạo</button>`}
-                                                        </div>
-                                                    </div>
-                                                </div>`;
+                                                </div>
+                                            </div>
+                                        </div>`;
                     });
 
                     html += `</div></div>`;
                 });
 
                 $('#payrollContainer').html(html);
+            }).fail(function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: xhr.responseText
+                });
             });
         }
 
@@ -274,65 +175,6 @@
             });
         }
 
-        function openPayrollDetail(maLuong) {
-            $.get(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, function (data) {
-                $('#detailHoTen').text(data.hoTen);
-                $('#detailMaNv').text(data.maNv);
-                $('#detailGioiTinh').text(data.gioiTinh);
-                $('#detailPhongBan').text(data.phongBan);
-                $('#detailChucVu').text(data.chucVu);
-                $('#detailLoaiHopDong').text(data.loaiHopDong);
-                $('#detailThangNam').text(new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' }));
-                $('#detailTenTrangThai').text(data.tenTrangThai);
-
-                $('#detailLuongCoBan').text(data.thuNhap?.luongCoBan?.toLocaleString('vi-VN') ?? 0);
-                $('#detailPhuCapCoDinh').text(data.thuNhap?.phuCapCoDinh?.toLocaleString('vi-VN') ?? 0);
-                $('#detailThuongCoDinh').text(data.thuNhap?.thuongCoDinh?.toLocaleString('vi-VN') ?? 0);
-                $('#detailPhuCapThem').text(data.thuNhap?.phuCapThem?.toLocaleString('vi-VN') ?? 0);
-                $('#detailLuongThem').text(data.thuNhap?.luongThem?.toLocaleString('vi-VN') ?? 0);
-                $('#detailLuongTangCa').text(data.thuNhap?.luongTangCa?.toLocaleString('vi-VN') ?? 0);
-                $('#detailTongLuong').text(data.thuNhap?.tongLuong?.toLocaleString('vi-VN') ?? 0);
-
-                $('#detailBHXH').text(`-${data.khauTru?.bhxh?.toLocaleString('vi-VN') ?? 0}`);
-                $('#detailBHYT').text(`-${data.khauTru?.bhyt?.toLocaleString('vi-VN') ?? 0}`);
-                $('#detailBHTN').text(`-${data.khauTru?.bhtn?.toLocaleString('vi-VN') ?? 0}`);
-                $('#detailThueTNCN').text(`-${data.khauTru?.thueTNCN?.toLocaleString('vi-VN') ?? 0}`);
-                $('#detailThucNhan').text(data.thucNhan?.toLocaleString('vi-VN') ?? 0);
-                $('#detailNgayIn').text(new Date(data.ngayIn).toLocaleDateString('vi-VN'));
-
-                // Xử lý thông tin tài khoản ngân hàng
-                if (data.taiKhoanNganHang) {
-                    $('#taiKhoanNganHangSection').collapse('show');
-                    $('#nganHangRow').collapse('show');
-                    $('#soTaiKhoanRow').collapse('show');
-                    $('#detailTenNganHang').text(data.taiKhoanNganHang.tenNganHang);
-                    $('#detailChiNhanh').text(data.taiKhoanNganHang.chiNhanh);
-                    $('#detailSoTaiKhoan').text(data.taiKhoanNganHang.soTaiKhoan);
-                } else {
-                    $('#taiKhoanNganHangSection').collapse('hide');
-                    $('#nganHangRow').collapse('hide');
-                    $('#soTaiKhoanRow').collapse('hide');
-                }
-
-                // Xử lý ghi chú
-                if (data.ghiChu) {
-                    $('#ghiChuSection').collapse('show');
-                    $('#detailGhiChu').text(data.ghiChu);
-                } else {
-                    $('#ghiChuSection').collapse('hide');
-                    $('#detailGhiChu').text('');
-                }
-
-                const modal = new bootstrap.Modal(document.getElementById('viewPayrollModal'));
-                modal.show();
-            }).fail(function (xhr) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: xhr.responseText
-                });
-            });
-        }
         function openCreateBulkModal() {
             const month = $('#monthSelect').val();
             const year = $('#yearSelect').val();

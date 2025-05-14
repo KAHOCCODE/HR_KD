@@ -51,7 +51,7 @@
                     <i class="fas fa-sync-alt mr-2 text-indigo-600"></i> Làm Bù
                 </h2>
                 <div class="space-x-2 flex items-center">
-                    <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center text-sm transition duration-200" onclick="approveSelectedMakeup('Đã duyệt')" data-bs-toggle="tooltip" title="Duyệt các bản ghi đã chọn">
+                    <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center text-sm transition duration-200" onclick="approveSelectedMakeup('LB2')" data-bs-toggle="tooltip" title="Duyệt các bản ghi đã chọn">
                         <i class="fas fa-check mr-1"></i> Duyệt
                     </button>
                     <button class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center text-sm transition duration-200" onclick="rejectSelectedMakeup()" data-bs-toggle="tooltip" title="Từ chối các bản ghi đã chọn">
@@ -90,14 +90,11 @@
                         <i class="fas fa-calendar-check mr-2 text-indigo-600"></i> Chấm Công
                     </h2>
                     <div class="space-x-2 flex items-center">
-                        <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center text-sm transition duration-200" onclick="approveSelectedAttendance('Đã duyệt')" data-bs-toggle="tooltip" title="Duyệt các bản ghi đã chọn">
+                        <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center text-sm transition duration-200" onclick="approveSelectedAttendance('LS2')" data-bs-toggle="tooltip" title="Duyệt các bản ghi đã chọn">
                             <i class="fas fa-check mr-1"></i> Duyệt
                         </button>
                         <button class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center text-sm transition duration-200" onclick="rejectSelectedAttendance()" data-bs-toggle="tooltip" title="Từ chối các bản ghi đã chọn">
                             <i class="fas fa-times mr-1"></i> Từ chối
-                        </button>
-                        <button id="approveAllBtn" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 flex items-center text-sm transition duration-200" onclick="approveAllAttendanceForDepartment()" data-bs-toggle="tooltip" title="Duyệt tất cả bản ghi đủ điều kiện">
-                            <i class="fas fa-check-circle mr-1"></i> Duyệt tổng thể
                         </button>
                     </div>
                 </div>
@@ -127,7 +124,7 @@
                         <i class="fas fa-clock mr-2 text-indigo-600"></i> Tăng Ca
                     </h2>
                     <div class="space-x-2 flex items-center">
-                        <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center text-sm transition duration-200" onclick="approveSelectedOvertime('Đã duyệt')" data-bs-toggle="tooltip" title="Duyệt các bản ghi đã chọn">
+                        <button class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center text-sm transition duration-200" onclick="approveSelectedOvertime('TC2')" data-bs-toggle="tooltip" title="Duyệt các bản ghi đã chọn">
                             <i class="fas fa-check mr-1"></i> Duyệt
                         </button>
                         <button class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center text-sm transition duration-200" onclick="rejectSelectedOvertime()" data-bs-toggle="tooltip" title="Từ chối các bản ghi đã chọn">
@@ -219,7 +216,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
 <!-- JavaScript Logic -->
 <script>
     let trangThaiMap = {};
@@ -253,6 +249,7 @@
         });
     });
 
+    // Load danh sách trạng thái
     function loadTrangThai() {
         fetch("/api/AttendanceManager/GetTrangThai")
             .then(res => res.json())
@@ -264,6 +261,7 @@
             });
     }
 
+    // Xóa bảng khi chưa có nhân viên được chọn
     function clearTables() {
         document.getElementById("attendanceTableBody").innerHTML = '';
         document.getElementById("overtimeTableBody").innerHTML = '';
@@ -273,15 +271,16 @@
         selectedMakeupIds = [];
     }
 
+    // Load bộ lọc
     function loadDepartments() {
-        fetch("/api/AttendanceManager/GetDepartmentsManager")
-            .then(res => res.json())
-            .then(data => {
-                const select = document.getElementById("departmentFilter");
-                select.innerHTML = '<option value="">Tất cả</option>';
-                data.forEach(d => select.innerHTML += `<option value="${d.maPhongBan}">${d.tenPhongBan}</option>`);
-            });
-    }
+    fetch("/api/AttendanceManager/GetDepartmentsManager")
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById("departmentFilter");
+            select.innerHTML = '<option value="">Tất cả</option>';
+            data.forEach(d => select.innerHTML += `<option value="${d.maPhongBan}">${d.tenPhongBan}</option>`);
+        });
+}
 
     function loadPositions() {
         fetch("/api/AttendanceManager/GetPositionsManager")
@@ -294,27 +293,28 @@
     }
 
     function loadEmployees() {
-        const pb = document.getElementById("departmentFilter").value;
-        const cv = document.getElementById("positionFilter").value;
+     const pb = document.getElementById("departmentFilter").value;
+     const cv = document.getElementById("positionFilter").value;
 
-        fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${pb}&maChucVu=${cv}`)
-            .then(res => res.json())
-            .then(data => {
-                const select = document.getElementById("employeeFilter");
-                select.innerHTML = '<option value="">Chọn nhân viên</option>';
-                data.forEach(d => select.innerHTML += `<option value="${d.maNv}">${d.hoTen}</option>`);
+     fetch(`/api/AttendanceManager/GetEmployeesManager?maPhongBan=${pb}&maChucVu=${cv}`)
+         .then(res => res.json())
+         .then(data => {
+             const select = document.getElementById("employeeFilter");
+             select.innerHTML = '<option value="">Chọn nhân viên</option>';
+             data.forEach(d => select.innerHTML += `<option value="${d.maNv}">${d.hoTen}</option>`);
 
-                if (data.length > 0) {
-                    select.value = data[0].maNv;
-                    fetchAttendanceRecords(data[0].maNv);
-                    fetchOvertimeRecords(data[0].maNv);
-                    fetchMakeupRecords(data[0].maNv);
-                } else {
-                    clearTables();
-                }
-            });
-    }
+             if (data.length > 0) {
+                 select.value = data[0].maNv;
+                 fetchAttendanceRecords(data[0].maNv);
+                 fetchOvertimeRecords(data[0].maNv);
+                 fetchMakeupRecords(data[0].maNv);
+             } else {
+                 clearTables();
+             }
+         });
+ }
 
+    // Chọn/tắt chọn tất cả checkbox
     function toggleSelectAll(type) {
         const checkboxes = document.querySelectorAll(`#${type}TableBody input[type="checkbox"]`);
         const selectAll = document.getElementById(`selectAll${type.charAt(0).toUpperCase() + type.slice(1)}`);
@@ -322,23 +322,30 @@
             selectedAttendanceIds = [];
             checkboxes.forEach(cb => {
                 cb.checked = selectAll.checked;
-                if (cb.checked) selectedAttendanceIds.push(parseInt(cb.value));
+                if (cb.checked) {
+                    selectedAttendanceIds.push(parseInt(cb.value));
+                }
             });
         } else if (type === 'overtime') {
             selectedOvertimeIds = [];
             checkboxes.forEach(cb => {
                 cb.checked = selectAll.checked;
-                if (cb.checked) selectedOvertimeIds.push(parseInt(cb.value));
+                if (cb.checked) {
+                    selectedOvertimeIds.push(parseInt(cb.value));
+                }
             });
         } else if (type === 'makeup') {
             selectedMakeupIds = [];
             checkboxes.forEach(cb => {
                 cb.checked = selectAll.checked;
-                if (cb.checked) selectedMakeupIds.push(parseInt(cb.value));
+                if (cb.checked) {
+                    selectedMakeupIds.push(parseInt(cb.value));
+                }
             });
         }
     }
 
+    // Bảng chấm công
     function fetchAttendanceRecords(maNv) {
         fetch(`/api/AttendanceManager/GetAttendanceManagerRecords?maNv=${maNv}`)
             .then(res => res.json())
@@ -354,27 +361,27 @@
         const body = document.getElementById("attendanceTableBody");
         body.innerHTML = records.map(r => `
             <tr class="hover:bg-gray-50 transition duration-200">
-                <td class="p-3"><input type="checkbox" value="${r.maChamCong}" onchange="updateSelectedAttendance(${r.maChamCong}, this.checked)" class="h-4 w-4"></td>
-                <td class="p-3">${r.ngayLamViec}</td>
+                <td class="p-3"><input type="checkbox" value="${r.maLichSuChamCong}" onchange="updateSelectedAttendance(${r.maLichSuChamCong}, this.checked)" class="h-4 w-4"></td>
+                <td class="p-3">${r.ngay}</td>
                 <td class="p-3">${r.gioVao || "-"}</td>
                 <td class="p-3">${r.gioRa || "-"}</td>
                 <td class="p-3">${r.tongGio}</td>
                 <td class="p-3"><span class="${getStatusClass(r.trangThai)}">${trangThaiMap[r.trangThai] || r.trangThai}</span></td>
                 <td class="p-3">${r.ghiChu || "-"}</td>
                 <td class="p-3 flex space-x-2">
-                    <button class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-200" onclick="approveAttendance(${r.maChamCong}, 'Đã duyệt')" data-bs-toggle="tooltip" title="Duyệt bản ghi"><i class="fas fa-check"></i></button>
-                    <button class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200" onclick="approveAttendance(${r.maChamCong}, 'Từ chối')" data-bs-toggle="tooltip" title="Từ chối bản ghi"><i class="fas fa-times"></i></button>
+                    <button class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-200" onclick="approveAttendance(${r.maLichSuChamCong}, 'LS2')" data-bs-toggle="tooltip" title="Duyệt bản ghi"><i class="fas fa-check"></i></button>
+                    <button class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200" onclick="approveAttendance(${r.maLichSuChamCong}, 'LS4')" data-bs-toggle="tooltip" title="Từ chối bản ghi"><i class="fas fa-times"></i></button>
                 </td>
             </tr>
         `).join("");
         document.getElementById("selectAllAttendance").checked = false;
     }
 
-    function updateSelectedAttendance(maChamCong, isChecked) {
+    function updateSelectedAttendance(maLichSuChamCong, isChecked) {
         if (isChecked) {
-            selectedAttendanceIds.push(maChamCong);
+            selectedAttendanceIds.push(maLichSuChamCong);
         } else {
-            selectedAttendanceIds = selectedAttendanceIds.filter(id => id !== maChamCong);
+            selectedAttendanceIds = selectedAttendanceIds.filter(id => id !== maLichSuChamCong);
         }
     }
 
@@ -415,22 +422,22 @@
     let currentRejectionId = null;
     let isBatchRejection = false;
 
-    function approveAttendance(maChamCong, trangThai) {
-        if (trangThai === "Từ chối") {
-            currentRejectionId = maChamCong;
+    function approveAttendance(maLichSuChamCong, trangThai) {
+        if (trangThai === "LS4") {
+            currentRejectionId = maLichSuChamCong;
             isBatchRejection = false;
             $('#rejectionModal').modal('show');
         } else {
-            submitApproval(maChamCong, trangThai, "");
+            submitApproval(maLichSuChamCong, trangThai, "");
         }
     }
 
     function submitRejection() {
         const comment = document.getElementById('rejectionComment').value;
         if (isBatchRejection) {
-            submitMultipleApproval(selectedAttendanceIds, "Từ chối", comment);
+            submitMultipleApproval(selectedAttendanceIds, "LS4", comment);
         } else if (currentRejectionId) {
-            submitApproval(currentRejectionId, "Từ chối", comment);
+            submitApproval(currentRejectionId, "LS4", comment);
         }
         $('#rejectionModal').modal('hide');
         document.getElementById('rejectionComment').value = '';
@@ -438,12 +445,12 @@
         isBatchRejection = false;
     }
 
-    function submitApproval(maChamCong, trangThai, ghiChu) {
+    function submitApproval(maLichSuChamCong, trangThai, ghiChu) {
         fetch("/api/AttendanceManager/ApproveAttendanceManager", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-                maChamCong: maChamCong, 
+                maChamCong: maLichSuChamCong, 
                 trangThai: trangThai,
                 ghiChu: ghiChu
             })
@@ -458,7 +465,9 @@
             });
             if (data.success) {
                 const selected = document.getElementById("employeeFilter").value;
-                if (selected) fetchAttendanceRecords(selected);
+                if (selected) {
+                    fetchAttendanceRecords(selected);
+                }
             }
         });
     }
@@ -483,11 +492,14 @@
             });
             if (data.success) {
                 const selected = document.getElementById("employeeFilter").value;
-                if (selected) fetchAttendanceRecords(selected);
+                if (selected) {
+                    fetchAttendanceRecords(selected);
+                }
             }
         });
     }
 
+    // Bảng tăng ca
     function fetchOvertimeRecords(maNv) {
         fetch(`/api/AttendanceManager/GetOvertimeRecords?maNv=${maNv}`)
             .then(res => res.json())
@@ -509,8 +521,8 @@
                 <td class="p-3">${r.tyLeTangCa || "-"}</td>
                 <td class="p-3"><span class="${getStatusClass(r.trangThai)}">${trangThaiMap[r.trangThai] || r.trangThai}</span></td>
                 <td class="p-3 flex space-x-2">
-                    <button class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-200" onclick="approveOvertime(${r.maTangCa}, 'Đã duyệt')" data-bs-toggle="tooltip" title="Duyệt bản ghi"><i class="fas fa-check"></i></button>
-                    <button class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200" onclick="approveOvertime(${r.maTangCa}, 'Từ chối')" data-bs-toggle="tooltip" title="Từ chối bản ghi"><i class="fas fa-times"></i></button>
+                    <button class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-200" onclick="approveOvertime(${r.maTangCa}, 'TC2')" data-bs-toggle="tooltip" title="Duyệt bản ghi"><i class="fas fa-check"></i></button>
+                    <button class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200" onclick="approveOvertime(${r.maTangCa}, 'TC4')" data-bs-toggle="tooltip" title="Từ chối bản ghi"><i class="fas fa-times"></i></button>
                 </td>
             </tr>
         `).join("");
@@ -556,7 +568,7 @@
     let isBatchOvertimeRejection = false;
 
     function approveOvertime(maTangCa, trangThai) {
-        if (trangThai === "Từ chối") {
+        if (trangThai === "TC4") {
             currentOvertimeRejectionId = maTangCa;
             isBatchOvertimeRejection = false;
             $('#overtimeRejectionModal').modal('show');
@@ -568,9 +580,9 @@
     function submitOvertimeRejection() {
         const comment = document.getElementById('overtimeRejectionComment').value;
         if (isBatchOvertimeRejection) {
-            submitMultipleOvertimeApproval(selectedOvertimeIds, "Từ chối", comment);
+            submitMultipleOvertimeApproval(selectedOvertimeIds, "TC4", comment);
         } else if (currentOvertimeRejectionId) {
-            submitOvertimeApproval(currentOvertimeRejectionId, "Từ chối", comment);
+            submitOvertimeApproval(currentOvertimeRejectionId, "TC4", comment);
         }
         $('#overtimeRejectionModal').modal('hide');
         document.getElementById('overtimeRejectionComment').value = '';
@@ -598,7 +610,9 @@
             });
             if (data.success) {
                 const selected = document.getElementById("employeeFilter").value;
-                if (selected) fetchOvertimeRecords(selected);
+                if (selected) {
+                    fetchOvertimeRecords(selected);
+                }
             }
         });
     }
@@ -623,11 +637,14 @@
             });
             if (data.success) {
                 const selected = document.getElementById("employeeFilter").value;
-                if (selected) fetchOvertimeRecords(selected);
+                if (selected) {
+                    fetchOvertimeRecords(selected);
+                }
             }
         });
     }
 
+    // Makeup work functions
     function fetchMakeupRecords(maNv) {
         fetch(`/api/AttendanceManager/GetMakeupRecords?maNv=${maNv}`)
             .then(res => res.json())
@@ -651,8 +668,8 @@
                 <td class="p-3"><span class="${getStatusClass(r.trangThai)}">${trangThaiMap[r.trangThai] || r.trangThai}</span></td>
                 <td class="p-3">${r.ghiChu || "-"}</td>
                 <td class="p-3 flex space-x-2">
-                    <button class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-200" onclick="approveMakeup(${r.maLamBu}, 'Đã duyệt')" data-bs-toggle="tooltip" title="Duyệt bản ghi"><i class="fas fa-check"></i></button>
-                    <button class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200" onclick="approveMakeup(${r.maLamBu}, 'Từ chối')" data-bs-toggle="tooltip" title="Từ chối bản ghi"><i class="fas fa-times"></i></button>
+                    <button class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-200" onclick="approveMakeup(${r.maLamBu}, 'LB2')" data-bs-toggle="tooltip" title="Duyệt bản ghi"><i class="fas fa-check"></i></button>
+                    <button class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition duration-200" onclick="approveMakeup(${r.maLamBu}, 'LB4')" data-bs-toggle="tooltip" title="Từ chối bản ghi"><i class="fas fa-times"></i></button>
                 </td>
             </tr>
         `).join("");
@@ -698,7 +715,7 @@
     let isBatchMakeupRejection = false;
 
     function approveMakeup(maLamBu, trangThai) {
-        if (trangThai === "Từ chối") {
+        if (trangThai === "LB4") {
             currentMakeupRejectionId = maLamBu;
             isBatchMakeupRejection = false;
             $('#makeupRejectionModal').modal('show');
@@ -710,9 +727,9 @@
     function submitMakeupRejection() {
         const comment = document.getElementById('makeupRejectionComment').value;
         if (isBatchMakeupRejection) {
-            submitMultipleMakeupApproval(selectedMakeupIds, "Từ chối", comment);
+            submitMultipleMakeupApproval(selectedMakeupIds, "LB4", comment);
         } else if (currentMakeupRejectionId) {
-            submitMakeupApproval(currentMakeupRejectionId, "Từ chối", comment);
+            submitMakeupApproval(currentMakeupRejectionId, "LB4", comment);
         }
         $('#makeupRejectionModal').modal('hide');
         document.getElementById('makeupRejectionComment').value = '';
@@ -740,7 +757,9 @@
             });
             if (data.success) {
                 const selected = document.getElementById("employeeFilter").value;
-                if (selected) fetchMakeupRecords(selected);
+                if (selected) {
+                    fetchMakeupRecords(selected);
+                }
             }
         });
     }
@@ -765,40 +784,10 @@
             });
             if (data.success) {
                 const selected = document.getElementById("employeeFilter").value;
-                if (selected) fetchMakeupRecords(selected);
+                if (selected) {
+                    fetchMakeupRecords(selected);
+                }
             }
-        });
-    }
-
-    function approveAllAttendanceForDepartment() {
-        const btn = document.getElementById('approveAllBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Đang xử lý...';
-        fetch('/api/AttendanceManager/ApproveAllAttendanceForDepartment', {
-            method: 'POST'
-        })
-        .then(res => res.json())
-        .then(data => {
-            Swal.fire({
-                icon: 'success',
-                title: 'Thành công!',
-                text: `Đã duyệt: ${data.totalApproved} bản ghi. Không duyệt: ${data.totalFailed} bản ghi.`,
-                confirmButtonText: 'OK'
-            });
-            const selected = document.getElementById("employeeFilter").value;
-            if (selected) fetchAttendanceRecords(selected);
-        })
-        .catch(err => {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Có lỗi xảy ra khi duyệt tổng thể!',
-                confirmButtonText: 'OK'
-            });
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Duyệt tổng thể';
         });
     }
 </script>

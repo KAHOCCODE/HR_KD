@@ -35,6 +35,8 @@ namespace HR_KD.ApiControllers
                         on new { nn.MaNv, Nam = nn.NgayNghi1.Year } equals new { sdp.MaNv, sdp.Nam } into sdpJoin
                     from sdp in sdpJoin.DefaultIfEmpty()
                     join tt in _context.TrangThais on nn.MaTrangThai equals tt.MaTrangThai
+                    join lnn in _context.LoaiNgayNghis on nn.MaLoaiNgayNghi equals lnn.MaLoaiNgayNghi into lnnJoin // Sử dụng Left Join
+                    from lnn in lnnJoin.DefaultIfEmpty()
                     orderby nn.NgayNghi1 descending
                     select new
                     {
@@ -43,23 +45,24 @@ namespace HR_KD.ApiControllers
                         nv.HoTen,
                         NgayNghi = nn.NgayNghi1.ToString("dd/MM/yyyy"),
                         nn.LyDo,
+                        TenLoai = lnn != null ? lnn.TenLoai : "Không xác định", // Xử lý trường hợp null
                         nn.MaTrangThai,
-                        TrangThai = tt.TenTrangThai, // Renamed for frontend consistency
+                        TrangThai = tt.TenTrangThai,
                         nn.FileDinhKem,
                         SoNgayConLai = sdp != null ? sdp.SoNgayConLai : 0,
                         NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy")
                     }).ToListAsync();
 
-                // Xử lý thông tin file đính kèm
+                // Xử lý thông tin file đính kèm và kết hợp TenLoai với LyDo
                 var processedData = data.Select(item => new
                 {
                     item.MaNgayNghi,
                     item.MaNv,
                     item.HoTen,
                     item.NgayNghi,
-                    item.LyDo,
+                    LyDo = !string.IsNullOrEmpty(item.LyDo) ? $"{item.TenLoai} - {item.LyDo}" : item.TenLoai,
                     item.MaTrangThai,
-                    item.TrangThai, // Using the properly renamed field
+                    item.TrangThai,
                     item.SoNgayConLai,
                     item.NgayCapNhat,
                     FileDinhKem = ProcessAttachmentFiles(item.FileDinhKem)
@@ -69,7 +72,6 @@ namespace HR_KD.ApiControllers
             }
             catch (Exception ex)
             {
-                // Xử lý lỗi
                 return StatusCode(500, new { success = false, message = "Lỗi khi lấy dữ liệu nghỉ phép.", error = ex.Message });
             }
         }

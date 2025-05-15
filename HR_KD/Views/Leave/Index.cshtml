@@ -2111,6 +2111,7 @@
             }
         }
 
+        // Fetch leave types
         try {
             const response = await fetch("/api/Leave/GetLeaveTypes");
             const result = await response.json();
@@ -2126,7 +2127,6 @@
                     option.textContent = leaveType.tenLoai;
                     option.dataset.description = leaveType.moTa || "Không có mô tả";
 
-                    // Kiểm tra và lưu ID của loại nghỉ không lương
                     if (leaveType.tenLoai.toLowerCase().includes('không lương')) {
                         unpaidLeaveTypeId = leaveType.maLoaiNgayNghi;
                     }
@@ -2147,8 +2147,7 @@
                     }
                 });
 
-                // Initialize leave type dropdown based on leave balance
-                updateLeaveTypeDropdown();
+                // KHÔNG gọi updateLeaveTypeDropdown() tại đây
             } else {
                 console.error("Lỗi dữ liệu:", result);
                 alert("Dữ liệu không hợp lệ.");
@@ -2156,6 +2155,40 @@
         } catch (error) {
             console.error("Lỗi hệ thống:", error);
             alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+        }
+
+        // Fetch số dư phép và gọi updateLeaveTypeDropdown() sau khi có dữ liệu
+        try {
+            const response = await fetch('/api/Leave/SoNgayConLai', {
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Lỗi khi lấy dữ liệu');
+            }
+            const data = await response.json();
+            if (data.success) {
+                availableLeaveBalance = data.soNgayConLai;
+                const soNgayConLaiElement = document.querySelector('.leave-enhanced-card .so-ngay-con-lai');
+                const soNgayPhepDuocCapElement = document.querySelector('.leave-enhanced-card .so-ngay-phep-duoc-cap');
+                const soNgayDaSuDungElement = document.querySelector('.leave-enhanced-card .so-ngay-da-su-dung');
+                if (soNgayConLaiElement) {
+                    soNgayConLaiElement.textContent = `${data.soNgayConLai} ngày`;
+                }
+                if (soNgayPhepDuocCapElement) {
+                    soNgayPhepDuocCapElement.textContent = `${data.soNgayPhepDuocCap} ngày`;
+                }
+                if (soNgayDaSuDungElement) {
+                    soNgayDaSuDungElement.textContent = `${data.soNgayDaSuDung} ngày`;
+                }
+                showLeaveBalanceWarnings();
+                updateLeaveTypeDropdown(); // Gọi tại đây để đảm bảo availableLeaveBalance đã được cập nhật
+            } else {
+                console.error('Lỗi:', data.message);
+            }
+        } catch (error) {
+            console.error('Lỗi:', error);
         }
 
         // Số ngày còn lại
@@ -2677,6 +2710,9 @@
         const leaveTypeSelect = document.getElementById("leaveTypeSelect");
         if (!leaveTypeSelect) return;
 
+        // Lưu giá trị hiện tại của dropdown trước khi cập nhật
+        const currentValue = leaveTypeSelect.value;
+
         if (availableLeaveBalance === 0) {
             // Disable các option khác, chỉ enable loại nghỉ không lương
             Array.from(leaveTypeSelect.options).forEach(option => {
@@ -2688,9 +2724,9 @@
                     option.style.opacity = "1";
                 }
             });
-            // Tự động chọn loại nghỉ không lương
+            // Buộc chọn loại nghỉ không lương nếu số dư phép bằng 0
             leaveTypeSelect.value = unpaidLeaveTypeId;
-            // Hiển thị mô tả nếu có
+            // Hiển thị mô tả cho loại nghỉ không lương
             const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
             const description = selectedOption?.dataset?.description;
             if (description) {
@@ -2703,9 +2739,19 @@
                 option.disabled = false;
                 option.style.opacity = "1";
             });
-            // Đặt lại về mặc định "Chọn loại nghỉ"
-            leaveTypeSelect.value = "";
-            document.getElementById("leaveTypeDescription").classList.remove('show');
+            // Khôi phục giá trị hiện tại (hoặc giữ nguyên nếu đã chọn)
+            leaveTypeSelect.value = currentValue || "";
+            // Cập nhật mô tả nếu có giá trị được chọn
+            if (currentValue) {
+                const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+                const description = selectedOption?.dataset?.description;
+                if (description) {
+                    document.getElementById("leaveTypeDescription").textContent = description;
+                    document.getElementById("leaveTypeDescription").classList.add('show');
+                }
+            } else {
+                document.getElementById("leaveTypeDescription").classList.remove('show');
+            }
         }
     }
 

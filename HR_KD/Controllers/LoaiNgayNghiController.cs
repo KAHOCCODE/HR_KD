@@ -51,7 +51,7 @@ namespace HR_KD.Controllers
         // POST: LoaiNgayNghi/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MaLoaiNgayNghi,TenLoai,MoTa,HuongLuong,TinhVaoPhepNam,CoTinhVaoLuong")] LoaiNgayNghi loaiNgayNghi)
+        public async Task<IActionResult> Create([Bind("MaLoaiNgayNghi,TenLoai,MoTa,HuongLuong,TinhVaoPhepNam,CoTinhVaoLuong,SoNgayNghiToiDa,SoLanDangKyToiDa")] LoaiNgayNghi loaiNgayNghi)
         {
             if (ModelState.IsValid)
             {
@@ -82,11 +82,28 @@ namespace HR_KD.Controllers
         // POST: LoaiNgayNghi/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("MaLoaiNgayNghi,TenLoai,MoTa,HuongLuong,TinhVaoPhepNam,CoTinhVaoLuong")] LoaiNgayNghi loaiNgayNghi)
+        public async Task<IActionResult> Edit(int id, [Bind("MaLoaiNgayNghi,TenLoai,MoTa,HuongLuong,TinhVaoPhepNam,CoTinhVaoLuong,SoNgayNghiToiDa,SoLanDangKyToiDa")] LoaiNgayNghi loaiNgayNghi)
         {
             if (id != loaiNgayNghi.MaLoaiNgayNghi)
             {
                 return NotFound();
+            }
+
+            // Kiểm tra tính hợp lệ
+            if (string.IsNullOrWhiteSpace(loaiNgayNghi.TenLoai))
+            {
+                ModelState.AddModelError("TenLoai", "Tên loại ngày nghỉ không được để trống");
+            }
+
+            // Kiểm tra tính hợp lệ cho các trường mới
+            if (loaiNgayNghi.SoNgayNghiToiDa.HasValue && loaiNgayNghi.SoNgayNghiToiDa < 0)
+            {
+                ModelState.AddModelError("SoNgayNghiToiDa", "Số ngày nghỉ tối đa không được nhỏ hơn 0");
+            }
+
+            if (loaiNgayNghi.SoLanDangKyToiDa.HasValue && loaiNgayNghi.SoLanDangKyToiDa < 0)
+            {
+                ModelState.AddModelError("SoLanDangKyToiDa", "Số lần đăng ký tối đa không được nhỏ hơn 0");
             }
 
             if (ModelState.IsValid)
@@ -96,6 +113,19 @@ namespace HR_KD.Controllers
                     _context.Update(loaiNgayNghi);
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = "Loại ngày nghỉ đã được cập nhật thành công!";
+
+                    // Kiểm tra nếu là AJAX request
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new
+                        {
+                            success = true,
+                            message = "Cập nhật thành công!",
+                            redirectUrl = Url.Action("Index")
+                        });
+                    }
+
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -108,8 +138,17 @@ namespace HR_KD.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
             }
+
+            // Nếu là AJAX request và có lỗi validation
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage);
+                return BadRequest(new { success = false, message = string.Join(", ", errors) });
+            }
+
             return View(loaiNgayNghi);
         }
 

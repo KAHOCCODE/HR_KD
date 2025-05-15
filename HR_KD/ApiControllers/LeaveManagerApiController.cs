@@ -84,7 +84,7 @@ namespace HR_KD.ApiControllers
                     item.NgayNghiList,
                     LyDo = !string.IsNullOrEmpty(item.LyDo) ? $"{item.TenLoai} - {item.LyDo}" : item.TenLoai,
                     item.MaTrangThai,
-                    item.TrangThai,
+                    TrangThai = item.MaTrangThai == "NN5" ? "Đã duyệt (Không hưởng lương)" : item.TrangThai,
                     item.SoNgayConLai,
                     item.NgayCapNhat,
                     item.FileDinhKem,
@@ -162,7 +162,29 @@ namespace HR_KD.ApiControllers
             switch (request.TrangThai)
             {
                 case "Đã duyệt":
-                    newMaTrangThai = "NN2";
+                    // Kiểm tra loại nghỉ
+                    var loaiNgayNghi = await _context.LoaiNgayNghis
+                        .FirstOrDefaultAsync(lnn => lnn.MaLoaiNgayNghi == ngayNghi.MaLoaiNgayNghi);
+
+                    if (loaiNgayNghi != null)
+                    {
+                        if (loaiNgayNghi.TinhVaoPhepNam)
+                        {
+                            newMaTrangThai = "NN2"; // Tính vào phép năm
+                        }
+                        else if (!loaiNgayNghi.HuongLuong)
+                        {
+                            newMaTrangThai = "NN5"; // Không hưởng lương
+                        }
+                        else
+                        {
+                            newMaTrangThai = "NN2"; // Hưởng lương nhưng không tính vào phép năm
+                        }
+                    }
+                    else
+                    {
+                        newMaTrangThai = "NN2"; // Mặc định là hưởng lương nếu không tìm thấy loại nghỉ
+                    }
                     break;
                 case "Từ chối":
                     newMaTrangThai = "NN3";
@@ -409,7 +431,30 @@ namespace HR_KD.ApiControllers
             switch (request.TrangThai)
             {
                 case "Đã duyệt":
-                    newMaTrangThai = "NN2";
+                    // Lấy tất cả các loại ngày nghỉ liên quan
+                    var loaiNgayNghis = await _context.NgayNghis
+                        .Where(nn => request.MaNgayNghiList.Contains(nn.MaNgayNghi))
+                        .Select(nn => nn.MaLoaiNgayNghi)
+                        .Distinct()
+                        .ToListAsync();
+
+                    var loaiNgayNghiInfo = await _context.LoaiNgayNghis
+                        .Where(lnn => loaiNgayNghis.Contains(lnn.MaLoaiNgayNghi))
+                        .ToDictionaryAsync(lnn => lnn.MaLoaiNgayNghi, lnn => new { lnn.HuongLuong, lnn.TinhVaoPhepNam });
+
+                    // Kiểm tra theo thứ tự ưu tiên
+                    if (loaiNgayNghiInfo.Values.Any(info => info.TinhVaoPhepNam))
+                    {
+                        newMaTrangThai = "NN2"; // Tính vào phép năm
+                    }
+                    else if (loaiNgayNghiInfo.Values.Any(info => !info.HuongLuong))
+                    {
+                        newMaTrangThai = "NN5"; // Không hưởng lương
+                    }
+                    else
+                    {
+                        newMaTrangThai = "NN2"; // Hưởng lương nhưng không tính vào phép năm
+                    }
                     break;
                 case "Từ chối":
                     newMaTrangThai = "NN3";

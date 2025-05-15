@@ -420,6 +420,191 @@ namespace HR_KD.ApiControllers
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
         }
+
+        [HttpGet]
+        [Route("CheckLeaveLimits")]
+        public async Task<IActionResult> CheckLeaveLimits(int maLoaiNgayNghi, int soNgayYeuCau)
+        {
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
+            try
+            {
+                var loaiNgayNghi = await _context.LoaiNgayNghis
+                    .FirstOrDefaultAsync(l => l.MaLoaiNgayNghi == maLoaiNgayNghi);
+                
+                if (loaiNgayNghi == null)
+                {
+                    return BadRequest(new { success = false, message = "Loại ngày nghỉ không tồn tại." });
+                }
+
+                // Kiểm tra số ngày nghỉ tối đa
+                var soNgayDaDangKy = await _context.NgayNghis
+                    .Where(n => n.MaNv == currentMaNv.Value && 
+                           n.MaLoaiNgayNghi == maLoaiNgayNghi && 
+                           n.MaTrangThai == "NN1")
+                    .CountAsync();
+
+                // Kiểm tra số lần đăng ký
+                var soLanDangKy = await _context.NgayNghis
+                    .Where(n => n.MaNv == currentMaNv.Value && 
+                           n.MaLoaiNgayNghi == maLoaiNgayNghi && 
+                           n.MaTrangThai == "NN1")
+                    .Select(n => n.MaDon)
+                    .Distinct()
+                    .CountAsync();
+
+                var result = new
+                {
+                    success = true,
+                    loaiNgayNghi = new
+                    {
+                        tenLoai = loaiNgayNghi.TenLoai,
+                        soNgayNghiToiDa = loaiNgayNghi.SoNgayNghiToiDa,
+                        soLanDangKyToiDa = loaiNgayNghi.SoLanDangKyToiDa
+                    },
+                    hienTai = new
+                    {
+                        soNgayDaDangKy = soNgayDaDangKy,
+                        soLanDangKy = soLanDangKy
+                    },
+                    yeuCau = new
+                    {
+                        soNgayYeuCau = soNgayYeuCau
+                    },
+                    kiemTra = new
+                    {
+                        vuotQuaSoNgay = loaiNgayNghi.SoNgayNghiToiDa.HasValue && 
+                                       (soNgayDaDangKy + soNgayYeuCau) > loaiNgayNghi.SoNgayNghiToiDa.Value,
+                        vuotQuaSoLan = loaiNgayNghi.SoLanDangKyToiDa.HasValue && 
+                                      (soLanDangKy + 1) > loaiNgayNghi.SoLanDangKyToiDa.Value
+                    }
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [Route("GetLeaveTypeLimits")]
+        public async Task<IActionResult> GetLeaveTypeLimits()
+        {
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
+
+            try
+            {
+                var leaveTypes = await _context.LoaiNgayNghis
+                    .Select(l => new
+                    {
+                        maLoaiNgayNghi = l.MaLoaiNgayNghi,
+                        tenLoai = l.TenLoai,
+                        soNgayNghiToiDa = l.SoNgayNghiToiDa,
+                        soLanDangKyToiDa = l.SoLanDangKyToiDa
+                    })
+                    .ToListAsync();
+
+                var result = new List<object>();
+
+                foreach (var leaveType in leaveTypes)
+                {
+                    // Đếm số ngày nghỉ đã đăng ký (NN1)
+                    var soNgayDaDangKy = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && 
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                               n.MaTrangThai == "NN1")
+                        .CountAsync();
+
+                    // Đếm số ngày nghỉ đã duyệt (NN2)
+                    var soNgayDaDuyet = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && 
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                               n.MaTrangThai == "NN2")
+                        .CountAsync();
+
+                    // Đếm số ngày nghỉ không lương đã duyệt (NN5)
+                    var soNgayKhongLuong = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && 
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                               n.MaTrangThai == "NN5")
+                        .CountAsync();
+
+                    // Đếm số lần đăng ký đang chờ duyệt (NN1)
+                    var soLanDangKy = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && 
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                               n.MaTrangThai == "NN1")
+                        .Select(n => n.MaDon)
+                        .Distinct()
+                        .CountAsync();
+
+                    // Đếm số lần đăng ký đã duyệt (NN2)
+                    var soLanDaDuyet = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && 
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                               n.MaTrangThai == "NN2")
+                        .Select(n => n.MaDon)
+                        .Distinct()
+                        .CountAsync();
+
+                    // Đếm số lần đăng ký không lương đã duyệt (NN5)
+                    var soLanKhongLuong = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && 
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                               n.MaTrangThai == "NN5")
+                        .Select(n => n.MaDon)
+                        .Distinct()
+                        .CountAsync();
+
+                    // Kiểm tra xem có vượt quá giới hạn không
+                    var vuotQuaSoNgay = leaveType.soNgayNghiToiDa.HasValue && 
+                                       (soNgayDaDangKy + soNgayDaDuyet + soNgayKhongLuong) >= leaveType.soNgayNghiToiDa.Value;
+                    
+                    var vuotQuaSoLan = leaveType.soLanDangKyToiDa.HasValue && 
+                                      (soLanDangKy + soLanDaDuyet + soLanKhongLuong) >= leaveType.soLanDangKyToiDa.Value;
+
+                    result.Add(new
+                    {
+                        leaveType.maLoaiNgayNghi,
+                        leaveType.tenLoai,
+                        leaveType.soNgayNghiToiDa,
+                        leaveType.soLanDangKyToiDa,
+                        hienTai = new
+                        {
+                            soNgayDaDangKy,
+                            soNgayDaDuyet,
+                            soNgayKhongLuong,
+                            soLanDangKy,
+                            soLanDaDuyet,
+                            soLanKhongLuong
+                        },
+                        kiemTra = new
+                        {
+                            vuotQuaSoNgay,
+                            vuotQuaSoLan,
+                            biVoHieuHoa = vuotQuaSoNgay || vuotQuaSoLan
+                        }
+                    });
+                }
+
+                return Ok(new { success = true, leaveTypes = result });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
+
         public class LeaveRequestDto
         {
             public string NgayNghi { get; set; }

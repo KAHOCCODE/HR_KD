@@ -497,23 +497,91 @@
                     return false;
                 }
 
+                // Get antiforgery token
+                var token = $('input[name="__RequestVerificationToken"]').val();
+
                 $.ajax({
                     url: $(this).attr('action'),
-                    type: 'PUT',
+                    type: 'POST',
                     data: $(this).serialize(),
+                    headers: {
+                        'X-HTTP-Method-Override': 'PUT',
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     success: function (result) {
-                        toastr.success('Cập nhật thành công!', 'Thành công');
-                        setTimeout(function () {
-                            window.location.href = '@Url.Action("Index")';
-                        }, 1500);
+                        if (result.success) {
+                            // Hiển thị SweetAlert2 thông báo thành công
+                            Swal.fire({
+                                title: 'Cập nhật thành công!',
+                                html: '<div class="text-left"><p>Loại ngày nghỉ đã được cập nhật thành công.</p></div>',
+                                icon: 'success',
+                                confirmButtonColor: '#4e73df',
+                                confirmButtonText: '<i class="fas fa-check mr-2"></i>Đồng ý',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                },
+                                buttonsStyling: true,
+                                background: '#fff',
+                                backdrop: `rgba(0,0,0,0.4)`,
+                                showClass: {
+                                    popup: 'animate__animated animate__fadeInDown animate__faster'
+                                },
+                                hideClass: {
+                                    popup: 'animate__animated animate__fadeOutUp animate__faster'
+                                }
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = '@Url.Action("Index")';
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Lỗi!',
+                                html: '<div class="text-left"><p class="text-danger">' + result.message + '</p></div>',
+                                icon: 'error',
+                                confirmButtonColor: '#e74a3b',
+                                confirmButtonText: '<i class="fas fa-times mr-2"></i>Đóng',
+                                customClass: {
+                                    confirmButton: 'btn btn-danger'
+                                },
+                                buttonsStyling: true,
+                                background: '#fff',
+                                backdrop: `rgba(0,0,0,0.4)`,
+                                showClass: {
+                                    popup: 'animate__animated animate__fadeInDown animate__faster'
+                                },
+                                hideClass: {
+                                    popup: 'animate__animated animate__fadeOutUp animate__faster'
+                                }
+                            });
+                        }
                     },
                     error: function (xhr) {
-                        if (xhr.status === 400) {
-                            var response = JSON.parse(xhr.responseText);
-                            toastr.error(response.message, 'Lỗi');
-                        } else {
-                            toastr.error('Đã xảy ra lỗi khi cập nhật.', 'Lỗi');
+                        var errorMessage = 'Đã xảy ra lỗi khi cập nhật.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
                         }
+
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            html: '<div class="text-left"><p class="text-danger">' + errorMessage + '</p></div>',
+                            icon: 'error',
+                            confirmButtonColor: '#e74a3b',
+                            confirmButtonText: '<i class="fas fa-times mr-2"></i>Đóng',
+                            customClass: {
+                                confirmButton: 'btn btn-danger'
+                            },
+                            buttonsStyling: true,
+                            background: '#fff',
+                            backdrop: `rgba(0,0,0,0.4)`,
+                            showClass: {
+                                popup: 'animate__animated animate__fadeInDown animate__faster'
+                            },
+                            hideClass: {
+                                popup: 'animate__animated animate__fadeOutUp animate__faster'
+                            }
+                        });
                     }
                 });
             });
@@ -550,4 +618,5 @@
 
     <!-- Add Animate.css for animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 }

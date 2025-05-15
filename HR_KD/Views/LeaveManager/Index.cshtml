@@ -208,6 +208,22 @@
             border: 1px solid #dee2e6;
         }
 
+        /* Thêm style cho trạng thái không hưởng lương */
+        .leave-status-no-salary {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Style cho dòng chứa trạng thái không hưởng lương */
+        tr[data-status="NN5"] {
+            background-color: #ffe5e5 !important;
+        }
+
+        tr[data-status="NN5"]:hover {
+            background-color: #ffe5e5 !important;
+        }
+
         .btn {
             padding: 10px 20px;
             border-radius: 6px;
@@ -1527,42 +1543,42 @@
 
                 if (dataList.length === 0) {
                     const row = `
-                                            <tr>
-                                                <td colspan="10" style="text-align: center; padding: 20px;">Không tìm thấy dữ liệu</td>
-                                            </tr>`;
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 20px;">Không tìm thấy dữ liệu</td>
+                        </tr>`;
                     leaveTableBody.innerHTML = row;
                     return;
                 }
 
                 dataList.slice(start, end).forEach(item => {
-                    const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Từ chối";
+                    const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không hưởng lương)" || item.trangThai === "Từ chối";
                     const actionContent = `
-                                        <div class="action-buttons">
-                                            ${isProcessed ? 'Đã xử lý' : `
-                                                <i class="fas fa-check-circle action-icon approve" data-bs-toggle="tooltip" data-bs-placement="top" title="Duyệt" onclick="Swal.fire({
-                                                    title: 'Xác nhận duyệt',
-                                                    text: 'Bạn có chắc chắn muốn duyệt đơn nghỉ phép này?',
-                                                    icon: 'question',
-                                                    showCancelButton: true,
-                                                    confirmButtonText: 'Xác nhận',
-                                                    cancelButtonText: 'Hủy'
-                                                }).then((result) => {
-                                                    if (result.isConfirmed) {
-                                                        updateStatus(${item.maNgayNghi}, 'Đã duyệt').then(res => {
-                                                            if (res.success) {
-                                                                Swal.fire({ title: 'Thành công', text: res.message, icon: 'success', confirmButtonText: 'OK' }).then(() => location.reload());
-                                                            } else {
-                                                                Swal.fire({ title: 'Lỗi', text: res.message, icon: 'error', confirmButtonText: 'OK' });
-                                                            }
-                                                        }).catch(err => Swal.fire({ title: 'Lỗi', text: 'Có lỗi xảy ra.', icon: 'error', confirmButtonText: 'OK' }));
-                                                    }
-                                                });"></i>
-                                                <button class="btn action-icon reject" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-bs-placement="top" title="Từ chối" data-ma-don="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">
-                                                    <i class="fas fa-times-circle"></i>
-                                                </button>
-                                            `}
-                                            <i class="fas fa-eye action-icon details" data-bs-toggle="modal" data-bs-target="#detailsModal" data-bs-placement="top" title="Chi tiết" data-ma-don="${item.maNgayNghi}"></i>
-                                        </div>`;
+                        <div class="action-buttons">
+                            ${isProcessed ? 'Đã xử lý' : `
+                                <i class="fas fa-check-circle action-icon approve" data-bs-toggle="tooltip" data-bs-placement="top" title="Duyệt" onclick="Swal.fire({
+                                    title: 'Xác nhận duyệt',
+                                    text: 'Bạn có chắc chắn muốn duyệt đơn nghỉ phép này?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Xác nhận',
+                                    cancelButtonText: 'Hủy'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        updateStatus(${item.maNgayNghi}, 'Đã duyệt').then(res => {
+                                            if (res.success) {
+                                                Swal.fire({ title: 'Thành công', text: res.message, icon: 'success', confirmButtonText: 'OK' }).then(() => location.reload());
+                                            } else {
+                                                Swal.fire({ title: 'Lỗi', text: res.message, icon: 'error', confirmButtonText: 'OK' });
+                                            }
+                                        }).catch(err => Swal.fire({ title: 'Lỗi', text: 'Có lỗi xảy ra.', icon: 'error', confirmButtonText: 'OK' }));
+                                    }
+                                });"></i>
+                                <button class="btn action-icon reject" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-bs-placement="top" title="Từ chối" data-ma-don="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            `}
+                            <i class="fas fa-eye action-icon details" data-bs-toggle="modal" data-bs-target="#detailsModal" data-bs-placement="top" title="Chi tiết" data-ma-don="${item.maNgayNghi}"></i>
+                        </div>`;
 
                     let attachmentContent;
                     if (item.fileDinhKem && Array.isArray(item.fileDinhKem) && item.fileDinhKem.length > 0) {
@@ -1577,48 +1593,48 @@
 
                             if (isImage) {
                                 fileList += `
-                                                        <li>
-                                                            <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#imageModal-${uniqueId}">
-                                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
-                                                            </a>
-                                                        </li>`;
+                                    <li>
+                                        <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#imageModal-${uniqueId}">
+                                            <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
+                                        </a>
+                                    </li>`;
                                 modalContent += `
-                                                        <div class="modal fade" id="imageModal-${uniqueId}" tabindex="-1" aria-labelledby="imageModalLabel-${uniqueId}" aria-hidden="true">
-                                                            <div class="modal-dialog modal-dialog-centered modal-lg">
-                                                                <div class="modal-content">
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title" id="imageModalLabel-${uniqueId}">${file.fileName}</h5>
-                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                    </div>
-                                                                    <div class="modal-body text-center">
-                                                                        <img src="${file.filePath}" alt="${file.fileName}" class="img-fluid" style="max-width: 100%;">
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>`;
+                                    <div class="modal fade" id="imageModal-${uniqueId}" tabindex="-1" aria-labelledby="imageModalLabel-${uniqueId}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="imageModalLabel-${uniqueId}">${file.fileName}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body text-center">
+                                                    <img src="${file.filePath}" alt="${file.fileName}" class="img-fluid" style="max-width: 100%;">
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>`;
                             } else {
                                 fileList += `
-                                                        <li>
-                                                            <a class="dropdown-item" href="${file.filePath}" target="_blank">
-                                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
-                                                            </a>
-                                                        </li>`;
+                                    <li>
+                                        <a class="dropdown-item" href="${file.filePath}" target="_blank">
+                                            <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
+                                        </a>
+                                    </li>`;
                             }
                         });
 
                         attachmentContent = `
-                                                <div class="dropdown">
-                                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownBtn-${item.maNgayNghi}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-paperclip"></i> ${fileCount} file đính kèm
-                                                    </button>
-                                                    <ul class="dropdown-menu" aria-labelledby="dropdownBtn-${item.maNgayNghi}">
-                                                        ${fileList}
-                                                    </ul>
-                                                </div>
-                                                ${modalContent}`;
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownBtn-${item.maNgayNghi}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-paperclip"></i> ${fileCount} file đính kèm
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownBtn-${item.maNgayNghi}">
+                                    ${fileList}
+                                </ul>
+                            </div>
+                            ${modalContent}`;
                     } else {
                         attachmentContent = 'Không có';
                     }
@@ -1649,18 +1665,18 @@
                         </div>`;
 
                     const row = `
-                                            <tr>
-                                                <td>${checkboxContent}</td>
-                                                <td>${item.maNgayNghi}</td>
-                                                <td>${item.ngayCapNhat}</td>
-                                                <td>${item.hoTen}</td>
-                                                <td>${leaveDatesContent}</td>
-                                                <td>${reasonContent}</td>
-                                                <td>${attachmentContent}</td>
-                                                <td><span class="leave-status leave-status-${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                                                <td>${item.soNgayConLai != null ? item.soNgayConLai : '--'}</td>
-                                                <td>${actionContent}</td>
-                                            </tr>`;
+                        <tr data-status="${item.maTrangThai}">
+                            <td>${checkboxContent}</td>
+                            <td>${item.maNgayNghi}</td>
+                            <td>${item.ngayCapNhat}</td>
+                            <td>${item.hoTen}</td>
+                            <td>${leaveDatesContent}</td>
+                            <td>${reasonContent}</td>
+                            <td>${attachmentContent}</td>
+                            <td><span class="leave-status leave-status-${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
+                            <td>${item.soNgayConLai != null ? item.soNgayConLai : '--'}</td>
+                            <td>${actionContent}</td>
+                        </tr>`;
                     leaveTableBody.innerHTML += row;
                 });
 
@@ -1770,6 +1786,7 @@
             function getStatusClass(status) {
                 switch (status) {
                     case 'Đã duyệt': return 'approved';
+                    case 'Đã duyệt (Không hưởng lương)': return 'no-salary';
                     case 'Từ chối': return 'rejected';
                     case 'Đã hủy': return 'canceled';
                     default: return 'pending';
@@ -1785,7 +1802,16 @@
                     if (tabText === "Đang chờ duyệt") {
                         statusFilter = "Chờ duyệt";
                     } else if (tabText === "Đã duyệt") {
-                        statusFilter = "Đã duyệt";
+                        // Lấy cả trạng thái NN2 và NN5
+                        dataList = originalData.filter(item => 
+                            item.maTrangThai === "NN2" || 
+                            item.maTrangThai === "NN5" || 
+                            item.trangThai === "Đã duyệt" || 
+                            item.trangThai === "Đã duyệt (Không hưởng lương)"
+                        );
+                        renderTable(currentPage);
+                        renderPagination();
+                        return;
                     } else if (tabText === "Tất cả đơn nghỉ phép") {
                         statusFilter = null;
                     } else if (tabText === "Đơn bị hủy") {

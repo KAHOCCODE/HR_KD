@@ -786,5 +786,76 @@ namespace HR_KD.ApiControllers
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message, stackTrace = ex.StackTrace });
             }
         }
+        [HttpDelete("DeleteRejectedRecord")]
+        public async Task<IActionResult> DeleteRejectedRecord([FromBody] DeleteRecordDTO request)
+        {
+            var maNv = GetMaNvFromClaims();
+            if (!maNv.HasValue)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
+            }
+
+            if (request == null || string.IsNullOrEmpty(request.Loai) || !DateOnly.TryParse(request.Ngay, out DateOnly ngay))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
+            }
+
+            try
+            {
+                bool deleted = false;
+
+                if (request.Loai == "Chấm Công")
+                {
+                    var record = await _context.LichSuChamCongs
+                        .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.Ngay == ngay && c.TrangThai == "CC4");
+                    if (record != null)
+                    {
+                        _context.LichSuChamCongs.Remove(record);
+                        deleted = true;
+                    }
+                }
+                else if (request.Loai == "Tăng Ca")
+                {
+                    var record = await _context.TangCas
+                        .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.NgayTangCa == ngay && c.TrangThai == "TC4");
+                    if (record != null)
+                    {
+                        _context.TangCas.Remove(record);
+                        deleted = true;
+                    }
+                }
+                else if (request.Loai == "Làm Bù")
+                {
+                    var record = await _context.LamBus
+                        .FirstOrDefaultAsync(c => c.MaNV == maNv.Value && c.NgayLamViec == ngay && c.TrangThai == "LB4");
+                    if (record != null)
+                    {
+                        _context.LamBus.Remove(record);
+                        deleted = true;
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "Loại bản ghi không hợp lệ." });
+                }
+
+                if (!deleted)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy bản ghi để xóa." });
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { success = true, message = "Xóa bản ghi thành công." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
+        public class DeleteRecordDTO
+        {
+            public string Loai { get; set; }
+            public string Ngay { get; set; }
+        }
     }
 }

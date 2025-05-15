@@ -2378,10 +2378,8 @@
             console.log(`Hiển thị ${paginatedData.length} bản ghi cho tab ${tabId}`);
             paginatedData.forEach((item, index) => {
                 try {
-                    // Hỗ trợ các biến thể tên trường có thể có
-                    const id = item.id || item.Id || item.maDon || item.MaDon || "";
+                    const maDon = item.maDon || item.MaDon || "";
                     const tenLoai = item.tenLoai || item.TenLoai || item.loaiNghi || item.LoaiNghi || "Không xác định";
-                    const ngayNghi = item.ngayNghi || item.NgayNghi || item.ngay || item.Ngay || "Không xác định";
                     const lyDo = item.lyDo || item.LyDo || item.moTa || item.MoTa || "Không có lý do";
                     const trangThai = item.trangThai || item.TrangThai || "Không xác định";
                     const fileDinhKem = item.fileDinhKem || item.FileDinhKem || item.files || item.Files || "";
@@ -2389,24 +2387,40 @@
                     const ngayHuy = item.ngayDuyet || item.NgayDuyet || "";
                     const ghiChu = item.ghiChu || item.GhiChu || item.noiDungPhanHoi || item.NoiDungPhanHoi || "Không có ghi chú";
                     const nguoiDuyetHoTen = item.nguoiDuyetHoTen || item.NguoiDuyetHoTen || item.nguoiDuyet || item.NguoiDuyet || "Chưa có";
+                    const ngayNghis = item.ngayNghis || item.NgayNghis || [];
 
                     console.log(`Dữ liệu dòng ${index + 1} của tab ${tabId}:`, {
-                        id, tenLoai, ngayNghi, lyDo, trangThai, fileDinhKem, ngayDuyet, ngayHuy, ghiChu, nguoiDuyetHoTen
+                        maDon, tenLoai, lyDo, trangThai, fileDinhKem, ngayDuyet, ngayHuy, ghiChu, nguoiDuyetHoTen, ngayNghis
                     });
 
                     const fileDisplayHtml = generateFileDisplayHtml(fileDinhKem);
                     const ngayDuyetFormatted = ngayDuyet ? formatDate(ngayDuyet) : "Chưa duyệt";
                     const ngayHuyFormatted = ngayHuy ? formatDate(ngayHuy) : "Chưa hủy";
 
+                    // Tạo dropdown cho danh sách ngày nghỉ
+                    const uniqueId = `dates-${maDon}-${index}`;
+                    const datesDropdownHtml = `
+                        <div class="dropdown">
+                            <button class="btn btn-link dropdown-toggle" type="button" id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                ${ngayNghis.length} ngày
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="${uniqueId}">
+                                ${ngayNghis.map(ngay => `
+                                    <li><a class="dropdown-item" href="#">${formatDate(ngay.ngayNghi)}</a></li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+
                     const row = document.createElement("tr");
                     if (tabId === 'pending') {
-                        const cancelButton = `<button class="btn-cancel" data-id="${id}">
-                                                    <i class="fas fa-times-circle"></i>
-                                                    <span>Hủy đơn</span>
-                                                </button>`;
+                        const cancelButton = `<button class="btn-cancel" data-id="${ngayNghis[0]?.id}">
+                                                <i class="fas fa-times-circle"></i>
+                                                <span>Hủy đơn</span>
+                                            </button>`;
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
-                                    <td>${formatDate(ngayNghi)}</td>
+                                    <td>${datesDropdownHtml}</td>
                                     <td>${lyDo}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
@@ -2415,17 +2429,16 @@
                     } else if (tabId === 'canceled') {
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
-                                    <td>${formatDate(ngayNghi)}</td>
+                                    <td>${datesDropdownHtml}</td>
                                     <td>${lyDo}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${ngayHuyFormatted}</td>
-
                                 `;
                     } else {
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
-                                    <td>${formatDate(ngayNghi)}</td>
+                                    <td>${datesDropdownHtml}</td>
                                     <td>${lyDo}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,19 +28,19 @@ namespace HR_KD.Controllers.Api
             return await _context.LoaiNgayNghis.ToListAsync();
         }
 
-        //// GET: api/LoaiNgayNghi/5
-        //[HttpGet("{id}")]
-        //public async Task<ActionResult<LoaiNgayNghi>> GetLoaiNgayNghi(int id)
-        //{
-        //    var loaiNgayNghi = await _context.LoaiNgayNghis.FindAsync(id);
+        // GET: api/LoaiNgayNghi/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<LoaiNgayNghi>> GetLoaiNgayNghi(int id)
+        {
+            var loaiNgayNghi = await _context.LoaiNgayNghis.FindAsync(id);
 
-        //    if (loaiNgayNghi == null)
-        //    {
-        //        return NotFound();
-        //    }
+            if (loaiNgayNghi == null)
+            {
+                return NotFound();
+            }
 
-        //    return loaiNgayNghi;
-        //}
+            return loaiNgayNghi;
+        }
 
         // PUT: api/LoaiNgayNghi/5
         [HttpPut("{id}")]
@@ -54,6 +55,17 @@ namespace HR_KD.Controllers.Api
             if (string.IsNullOrWhiteSpace(loaiNgayNghi.TenLoai))
             {
                 return BadRequest(new { message = "Tên loại ngày nghỉ không được để trống" });
+            }
+
+            // Kiểm tra tính hợp lệ cho các trường mới
+            if (loaiNgayNghi.SoNgayNghiToiDa.HasValue && loaiNgayNghi.SoNgayNghiToiDa < 0)
+            {
+                return BadRequest(new { message = "Số ngày nghỉ tối đa không được nhỏ hơn 0" });
+            }
+
+            if (loaiNgayNghi.SoLanDangKyToiDa.HasValue && loaiNgayNghi.SoLanDangKyToiDa < 0)
+            {
+                return BadRequest(new { message = "Số lần đăng ký tối đa không được nhỏ hơn 0" });
             }
 
             _context.Entry(loaiNgayNghi).State = EntityState.Modified;
@@ -85,6 +97,17 @@ namespace HR_KD.Controllers.Api
             if (string.IsNullOrWhiteSpace(loaiNgayNghi.TenLoai))
             {
                 return BadRequest(new { message = "Tên loại ngày nghỉ không được để trống" });
+            }
+
+            // Kiểm tra tính hợp lệ cho các trường mới
+            if (loaiNgayNghi.SoNgayNghiToiDa.HasValue && loaiNgayNghi.SoNgayNghiToiDa < 0)
+            {
+                return BadRequest(new { message = "Số ngày nghỉ tối đa không được nhỏ hơn 0" });
+            }
+
+            if (loaiNgayNghi.SoLanDangKyToiDa.HasValue && loaiNgayNghi.SoLanDangKyToiDa < 0)
+            {
+                return BadRequest(new { message = "Số lần đăng ký tối đa không được nhỏ hơn 0" });
             }
 
             _context.LoaiNgayNghis.Add(loaiNgayNghi);

@@ -35,17 +35,18 @@ namespace HR_KD.ApiControllers
                         on new { nn.MaNv, Nam = nn.NgayNghi1.Year } equals new { sdp.MaNv, sdp.Nam } into sdpJoin
                     from sdp in sdpJoin.DefaultIfEmpty()
                     join tt in _context.TrangThais on nn.MaTrangThai equals tt.MaTrangThai
-                    join lnn in _context.LoaiNgayNghis on nn.MaLoaiNgayNghi equals lnn.MaLoaiNgayNghi into lnnJoin // Sử dụng Left Join
+                    join lnn in _context.LoaiNgayNghis on nn.MaLoaiNgayNghi equals lnn.MaLoaiNgayNghi into lnnJoin
                     from lnn in lnnJoin.DefaultIfEmpty()
                     orderby nn.NgayNghi1 descending
                     select new
                     {
                         nn.MaNgayNghi,
+                        nn.MaDon,
                         nv.MaNv,
                         nv.HoTen,
                         NgayNghi = nn.NgayNghi1.ToString("dd/MM/yyyy"),
                         nn.LyDo,
-                        TenLoai = lnn != null ? lnn.TenLoai : "Không xác định", // Xử lý trường hợp null
+                        TenLoai = lnn != null ? lnn.TenLoai : "Không xác định",
                         nn.MaTrangThai,
                         TrangThai = tt.TenTrangThai,
                         nn.FileDinhKem,
@@ -53,19 +54,41 @@ namespace HR_KD.ApiControllers
                         NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy")
                     }).ToListAsync();
 
+                // Nhóm dữ liệu theo MaDon
+                var groupedData = data
+                    .GroupBy(x => x.MaDon)
+                    .Select(g => new
+                    {
+                        MaDon = g.Key,
+                        MaNgayNghi = g.First().MaNgayNghi,
+                        MaNv = g.First().MaNv,
+                        HoTen = g.First().HoTen,
+                        NgayNghiList = g.Select(x => x.NgayNghi).ToList(),
+                        LyDo = g.First().LyDo,
+                        TenLoai = g.First().TenLoai,
+                        MaTrangThai = g.First().MaTrangThai,
+                        TrangThai = g.First().TrangThai,
+                        FileDinhKem = ProcessAttachmentFiles(g.First().FileDinhKem),
+                        SoNgayConLai = g.First().SoNgayConLai,
+                        NgayCapNhat = g.First().NgayCapNhat,
+                        TongSoNgay = g.Count()
+                    }).ToList();
+
                 // Xử lý thông tin file đính kèm và kết hợp TenLoai với LyDo
-                var processedData = data.Select(item => new
+                var processedData = groupedData.Select(item => new
                 {
+                    item.MaDon,
                     item.MaNgayNghi,
                     item.MaNv,
                     item.HoTen,
-                    item.NgayNghi,
+                    item.NgayNghiList,
                     LyDo = !string.IsNullOrEmpty(item.LyDo) ? $"{item.TenLoai} - {item.LyDo}" : item.TenLoai,
                     item.MaTrangThai,
                     item.TrangThai,
                     item.SoNgayConLai,
                     item.NgayCapNhat,
-                    FileDinhKem = ProcessAttachmentFiles(item.FileDinhKem)
+                    item.FileDinhKem,
+                    item.TongSoNgay
                 }).ToList();
 
                 return Ok(new { success = true, data = processedData });
@@ -152,125 +175,133 @@ namespace HR_KD.ApiControllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Cập nhật trạng thái của ngày nghỉ
-                ngayNghi.MaTrangThai = newMaTrangThai;
-                ngayNghi.NgayDuyet = DateTime.Now;
-                ngayNghi.NguoiDuyetId = currentMaNv;
+                // Lấy tất cả các ngày nghỉ có cùng MaDon
+                var allNgayNghis = await _context.NgayNghis
+                    .Where(nn => nn.MaDon == ngayNghi.MaDon)
+                    .ToListAsync();
 
-                // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
-                if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
+                foreach (var nn in allNgayNghis)
                 {
-                    ngayNghi.GhiChu = request.LyDo;
-                }
+                    // Cập nhật trạng thái của ngày nghỉ
+                    nn.MaTrangThai = newMaTrangThai;
+                    nn.NgayDuyet = DateTime.Now;
+                    nn.NguoiDuyetId = currentMaNv;
 
-                // Cập nhật đơn nghỉ phép
-                _context.NgayNghis.Update(ngayNghi);
-
-                // Xử lý chấm công dựa trên trạng thái
-                DateOnly ngayLamViec = ngayNghi.NgayNghi1;
-
-                var chamCong = await _context.ChamCongs
-                    .FirstOrDefaultAsync(cc => cc.MaNv == ngayNghi.MaNv && cc.NgayLamViec == ngayLamViec);
-
-                if (newMaTrangThai == "NN2") // Đã duyệt
-                {
-                    if (chamCong == null)
+                    // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
+                    if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
                     {
-                        chamCong = new ChamCong
+                        nn.GhiChu = request.LyDo;
+                    }
+
+                    // Cập nhật đơn nghỉ phép
+                    _context.NgayNghis.Update(nn);
+
+                    // Xử lý chấm công dựa trên trạng thái
+                    DateOnly ngayLamViec = nn.NgayNghi1;
+
+                    var chamCong = await _context.ChamCongs
+                        .FirstOrDefaultAsync(cc => cc.MaNv == nn.MaNv && cc.NgayLamViec == ngayLamViec);
+
+                    if (newMaTrangThai == "NN2") // Đã duyệt
+                    {
+                        if (chamCong == null)
                         {
-                            MaNv = ngayNghi.MaNv,
-                            NgayLamViec = ngayLamViec,
-                            GioVao = new TimeOnly(8, 0), // 8:00 AM
-                            GioRa = new TimeOnly(20, 0), // 8:00 PM
-                            TongGio = 8m,
-                            TrangThai = "CC5",
-                            MaNvDuyet = currentMaNv.Value
-                        };
-                        _context.ChamCongs.Add(chamCong);
-                    }
-                    else
-                    {
-                        chamCong.GioVao = new TimeOnly(8, 0);
-                        chamCong.GioRa = new TimeOnly(20, 0);
-                        chamCong.TongGio = 8m;
-                        chamCong.TrangThai = "CC5";
-                        chamCong.MaNvDuyet = currentMaNv.Value;
-                        _context.ChamCongs.Update(chamCong);
-                    }
-                }
-                else if (newMaTrangThai == "NN3") // Từ chối
-                {
-                    if (chamCong == null)
-                    {
-                        chamCong = new ChamCong
+                            chamCong = new ChamCong
+                            {
+                                MaNv = nn.MaNv,
+                                NgayLamViec = ngayLamViec,
+                                GioVao = new TimeOnly(8, 0), // 8:00 AM
+                                GioRa = new TimeOnly(20, 0), // 8:00 PM
+                                TongGio = 8m,
+                                TrangThai = "CC5",
+                                MaNvDuyet = currentMaNv.Value
+                            };
+                            _context.ChamCongs.Add(chamCong);
+                        }
+                        else
                         {
-                            MaNv = ngayNghi.MaNv,
-                            NgayLamViec = ngayLamViec,
-                            GioVao = new TimeOnly(8, 0),
-                            GioRa = new TimeOnly(8, 0),
-                            TongGio = 0m,
-                            TrangThai = "CC6",
-                            MaNvDuyet = currentMaNv.Value
-                        };
-                        _context.ChamCongs.Add(chamCong);
+                            chamCong.GioVao = new TimeOnly(8, 0);
+                            chamCong.GioRa = new TimeOnly(20, 0);
+                            chamCong.TongGio = 8m;
+                            chamCong.TrangThai = "CC5";
+                            chamCong.MaNvDuyet = currentMaNv.Value;
+                            _context.ChamCongs.Update(chamCong);
+                        }
                     }
-                    else
+                    else if (newMaTrangThai == "NN3") // Từ chối
                     {
-                        chamCong.GioVao = new TimeOnly(8, 0);
-                        chamCong.GioRa = new TimeOnly(8, 0);
-                        chamCong.TongGio = 0m;
-                        chamCong.TrangThai = "CC6";
-                        chamCong.MaNvDuyet = currentMaNv.Value;
-                        _context.ChamCongs.Update(chamCong);
-                    }
-
-                    // Thêm hoặc cập nhật GioThieu
-                    var gioThieu = await _context.GioThieus
-                        .FirstOrDefaultAsync(gt => gt.MaNv == ngayNghi.MaNv && gt.NgayThieu == ngayLamViec);
-
-                    if (gioThieu == null)
-                    {
-                        gioThieu = new GioThieu
+                        if (chamCong == null)
                         {
-                            MaNv = ngayNghi.MaNv,
-                            NgayThieu = ngayLamViec,
-                            TongGioThieu = 8m,
-                            MaNvNavigation = nhanVien
-                        };
-                        _context.GioThieus.Add(gioThieu);
-                    }
-                    else
-                    {
-                        gioThieu.TongGioThieu = 8m;
-                        _context.GioThieus.Update(gioThieu);
-                    }
-
-                    // Cập nhật TongGioThieu
-                    var firstDayOfMonth = new DateOnly(ngayLamViec.Year, ngayLamViec.Month, 1);
-                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-
-                    var tongGioThieu = await _context.TongGioThieus
-                        .FirstOrDefaultAsync(t => t.MaNv == ngayNghi.MaNv &&
-                                                t.NgayBatDauThieu == firstDayOfMonth &&
-                                                t.NgayKetThucThieu == lastDayOfMonth);
-
-                    if (tongGioThieu == null)
-                    {
-                        tongGioThieu = new TongGioThieu
+                            chamCong = new ChamCong
+                            {
+                                MaNv = nn.MaNv,
+                                NgayLamViec = ngayLamViec,
+                                GioVao = new TimeOnly(8, 0),
+                                GioRa = new TimeOnly(8, 0),
+                                TongGio = 0m,
+                                TrangThai = "CC6",
+                                MaNvDuyet = currentMaNv.Value
+                            };
+                            _context.ChamCongs.Add(chamCong);
+                        }
+                        else
                         {
-                            MaNv = ngayNghi.MaNv,
-                            NgayBatDauThieu = firstDayOfMonth,
-                            NgayKetThucThieu = lastDayOfMonth,
-                            TongGioConThieu = 8m,
-                            TongGioLamBu = 0m,
-                            MaNvNavigation = nhanVien
-                        };
-                        _context.TongGioThieus.Add(tongGioThieu);
-                    }
-                    else
-                    {
-                        tongGioThieu.TongGioConThieu += 8m;
-                        _context.TongGioThieus.Update(tongGioThieu);
+                            chamCong.GioVao = new TimeOnly(8, 0);
+                            chamCong.GioRa = new TimeOnly(8, 0);
+                            chamCong.TongGio = 0m;
+                            chamCong.TrangThai = "CC6";
+                            chamCong.MaNvDuyet = currentMaNv.Value;
+                            _context.ChamCongs.Update(chamCong);
+                        }
+
+                        // Thêm hoặc cập nhật GioThieu
+                        var gioThieu = await _context.GioThieus
+                            .FirstOrDefaultAsync(gt => gt.MaNv == nn.MaNv && gt.NgayThieu == ngayLamViec);
+
+                        if (gioThieu == null)
+                        {
+                            gioThieu = new GioThieu
+                            {
+                                MaNv = nn.MaNv,
+                                NgayThieu = ngayLamViec,
+                                TongGioThieu = 8m,
+                                MaNvNavigation = nhanVien
+                            };
+                            _context.GioThieus.Add(gioThieu);
+                        }
+                        else
+                        {
+                            gioThieu.TongGioThieu = 8m;
+                            _context.GioThieus.Update(gioThieu);
+                        }
+
+                        // Cập nhật TongGioThieu
+                        var firstDayOfMonth = new DateOnly(ngayLamViec.Year, ngayLamViec.Month, 1);
+                        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                        var tongGioThieu = await _context.TongGioThieus
+                            .FirstOrDefaultAsync(t => t.MaNv == nn.MaNv &&
+                                                    t.NgayBatDauThieu == firstDayOfMonth &&
+                                                    t.NgayKetThucThieu == lastDayOfMonth);
+
+                        if (tongGioThieu == null)
+                        {
+                            tongGioThieu = new TongGioThieu
+                            {
+                                MaNv = nn.MaNv,
+                                NgayBatDauThieu = firstDayOfMonth,
+                                NgayKetThucThieu = lastDayOfMonth,
+                                TongGioConThieu = 8m,
+                                TongGioLamBu = 0m,
+                                MaNvNavigation = nhanVien
+                            };
+                            _context.TongGioThieus.Add(tongGioThieu);
+                        }
+                        else
+                        {
+                            tongGioThieu.TongGioConThieu += 8m;
+                            _context.TongGioThieus.Update(tongGioThieu);
+                        }
                     }
                 }
 
@@ -304,10 +335,10 @@ namespace HR_KD.ApiControllers
                 data = new
                 {
                     nguoiDuyet = nguoiDuyet.HoTen,
-                    maTrangThai = ngayNghi.MaTrangThai,
+                    maTrangThai = newMaTrangThai,
                     trangThai = tenTrangThai,
-                    ngayDuyet = ngayNghi.NgayDuyet,
-                    ghiChu = ngayNghi.GhiChu
+                    ngayDuyet = DateTime.Now,
+                    ghiChu = request.LyDo
                 }
             });
         }
@@ -322,19 +353,26 @@ namespace HR_KD.ApiControllers
             var currentMonth = today.Month;
             var currentYear = today.Year;
 
-            // Đếm số đơn chờ duyệt
+            // Đếm số đơn chờ duyệt (theo MaDon duy nhất)
             var pendingCount = await _context.NgayNghis
-                .CountAsync(nn => nn.MaTrangThai == "NN1");
+                .Where(nn => nn.MaTrangThai == "NN1")
+                .Select(nn => nn.MaDon)
+                .Distinct()
+                .CountAsync();
 
-            // Đếm số đơn đã duyệt trong ngày hiện tại
+            // Đếm số đơn đã duyệt trong ngày hiện tại (theo MaDon duy nhất)
             var approvedTodayCount = await _context.NgayNghis
-                .CountAsync(nn => nn.MaTrangThai == "NN2" &&
-                                 nn.NgayLamDon.Date == today);
+                .Where(nn => nn.MaTrangThai == "NN2" && nn.NgayLamDon.Date == today)
+                .Select(nn => nn.MaDon)
+                .Distinct()
+                .CountAsync();
 
-            // Đếm tổng số đơn trong tháng hiện tại
+            // Đếm tổng số đơn trong tháng hiện tại (theo MaDon duy nhất)
             var currentMonthCount = await _context.NgayNghis
-                .CountAsync(nn => nn.NgayNghi1.Month == currentMonth &&
-                                 nn.NgayNghi1.Year == currentYear);
+                .Where(nn => nn.NgayNghi1.Month == currentMonth && nn.NgayNghi1.Year == currentYear)
+                .Select(nn => nn.MaDon)
+                .Distinct()
+                .CountAsync();
 
             return Ok(new
             {
@@ -384,11 +422,20 @@ namespace HR_KD.ApiControllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                foreach (var maNgayNghi in request.MaNgayNghiList)
-                {
-                    var ngayNghi = await _context.NgayNghis.FindAsync(maNgayNghi);
-                    if (ngayNghi == null) continue;
+                // Lấy tất cả các MaDon từ danh sách MaNgayNghi
+                var maDons = await _context.NgayNghis
+                    .Where(nn => request.MaNgayNghiList.Contains(nn.MaNgayNghi))
+                    .Select(nn => nn.MaDon)
+                    .Distinct()
+                    .ToListAsync();
 
+                // Lấy tất cả các ngày nghỉ có MaDon trong danh sách
+                var allNgayNghis = await _context.NgayNghis
+                    .Where(nn => maDons.Contains(nn.MaDon))
+                    .ToListAsync();
+
+                foreach (var ngayNghi in allNgayNghis)
+                {
                     // Cập nhật trạng thái của ngày nghỉ
                     ngayNghi.MaTrangThai = newMaTrangThai;
                     ngayNghi.NgayDuyet = DateTime.Now;
@@ -479,7 +526,7 @@ namespace HR_KD.ApiControllers
                     data = new
                     {
                         nguoiDuyet = nguoiDuyet.HoTen,
-                        soLuongDon = request.MaNgayNghiList.Count,
+                        soLuongDon = maDons.Count,
                         trangThai = request.TrangThai
                     }
                 });

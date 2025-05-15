@@ -373,6 +373,17 @@ namespace HR_KD.Services
                 return; // Không tính vào phép năm, không cần xử lý tiếp
             }
 
+            // Lấy tất cả các ngày nghỉ có cùng MaDon
+            var allNgayNghis = await _context.NgayNghis
+                .Include(n => n.MaLoaiNgayNghiNavigation)
+                .Where(n => n.MaDon == ngayNghi.MaDon)
+                .ToListAsync();
+
+            // Tính tổng số ngày nghỉ có tính vào phép năm
+            decimal tongSoNgayNghi = allNgayNghis
+                .Where(n => n.MaLoaiNgayNghiNavigation != null && n.MaLoaiNgayNghiNavigation.TinhVaoPhepNam)
+                .Count();
+
             // Lấy bản ghi PhepNamNhanVien của nhân viên cho năm tương ứng
             var phepNam = await _context.PhepNamNhanViens
                 .FirstOrDefaultAsync(p => p.MaNv == ngayNghi.MaNv && p.Nam == ngayNghi.NgayNghi1.Year);
@@ -443,7 +454,7 @@ namespace HR_KD.Services
                     MaNv = ngayNghi.MaNv,
                     Nam = ngayNghi.NgayNghi1.Year,
                     SoNgayPhepDuocCap = soNgayPhepDuocCap,
-                    SoNgayDaSuDung = 0,
+                    SoNgayDaSuDung = tongSoNgayNghi, // Sử dụng tổng số ngày nghỉ
                     NgayCapNhat = DateTime.Now,
                     CauHinhPhepNamId = cauHinh.Id,
                     IsReset = false, // Bản ghi được tạo trong năm không phải từ quá trình reset
@@ -451,14 +462,13 @@ namespace HR_KD.Services
                 };
                 _context.PhepNamNhanViens.Add(phepNam);
             }
-
-            // Tính số ngày nghỉ (giả định mỗi đơn là 1 ngày, có thể điều chỉnh tùy theo logic nghiệp vụ)
-            decimal soNgayNghi = 1; // Cần tính toán chính xác số ngày nghỉ dựa trên đơn
-
-            // Cập nhật số ngày đã sử dụng
-            phepNam.SoNgayDaSuDung += soNgayNghi;
-            phepNam.NgayCapNhat = DateTime.Now;
-            phepNam.GhiChu = $"Cập nhật số ngày đã sử dụng cho đơn nghỉ phép {maNgayNghi}";
+            else
+            {
+                // Cập nhật số ngày đã sử dụng
+                phepNam.SoNgayDaSuDung += tongSoNgayNghi;
+                phepNam.NgayCapNhat = DateTime.Now;
+                phepNam.GhiChu = $"Cập nhật số ngày đã sử dụng cho đơn nghỉ phép {maNgayNghi}";
+            }
 
             // Tính số ngày còn lại
             decimal soNgayConLai = phepNam.SoNgayPhepDuocCap - phepNam.SoNgayDaSuDung;

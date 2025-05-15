@@ -210,19 +210,43 @@
                             }
                         </div>
                     </div>
-                   @*  <div class="row">
-                        <div class="col-sm-6 info-label">Có tính vào lương:</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thêm phần Thông tin giới hạn -->
+        <div class="row mt-2">
+            <div class="col-md-6 mb-4">
+                <div class="info-card">
+                    <h5 class="mb-3 text-primary">
+                        <i class="fas fa-sliders-h mr-2"></i> Giới hạn ngày nghỉ
+                    </h5>
+                    <div class="row mb-3">
+                        <div class="col-sm-6 info-label">Số ngày nghỉ tối đa:</div>
                         <div class="col-sm-6 info-value">
-                            @if (Model.CoTinhVaoLuong)
+                            @if (Model.SoNgayNghiToiDa.HasValue && Model.SoNgayNghiToiDa.Value > 0)
                             {
-                                <span class="badge badge-custom-yes"><i class="fas fa-check mr-1"></i> Có</span>
+                                <span class="badge bg-info text-white">@Model.SoNgayNghiToiDa ngày</span>
                             }
                             else
                             {
-                                <span class="badge badge-custom-no"><i class="fas fa-times mr-1"></i> Không</span>
+                                <span class="text-muted">Không giới hạn</span>
                             }
                         </div>
-                    </div> *@
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-6 info-label">Số lần đăng ký tối đa:</div>
+                        <div class="col-sm-6 info-value">
+                            @if (Model.SoLanDangKyToiDa.HasValue && Model.SoLanDangKyToiDa.Value > 0)
+                            {
+                                <span class="badge bg-info text-white">@Model.SoLanDangKyToiDa lần</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Không giới hạn</span>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -265,37 +289,37 @@
         // Thêm style mới cho SweetAlert2
         const customStyle = document.createElement('style');
         customStyle.textContent = `
-                .swal2-popup {
-                    border-radius: 15px;
-                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-                }
-                .swal2-title {
-                    font-size: 1.6rem;
-                    font-weight: 600;
-                    color: #333;
-                }
-                .swal2-html-container {
-                    margin-top: 1.5rem;
-                    text-align: left;
-                    padding: 0 1rem;
-                }
-                .swal2-confirm {
-                    border-radius: 8px !important;
-                    padding: 12px 24px !important;
-                    font-weight: 500 !important;
-                }
-                .swal2-cancel {
-                    border-radius: 8px !important;
-                    padding: 12px 24px !important;
-                    font-weight: 500 !important;
-                }
-                .text-danger {
-                    color: #d32f2f;
-                }
-                .text-left {
-                    text-align: left;
-                }
-            `;
+                        .swal2-popup {
+                            border-radius: 15px;
+                            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+                        }
+                        .swal2-title {
+                            font-size: 1.6rem;
+                            font-weight: 600;
+                            color: #333;
+                        }
+                        .swal2-html-container {
+                            margin-top: 1.5rem;
+                            text-align: left;
+                            padding: 0 1rem;
+                        }
+                        .swal2-confirm {
+                            border-radius: 8px !important;
+                            padding: 12px 24px !important;
+                            font-weight: 500 !important;
+                        }
+                        .swal2-cancel {
+                            border-radius: 8px !important;
+                            padding: 12px 24px !important;
+                            font-weight: 500 !important;
+                        }
+                        .text-danger {
+                            color: #d32f2f;
+                        }
+                        .text-left {
+                            text-align: left;
+                        }
+                    `;
         document.head.appendChild(customStyle);
     });
 

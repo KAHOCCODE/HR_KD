@@ -2412,6 +2412,10 @@
                         </div>
                     `;
 
+                    // Tạo tooltip cho lý do và ghi chú
+                    const lyDoTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDo}">${truncateText(lyDo, 23)}</div>`;
+                    const ghiChuTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${ghiChu}">${truncateText(ghiChu, 23)}</div>`;
+
                     const row = document.createElement("tr");
                     if (tabId === 'pending') {
                         const cancelButton = `<button class="btn-cancel" data-id="${ngayNghis[0]?.id}">
@@ -2421,7 +2425,7 @@
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
                                     <td>${datesDropdownHtml}</td>
-                                    <td>${lyDo}</td>
+                                    <td>${lyDoTooltip}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${cancelButton}</td>
@@ -2430,7 +2434,7 @@
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
                                     <td>${datesDropdownHtml}</td>
-                                    <td>${lyDo}</td>
+                                    <td>${lyDoTooltip}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${ngayHuyFormatted}</td>
@@ -2439,11 +2443,11 @@
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
                                     <td>${datesDropdownHtml}</td>
-                                    <td>${lyDo}</td>
+                                    <td>${lyDoTooltip}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${ngayDuyetFormatted}</td>
-                                    <td>${ghiChu}</td>
+                                    <td>${ghiChuTooltip}</td>
                                     <td>${nguoiDuyetHoTen}</td>
                                 `;
                     }
@@ -2470,12 +2474,27 @@
                 });
             });
 
+            // Khởi tạo tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover',
+                    html: true
+                });
+            });
+
             initializeDropdowns();
             updatePaginationControls(tabId);
             console.log(`Hoàn thành render tab ${tabId}`);
         } catch (error) {
             console.error(`Lỗi khi thiết lập sự kiện cho tab ${tabId}:`, error);
         }
+    }
+
+    // Thêm hàm truncateText để cắt ngắn text
+    function truncateText(text, maxLength) {
+        if (!text) return '';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     }
 
     function generateFileDisplayHtml(fileDinhKem) {

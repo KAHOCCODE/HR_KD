@@ -18,6 +18,9 @@ public class LoaiNgayNghiMetadata
 
     [DisplayName("Mô tả")]
     public string? MoTa { get; set; }
+    public int? SoNgayNghiToiDa { get; set; }
+    public int? SoLanDangKyToiDa { get; set; }
+
 
     [DisplayName("Hưởng lương")]
     public bool HuongLuong { get; set; }
@@ -38,6 +41,14 @@ public partial class LoaiNgayNghi
     public string TenLoai { get; set; } = null!;
 
     public string? MoTa { get; set; }
+    [DisplayName("Số ngày nghỉ tối đa (bỏ trống nếu không giới hạn)")]
+    [Range(0, 365, ErrorMessage = "Phải từ 0 đến 365 ngày")]
+    public int? SoNgayNghiToiDa { get; set; }
+
+    [DisplayName("Số lần đăng ký tối đa (bỏ trống nếu không giới hạn)")]
+    [Range(0, 100, ErrorMessage = "Phải từ 0 đến 100 lần")]
+    public int? SoLanDangKyToiDa { get; set; }
+
 
     public bool HuongLuong { get; set; }
     public bool TinhVaoPhepNam { get; set; }

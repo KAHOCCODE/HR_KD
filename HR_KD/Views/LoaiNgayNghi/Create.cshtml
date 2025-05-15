@@ -3,15 +3,16 @@
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 @{
-    ViewData["Title"] = "Thêm loại ngày nghỉ";
+    ViewData["Title"] = "Tạo loại ngày nghỉ";
 }
+
 
 <!-- CSS Tùy chỉnh -->
 <style>
     body {
         background-color: #f8f9fa;
     }
-    
+
     .card {
         border: none;
         border-radius: 0.75rem;
@@ -19,87 +20,87 @@
         transition: all 0.3s ease;
         overflow: hidden;
     }
-    
+
     .card-header {
         background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
         color: white;
         border-bottom: none;
         padding: 1.25rem 1.5rem;
     }
-    
+
     .back-btn {
         color: white;
         background-color: rgba(255, 255, 255, 0.2);
         border: none;
         transition: all 0.3s;
     }
-    
-    .back-btn:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-        transform: translateX(-3px);
-    }
-    
+
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+
     .card-body {
         padding: 2rem;
         background-color: #f8f9fc;
         border-bottom-left-radius: 0.8rem;
         border-bottom-right-radius: 0.8rem;
     }
-    
+
     .form-label {
         font-weight: 500;
         color: #495057;
         margin-bottom: 0.5rem;
     }
-    
+
     .form-control {
         border-radius: 0.5rem;
         padding: 0.75rem 1rem;
         border: 1px solid #e2e8f0;
         transition: all 0.3s;
     }
-    
-    .form-control:focus {
-        box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.1);
-        border-color: #4e73df;
-    }
-    
+
+        .form-control:focus {
+            box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.1);
+            border-color: #4e73df;
+        }
+
     .action-btn {
         border-radius: 0.5rem;
         padding: 0.75rem 1.5rem;
         font-weight: 500;
         transition: all 0.3s;
     }
-    
+
     .btn-primary {
         background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
         border: none;
     }
-    
-    .btn-primary:hover {
-        background: linear-gradient(135deg, #3a5fc8, #1b3c9e);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
-        transition: all 0.2s ease;
-    }
-    
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3a5fc8, #1b3c9e);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
     .btn-secondary {
         background-color: #6c757d;
         border: none;
     }
-    
-    .btn-secondary:hover {
-        background-color: #5a6268;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
-        transition: all 0.2s ease;
-    }
-    
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
     .required-star {
         color: #dc3545;
         font-weight: bold;
     }
-    
+
     .form-section {
         background-color: white;
         border-radius: 0.75rem;
@@ -108,11 +109,11 @@
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
         transition: all 0.2s ease;
     }
-    
-    .form-section:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
-    }
-    
+
+        .form-section:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        }
+
     .section-title {
         font-size: 1.1rem;
         font-weight: 600;
@@ -123,7 +124,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
-    
+
     /* Custom toggle switch styling */
     .switch-container {
         background-color: white;
@@ -133,11 +134,11 @@
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
         transition: all 0.2s ease;
     }
-    
-    .switch-container:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
-    }
-    
+
+        .switch-container:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        }
+
     .switch-title {
         font-size: 1.1rem;
         font-weight: 600;
@@ -148,7 +149,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
-    
+
     .toggle-switch {
         position: relative;
         display: inline-block;
@@ -157,13 +158,13 @@
         margin-right: 15px;
         margin-bottom: 0;
     }
-    
-    .toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
     .toggle-slider {
         position: absolute;
         cursor: pointer;
@@ -175,44 +176,96 @@
         transition: .4s;
         border-radius: 34px;
     }
-    
-    .toggle-slider:before {
-        position: absolute;
-        content: "";
-        height: 18px;
-        width: 18px;
-        left: 3px;
-        bottom: 3px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-    
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
     input:checked + .toggle-slider {
         background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
     }
-    
+
     input:focus + .toggle-slider {
         box-shadow: 0 0 1px #4e73df;
     }
-    
+
     input:checked + .toggle-slider:before {
         transform: translateX(26px);
     }
-    
+
     .toggle-label {
         font-weight: 500;
         margin-bottom: 0;
         cursor: pointer;
     }
-    
+
     .text-muted-custom {
         font-size: 0.8rem;
         color: #858796;
         margin-top: 2px;
     }
-    
-  
+
+    /* Custom styling for number inputs */
+    .form-control::-webkit-outer-spin-button,
+    .form-control::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .form-control[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    .info-icon {
+        color: #4e73df;
+        font-size: 0.9rem;
+        margin-left: 5px;
+        cursor: help;
+    }
+
+    .limit-section {
+        background-color: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+    }
+
+        .limit-section:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        }
+
+    /* CSS cho small.form-text.text-muted - đổi sang màu đỏ */
+    small.form-text.text-muted {
+        display: block;
+        margin-top: 5px;
+        font-size: 0.8rem;
+        color: #dc3545; /* Màu đỏ Bootstrap */
+        background-color: rgba(220, 53, 69, 0.05); /* Nền đỏ nhạt */
+        padding: 6px 12px;
+        border-left: 3px solid #dc3545; /* Viền bên trái màu đỏ */
+        border-radius: 0 4px 4px 0;
+        transition: all 0.3s ease;
+    }
+
+        small.form-text.text-muted:hover {
+            background-color: rgba(220, 53, 69, 0.1); /* Nền đỏ nhạt hơn khi hover */
+            transform: translateX(2px);
+        }
+
+        /* Cập nhật màu cho icon info */
+        small.form-text.text-muted .fa-info-circle {
+            color: #dc3545; /* Biểu tượng thông tin cũng có màu đỏ */
+        }
 </style>
 
 <div class="container-fluid py-4 animate__animated animate__fadeIn">
@@ -231,7 +284,7 @@
         <div class="card-body">
             <form asp-action="Create" id="leaveTypeForm">
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-                
+
                 <div class="form-section">
                     <h5 class="section-title">
                         <i class="fas fa-info-circle me-2 text-info"></i>Thông tin cơ bản
@@ -244,7 +297,7 @@
                                 <span asp-validation-for="TenLoai" class="text-danger"></span>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <div class="form-floating">
                                 <textarea asp-for="MoTa" class="form-control" placeholder="Nhập mô tả" id="moTa" style="height: 100px"></textarea>
@@ -254,9 +307,39 @@
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- Thêm section giới hạn -->
+                <div class="limit-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-sliders-h me-2 text-info"></i>Giới hạn ngày nghỉ
+                    </h5>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input asp-for="SoNgayNghiToiDa" type="number" class="form-control" id="soNgayNghiToiDa" min="0" max="365" placeholder="Nhập số ngày nghỉ tối đa" />
+                                <label asp-for="SoNgayNghiToiDa" for="soNgayNghiToiDa">Số ngày nghỉ tối đa</label>
+                                <span asp-validation-for="SoNgayNghiToiDa" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>Bỏ trống nếu không giới hạn số ngày nghỉ
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input asp-for="SoLanDangKyToiDa" type="number" class="form-control" id="soLanDangKyToiDa" min="0" max="100" placeholder="Nhập số lần đăng ký tối đa" />
+                                <label asp-for="SoLanDangKyToiDa" for="soLanDangKyToiDa">Số lần đăng ký tối đa</label>
+                                <span asp-validation-for="SoLanDangKyToiDa" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>Bỏ trống nếu không giới hạn số lần đăng ký
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="switch-container">
-                    <h5 class="switch-title"><i class="fas fa-sliders-h me-2 text-info"></i>Cấu hình loại ngày nghỉ</h5>
+                    <h5 class="switch-title"><i class="fas fa-cog me-2 text-info"></i>Cấu hình loại ngày nghỉ</h5>
                     <div class="row">
                         <div class="col-md-4">
                             <div class="d-flex align-items-center mb-3">
@@ -282,21 +365,9 @@
                                 </label>
                             </div>
                         </div>
-                       @*  <div class="col-md-4">
-                            <div class="d-flex align-items-center mb-3">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" asp-for="CoTinhVaoLuong">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                                <label class="toggle-label" for="CoTinhVaoLuong">
-                                    Có tính vào lương
-                                    <div class="text-muted-custom">Ảnh hưởng đến tính toán lương</div>
-                                </label>
-                            </div>
-                        </div> *@
                     </div>
                 </div>
-                
+
                 <div class="form-group mt-4 text-end">
                     <button type="submit" class="btn btn-primary action-btn me-2">
                         <i class="fas fa-save me-2"></i> Lưu
@@ -311,65 +382,90 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+
+
 
     <script>
         $(document).ready(function () {
             // Animation on load
-            setTimeout(function() {
+            setTimeout(function () {
                 $('.animate__animated').removeClass('animate__fadeIn');
             }, 800);
-            
+
             // Form validation
             $("#leaveTypeForm").validate({
                 rules: {
                     TenLoai: {
                         required: true,
                         minlength: 2
+                    },
+                    SoNgayNghiToiDa: {
+                        min: 0,
+                        max: 365,
+                        digits: true
+                    },
+                    SoLanDangKyToiDa: {
+                        min: 0,
+                        max: 100,
+                        digits: true
                     }
                 },
                 messages: {
                     TenLoai: {
                         required: "Vui lòng nhập tên loại ngày nghỉ",
                         minlength: "Tên loại ngày nghỉ phải có ít nhất 2 ký tự"
+                    },
+                    SoNgayNghiToiDa: {
+                        min: "Số ngày nghỉ tối đa không được nhỏ hơn 0",
+                        max: "Số ngày nghỉ tối đa không được vượt quá 365",
+                        digits: "Vui lòng nhập số nguyên dương"
+                    },
+                    SoLanDangKyToiDa: {
+                        min: "Số lần đăng ký tối đa không được nhỏ hơn 0",
+                        max: "Số lần đăng ký tối đa không được vượt quá 100",
+                        digits: "Vui lòng nhập số nguyên dương"
                     }
                 },
                 errorElement: "div",
                 errorClass: "text-danger",
-                highlight: function(element) {
+                highlight: function (element) {
                     $(element).addClass("is-invalid").removeClass("is-valid");
                 },
-                unhighlight: function(element) {
+                unhighlight: function (element) {
                     $(element).addClass("is-valid").removeClass("is-invalid");
                 }
             });
-            
+
             // Toggle switch animation
-            $('.toggle-switch input').change(function() {
+            $('.toggle-switch input').change(function () {
                 let toggleContainer = $(this).closest('.d-flex');
                 toggleContainer.addClass('animate__animated animate__pulse');
-                setTimeout(function() {
+                setTimeout(function () {
                     toggleContainer.removeClass('animate__animated animate__pulse');
                 }, 500);
             });
-            
+
             // Focus animation
-            $('.form-control').focus(function() {
+            $('.form-control').focus(function () {
                 $(this).closest('.form-floating').addClass('shadow-sm');
-            }).blur(function() {
+            }).blur(function () {
                 $(this).closest('.form-floating').removeClass('shadow-sm');
+            });
+
+            // Bootstrap tooltips initialization
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
             });
         });
     </script>
     <script src="~/js/loai-ngay-nghi.js" asp-append-version="true"></script>
     <!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Add Font Awesome if not already in your layout -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <!-- Add Font Awesome if not already in your layout -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
-<!-- Add Animate.css for animations -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <!-- Add Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 }

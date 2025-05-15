@@ -60,9 +60,8 @@ namespace HR_KD.ApiControllers
                 if (files != null && files.Count > 0)
                 {
                     var fileNames = new List<string>();
-
-                    string uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-                    Directory.CreateDirectory(uploadPath); // Đảm bảo thư mục uploads tồn tại
+                    string uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads");
+                    Directory.CreateDirectory(uploadPath);
 
                     foreach (var file in files)
                     {
@@ -90,13 +89,54 @@ namespace HR_KD.ApiControllers
                         }
                     }
 
-                    // Nối các tên file bằng dấu gạch ngang
                     fileAttachments = string.Join("-", fileNames);
                 }
 
+                // Tạo mã đơn ngẫu nhiên 5 ký tự
+                string maDon = await GenerateRandomMaDonAsync();
+
+                // Kiểm tra giới hạn cho từng loại ngày nghỉ
+                var maLoaiNgayNghis = leaveRequests.Select(r => r.MaLoaiNgayNghi.Value).Distinct();
+                foreach (var maLoai in maLoaiNgayNghis)
+                {
+                    var loaiNgayNghi = await _context.LoaiNgayNghis
+                        .FirstOrDefaultAsync(l => l.MaLoaiNgayNghi == maLoai);
+                    if (loaiNgayNghi == null)
+                    {
+                        return BadRequest(new { success = false, message = $"Loại ngày nghỉ {maLoai} không tồn tại." });
+                    }
+
+                    // Đếm số ngày nghỉ đã đăng ký cho loại này
+                    var soNgayDaDangKy = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && n.MaLoaiNgayNghi == maLoai && n.MaTrangThai == "NN1")
+                        .CountAsync();
+
+                    // Số ngày nghỉ trong yêu cầu hiện tại cho loại này
+                    var soNgayYeuCau = leaveRequests.Count(r => r.MaLoaiNgayNghi == maLoai);
+
+                    if (loaiNgayNghi.SoNgayNghiToiDa.HasValue &&
+                        (soNgayDaDangKy + soNgayYeuCau) > loaiNgayNghi.SoNgayNghiToiDa.Value)
+                    {
+                        return BadRequest(new { success = false, message = $"Vượt quá số ngày nghỉ tối đa cho loại {loaiNgayNghi.TenLoai}." });
+                    }
+
+                    // Đếm số lần đăng ký (dựa trên MaDon)
+                    var soLanDangKy = await _context.NgayNghis
+                        .Where(n => n.MaNv == currentMaNv.Value && n.MaLoaiNgayNghi == maLoai && n.MaTrangThai == "NN1")
+                        .Select(n => n.MaDon)
+                        .Distinct()
+                        .CountAsync();
+
+                    if (loaiNgayNghi.SoLanDangKyToiDa.HasValue &&
+                        (soLanDangKy + 1) > loaiNgayNghi.SoLanDangKyToiDa.Value)
+                    {
+                        return BadRequest(new { success = false, message = $"Vượt quá số lần đăng ký tối đa cho loại {loaiNgayNghi.TenLoai}." });
+                    }
+                }
+
+                // Lưu các ngày nghỉ
                 foreach (var request in leaveRequests)
                 {
-                    // Validate dữ liệu
                     if (!DateTime.TryParse(request.NgayNghi, out DateTime ngayNghi))
                     {
                         return BadRequest(new { success = false, message = $"Ngày nghỉ không hợp lệ: {request.NgayNghi}" });
@@ -106,20 +146,20 @@ namespace HR_KD.ApiControllers
                         return BadRequest(new { success = false, message = "Mã loại ngày nghỉ không hợp lệ." });
                     }
 
-                    // Tạo bản ghi nghỉ phép
                     var leave = new NgayNghi
                     {
-                        MaNv = currentMaNv.Value, // Sử dụng mã NV từ claims
+                        MaNv = currentMaNv.Value,
                         NgayNghi1 = DateOnly.FromDateTime(ngayNghi),
-                        NgayLamDon =DateTime.Now,
+                        NgayLamDon = DateTime.Now,
                         LyDo = request.LyDo ?? "Không có lý do",
                         MaTrangThai = "NN1",
                         MaLoaiNgayNghi = request.MaLoaiNgayNghi.Value,
-                        FileDinhKem = fileAttachments // Thêm file đính kèm
-                   
+                        FileDinhKem = fileAttachments,
+                        MaDon = maDon // Gán mã đơn
                     };
                     _context.NgayNghis.Add(leave);
                 }
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new { success = true, message = "Đăng ký nghỉ phép thành công." });
@@ -131,6 +171,21 @@ namespace HR_KD.ApiControllers
             }
         }
 
+        // Hàm sinh chuỗi ngẫu nhiên 5 ký tự
+        private async Task<string> GenerateRandomMaDonAsync()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            Random random = new Random();
+            string maDon;
+
+            do
+            {
+                maDon = new string(Enumerable.Repeat(chars, 5)
+                    .Select(s => s[random.Next(s.Length)]).ToArray());
+            } while (await _context.NgayNghis.AnyAsync(n => n.MaDon == maDon)); // Kiểm tra trùng lặp
+
+            return maDon;
+        }
 
         [HttpGet]
         [Route("GetLeaveHistory")]
@@ -156,11 +211,11 @@ namespace HR_KD.ApiControllers
                             (nl, nv) => new
                             {
                                 id = nl.n.MaNgayNghi,
+                                MaDon = nl.n.MaDon,
                                 MaLoaiNgayNghi = nl.n.MaLoaiNgayNghi,
                                 TenLoai = nl.l.TenLoai,
                                 NgayNghi = nl.n.NgayNghi1.ToString("yyyy-MM-dd"),
                                 LyDo = nl.n.LyDo,
-                           
                                 TrangThai = _context.TrangThais
                                    .Where(t => t.MaTrangThai == nl.n.MaTrangThai)
                                   .Select(t => t.TenTrangThai)
@@ -173,7 +228,28 @@ namespace HR_KD.ApiControllers
                             })
                 .ToListAsync();
 
-            return Ok(new { success = true, leaveHistory });
+            // Nhóm các đơn theo MaDon
+            var groupedLeaveHistory = leaveHistory
+                .GroupBy(x => x.MaDon)
+                .Select(g => new
+                {
+                    MaDon = g.Key,
+                    TenLoai = g.First().TenLoai,
+                    LyDo = g.First().LyDo,
+                    TrangThai = g.First().TrangThai,
+                    FileDinhKem = g.First().FileDinhKem,
+                    NgayDuyet = g.First().NgayDuyet,
+                    GhiChu = g.First().GhiChu,
+                    NguoiDuyetHoTen = g.First().NguoiDuyetHoTen,
+                    NgayNghis = g.Select(x => new
+                    {
+                        id = x.id,
+                        NgayNghi = x.NgayNghi
+                    }).ToList()
+                })
+                .ToList();
+
+            return Ok(new { success = true, leaveHistory = groupedLeaveHistory });
         }
 
 

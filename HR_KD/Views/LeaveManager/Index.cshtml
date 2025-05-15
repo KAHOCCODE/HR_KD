@@ -656,6 +656,67 @@
             #detailsModal .btn-secondary:hover {
                 background-color: #5a6268;
             }
+
+        /* Add these styles for the dropdown */
+        .leave-dates-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .leave-dates-dropdown .dropdown-toggle {
+            background-color: #f8f9fa;
+            border: 1px solid #e3e6f0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .leave-dates-dropdown .dropdown-toggle:hover {
+            background-color: #e9ecef;
+        }
+
+        .leave-dates-dropdown .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            min-width: 200px;
+            padding: 8px 0;
+            margin: 4px 0 0;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,.15);
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: none;
+        }
+
+        .leave-dates-dropdown .dropdown-menu.show {
+            display: block;
+        }
+
+        .leave-dates-dropdown .dropdown-item {
+            padding: 8px 16px;
+            color: #2c3e50;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.2s ease;
+        }
+
+        .leave-dates-dropdown .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .leave-dates-dropdown .badge {
+            background-color: #1e88e5;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -775,8 +836,8 @@
                     <div class="detail-section">
                         <div class="detail-section-title">Thông tin cơ bản</div>
                         <div class="detail-row">
-                            <div class="detail-label">Mã Ngày Nghỉ</div>
-                            <div class="detail-value" id="detail-maNgayNghi">--</div>
+                            <div class="detail-label">Mã Đơn</div>
+                            <div class="detail-value" id="detail-maDon">--</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">Ngày Làm Đơn</div>
@@ -791,8 +852,16 @@
                     <div class="detail-section">
                         <div class="detail-section-title">Thông tin nghỉ phép</div>
                         <div class="detail-row">
-                            <div class="detail-label">Ngày Nghỉ</div>
-                            <div class="detail-value" id="detail-ngayNghi">--</div>
+                            <div class="detail-label">Danh Sách Ngày Nghỉ</div>
+                            <div class="detail-value" id="detail-ngayNghiList">
+                                <ul class="list-unstyled mb-0">
+                                    <!-- Sẽ được điền bằng JavaScript -->
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Tổng Số Ngày Nghỉ</div>
+                            <div class="detail-value" id="detail-tongSoNgay">--</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">Lý Do</div>
@@ -822,7 +891,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-approve" id="modal-approve" style="display: none;">Duyệt</button>
-                    <button type="button" class="btn btn-reject" id="modal-reject" style="display: none;" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-ma-ngay-nghi="">Từ chối</button>
+                    <button type="button" class="btn btn-reject" id="modal-reject" style="display: none;" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-ma-don="">Từ chối</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>
@@ -882,14 +951,14 @@
             if (rejectReasonModal) {
                 rejectReasonModal.addEventListener('show.bs.modal', function (event) {
                     const button = event.relatedTarget;
-                    const maNgayNghi = button.getAttribute('data-ma-ngay-nghi');
-                    this.setAttribute('data-ma-ngay-nghi', maNgayNghi);
+                    const maNgayNghi = button.getAttribute('data-ma-don');
+                    this.setAttribute('data-ma-don', maNgayNghi);
                     document.getElementById('rejectReason').value = '';
                 });
 
                 document.getElementById('confirmReject').addEventListener('click', function () {
                     const modal = document.getElementById('rejectReasonModal');
-                    const maNgayNghi = parseInt(modal.getAttribute('data-ma-ngay-nghi'));
+                    const maNgayNghi = parseInt(modal.getAttribute('data-ma-don'));
                     const lyDo = document.getElementById('rejectReason').value.trim();
 
                     if (!lyDo) {
@@ -1038,18 +1107,27 @@
             if (detailsModal) {
                 detailsModal.addEventListener('show.bs.modal', function (event) {
                     const button = event.relatedTarget;
-                    const maNgayNghi = button.getAttribute('data-ma-ngay-nghi');
+                    const maNgayNghi = button.getAttribute('data-ma-don');
                     const item = dataList.find(d => d.maNgayNghi == maNgayNghi);
 
                     if (item) {
-                        document.getElementById('detail-maNgayNghi').textContent = item.maNgayNghi ?? '--';
+                        document.getElementById('detail-maDon').textContent = item.maNgayNghi ?? '--';
                         document.getElementById('detail-ngayCapNhat').textContent = item.ngayCapNhat ?? '--';
                         document.getElementById('detail-hoTen').textContent = item.hoTen ?? '--';
-                        document.getElementById('detail-ngayNghi').textContent = item.ngayNghi ?? '--';
                         document.getElementById('detail-lyDo').textContent = item.lyDo ?? 'Không xác định';
                         document.getElementById('detail-trangThai').textContent = item.trangThai ?? '--';
                         document.getElementById('detail-soNgayConLai').textContent = item.soNgayConLai != null ? item.soNgayConLai : '--';
                         document.getElementById('detail-lyDoTuChoi').textContent = item.lyDo ?? '--';
+                        document.getElementById('detail-tongSoNgay').textContent = item.tongSoNgay ?? '--';
+
+                        // Hiển thị danh sách ngày nghỉ
+                        const ngayNghiList = document.getElementById('detail-ngayNghiList').querySelector('ul');
+                        ngayNghiList.innerHTML = item.ngayNghiList.map(date => `
+                            <li class="mb-2">
+                                <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                ${date}
+                            </li>
+                        `).join('');
 
                         const fileDinhKemElement = document.getElementById('detail-fileDinhKem');
                         if (item.fileDinhKem && Array.isArray(item.fileDinhKem) && item.fileDinhKem.length > 0) {
@@ -1064,48 +1142,48 @@
 
                                 if (isImage) {
                                     fileList += `
-                                                        <li>
-                                                            <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#imageModal-${uniqueId}">
-                                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
-                                                            </a>
-                                                        </li>`;
+                                        <li>
+                                            <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#imageModal-${uniqueId}">
+                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
+                                            </a>
+                                        </li>`;
                                     modalContent += `
-                                                        <div class="modal fade" id="imageModal-${uniqueId}" tabindex="-1" aria-labelledby="imageModalLabel-${uniqueId}" aria-hidden="true">
-                                                            <div class="modal-dialog modal-dialog-centered modal-lg">
-                                                                <div class="modal-content">
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title" id="imageModalLabel-${uniqueId}">${file.fileName}</h5>
-                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                    </div>
-                                                                    <div class="modal-body text-center">
-                                                                        <img src="${file.filePath}" alt="${file.fileName}" class="img-fluid" style="max-width: 100%;">
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>`;
+                                        <div class="modal fade" id="imageModal-${uniqueId}" tabindex="-1" aria-labelledby="imageModalLabel-${uniqueId}" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="imageModalLabel-${uniqueId}">${file.fileName}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        <img src="${file.filePath}" alt="${file.fileName}" class="img-fluid" style="max-width: 100%;">
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>`;
                                 } else {
                                     fileList += `
-                                                        <li>
-                                                            <a class="dropdown-item" href="${file.filePath}" target="_blank">
-                                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
-                                                            </a>
-                                                        </li>`;
+                                        <li>
+                                            <a class="dropdown-item" href="${file.filePath}" target="_blank">
+                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
+                                            </a>
+                                        </li>`;
                                 }
                             });
 
                             const attachmentContent = `
-                                                <div class="dropdown">
-                                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownBtn-${item.maNgayNghi}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-paperclip"></i> ${fileCount} file đính kèm
-                                                    </button>
-                                                    <ul class="dropdown-menu" aria-labelledby="dropdownBtn-${item.maNgayNghi}">
-                                                        ${fileList}
-                                                    </ul>
-                                                </div>
-                                                ${modalContent}`;
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownBtn-${item.maNgayNghi}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-paperclip"></i> ${fileCount} file đính kèm
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownBtn-${item.maNgayNghi}">
+                                        ${fileList}
+                                    </ul>
+                                </div>
+                                ${modalContent}`;
                             fileDinhKemElement.innerHTML = attachmentContent;
                         } else {
                             fileDinhKemElement.textContent = 'Không có';
@@ -1114,8 +1192,8 @@
                         const isPending = item.trangThai === 'Chờ duyệt';
                         document.getElementById('modal-approve').style.display = isPending ? 'block' : 'none';
                         document.getElementById('modal-reject').style.display = isPending ? 'block' : 'none';
-                        document.getElementById('modal-reject').setAttribute('data-ma-ngay-nghi', item.maNgayNghi);
-                        detailsModal.setAttribute('data-ma-ngay-nghi', item.maNgayNghi);
+                        document.getElementById('modal-reject').setAttribute('data-ma-don', item.maNgayNghi);
+                        detailsModal.setAttribute('data-ma-don', item.maNgayNghi);
 
                         const statusElement = document.getElementById('detail-trangThai');
                         statusElement.textContent = item.trangThai;
@@ -1141,7 +1219,7 @@
             }
 
             document.getElementById('modal-approve').addEventListener('click', function () {
-                const maNgayNghi = parseInt(detailsModal.getAttribute('data-ma-ngay-nghi'));
+                const maNgayNghi = detailsModal.getAttribute('data-ma-don');
                 Swal.fire({
                     title: 'Xác nhận duyệt',
                     text: 'Bạn có chắc chắn muốn duyệt đơn nghỉ phép này?',
@@ -1479,11 +1557,11 @@
                                                         }).catch(err => Swal.fire({ title: 'Lỗi', text: 'Có lỗi xảy ra.', icon: 'error', confirmButtonText: 'OK' }));
                                                     }
                                                 });"></i>
-                                                <button class="btn action-icon reject" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-bs-placement="top" title="Từ chối" data-ma-ngay-nghi="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">
+                                                <button class="btn action-icon reject" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-bs-placement="top" title="Từ chối" data-ma-don="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">
                                                     <i class="fas fa-times-circle"></i>
                                                 </button>
                                             `}
-                                            <i class="fas fa-eye action-icon details" data-bs-toggle="modal" data-bs-target="#detailsModal" data-bs-placement="top" title="Chi tiết" data-ma-ngay-nghi="${item.maNgayNghi}"></i>
+                                            <i class="fas fa-eye action-icon details" data-bs-toggle="modal" data-bs-target="#detailsModal" data-bs-placement="top" title="Chi tiết" data-ma-don="${item.maNgayNghi}"></i>
                                         </div>`;
 
                     let attachmentContent;
@@ -1495,7 +1573,7 @@
                         item.fileDinhKem.forEach((file, index) => {
                             const isImage = isImageFile(file.fileName);
                             const fileIcon = isImage ? 'fa-file-image' : 'fa-file-alt';
-                            const uniqueId = `file-${item.maNgayNghi}-${index}`;
+                            const uniqueId = `detail-file-${item.maNgayNghi}-${index}`;
 
                             if (isImage) {
                                 fileList += `
@@ -1555,13 +1633,28 @@
                         ? `<span class="reason-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${reasonText}">${truncatedReason}</span>`
                         : reasonText;
 
+                    // Tạo dropdown cho ngày nghỉ
+                    const leaveDatesContent = `
+                        <div class="leave-dates-dropdown">
+                            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>${item.tongSoNgay} ngày nghỉ</span>
+                                <span class="badge">${item.tongSoNgay}</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                ${item.ngayNghiList.map(date => `
+                                    <li><a class="dropdown-item" href="#">${date}</a></li>
+                                `).join('')}
+                            </ul>
+                        </div>`;
+
                     const row = `
                                             <tr>
                                                 <td>${checkboxContent}</td>
                                                 <td>${item.maNgayNghi}</td>
                                                 <td>${item.ngayCapNhat}</td>
                                                 <td>${item.hoTen}</td>
-                                                <td>${item.ngayNghi}</td>
+                                                <td>${leaveDatesContent}</td>
                                                 <td>${reasonContent}</td>
                                                 <td>${attachmentContent}</td>
                                                 <td><span class="leave-status leave-status-${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>

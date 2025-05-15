@@ -1493,17 +1493,30 @@
             }
 
             function filterData() {
-                const searchTerm = searchInput.value.toLowerCase();
+                const searchTerm = searchInput.value.toLowerCase().trim();
                 const selectedStatus = statusFilter.value === "Trạng thái" ? null : statusFilter.value;
                 const selectedMonth = monthFilter.value === "Tháng" ? null : monthFilter.value;
 
                 dataList = [...originalData];
 
                 if (searchTerm) {
-                    dataList = dataList.filter(item =>
-                        (item.ngayCapNhat && item.ngayCapNhat.toLowerCase().includes(searchTerm)) ||
-                        (item.hoTen && item.hoTen.toLowerCase().includes(searchTerm))
-                    );
+                    dataList = dataList.filter(item => {
+                        // Tìm kiếm theo nhiều trường
+                        return (
+                            // Tìm theo tên nhân viên
+                            (item.hoTen && item.hoTen.toLowerCase().includes(searchTerm)) ||
+                            // Tìm theo mã ngày nghỉ
+                            (item.maNgayNghi && item.maNgayNghi.toString().includes(searchTerm)) ||
+                            // Tìm theo ngày làm đơn
+                            (item.ngayCapNhat && item.ngayCapNhat.toLowerCase().includes(searchTerm)) ||
+                            // Tìm theo lý do
+                            (item.lyDo && item.lyDo.toLowerCase().includes(searchTerm)) ||
+                            // Tìm theo trạng thái
+                            (item.trangThai && item.trangThai.toLowerCase().includes(searchTerm)) ||
+                            // Tìm theo danh sách ngày nghỉ
+                            (item.ngayNghiList && item.ngayNghiList.some(date => date.toLowerCase().includes(searchTerm)))
+                        );
+                    });
                 }
 
                 if (selectedStatus) {
@@ -1513,9 +1526,13 @@
                 if (selectedMonth) {
                     const [month, year] = selectedMonth.split('/');
                     dataList = dataList.filter(item => {
-                        const parts = item.ngayNghi.split('/');
-                        const itemDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                        return (itemDate.getMonth() + 1 == parseInt(month) && itemDate.getFullYear() == parseInt(year));
+                        // Kiểm tra tất cả các ngày nghỉ trong danh sách
+                        return item.ngayNghiList.some(dateStr => {
+                            const parts = dateStr.split('/');
+                            if (parts.length !== 3) return false;
+                            const itemDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                            return (itemDate.getMonth() + 1 == parseInt(month) && itemDate.getFullYear() == parseInt(year));
+                        });
                     });
                 }
 

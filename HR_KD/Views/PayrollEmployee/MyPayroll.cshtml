@@ -4,12 +4,17 @@
     ViewBag.ShowDownloadPdf = true;
 }
 
-<!-- Existing CSS and HTML -->
-<div class="container py-6">
-    <h2 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-wallet mr-2"></i> Bảng lương cá nhân</h2>
-    <div id="myPayrollContainer" class="space-y-4"></div>
-    <div id="pdfViewerContainer" style="width: 100%; height: 500px; border: 1px solid #e2e8f0; border-radius: 0.5rem; margin-bottom: 1rem; overflow: auto; display: none;">
-        <canvas id="pdfViewer"></canvas>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<div class="container py-8 max-w-7xl mx-auto">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+        <i class="fas fa-wallet mr-3 text-indigo-600"></i> Bảng lương cá nhân
+    </h2>
+    <div id="myPayrollContainer" class="space-y-6"></div>
+    <div id="pdfViewerContainer" class="w-full h-[500px] border border-gray-200 rounded-lg shadow-sm overflow-auto hidden">
+        <canvas id="pdfViewer" class="w-full h-full"></canvas>
     </div>
 </div>
 
@@ -27,49 +32,69 @@
         });
 
         function showPayrollDetail(maLuong, showDownloadPdf = false) {
+            Swal.fire({
+                title: 'Đang tải...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.get(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, function (data) {
+                Swal.close();
+                console.log('Payroll Detail Response:', data); // Debug log
+                if (!data.thuNhap || !data.khauTru) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Dữ liệu bảng lương không đầy đủ.',
+                        showConfirmButton: true,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    return;
+                }
                 const html = `
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Thông tin nhân viên</h6>
-                                    <div class="mb-2"><strong>Mã lương:</strong> ${data.maLuong}</div>
-                                    <div class="mb-2"><strong>Mã NV:</strong> ${data.maNv}</div>
-                                    <div class="mb-2"><strong>Họ tên:</strong> ${data.hoTen}</div>
-                                    <div class="mb-2"><strong>Giới tính:</strong> ${data.gioiTinh}</div>
-                                    <div class="mb-2"><strong>Phòng ban:</strong> ${data.phongBan}</div>
-                                    <div class="mb-2"><strong>Chức vụ:</strong> ${data.chucVu}</div>
-                                    <div class="mb-2"><strong>Loại hợp đồng:</strong> ${data.loaiHopDong}</div>
-                                    <div class="mb-2"><strong>Tháng lương:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h6 class="font-semibold text-indigo-600 mb-3 text-lg">Thông tin nhân viên</h6>
+                                    <div class="mb-2 text-sm"><strong>Mã lương:</strong> ${data.maLuong}</div>
+                                    <div class="mb-2 text-sm"><strong>Mã NV:</strong> ${data.maNv}</div>
+                                    <div class="mb-2 text-sm"><strong>Họ tên:</strong> ${data.hoTen}</div>
+                                    <div class="mb-2 text-sm"><strong>Giới tính:</strong> ${data.gioiTinh}</div>
+                                    <div class="mb-2 text-sm"><strong>Phòng ban:</strong> ${data.phongBan}</div>
+                                    <div class="mb-2 text-sm"><strong>Chức vụ:</strong> ${data.chucVu}</div>
+                                    <div class="mb-2 text-sm"><strong>Loại hợp đồng:</strong> ${data.loaiHopDong}</div>
+                                    <div class="mb-2 text-sm"><strong>Tháng lương:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
                                 </div>
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Thu nhập</h6>
-                                    <div class="mb-2"><strong>Lương cơ bản:</strong> ${formatCurrency(data.thuNhap.luongCoBan)}</div>
-                                    <div class="mb-2"><strong>Phụ cấp cố định:</strong> ${formatCurrency(data.thuNhap.phuCapCoDinh)}</div>
-                                    <div class="mb-2"><strong>Thưởng cố định:</strong> ${formatCurrency(data.thuNhap.thuongCoDinh)}</div>
-                                    <div class="mb-2"><strong>Phụ cấp thêm:</strong> ${formatCurrency(data.thuNhap.phuCapThem)}</div>
-                                    <div class="mb-2"><strong>Lương thêm:</strong> ${formatCurrency(data.thuNhap.luongThem)}</div>
-                                    <div class="mb-2"><strong>Lương tăng ca:</strong> ${formatCurrency(data.thuNhap.luongTangCa)}</div>
-                                    <div class="mb-2"><strong>Tổng lương:</strong> ${formatCurrency(data.thuNhap.tongLuong)}</div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h6 class="font-semibold text-indigo-600 mb-3 text-lg">Thu nhập</h6>
+                                    <div class="mb-2 text-sm"><strong>Lương cơ bản:</strong> ${formatCurrency(data.thuNhap.luongCoBan)}</div>
+                                    <div class="mb-2 text-sm"><strong>Phụ cấp cố định:</strong> ${formatCurrency(data.thuNhap.phuCapCoDinh)}</div>
+                                    <div class="mb-2 text-sm"><strong>Thưởng cố định:</strong> ${formatCurrency(data.thuNhap.thuongCoDinh)}</div>
+                                    <div class="mb-2 text-sm"><strong>Phụ cấp thêm:</strong> ${formatCurrency(data.thuNhap.phuCapThem)}</div>
+                                    <div class="mb-2 text-sm"><strong>Lương thêm:</strong> ${formatCurrency(data.thuNhap.luongThem)}</div>
+                                    <div class="mb-2 text-sm"><strong>Lương tăng ca:</strong> ${formatCurrency(data.thuNhap.luongTangCa)}</div>
+                                    <div class="mb-2 text-sm font-bold"><strong>Tổng lương:</strong> ${formatCurrency(data.thuNhap.tongLuong)}</div>
                                 </div>
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Khấu trừ</h6>
-                                    <div class="mb-2"><strong>BHXH:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhxh)}</span></div>
-                                    <div class="mb-2"><strong>BHYT:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhyt)}</span></div>
-                                    <div class="mb-2"><strong>BHTN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhtn)}</span></div>
-                                    <div class="mb-2"><strong>Thuế TNCN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.thueTNCN)}</span></div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h6 class="font-semibold text-indigo-600 mb-3 text-lg">Khấu trừ</h6>
+                                    <div class="mb-2 text-sm"><strong>BHXH:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhxh)}</span></div>
+                                    <div class="mb-2 text-sm"><strong>BHYT:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhyt)}</span></div>
+                                    <div class="mb-2 text-sm"><strong>BHTN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhtn)}</span></div>
+                                    <div class="mb-2 text-sm"><strong>Thuế TNCN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.thueTNCN)}</span></div>
                                 </div>
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Thực nhận & Tài khoản</h6>
-                                    <div class="mb-2"><strong>Thực nhận:</strong> <span class="text-green-600">${formatCurrency(data.thucNhan)}</span></div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h6 class="font-semibold text-indigo-600 mb-3 text-lg">Thực nhận & Tài khoản</h6>
+                                    <div class="mb-2 text-sm font-bold"><strong>Thực nhận:</strong> <span class="text-green-600">${formatCurrency(data.thucNhan)}</span></div>
                                     ${data.taiKhoanNganHang ? `
-                                    <div class="mb-2"><strong>Ngân hàng:</strong> ${data.taiKhoanNganHang.tenNganHang}</div>
-                                    <div class="mb-2"><strong>Chi nhánh:</strong> ${data.taiKhoanNganHang.chiNhanh}</div>
-                                    <div class="mb-2"><strong>Số tài khoản:</strong> ${data.taiKhoanNganHang.soTaiKhoan}</div>
-                                    ` : '<div class="mb-2"><strong>Tài khoản:</strong> Chưa có thông tin</div>'}
+                                    <div class="mb-2 text-sm"><strong>Ngân hàng:</strong> ${data.taiKhoanNganHang.tenNganHang}</div>
+                                    <div class="mb-2 text-sm"><strong>Chi nhánh:</strong> ${data.taiKhoanNganHang.chiNhanh}</div>
+                                    <div class="mb-2 text-sm"><strong>Số tài khoản:</strong> ${data.taiKhoanNganHang.soTaiKhoan}</div>
+                                    ` : '<div class="mb-2 text-sm"><strong>Tài khoản:</strong> Chưa có thông tin</div>'}
                                 </div>
                             </div>
-                            ${data.ghiChu ? `<div class="mt-4"><strong>Ghi chú:</strong> <p class="italic">${data.ghiChu}</p></div>` : ''}
-                            <div class="mt-4"><strong>Trạng thái:</strong> ${data.tenTrangThai}</div>
+                            ${data.ghiChu ? `<div class="mt-4 text-sm"><strong>Ghi chú:</strong> <p class="italic text-gray-600">${data.ghiChu}</p></div>` : ''}
+                            <div class="mt-4 text-sm"><strong>Trạng thái:</strong> <span class="${getStatusClass(data.trangThai)}">${getStatusIcon(data.trangThai)}${data.tenTrangThai}</span></div>
                         `;
                 $('#payrollDetailContent').html(html);
 
@@ -85,12 +110,14 @@
                 }
 
                 // Show action buttons for BL1 status
+                console.log('Payroll Status:', data.trangThai); // Debug log
                 if (data.trangThai === 'BL1') {
+                    console.log('Adding BL1 action buttons');
                     $('#actionButtons').html(`
-                                <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm rounded-md" onclick="confirmPayroll(${data.maLuong})">
+                                <button class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm" onclick="confirmPayroll(${data.maLuong})">
                                     <i class="fas fa-check mr-2"></i> Xác nhận
                                 </button>
-                                <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm rounded-md" onclick="rejectPayroll(${data.maLuong})">
+                                <button class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm" onclick="rejectPayroll(${data.maLuong})">
                                     <i class="fas fa-edit mr-2"></i> Yêu cầu chỉnh sửa
                                 </button>
                             `);
@@ -101,10 +128,14 @@
                 const modal = new bootstrap.Modal(document.getElementById('payrollDetailModal'), { backdrop: 'static' });
                 modal.show();
             }).fail(function (xhr) {
+                Swal.close();
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: xhr.responseText || 'Không thể tải chi tiết bảng lương.'
+                    text: xhr.responseText || 'Không thể tải chi tiết bảng lương.',
+                    showConfirmButton: true,
+                    timer: 3000,
+                    timerProgressBar: true
                 });
                 console.error("Lỗi tải chi tiết bảng lương:", xhr);
             });
@@ -120,21 +151,44 @@
                 cancelButtonText: '<i class="fas fa-times mr-2"></i> Hủy',
                 buttonsStyling: false,
                 customClass: {
-                    confirmButton: 'btn btn-success mr-2',
-                    cancelButton: 'btn btn-secondary'
+                    confirmButton: 'inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm mr-2',
+                    cancelButton: 'inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm'
+                },
+                showClass: {
+                    popup: 'animate__animated animate__fadeInDown'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOutUp'
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('#actionButtons button').prop('disabled', true);
                     $.post(`/api/PayrollEmployeeApi/ConfirmPayroll/${maLuong}`, function (response) {
-                        Swal.fire('Thành công!', response, 'success').then(() => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công!',
+                            text: response,
+                            showConfirmButton: true,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            showClass: {
+                                popup: 'animate__animated animate__bounceIn'
+                            }
+                        }).then(() => {
                             const modal = bootstrap.Modal.getInstance(document.getElementById('payrollDetailModal'));
                             modal.hide();
                             loadMyPayrolls();
                         });
                     }).fail(function (xhr) {
                         $('#actionButtons button').prop('disabled', false);
-                        Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi xác nhận.', 'error');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: xhr.responseText || 'Đã xảy ra lỗi khi xác nhận.',
+                            showConfirmButton: true,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
                     });
                 }
             });
@@ -151,13 +205,19 @@
                 cancelButtonText: '<i class="fas fa-times mr-2"></i> Hủy',
                 buttonsStyling: false,
                 customClass: {
-                    confirmButton: 'btn btn-warning mr-2',
-                    cancelButton: 'btn btn-secondary'
+                    confirmButton: 'inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm mr-2',
+                    cancelButton: 'inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out shadow-sm'
                 },
                 inputValidator: (value) => {
                     if (!value) {
                         return 'Bạn cần nhập lý do để gửi yêu cầu điều chỉnh!';
                     }
+                },
+                showClass: {
+                    popup: 'animate__animated animate__fadeInDown'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOutUp'
                 }
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
@@ -169,7 +229,17 @@
                         contentType: 'application/json',
                         data: JSON.stringify(lyDo),
                         success: function (response) {
-                            Swal.fire('Thành công!', response, 'success').then(() => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công!',
+                                text: response,
+                                showConfirmButton: true,
+                                timer: 2000,
+                                timerProgressBar: true,
+                                showClass: {
+                                    popup: 'animate__animated animate__bounceIn'
+                                }
+                            }).then(() => {
                                 const modal = bootstrap.Modal.getInstance(document.getElementById('payrollDetailModal'));
                                 modal.hide();
                                 loadMyPayrolls();
@@ -177,7 +247,14 @@
                         },
                         error: function (xhr) {
                             $('#actionButtons button').prop('disabled', false);
-                            Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi gửi yêu cầu.', 'error');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi!',
+                                text: xhr.responseText || 'Đã xảy ra lỗi khi gửi yêu cầu.',
+                                showConfirmButton: true,
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
                         }
                     });
                 }
@@ -194,7 +271,7 @@
             const canvas = document.getElementById('pdfViewer');
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            pdfViewerContainer.style.display = 'block';
+            pdfViewerContainer.classList.remove('hidden');
             pdfjsLib.getDocument(pdfUrl).promise.then(function (pdfDoc_) {
                 pdfDoc = pdfDoc_;
                 renderPage(1);
@@ -202,7 +279,10 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Không thể tải PDF bảng lương.'
+                    text: 'Không thể tải PDF bảng lương.',
+                    showConfirmButton: true,
+                    timer: 3000,
+                    timerProgressBar: true
                 });
                 console.error("Lỗi tải PDF:", error);
             });
@@ -242,62 +322,70 @@
             return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
         }
 
-        // Placeholder for loadMyPayrolls (assumed to exist in main view)
         function loadMyPayrolls() {
-            // Implementation as provided in previous context
             $.get('/api/PayrollEmployeeApi/MyPayroll', function (response) {
                 let html = '';
                 if (response.hasPayroll) {
                     response.data.forEach(yearData => {
-                        html += `<div class="bg-white shadow rounded-md p-4 mb-6">
-                                            <h3 class="text-xl font-semibold text-indigo-700 mb-3"><i class="far fa-calendar-alt mr-2"></i> Năm ${yearData.year}</h3>
-                                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                        html += `<div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+                                    <h3 class="text-xl font-semibold text-indigo-700 mb-4 flex items-center">
+                                        <i class="far fa-calendar-alt mr-2 text-indigo-600"></i> Năm ${yearData.year}
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
                         yearData.months.forEach(monthData => {
                             const statusClass = getStatusClass(monthData.trangThai);
                             const statusIcon = getStatusIcon(monthData.trangThai);
-                            html += `<div class="bg-gray-50 rounded-md border border-gray-200 p-3 flex flex-col justify-between h-40">
-                                                <div>
-                                                    <div class="font-semibold text-gray-800">${monthData.displayMonthYear}</div>
-                                                    <div class="text-sm text-gray-600">Trạng thái: <span class="${statusClass}">${statusIcon}${monthData.tenTrangThai}</span></div>
-                                                    <div class="text-sm text-gray-600">Tổng lương: ${formatCurrency(monthData.tongLuong)}</div>
-                                                    <div class="text-sm text-green-600 font-semibold">Thực nhận: ${formatCurrency(monthData.thucNhan)}</div>
-                                                </div>
-                                                <div class="mt-2 space-y-2">
-                                                    <button class="inline-flex items-center px-3 py-2 bg-indigo-500 hover:bg-indigo-700 text-white text-sm rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 w-full" onclick="showPayrollDetail(${monthData.maLuong}, true)">
-                                                        <i class="fas fa-eye mr-2"></i> Xem chi tiết
-                                                    </button>
-                                                </div>
-                                            </div>`;
+                            html += `<div class="bg-gray-50 rounded-lg border border-gray-200 p-4 flex flex-col justify-between h-48 transition duration-150 ease-in-out hover:shadow-md">
+                                        <div>
+                                            <div class="font-semibold text-gray-800 text-base">${monthData.displayMonthYear}</div>
+                                            <div class="text-sm text-gray-600 mt-1">Trạng thái: <span class="${statusClass}">${statusIcon}${monthData.tenTrangThai}</span></div>
+                                            <div class="text-sm text-gray-600 mt-1">Tổng lương: ${formatCurrency(monthData.tongLuong)}</div>
+                                            <div class="text-sm text-green-600 font-semibold mt-1">Thực nhận: ${formatCurrency(monthData.thucNhan)}</div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 w-full" onclick="showPayrollDetail(${monthData.maLuong}, true)">
+                                                <i class="fas fa-eye mr-2"></i> Xem chi tiết
+                                            </button>
+                                        </div>
+                                    </div>`;
                         });
                         html += `</div></div>`;
                     });
                 } else {
-                    html = `<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative" role="alert">
-                                        <strong class="font-bold"><i class="fas fa-info-circle mr-2"></i> Thông báo!</strong>
-                                        <span class="block sm:inline">${response.message}</span>
-                                    </div>`;
+                    html = `<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg" role="alert">
+                                <strong class="font-bold flex items-center"><i class="fas fa-info-circle mr-2"></i> Thông báo!</strong>
+                                <span class="block sm:inline">${response.message}</span>
+                            </div>`;
                 }
                 $('#myPayrollContainer').html(html);
             }).fail(function (xhr) {
-                $('#myPayrollContainer').html(`<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                                    <strong class="font-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Lỗi!</strong>
-                                    <span class="block sm:inline">Lỗi khi tải bảng lương cá nhân. ${xhr.responseText ? ': ' + xhr.responseText : ''}</span>
-                                </div>`);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: xhr.responseText || 'Lỗi khi tải bảng lương cá nhân.',
+                    showConfirmButton: true,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                $('#myPayrollContainer').html(`<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg" role="alert">
+                            <strong class="font-bold flex items-center"><i class="fas fa-exclamation-triangle mr-2"></i> Lỗi!</strong>
+                            <span class="block sm:inline">Lỗi khi tải bảng lương cá nhân. ${xhr.responseText ? ': ' + xhr.responseText : ''}</span>
+                        </div>`);
             });
         }
 
         function getStatusClass(status) {
             switch (status) {
-                case 'BL1': return 'badge bg-secondary';
-                case 'BL1A': return 'badge bg-info';
-                case 'BL1R': return 'badge bg-warning text-dark';
-                case 'BL2': return 'badge bg-primary';
-                case 'BL2R': return 'badge bg-warning text-dark';
-                case 'BL3': return 'badge bg-success';
-                case 'BL3R': return 'badge bg-danger';
-                case 'BL4': return 'badge bg-success text-white bg-gradient';
-                case 'BL5': return 'badge bg-light text-dark border';
-                default: return 'badge bg-light text-dark border';
+                case 'BL1': return 'inline-flex items-center px-2 py-1 bg-gray-500 text-white text-xs font-medium rounded-full';
+                case 'BL1A': return 'inline-flex items-center px-2 py-1 bg-blue-500 text-white text-xs font-medium rounded-full';
+                case 'BL1R': return 'inline-flex items-center px-2 py-1 bg-yellow-500 text-gray-800 text-xs font-medium rounded-full';
+                case 'BL2': return 'inline-flex items-center px-2 py-1 bg-indigo-500 text-white text-xs font-medium rounded-full';
+                case 'BL2R': return 'inline-flex items-center px-2 py-1 bg-yellow-600 text-gray-800 text-xs font-medium rounded-full';
+                case 'BL3': return 'inline-flex items-center px-2 py-1 bg-green-500 text-white text-xs font-medium rounded-full';
+                case 'BL3R': return 'inline-flex items-center px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full';
+                case 'BL4': return 'inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs font-medium rounded-full';
+                case 'BL5': return 'inline-flex items-center px-2 py-1 bg-gray-300 text-gray-800 text-xs font-medium rounded-full';
+                default: return 'inline-flex items-center px-2 py-1 bg-gray-300 text-gray-800 text-xs font-medium rounded-full';
             }
         }
 

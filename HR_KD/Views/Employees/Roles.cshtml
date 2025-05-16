@@ -1,76 +1,290 @@
-﻿@model List<HR_KD.Data.TaiKhoan>
+﻿@using HR_KD.Data;
+@using Newtonsoft.Json;
 @{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
-    var allRoles = (List<HR_KD.Data.QuyenHan>)ViewBag.AllRoles;
+    ViewBag.Title = "Phân quyền nhân viên";
+    var allRoles = (List<QuyenHan>)ViewBag.AllRoles;
+    bool isDirector = ViewBag.IsDirector;
+    string departmentName = ViewBag.DepartmentName;
+    var userRoles = (List<string>)ViewBag.UserRoles;
 }
 
-<h2 class="text-primary mt-4 mb-3"><i class="fa fa-key"></i> Phân quyền nhân viên</h2>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    .table-hover tbody tr:hover,
+    .table-hover tbody tr:hover td,
+    .table-hover tbody tr:hover th {
+        background-color: #f0f0f0;
+    }
 
-<table class="table table-bordered table-hover shadow">
-    <thead class="table-dark">
-        <tr>
-            <th>Username</th>
-            <th>Họ tên</th>
-            <th>Chức vụ</th>
-            <th>Quyền hiện tại</th>
-            <th>Phân quyền</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var acc in Model)
-        {
-            <tr>
-                <td>@acc.Username</td>
-                <td>@acc.MaNvNavigation.HoTen</td>
-                <td>@acc.MaNvNavigation.MaChucVuNavigation.TenChucVu</td>
-                <td>
-                    @foreach (var role in acc.TaiKhoanQuyenHans)
-                    {
-                        <span class="badge bg-success me-1">@role.QuyenHan.TenQuyenHan</span>
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-warning btn-sm"
-                            data-username="@acc.Username"
-                            data-hoten="@acc.MaNvNavigation.HoTen"
-                            data-roles='@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(acc.TaiKhoanQuyenHans.Select(r => r.MaQuyenHan)))'
-                            onclick="openModalFromButton(this)">
-                        <i class="fa fa-edit"></i> Sửa quyền
-                    </button>
-                </td>
-            </tr>
+    .badge {
+        border-radius: 0.375rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: white;
+    }
+
+    .badge-green {
+        background-color: #16a34a;
+    }
+
+    .badge-blue {
+        background-color: #3b82f6;
+    }
+
+    .btn-warning {
+        background-color: #f59e0b;
+    }
+
+        .btn-warning:hover {
+            background-color: #d97706;
         }
-    </tbody>
-</table>
 
-<!-- Modal -->
-<div class="modal fade" id="roleModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <form id="roleForm" class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Phân quyền cho <span id="modalHoTen"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    .btn-success {
+        background-color: #16a34a;
+    }
+
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+    .btn-secondary {
+        background-color: #6b7280;
+    }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+    .modal-header {
+        background-color: #3b82f6;
+    }
+
+    .modal-title {
+        color: white;
+        font-weight: 600;
+    }
+
+    .form-check-input:checked {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+    .form-check-input:focus {
+        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+    }
+
+    .accordion-button:not(.collapsed) {
+        color: #084298;
+        background-color: #e0f2fe;
+        box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .125);
+    }
+
+    .accordion-button:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+    }
+
+    .role-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        cursor: pointer;
+    }
+
+        .role-item:hover {
+            background-color: #f9fafb;
+        }
+
+    .role-checkbox-container {
+        margin-right: 1rem;
+    }
+
+    .role-description {
+        font-size: 0.875rem;
+        color: #4b5563;
+    }
+
+    .permission-details {
+        margin-top: 0.5rem;
+        padding-left: 2.5rem;
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+</style>
+
+<div class="container mx-auto px-4 py-6">
+    <h2 class="text-2xl font-bold text-blue-600 mb-4 flex items-center">
+        <i class="fas fa-key mr-2"></i> Phân quyền nhân viên
+    </h2>
+
+    @if (!isDirector && departmentName != null)
+    {
+        <h4 class="text-lg font-semibold text-gray-700 mb-4">Phòng ban: @departmentName</h4>
+    }
+
+    @if (isDirector)
+    {
+        @foreach (var department in Model as Dictionary<string, List<TaiKhoan>>)
+        {
+            <h4 class="text-lg font-semibold text-gray-700 mt-6 mb-3">Phòng ban: @department.Key</h4>
+            <div class="overflow-x-auto shadow-lg rounded-lg">
+                <table class="table table-bordered table-hover w-full bg-white">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Username</th>
+                            <th class="py-3 px-4 text-left">Họ tên</th>
+                            <th class="py-3 px-4 text-left">Chức vụ</th>
+                            <th class="py-3 px-4 text-left">Quyền hiện tại</th>
+                            <th class="py-3 px-4 text-left">Phân quyền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var acc in department.Value)
+                        {
+                            <tr class="hover:bg-gray-100">
+                                <td class="py-3 px-4">@acc.Username</td>
+                                <td class="py-3 px-4">@acc.MaNvNavigation.HoTen</td>
+                                <td class="py-3 px-4">@acc.MaNvNavigation.MaChucVuNavigation.TenChucVu</td>
+                                <td class="py-3 px-4">
+                                    @foreach (var role in acc.TaiKhoanQuyenHans)
+                                    {
+                                        <span class="badge badge-green px-2 py-1 rounded mr-1">@role.QuyenHan.TenQuyenHan</span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4">
+                                    <button class="btn btn-warning btn-sm bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded flex items-center"
+                                            data-username="@acc.Username"
+                                            data-hoten="@acc.MaNvNavigation.HoTen"
+                                            data-roles='@Html.Raw(JsonConvert.SerializeObject(acc.TaiKhoanQuyenHans.Select(r => r.MaQuyenHan)))'
+                                            onclick="openModalFromButton(this)">
+                                        <i class="fas fa-edit mr-1"></i> Sửa quyền
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-            <div class="modal-body">
-                <input type="hidden" id="modalUsername" name="username" />
-                @foreach (var role in allRoles)
-                {
-                    <div class="form-check">
-                        <input class="form-check-input role-checkbox" type="checkbox" value="@role.MaQuyenHan" id="role_@role.MaQuyenHan" name="roles" />
-                        <label class="form-check-label" for="role_@role.MaQuyenHan">@role.TenQuyenHan</label>
+        }
+    }
+    else
+    {
+        <div class="overflow-x-auto shadow-lg rounded-lg">
+            <table class="table table-bordered table-hover w-full bg-white">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="py-3 px-4 text-left">Username</th>
+                        <th class="py-3 px-4 text-left">Họ tên</th>
+                        <th class="py-3 px-4 text-left">Chức vụ</th>
+                        <th class="py-3 px-4 text-left">Quyền hiện tại</th>
+                        <th class="py-3 px-4 text-left">Phân quyền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var acc in Model as List<TaiKhoan>)
+                    {
+                        <tr class="hover:bg-gray-100">
+                            <td class="py-3 px-4">@acc.Username</td>
+                            <td class="py-3 px-4">@acc.MaNvNavigation.HoTen</td>
+                            <td class="py-3 px-4">@acc.MaNvNavigation.MaChucVuNavigation.TenChucVu</td>
+                            <td class="py-3 px-4">
+                                @foreach (var role in acc.TaiKhoanQuyenHans)
+                                {
+                                    <span class="badge badge-green px-2 py-1 rounded mr-1">@role.QuyenHan.TenQuyenHan</span>
+                                }
+                            </td>
+                            <td class="py-3 px-4">
+                                <button class="btn btn-warning btn-sm bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded flex items-center"
+                                        data-username="@acc.Username"
+                                        data-hoten="@acc.MaNvNavigation.HoTen"
+                                        data-roles='@Html.Raw(JsonConvert.SerializeObject(acc.TaiKhoanQuyenHans.Select(r => r.MaQuyenHan)))'
+                                        onclick="openModalFromButton(this)">
+                                    <i class="fas fa-edit mr-1"></i> Sửa quyền
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <form id="roleForm" class="modal-content rounded-lg shadow-lg">
+                <div class="modal-header bg-blue-600 text-white">
+                    <h5 class="modal-title font-semibold" id="roleModalLabel">
+                        Phân quyền cho <span id="modalHoTen"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-gray-50 p-6">
+                    <input type="hidden" id="modalUsername" name="username" />
+                    <div class="role-list">
+                        @foreach (var role in allRoles)
+                        {
+                            var permissions = role.GetPermissions();
+                            <div class="role-item" data-role-id="@role.MaQuyenHan"
+                                 onclick="toggleRoleDetails(this)">
+                                <div class="role-checkbox-container">
+                                    <input class="form-check-input role-checkbox" type="checkbox"
+                                           value="@role.MaQuyenHan" id="role_@role.MaQuyenHan" name="roles" />
+                                </div>
+                                <div>
+                                    <h6 class="font-semibold text-gray-800">@role.TenQuyenHan</h6>
+                                    <p class="role-description">@role.MoTaQuyenHan</p>
+                                    <div class="permission-details" id="details_@role.MaQuyenHan" style="display: none;">
+                                        <strong class="text-blue-600">Chi tiết:</strong>
+                                        <ul class="list-disc pl-5">
+                                            @foreach (var module in permissions)
+                                            {
+                                                <li class="mb-1">
+                                                    <span class="font-semibold">@module.Key:</span>
+                                                    <ul class="list-circle pl-5">
+                                                        @foreach (var action in module.Value)
+                                                        {
+                                                            if (action.Value)
+                                                            {
+                                                                <li class="text-gray-600">
+                                                                    <i class="fas fa-check-circle text-green-500 mr-1"></i>@action.Key
+                                                                </li>
+                                                            }
+                                                        }
+                                                    </ul>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
-                }
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-success">Lưu</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-            </div>
-        </form>
+                </div>
+                <div class="modal-footer bg-gray-100">
+                    <button type="submit"
+                            class="btn btn-success bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                        <i class="fas fa-save mr-2"></i> Lưu
+                    </button>
+                    <button type="button" class="btn btn-secondary bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+                            data-bs-dismiss="modal">
+                        <i class="fas fa-times mr-2"></i> Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentUsername = "";
 
@@ -85,6 +299,21 @@
                     $('#role_' + role).prop('checked', true);
                 });
             }
+
+            // Disable roles cao hơn vai trò của người dùng hiện tại
+            var userRoles = @Html.Raw(JsonConvert.SerializeObject(userRoles));
+            var roleHierarchy = ['DIRECTOR', 'EMPLOYEE_MANAGER', 'LINE_MANAGER', 'EMPLOYEE',
+                'PAYROLL_AUDITOR', 'LIMITED_EMPLOYEE_MANAGER'
+            ];
+            var highestCurrentRoleIndex = Math.min(...userRoles.map(r => roleHierarchy.indexOf(r)));
+
+            $('.role-checkbox').each(function () {
+                var role = $(this).val();
+                var roleIndex = roleHierarchy.indexOf(role);
+                if (roleIndex < highestCurrentRoleIndex) {
+                    $(this).prop('disabled', true).parent().css('opacity', '0.5');
+                }
+            });
 
             $('#roleModal').modal('show');
         }
@@ -103,6 +332,16 @@
             openModal(username, hoTen, existingRoles);
         }
 
+        function toggleRoleDetails(item) {
+            const roleId = $(item).data('role-id');
+            const detailsElement = $('#details_' + roleId);
+            if (detailsElement.is(':visible')) {
+                detailsElement.slideUp();
+            } else {
+                detailsElement.slideDown();
+            }
+        }
+
         $('#roleForm').submit(function (e) {
             e.preventDefault();
             const roles = $('.role-checkbox:checked').map(function () {
@@ -119,10 +358,28 @@
                 }),
                 success: function (res) {
                     if (res.success) {
-                        Swal.fire('Thành công', 'Phân quyền đã được cập nhật', 'success').then(() => location.reload());
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: 'Phân quyền đã được cập nhật',
+                            confirmButtonColor: '#10B981'
+                        }).then(() => location.reload());
                     } else {
-                        Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: res.message || 'Có lỗi xảy ra',
+                            confirmButtonColor: '#EF4444'
+                        });
                     }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Không thể kết nối đến server',
+                        confirmButtonColor: '#EF4444'
+                    });
                 }
             });
         });

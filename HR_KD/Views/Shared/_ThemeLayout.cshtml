@@ -265,40 +265,44 @@
                                 }
                             </ul>
                         </li>
-<!--Quản lý lương -->
+                        <!-- Quản lý lương -->
                         @{
                             bool isDirector = User.IsInRole("DIRECTOR");
-                            bool isAccountant = User.IsInRole("EMPLOYEE_MANAGER");
-                            bool isManager = User.IsInRole("LINE_MANAGER");
+                            bool isEmployeeManager = User.IsInRole("EMPLOYEE_MANAGER");
+                            bool isLineManager = User.IsInRole("LINE_MANAGER");
                             bool isEmployee = User.IsInRole("EMPLOYEE");
+                            bool isPayrollAuditor = User.IsInRole("PAYROLL_AUDITOR");
                         }
 
                         <li class="submenu">
                             <a href="#"><i class="fa fa-money"></i> <span>Quản lý lương</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
-
-                                @* Chung cho tất cả: Bảng lương cá nhân *@
                                 <li><a href="~/PayrollEmployee/MyPayroll"><i class="fa fa-wallet"></i> Bảng lương cá nhân</a></li>
 
-                                @* Menu theo vai trò *@
-                                @if (isManager || isAccountant || isDirector)
+                                @if (isDirector || isPayrollAuditor)
                                 {
                                     <li><a href="~/Payroll/Index"><i class="fa fa-calculator"></i> Tạo bảng lương theo phòng</a></li>
                                 }
 
-                                @if (isManager || isDirector)
+                                @if (isDirector || isEmployeeManager || isLineManager || isPayrollAuditor)
                                 {
                                     <li><a href="~/PayrollManager/DepartmentReview"><i class="fa fa-eye"></i> Rà soát bảng lương trong phòng ban</a></li>
                                 }
 
-                                @if (isAccountant || isDirector)
+                                @if (isDirector || isPayrollAuditor)
                                 {
                                     <li><a href="~/PayrollAccountant/ByAccountant"><i class="fa fa-file-invoice-dollar"></i> Kế toán duyệt bảng lương kế toán</a></li>
-                                    <li><a href="~/PayrollDirector/DirectorReview"><i class="fa fa-paper-plane"></i>Giám đốc duyệt bảng lương</a></li>
                                 }
 
-                                @* Chức năng thống kê – chung *@
-                                <li><a href="~/SalaryStatistics/Index"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
+                                @if (isDirector)
+                                {
+                                    <li><a href="~/PayrollDirector/DirectorReview"><i class="fa fa-paper-plane"></i> Giám đốc duyệt bảng lương</a></li>
+                                }
+
+                                @if (isDirector || isEmployeeManager || isLineManager || isPayrollAuditor)
+                                {
+                                    <li><a href="~/SalaryStatistics/Index"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
+                                }
                             </ul>
                         </li>
                         <li class="submenu">
@@ -323,7 +327,7 @@
                             <ul style="display: none;">
                                 <li><a href="~/Reports/Employee"><i class="fa fa-users"></i> Báo cáo nhân viên</a></li>
                                 <li><a href="~/Reports/Salary"><i class="fa fa-dollar-sign"></i> Báo cáo lương</a></li>
-                                <li><a href="~/Reports/Attendance"><i class="fa fa-calendar-check"></i> Báo cáo chấm công</a></li>
+                                <li><a href="~/AttendanceReport/Index"><i class="fa fa-calendar-check"></i> Báo cáo chấm công</a></li>
                             </ul>
                         </li>
 

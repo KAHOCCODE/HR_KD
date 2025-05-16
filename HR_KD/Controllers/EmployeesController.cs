@@ -9,10 +9,12 @@ namespace HR_KD.Controllers
     public class EmployeesController : Controller
     {
         private readonly HrDbContext _context;
+        private readonly ILogger<EmployeesController> _logger;
 
-        public EmployeesController(HrDbContext context)
+        public EmployeesController(HrDbContext context, ILogger<EmployeesController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         #region Danh sách nhân viên
@@ -102,11 +104,9 @@ namespace HR_KD.Controllers
         #region Chỉnh sửa lương
         public IActionResult EditSalary(int maLuongNV, int maNv)
         {
-            // Pass the data to the view via ViewData or a model
             ViewData["MaLuongNV"] = maLuongNV;
             ViewData["MaNv"] = maNv;
 
-            // Alternatively, you can create a DTO or ViewModel to pass to the view
             var model = new ThongTinLuongNVDTO
             {
                 MaLuongNV = maLuongNV,
@@ -118,48 +118,100 @@ namespace HR_KD.Controllers
         #endregion
 
         #region Phân quyền
-        [Authorize(Policy = "CanManageSubordinates")]
         public IActionResult Roles()
         {
             var currentUser = _context.TaiKhoans
                 .Include(t => t.MaNvNavigation)
+                .ThenInclude(nv => nv.MaPhongBanNavigation)
+                .Include(t => t.TaiKhoanQuyenHans)
+                .ThenInclude(t => t.QuyenHan)
+                .AsNoTracking() // Tối ưu hiệu suất
                 .FirstOrDefault(t => t.Username == User.Identity.Name);
 
             if (currentUser == null) return Unauthorized();
 
             var currentNv = currentUser.MaNvNavigation;
 
-            // Tìm cấp dưới: cùng phòng ban, chức vụ thấp hơn
-            var capDuoi = _context.TaiKhoans
-                .Include(t => t.MaNvNavigation).ThenInclude(nv => nv.MaChucVuNavigation)
-                .Include(t => t.TaiKhoanQuyenHans).ThenInclude(r => r.QuyenHan)
-                .Where(t =>
-                    t.MaNvNavigation.MaPhongBan == currentNv.MaPhongBan &&
-                    t.MaNvNavigation.MaChucVu > currentNv.MaChucVu
-                ).ToList();
+            bool isDirector = User.IsInRole("DIRECTOR");
 
-            ViewBag.AllRoles = _context.QuyenHans.ToList();
+            if (isDirector)
+            {
+                var allEmployees = _context.TaiKhoans
+                    .Include(t => t.MaNvNavigation).ThenInclude(nv => nv.MaChucVuNavigation)
+                    .Include(t => t.MaNvNavigation).ThenInclude(nv => nv.MaPhongBanNavigation)
+                    .Include(t => t.TaiKhoanQuyenHans).ThenInclude(r => r.QuyenHan)
+                    .AsNoTracking()
+                    .ToList()
+                    .GroupBy(t => t.MaNvNavigation.MaPhongBanNavigation.TenPhongBan)
+                    .ToDictionary(g => g.Key, g => g.ToList());
 
-            return View(capDuoi);
+                ViewBag.AllRoles = _context.QuyenHans.AsNoTracking().ToList();
+                ViewBag.IsDirector = true;
+                ViewBag.DepartmentName = null;
+                ViewBag.UserRoles = currentUser.TaiKhoanQuyenHans.Select(r => r.MaQuyenHan).ToList();
+                return View(allEmployees);
+            }
+            else
+            {
+                var capDuoi = _context.TaiKhoans
+                    .Include(t => t.MaNvNavigation).ThenInclude(nv => nv.MaChucVuNavigation)
+                    .Include(t => t.MaNvNavigation).ThenInclude(nv => nv.MaPhongBanNavigation)
+                    .Include(t => t.TaiKhoanQuyenHans).ThenInclude(r => r.QuyenHan)
+                    .Where(t =>
+                        t.MaNvNavigation.MaPhongBan == currentNv.MaPhongBan &&
+                        t.MaNvNavigation.MaChucVu > currentNv.MaChucVu)
+                    .AsNoTracking()
+                    .ToList();
+
+                ViewBag.AllRoles = _context.QuyenHans.AsNoTracking().ToList();
+                ViewBag.IsDirector = false;
+                ViewBag.DepartmentName = currentNv.MaPhongBanNavigation.TenPhongBan;
+                ViewBag.UserRoles = currentUser.TaiKhoanQuyenHans.Select(r => r.MaQuyenHan).ToList();
+                return View(capDuoi);
+            }
         }
 
         [HttpPost]
-        [Authorize(Policy = "CanManageSubordinates")]
         public JsonResult UpdateRoles([FromBody] AssignRoleDto dto)
         {
-            var user = _context.TaiKhoans.Include(t => t.MaNvNavigation)
+            var user = _context.TaiKhoans
+                .Include(t => t.MaNvNavigation)
+                .Include(t => t.TaiKhoanQuyenHans)
                 .FirstOrDefault(x => x.Username == dto.Username);
 
-            var current = _context.TaiKhoans.Include(x => x.MaNvNavigation)
+            var current = _context.TaiKhoans
+                .Include(x => x.MaNvNavigation)
+                .ThenInclude(nv => nv.MaPhongBanNavigation)
+                .Include(x => x.TaiKhoanQuyenHans)
+                .ThenInclude(x => x.QuyenHan)
                 .FirstOrDefault(x => x.Username == User.Identity.Name);
 
             if (user == null || current == null)
                 return Json(new { success = false, message = "Tài khoản không hợp lệ" });
 
-            if (user.MaNvNavigation.MaPhongBan != current.MaNvNavigation.MaPhongBan ||
-                user.MaNvNavigation.MaChucVu <= current.MaNvNavigation.MaChucVu)
+            bool isDirector = User.IsInRole("DIRECTOR");
+            if (!isDirector)
             {
-                return Json(new { success = false, message = "Không đủ quyền" });
+                if (user.MaNvNavigation.MaPhongBan != current.MaNvNavigation.MaPhongBan ||
+                    user.MaNvNavigation.MaChucVu <= current.MaNvNavigation.MaChucVu)
+                {
+                    return Json(new { success = false, message = "Không đủ quyền" });
+                }
+
+                var roleHierarchy = new List<string> { "DIRECTOR", "EMPLOYEE_MANAGER", "LINE_MANAGER", "EMPLOYEE", "PAYROLL_AUDITOR", "LIMITED_EMPLOYEE_MANAGER" };
+                var currentUserRoles = current.TaiKhoanQuyenHans.Select(r => r.MaQuyenHan).ToList();
+                var highestCurrentRole = currentUserRoles
+                    .Select(r => roleHierarchy.IndexOf(r))
+                    .Min();
+
+                foreach (var role in dto.Roles)
+                {
+                    var roleIndex = roleHierarchy.IndexOf(role);
+                    if (roleIndex < highestCurrentRole)
+                    {
+                        return Json(new { success = false, message = $"Không thể gán vai trò {role} cao hơn vai trò hiện tại" });
+                    }
+                }
             }
 
             _context.TaiKhoanQuyenHans.RemoveRange(_context.TaiKhoanQuyenHans.Where(x => x.Username == dto.Username));
@@ -173,8 +225,16 @@ namespace HR_KD.Controllers
             }
 
             _context.SaveChanges();
+            _logger.LogInformation("User {Username} updated roles for {TargetUsername} to {Roles}", User.Identity.Name, dto.Username, string.Join(",", dto.Roles));
             return Json(new { success = true });
         }
         #endregion
     }
+
+    public class AssignRoleDto
+    {
+        public string Username { get; set; }
+        public List<string> Roles { get; set; }
+    }
 }
+

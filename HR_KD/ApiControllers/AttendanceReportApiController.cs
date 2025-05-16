@@ -60,7 +60,7 @@ namespace HR_KD.ApiControllers
                           {
                               c.NgayLamViec,
                               TrangThai = t.TenTrangThai,
-                              TongGio = (decimal?)c.TongGio, // Cast to nullable decimal
+                              TongGio = (decimal?)c.TongGio,
                               GioVao = c.GioVao.HasValue ? c.GioVao.Value.ToString("HH:mm") : null,
                               GioRa = c.GioRa.HasValue ? c.GioRa.Value.ToString("HH:mm") : null,
                               c.GhiChu
@@ -92,11 +92,23 @@ namespace HR_KD.ApiControllers
                           {
                               t.NgayTangCa,
                               TrangThai = s.TenTrangThai,
-                              TongGio = (decimal?)t.SoGioTangCa, // Cast to nullable decimal
+                              TongGio = (decimal?)t.SoGioTangCa,
                               GioVao = t.GioVao.HasValue ? t.GioVao.Value.ToString("HH:mm") : null,
                               GioRa = t.GioRa.HasValue ? t.GioRa.Value.ToString("HH:mm") : null,
                               t.GhiChu
                           })
+                    .ToListAsync();
+
+                // Fetch missing hours
+                var missingHoursRecords = await _context.GioThieus
+                    .Where(g => g.MaNv == maNv.Value &&
+                                g.NgayThieu >= startDate &&
+                                g.NgayThieu <= endDate)
+                    .Select(g => new
+                    {
+                        g.NgayThieu,
+                        g.TongGioThieu
+                    })
                     .ToListAsync();
 
                 // Calculate total working days in the month (excluding weekends)
@@ -116,6 +128,9 @@ namespace HR_KD.ApiControllers
                 var attendanceDays = attendanceRecords.Count;
                 var leaveDaysCount = leaveDays.Count;
                 var missingDays = workingDays - attendanceDays - leaveDaysCount;
+                var totalAttendanceHours = attendanceRecords.Sum(r => r.TongGio ?? 0);
+                var totalMissingHours = missingHoursRecords.Sum(r => r.TongGioThieu);
+                var totalOvertimeHours = overtimeRecords.Sum(r => r.TongGio ?? 0);
 
                 // Map attendance records to calendar events
                 var calendarEvents = attendanceRecords.Select(r => new
@@ -128,7 +143,7 @@ namespace HR_KD.ApiControllers
                            "#17a2b8", // Cyan for Other
                     Details = new
                     {
-                        TongGio = r.TongGio, // Nullable decimal
+                        TongGio = r.TongGio,
                         GioVao = r.GioVao,
                         GioRa = r.GioRa,
                         GhiChu = r.GhiChu ?? ""
@@ -143,7 +158,7 @@ namespace HR_KD.ApiControllers
                     Color = "#6c757d", // Gray for leave
                     Details = new
                     {
-                        TongGio = (decimal?)0, // Nullable decimal
+                        TongGio = (decimal?)0,
                         GioVao = (string)null,
                         GioRa = (string)null,
                         GhiChu = l.LyDo ?? ""
@@ -158,7 +173,7 @@ namespace HR_KD.ApiControllers
                     Color = "#007bff", // Blue for overtime
                     Details = new
                     {
-                        TongGio = t.TongGio, // Nullable decimal
+                        TongGio = t.TongGio,
                         GioVao = t.GioVao,
                         GioRa = t.GioRa,
                         GhiChu = t.GhiChu ?? ""
@@ -182,7 +197,10 @@ namespace HR_KD.ApiControllers
                         LeaveDays = leaveDaysCount,
                         MissingDays = missingDays,
                         TotalWorkingDays = workingDays,
-                        OvertimeDays = overtimeRecords.Count
+                        OvertimeDays = overtimeRecords.Count,
+                        TotalAttendanceHours = totalAttendanceHours,
+                        TotalMissingHours = totalMissingHours,
+                        TotalOvertimeHours = totalOvertimeHours
                     },
                     calendar = allEvents
                 };

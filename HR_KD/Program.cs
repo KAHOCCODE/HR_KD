@@ -38,13 +38,21 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("CanManageSubordinates", policy =>
-        policy.Requirements.Add(new ManageSubordinateRequirement()));
     options.AddPolicy("EMPLOYEE", policy => policy.RequireRole("EMPLOYEE"));
     options.AddPolicy("EMPLOYEE_MANAGER", policy => policy.RequireRole("EMPLOYEE_MANAGER"));
     options.AddPolicy("LINE_MANAGER", policy => policy.RequireRole("LINE_MANAGER"));
-    // giám đốc
     options.AddPolicy("DIRECTOR", policy => policy.RequireRole("DIRECTOR"));
+
+    options.AddPolicy("EmployeeView", policy => policy.Requirements.Add(new ManageSubordinateRequirement("employees", "view")));
+    options.AddPolicy("EmployeeCreate", policy => policy.Requirements.Add(new ManageSubordinateRequirement("employees", "create")));
+    options.AddPolicy("RoleManage", policy => policy.Requirements.Add(new ManageSubordinateRequirement("employees", "assign_roles")));
+    options.AddPolicy("AttendanceManage", policy => policy.Requirements.Add(new ManageSubordinateRequirement("attendance", "manage")));
+    options.AddPolicy("HolidayCreate", policy => policy.Requirements.Add(new ManageSubordinateRequirement("holidays", "create")));
+    options.AddPolicy("HolidayApprove", policy => policy.Requirements.Add(new ManageSubordinateRequirement("holidays", "approve")));
+    options.AddPolicy("PayrollCreate", policy => policy.Requirements.Add(new ManageSubordinateRequirement("payroll", "create")));
+    options.AddPolicy("PayrollApproveBL2", policy => policy.Requirements.Add(new ManageSubordinateRequirement("payroll", "approve_bl2_to_bl3")));
+    options.AddPolicy("PayrollApproveBL3", policy => policy.Requirements.Add(new ManageSubordinateRequirement("payroll", "approve_bl3_to_bl4")));
+
 
 });
 

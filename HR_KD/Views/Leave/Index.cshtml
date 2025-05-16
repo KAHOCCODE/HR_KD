@@ -1666,7 +1666,188 @@
         return expandedHolidays;
     }
 
-    // Document Ready Event Handler
+    // Thêm biến để lưu trữ thông tin giới hạn
+    let leaveTypeLimits = {};
+
+    // Cập nhật hàm fetchLeaveTypes để lấy thông tin giới hạn
+    async function fetchLeaveTypes() {
+        try {
+            const [typesResponse, limitsResponse] = await Promise.all([
+                fetch("/api/Leave/GetLeaveTypes"),
+                fetch("/api/Leave/GetLeaveTypeLimits", {
+                    headers: {
+                        "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                    }
+                })
+            ]);
+
+            const typesResult = await typesResponse.json();
+            const limitsResult = await limitsResponse.json();
+
+            if (typesResult.success && limitsResult.success) {
+                const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+                const leaveTypeDescription = document.getElementById("leaveTypeDescription");
+                leaveTypeSelect.innerHTML = '<option value="">Chọn loại nghỉ</option>';
+
+                // Lưu thông tin giới hạn
+                leaveTypeLimits = {};
+                limitsResult.leaveTypes.forEach(limit => {
+                    leaveTypeLimits[limit.maLoaiNgayNghi] = limit;
+                });
+
+                typesResult.leaveTypes.forEach(leaveType => {
+                    const option = document.createElement("option");
+                    option.value = leaveType.maLoaiNgayNghi;
+                    option.textContent = leaveType.tenLoai;
+                    option.dataset.description = leaveType.moTa || "Không có mô tả";
+
+                    // Kiểm tra và thêm tooltip cho các loại nghỉ đã đạt giới hạn
+                    const limit = leaveTypeLimits[leaveType.maLoaiNgayNghi];
+                    if (limit && limit.kiemTra.biVoHieuHoa) {
+                        let tooltipText = "Không thể đăng ký: ";
+                        if (limit.kiemTra.vuotQuaSoNgay) {
+                            tooltipText += `Đã đạt giới hạn ${limit.soNgayNghiToiDa} ngày`;
+                        }
+                        if (limit.kiemTra.vuotQuaSoLan) {
+                            if (limit.kiemTra.vuotQuaSoNgay) tooltipText += " và ";
+                            tooltipText += `Đã đạt giới hạn ${limit.soLanDangKyToiDa} lần đăng ký`;
+                        }
+                        option.title = tooltipText;
+                        option.disabled = true;
+                        option.style.opacity = "0.5";
+                    }
+
+                    if (leaveType.tenLoai.toLowerCase().includes('không lương')) {
+                        unpaidLeaveTypeId = leaveType.maLoaiNgayNghi;
+                    }
+
+                    leaveTypeSelect.appendChild(option);
+                });
+
+                // Thêm sự kiện change cho select
+                leaveTypeSelect.addEventListener('change', async function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const description = selectedOption.dataset.description;
+
+                    if (this.value) {
+                        document.getElementById("leaveTypeDescription").textContent = description;
+                        document.getElementById("leaveTypeDescription").classList.add('show');
+
+                        // Kiểm tra giới hạn nếu đã chọn ngày
+                        const selectedDates = datePicker.selectedDates;
+                        if (selectedDates.length > 0) {
+                            try {
+                                const limitCheck = await checkLeaveLimits(parseInt(this.value), selectedDates.length);
+                                
+                                if (limitCheck.kiemTra.vuotQuaSoNgay) {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Vượt quá giới hạn',
+                                        html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
+                                          Bạn đã đăng ký ${limitCheck.hienTai.soNgayDaDangKy} ngày và đang yêu cầu thêm ${selectedDates.length} ngày.`
+                                    });
+                                    datePicker.clear();
+                                    document.getElementById("selectedDates").textContent = "";
+                                    return;
+                                }
+
+                                if (limitCheck.kiemTra.vuotQuaSoLan) {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Vượt quá giới hạn',
+                                        html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
+                                          Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                    });
+                                    datePicker.clear();
+                                    document.getElementById("selectedDates").textContent = "";
+                                    return;
+                                }
+                            } catch (error) {
+                                console.error('Lỗi khi kiểm tra giới hạn:', error);
+                            }
+                        }
+                    } else {
+                        document.getElementById("leaveTypeDescription").classList.remove('show');
+                    }
+                });
+            } else {
+                console.error("Lỗi dữ liệu:", typesResult);
+                alert("Dữ liệu không hợp lệ.");
+            }
+        } catch (error) {
+            console.error("Lỗi hệ thống:", error);
+            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+        }
+    }
+
+    // Cập nhật hàm updateLeaveTypeDropdown
+    function updateLeaveTypeDropdown() {
+        const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+        if (!leaveTypeSelect) return;
+
+        // Lưu giá trị hiện tại của dropdown trước khi cập nhật
+        const currentValue = leaveTypeSelect.value;
+
+        if (availableLeaveBalance === 0) {
+            // Disable các option khác, chỉ enable loại nghỉ không lương
+            Array.from(leaveTypeSelect.options).forEach(option => {
+                if (option.value && option.value !== unpaidLeaveTypeId.toString()) {
+                    option.disabled = true;
+                    option.style.opacity = "0.5";
+                } else {
+                    // Kiểm tra giới hạn cho loại nghỉ không lương
+                    const limit = leaveTypeLimits[option.value];
+                    if (limit && limit.kiemTra.biVoHieuHoa) {
+                        option.disabled = true;
+                        option.style.opacity = "0.5";
+                    } else {
+                        option.disabled = false;
+                        option.style.opacity = "1";
+                    }
+                }
+            });
+            // Buộc chọn loại nghỉ không lương nếu số dư phép bằng 0 và chưa đạt giới hạn
+            if (!leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
+                leaveTypeSelect.value = unpaidLeaveTypeId;
+                // Hiển thị mô tả cho loại nghỉ không lương
+                const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+                const description = selectedOption?.dataset?.description;
+                if (description) {
+                    document.getElementById("leaveTypeDescription").textContent = description;
+                    document.getElementById("leaveTypeDescription").classList.add('show');
+                }
+            }
+        } else {
+            // Enable tất cả các option chưa đạt giới hạn
+            Array.from(leaveTypeSelect.options).forEach(option => {
+                if (option.value) {
+                    const limit = leaveTypeLimits[option.value];
+                    if (limit && limit.kiemTra.biVoHieuHoa) {
+                        option.disabled = true;
+                        option.style.opacity = "0.5";
+                    } else {
+                        option.disabled = false;
+                        option.style.opacity = "1";
+                    }
+                }
+            });
+            // Khôi phục giá trị hiện tại (hoặc giữ nguyên nếu đã chọn)
+            if (currentValue && !leaveTypeLimits[currentValue]?.kiemTra.biVoHieuHoa) {
+                leaveTypeSelect.value = currentValue;
+                // Cập nhật mô tả nếu có giá trị được chọn
+                const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+                const description = selectedOption?.dataset?.description;
+                if (description) {
+                    document.getElementById("leaveTypeDescription").textContent = description;
+                    document.getElementById("leaveTypeDescription").classList.add('show');
+                }
+            } else {
+                document.getElementById("leaveTypeDescription").classList.remove('show');
+            }
+        }
+    }
+
+    // Thay thế đoạn code fetch leave types cũ bằng hàm mới
     document.addEventListener("DOMContentLoaded", async function () {
         console.log("DOM đã sẵn sàng, kiểm tra các phần tử...");
 
@@ -1747,7 +1928,7 @@
                     dayElem.classList.add("holiday");
                 }
             },
-            onClose: function (selectedDates) {
+            onClose: async function(selectedDates) {
                 const validDates = selectedDates.filter(date => {
                     const dateTime = date.setHours(0, 0, 0, 0);
                     const isHoliday = expandedHolidays.some(h => h.date === dateTime);
@@ -1761,12 +1942,46 @@
                         text: 'Có ngày không hợp lệ trong lựa chọn của bạn!'
                     });
                     this.clear();
+                    return;
                 }
 
                 document.getElementById("selectedDates").textContent =
                     validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
 
-                // Check leave balance and update leave type dropdown
+                // Kiểm tra giới hạn nếu đã chọn loại nghỉ phép
+                const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+                if (leaveTypeSelect.value) {
+                    try {
+                        const limitCheck = await checkLeaveLimits(parseInt(leaveTypeSelect.value), validDates.length);
+                        
+                        if (limitCheck.kiemTra.vuotQuaSoNgay) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Vượt quá giới hạn',
+                                html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
+                                      Bạn đã đăng ký ${limitCheck.hienTai.soNgayDaDangKy} ngày và đang yêu cầu thêm ${validDates.length} ngày.`
+                            });
+                            this.clear();
+                            document.getElementById("selectedDates").textContent = "";
+                            return;
+                        }
+
+                        if (limitCheck.kiemTra.vuotQuaSoLan) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Vượt quá giới hạn',
+                                html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
+                                      Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                            });
+                            this.clear();
+                            document.getElementById("selectedDates").textContent = "";
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Lỗi khi kiểm tra giới hạn:', error);
+                    }
+                }
+
                 updateLeaveTypeDropdown();
             }
         });
@@ -1883,7 +2098,7 @@
                             dayElem.classList.add("holiday");
                         }
                     },
-                    onClose: function (selectedDates) {
+                    onClose: async function(selectedDates) {
                         const validDates = selectedDates.filter(date => {
                             const dateTime = date.setHours(0, 0, 0, 0);
                             const isHoliday = expandedHolidays.some(h => h.date === dateTime);
@@ -1897,10 +2112,45 @@
                                 text: 'Có ngày không hợp lệ trong lựa chọn của bạn!'
                             });
                             this.clear();
+                            return;
                         }
 
                         document.getElementById("selectedDates").textContent =
                             validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
+
+                        // Kiểm tra giới hạn nếu đã chọn loại nghỉ phép
+                        const leaveTypeSelect = document.getElementById("leaveTypeSelect");
+                        if (leaveTypeSelect.value) {
+                            try {
+                                const limitCheck = await checkLeaveLimits(parseInt(leaveTypeSelect.value), validDates.length);
+                                
+                                if (limitCheck.kiemTra.vuotQuaSoNgay) {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Vượt quá giới hạn',
+                                        html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
+                                      Bạn đã đăng ký ${limitCheck.hienTai.soNgayDaDangKy} ngày và đang yêu cầu thêm ${validDates.length} ngày.`
+                                    });
+                                    this.clear();
+                                    document.getElementById("selectedDates").textContent = "";
+                                    return;
+                                }
+
+                                if (limitCheck.kiemTra.vuotQuaSoLan) {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Vượt quá giới hạn',
+                                        html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
+                                      Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                    });
+                                    this.clear();
+                                    document.getElementById("selectedDates").textContent = "";
+                                    return;
+                                }
+                            } catch (error) {
+                                console.error('Lỗi khi kiểm tra giới hạn:', error);
+                            }
+                        }
 
                         updateLeaveTypeDropdown();
                     }
@@ -2111,51 +2361,41 @@
             }
         }
 
+        // Fetch leave types
+        await fetchLeaveTypes();
+
+        // Fetch số dư phép và gọi updateLeaveTypeDropdown() sau khi có dữ liệu
         try {
-            const response = await fetch("/api/Leave/GetLeaveTypes");
-            const result = await response.json();
-
-            if (result && result.success && Array.isArray(result.leaveTypes)) {
-                const leaveTypeSelect = document.getElementById("leaveTypeSelect");
-                const leaveTypeDescription = document.getElementById("leaveTypeDescription");
-                leaveTypeSelect.innerHTML = '<option value="">Chọn loại nghỉ</option>';
-
-                result.leaveTypes.forEach(leaveType => {
-                    const option = document.createElement("option");
-                    option.value = leaveType.maLoaiNgayNghi;
-                    option.textContent = leaveType.tenLoai;
-                    option.dataset.description = leaveType.moTa || "Không có mô tả";
-
-                    // Kiểm tra và lưu ID của loại nghỉ không lương
-                    if (leaveType.tenLoai.toLowerCase().includes('không lương')) {
-                        unpaidLeaveTypeId = leaveType.maLoaiNgayNghi;
-                    }
-
-                    leaveTypeSelect.appendChild(option);
-                });
-
-                // Add change event listener to show description
-                leaveTypeSelect.addEventListener('change', function () {
-                    const selectedOption = this.options[this.selectedIndex];
-                    const description = selectedOption.dataset.description;
-
-                    if (this.value) {
-                        leaveTypeDescription.textContent = description;
-                        leaveTypeDescription.classList.add('show');
-                    } else {
-                        leaveTypeDescription.classList.remove('show');
-                    }
-                });
-
-                // Initialize leave type dropdown based on leave balance
-                updateLeaveTypeDropdown();
+            const response = await fetch('/api/Leave/SoNgayConLai', {
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Lỗi khi lấy dữ liệu');
+            }
+            const data = await response.json();
+            if (data.success) {
+                availableLeaveBalance = data.soNgayConLai;
+                const soNgayConLaiElement = document.querySelector('.leave-enhanced-card .so-ngay-con-lai');
+                const soNgayPhepDuocCapElement = document.querySelector('.leave-enhanced-card .so-ngay-phep-duoc-cap');
+                const soNgayDaSuDungElement = document.querySelector('.leave-enhanced-card .so-ngay-da-su-dung');
+                if (soNgayConLaiElement) {
+                    soNgayConLaiElement.textContent = `${data.soNgayConLai} ngày`;
+                }
+                if (soNgayPhepDuocCapElement) {
+                    soNgayPhepDuocCapElement.textContent = `${data.soNgayPhepDuocCap} ngày`;
+                }
+                if (soNgayDaSuDungElement) {
+                    soNgayDaSuDungElement.textContent = `${data.soNgayDaSuDung} ngày`;
+                }
+                showLeaveBalanceWarnings();
+                updateLeaveTypeDropdown(); // Gọi tại đây để đảm bảo availableLeaveBalance đã được cập nhật
             } else {
-                console.error("Lỗi dữ liệu:", result);
-                alert("Dữ liệu không hợp lệ.");
+                console.error('Lỗi:', data.message);
             }
         } catch (error) {
-            console.error("Lỗi hệ thống:", error);
-            alert("Lỗi hệ thống. Vui lòng thử lại sau.");
+            console.error('Lỗi:', error);
         }
 
         // Số ngày còn lại
@@ -2345,10 +2585,8 @@
             console.log(`Hiển thị ${paginatedData.length} bản ghi cho tab ${tabId}`);
             paginatedData.forEach((item, index) => {
                 try {
-                    // Hỗ trợ các biến thể tên trường có thể có
-                    const id = item.id || item.Id || item.maDon || item.MaDon || "";
+                    const maDon = item.maDon || item.MaDon || "";
                     const tenLoai = item.tenLoai || item.TenLoai || item.loaiNghi || item.LoaiNghi || "Không xác định";
-                    const ngayNghi = item.ngayNghi || item.NgayNghi || item.ngay || item.Ngay || "Không xác định";
                     const lyDo = item.lyDo || item.LyDo || item.moTa || item.MoTa || "Không có lý do";
                     const trangThai = item.trangThai || item.TrangThai || "Không xác định";
                     const fileDinhKem = item.fileDinhKem || item.FileDinhKem || item.files || item.Files || "";
@@ -2356,25 +2594,45 @@
                     const ngayHuy = item.ngayDuyet || item.NgayDuyet || "";
                     const ghiChu = item.ghiChu || item.GhiChu || item.noiDungPhanHoi || item.NoiDungPhanHoi || "Không có ghi chú";
                     const nguoiDuyetHoTen = item.nguoiDuyetHoTen || item.NguoiDuyetHoTen || item.nguoiDuyet || item.NguoiDuyet || "Chưa có";
+                    const ngayNghis = item.ngayNghis || item.NgayNghis || [];
 
                     console.log(`Dữ liệu dòng ${index + 1} của tab ${tabId}:`, {
-                        id, tenLoai, ngayNghi, lyDo, trangThai, fileDinhKem, ngayDuyet, ngayHuy, ghiChu, nguoiDuyetHoTen
+                        maDon, tenLoai, lyDo, trangThai, fileDinhKem, ngayDuyet, ngayHuy, ghiChu, nguoiDuyetHoTen, ngayNghis
                     });
 
                     const fileDisplayHtml = generateFileDisplayHtml(fileDinhKem);
                     const ngayDuyetFormatted = ngayDuyet ? formatDate(ngayDuyet) : "Chưa duyệt";
                     const ngayHuyFormatted = ngayHuy ? formatDate(ngayHuy) : "Chưa hủy";
 
+                    // Tạo dropdown cho danh sách ngày nghỉ
+                    const uniqueId = `dates-${maDon}-${index}`;
+                    const datesDropdownHtml = `
+                        <div class="dropdown">
+                            <button class="btn btn-link dropdown-toggle" type="button" id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                ${ngayNghis.length} ngày
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="${uniqueId}">
+                                ${ngayNghis.map(ngay => `
+                                    <li><a class="dropdown-item" href="#">${formatDate(ngay.ngayNghi)}</a></li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+
+                    // Tạo tooltip cho lý do và ghi chú
+                    const lyDoTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDo}">${truncateText(lyDo, 23)}</div>`;
+                    const ghiChuTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${ghiChu}">${truncateText(ghiChu, 23)}</div>`;
+
                     const row = document.createElement("tr");
                     if (tabId === 'pending') {
-                        const cancelButton = `<button class="btn-cancel" data-id="${id}">
-                                                    <i class="fas fa-times-circle"></i>
-                                                    <span>Hủy đơn</span>
-                                                </button>`;
+                        const cancelButton = `<button class="btn-cancel" data-id="${ngayNghis[0]?.id}">
+                                                <i class="fas fa-times-circle"></i>
+                                                <span>Hủy đơn</span>
+                                            </button>`;
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
-                                    <td>${formatDate(ngayNghi)}</td>
-                                    <td>${lyDo}</td>
+                                    <td>${datesDropdownHtml}</td>
+                                    <td>${lyDoTooltip}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${cancelButton}</td>
@@ -2382,22 +2640,21 @@
                     } else if (tabId === 'canceled') {
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
-                                    <td>${formatDate(ngayNghi)}</td>
-                                    <td>${lyDo}</td>
+                                    <td>${datesDropdownHtml}</td>
+                                    <td>${lyDoTooltip}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${ngayHuyFormatted}</td>
-
                                 `;
                     } else {
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
-                                    <td>${formatDate(ngayNghi)}</td>
-                                    <td>${lyDo}</td>
+                                    <td>${datesDropdownHtml}</td>
+                                    <td>${lyDoTooltip}</td>
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${ngayDuyetFormatted}</td>
-                                    <td>${ghiChu}</td>
+                                    <td>${ghiChuTooltip}</td>
                                     <td>${nguoiDuyetHoTen}</td>
                                 `;
                     }
@@ -2424,12 +2681,27 @@
                 });
             });
 
+            // Khởi tạo tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover',
+                    html: true
+                });
+            });
+
             initializeDropdowns();
             updatePaginationControls(tabId);
             console.log(`Hoàn thành render tab ${tabId}`);
         } catch (error) {
             console.error(`Lỗi khi thiết lập sự kiện cho tab ${tabId}:`, error);
         }
+    }
+
+    // Thêm hàm truncateText để cắt ngắn text
+    function truncateText(text, maxLength) {
+        if (!text) return '';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     }
 
     function generateFileDisplayHtml(fileDinhKem) {
@@ -2673,42 +2945,6 @@
         }
     }
 
-    function updateLeaveTypeDropdown() {
-        const leaveTypeSelect = document.getElementById("leaveTypeSelect");
-        if (!leaveTypeSelect) return;
-
-        if (availableLeaveBalance === 0) {
-            // Disable các option khác, chỉ enable loại nghỉ không lương
-            Array.from(leaveTypeSelect.options).forEach(option => {
-                if (option.value && option.value !== unpaidLeaveTypeId.toString()) {
-                    option.disabled = true;
-                    option.style.opacity = "0.5";
-                } else {
-                    option.disabled = false;
-                    option.style.opacity = "1";
-                }
-            });
-            // Tự động chọn loại nghỉ không lương
-            leaveTypeSelect.value = unpaidLeaveTypeId;
-            // Hiển thị mô tả nếu có
-            const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
-            const description = selectedOption?.dataset?.description;
-            if (description) {
-                document.getElementById("leaveTypeDescription").textContent = description;
-                document.getElementById("leaveTypeDescription").classList.add('show');
-            }
-        } else {
-            // Enable tất cả các option
-            Array.from(leaveTypeSelect.options).forEach(option => {
-                option.disabled = false;
-                option.style.opacity = "1";
-            });
-            // Đặt lại về mặc định "Chọn loại nghỉ"
-            leaveTypeSelect.value = "";
-            document.getElementById("leaveTypeDescription").classList.remove('show');
-        }
-    }
-
     function setupPaginationControls() {
         ['pending', 'approved', 'rejected', 'canceled'].forEach(tabId => {
             setupPaginationForTab(tabId);
@@ -2777,4 +3013,29 @@
         e.stopPropagation();
         document.getElementById('fileAttachments').click();
     });
+
+    // Thêm hàm kiểm tra giới hạn
+    async function checkLeaveLimits(maLoaiNgayNghi, soNgayYeuCau) {
+        try {
+            const response = await fetch(`/api/Leave/CheckLeaveLimits?maLoaiNgayNghi=${maLoaiNgayNghi}&soNgayYeuCau=${soNgayYeuCau}`, {
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem('jwtToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Lỗi khi kiểm tra giới hạn');
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.message);
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Lỗi khi kiểm tra giới hạn:', error);
+            throw error;
+        }
+    }
 </script>

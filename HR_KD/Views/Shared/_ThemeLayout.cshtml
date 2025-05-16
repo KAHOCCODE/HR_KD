@@ -207,9 +207,9 @@
                             <a href="#"><i class="fa fa-clock-o"></i> <span>Chấm công</span> <span class="menu-arrow"></span></a>
                             <ul style="display: none;">
                                 <!-- Accessible to all users -->
-                                <li><a href="~/Attendance/Attendance"><i class="fa fa-list"></i> Chấm công</a></li>
+                                <li><a href="~/Attendance"><i class="fa fa-list"></i> Chấm công</a></li>
                                 <li><a href="~/LamBu/Index"><i class="fa fa-list"></i> Làm bù</a></li>
-                                <li><a href="~/Attendance"><i class="fa fa-list"></i> Danh sách chấm công</a></li>
+                                <li><a href="~/Attendance/Attendance"><i class="fa fa-list"></i> Danh sách chấm công</a></li>
                                 <!-- Restricted to EMPLOYEE_MANAGER role -->
                                 @if (User.IsInRole("DIRECTOR"))
                                 { 
@@ -310,7 +310,7 @@
                             <ul style="display: none;">
                                 <li><a href="~/Reports/Employee"><i class="fa fa-users"></i> Báo cáo nhân viên</a></li>
                                 <li><a href="~/Reports/Salary"><i class="fa fa-dollar-sign"></i> Báo cáo lương</a></li>
-                                <li><a href="~/Reports/Attendance"><i class="fa fa-calendar-check"></i> Báo cáo chấm công</a></li>
+                                <li><a href="~/AttendanceReport/Index"><i class="fa fa-calendar-check"></i> Báo cáo chấm công</a></li>
                             </ul>
                         </li>
 

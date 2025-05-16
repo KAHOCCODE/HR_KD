@@ -28,6 +28,7 @@ public partial class NgayNghi
     public string? GhiChu { get; set; }
 
     public string? FileDinhKem { get; set; }
+    public string MaDon { get; set; } = null!; // Thêm trường MaDon để nhóm đơn đăng ký
 
     public virtual LoaiNgayNghi? MaLoaiNgayNghiNavigation { get; set; }
 

@@ -44,7 +44,7 @@ namespace HR_KD.ApiControllers
 
         // GET: api/LamBu/GetRemainingHours/{maNv}
         [HttpGet("GetRemainingHours/{maNv}")]
-        public async Task<ActionResult<decimal>> GetRemainingHours(int maNv)
+        public async Task<ActionResult> GetRemainingHours(int maNv)
         {
             var userMaNv = GetMaNvFromClaims();
             if (!userMaNv.HasValue || userMaNv.Value != maNv)
@@ -56,12 +56,10 @@ namespace HR_KD.ApiControllers
             {
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
 
-                // Query TongGioThieu for the employee where the current date is within NgayBatDauThieu and NgayKetThucThieu
                 var tongGioThieu = await _context.TongGioThieus
                     .Where(t => t.MaNv == maNv && t.NgayBatDauThieu <= currentDate && t.NgayKetThucThieu >= currentDate)
                     .FirstOrDefaultAsync();
 
-                // If no record is found, return zeroed values
                 if (tongGioThieu == null)
                 {
                     return Ok(new
@@ -73,7 +71,6 @@ namespace HR_KD.ApiControllers
                     });
                 }
 
-                // Calculate remaining hours
                 var remainingHours = tongGioThieu.TongGioConThieu - tongGioThieu.TongGioLamBu;
 
                 return Ok(new
@@ -100,20 +97,18 @@ namespace HR_KD.ApiControllers
                 return Unauthorized(new { success = false, message = "Mã nhân viên không hợp lệ." });
             }
 
-            if (request == null || (request.LamBu == null && request.LamBuBanDem == null) || (!request.LamBu.Any() && !request.LamBuBanDem.Any()))
+            if (request == null || request.LamBu == null || !request.LamBu.Any())
             {
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
 
-            if (request.LamBu?.Any(lb => lb.MaNV != userMaNv.Value) == true ||
-                request.LamBuBanDem?.Any(lb => lb.MaNV != userMaNv.Value) == true)
+            if (request.LamBu.Any(lb => lb.MaNV != userMaNv.Value))
             {
                 return Unauthorized(new { success = false, message = "Không có quyền gửi dữ liệu cho nhân viên khác." });
             }
 
             try
             {
-                // Fetch remaining hours
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
                 var tongGioThieu = await _context.TongGioThieus
                     .Where(t => t.MaNv == userMaNv.Value && t.NgayBatDauThieu <= currentDate && t.NgayKetThucThieu >= currentDate)
@@ -121,137 +116,82 @@ namespace HR_KD.ApiControllers
 
                 decimal remainingHours = tongGioThieu?.TongGioConThieu - tongGioThieu?.TongGioLamBu ?? 0;
 
-                // Calculate total submitted hours
-                decimal totalSubmittedHours = 0;
-                if (request.LamBu != null)
-                {
-                    totalSubmittedHours += request.LamBu.Sum(lb => lb.TongGio ?? 0);
-                }
-                if (request.LamBuBanDem != null)
-                {
-                    totalSubmittedHours += request.LamBuBanDem.Sum(lb => lb.TongGio ?? 0);
-                }
+                decimal totalSubmittedHours = request.LamBu.Sum(lb => lb.TongGio ?? 0);
 
-                // Check if total submitted hours exceed remaining hours
                 if (totalSubmittedHours > remainingHours)
                 {
                     return BadRequest(new { success = false, message = $"Tổng giờ làm bù ({totalSubmittedHours}h) không được vượt quá số giờ còn thiếu ({remainingHours}h)." });
                 }
 
-                // Process day compensatory work
-                if (request.LamBu != null)
+                foreach (var lamBu in request.LamBu)
                 {
-                    foreach (var lamBu in request.LamBu)
+                    var ngayLamViec = lamBu.NgayLamViec;
+                    var dayOfWeek = ngayLamViec.ToDateTime(TimeOnly.MinValue).DayOfWeek;
+                    var gioVao = lamBu.GioVao;
+                    var gioRa = lamBu.GioRa;
+
+                    // Validation for weekdays (Monday-Friday): 18:00-22:00, max 4 hours
+                    if (dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday)
                     {
-                        // Existing validation for day compensatory work
-                        var ngayLamViec = lamBu.NgayLamViec;
-                        var dayOfWeek = ngayLamViec.ToDateTime(TimeOnly.MinValue).DayOfWeek;
-                        var gioVao = lamBu.GioVao;
-                        var gioRa = lamBu.GioRa;
-
-                        if (dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday)
-                        {
-                            if (gioVao < TimeOnly.Parse("18:00") || gioVao > TimeOnly.Parse("22:00") ||
-                                gioRa < TimeOnly.Parse("18:00") || gioRa > TimeOnly.Parse("22:00"))
-                            {
-                                return BadRequest(new { success = false, message = $"Làm bù từ thứ Hai đến thứ Sáu chỉ được phép từ 18:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
-                            }
-                        }
-                        else if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
-                        {
-                            if ((gioVao < TimeOnly.Parse("08:00") || gioVao > TimeOnly.Parse("18:00") || gioRa < TimeOnly.Parse("08:00") || gioRa > TimeOnly.Parse("18:00")) &&
-                                (gioVao < TimeOnly.Parse("18:00") || gioVao > TimeOnly.Parse("22:00") || gioRa < TimeOnly.Parse("18:00") || gioRa > TimeOnly.Parse("22:00")))
-                            {
-                                return BadRequest(new { success = false, message = $"Làm bù vào thứ Bảy và Chủ Nhật chỉ được phép từ 08:00 đến 18:00 hoặc 18:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
-                            }
-                        }
-                        else
-                        {
-                            return BadRequest(new { success = false, message = $"Không được phép làm bù vào ngày {ngayLamViec}." });
-                        }
-
-                        var conflictingTangCa = await _context.TangCas
-                            .Where(tc => tc.NgayTangCa == ngayLamViec && tc.MaNv == lamBu.MaNV)
-                            .ToListAsync();
-
-                        foreach (var tangCa in conflictingTangCa)
-                        {
-                            var tangCaStart = TimeOnly.Parse("18:00");
-                            var tangCaEnd = tangCaStart.AddHours((double)tangCa.SoGioTangCa);
-
-                            if ((gioVao >= tangCaStart && gioVao <= tangCaEnd) || (gioRa >= tangCaStart && gioRa <= tangCaEnd) ||
-                                (gioVao <= tangCaStart && gioRa >= tangCaEnd))
-                    {
-                                return BadRequest(new { success = false, message = $"Làm bù vào ngày {ngayLamViec} trùng với giờ tăng ca. Vui lòng kiểm tra lại." });
-                            }
-                        }
-
-                        if (gioVao.HasValue && gioRa.HasValue)
-                        {
-                            var hours = (gioRa.Value - gioVao.Value).TotalHours;
-                            if (hours < 0) hours += 24;
-                            if (hours >= 8) hours -= 2;
-                            lamBu.TongGio = (decimal)Math.Round(hours, 2);
-                        }
-
-                        lamBu.TrangThai = "LB1";
-                        _context.LamBus.Add(lamBu);
-                    }
-                }
-
-                // Process night compensatory work
-                if (request.LamBuBanDem != null)
-                {
-                    foreach (var lamBu in request.LamBuBanDem)
-                    {
-                        // Existing validation for night compensatory work
-                        var ngayLamViec = lamBu.NgayLamViec;
-                        var gioVao = lamBu.GioVao;
-                        var gioRa = lamBu.GioRa;
-
                         if (gioVao < TimeOnly.Parse("18:00") || gioVao > TimeOnly.Parse("22:00") ||
                             gioRa < TimeOnly.Parse("18:00") || gioRa > TimeOnly.Parse("22:00"))
                         {
-                            return BadRequest(new { success = false, message = $"Làm bù ban đêm chỉ được phép từ 18:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
+                            return BadRequest(new { success = false, message = $"Làm bù từ thứ Hai đến thứ Sáu chỉ được phép từ 18:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
                         }
 
-                        var conflictingTangCa = await _context.TangCas
-                            .Where(tc => tc.NgayTangCa == ngayLamViec && tc.MaNv == lamBu.MaNV)
-                            .ToListAsync();
-
-                        foreach (var tangCa in conflictingTangCa)
+                        var hours = (gioRa.Value - gioVao.Value).TotalHours;
+                        if (hours < 0) hours += 24;
+                        if (hours > 4)
                         {
-                            var tangCaStart = TimeOnly.Parse("18:00");
-                            var tangCaEnd = tangCaStart.AddHours((double)tangCa.SoGioTangCa);
-
-                            if ((gioVao >= tangCaStart && gioVao <= tangCaEnd) || (gioRa >= tangCaStart && gioRa <= tangCaEnd) ||
-                                (gioVao <= tangCaStart && gioRa >= tangCaEnd))
-                            {
-                                return BadRequest(new { success = false, message = $"Làm bù ban đêm vào ngày {ngayLamViec} trùng với giờ tăng ca. Vui lòng kiểm tra lại." });
-                            }
+                            return BadRequest(new { success = false, message = $"Làm bù từ thứ Hai đến thứ Sáu không được vượt quá 4 giờ. Ngày {ngayLamViec} không hợp lệ." });
                         }
-
-                        var conflictingLamBu = request.LamBu?.Where(lb => lb.NgayLamViec == ngayLamViec && lb.MaNV == lamBu.MaNV).ToList() ?? new List<LamBu>();
-                        foreach (var dayLamBu in conflictingLamBu)
-                        {
-                            if ((gioVao >= dayLamBu.GioVao && gioVao <= dayLamBu.GioRa) ||
-                                (gioRa >= dayLamBu.GioVao && gioRa <= dayLamBu.GioRa) ||
-                                (gioVao <= dayLamBu.GioVao && gioRa >= dayLamBu.GioRa))
-                            {
-                                return BadRequest(new { success = false, message = $"Làm bù ban đêm vào ngày {ngayLamViec} trùng với giờ làm bù ban ngày. Vui lòng kiểm tra lại." });
-                            }
-                        }
-
-                        if (gioVao.HasValue && gioRa.HasValue)
-                        {
-                            var hours = (gioRa.Value - gioVao.Value).TotalHours;
-                            if (hours < 0) hours += 24;
-                            lamBu.TongGio = (decimal)Math.Round(hours, 2);
-                        }
-
-                        lamBu.TrangThai = "LB1";
-                        _context.LamBus.Add(lamBu);
                     }
+                    // Validation for weekends (Saturday-Sunday): 08:00-22:00, 1-hour break if over 4 hours
+                    else if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
+                    {
+                        if (gioVao < TimeOnly.Parse("08:00") || gioVao > TimeOnly.Parse("22:00") ||
+                            gioRa < TimeOnly.Parse("08:00") || gioRa > TimeOnly.Parse("22:00"))
+                        {
+                            return BadRequest(new { success = false, message = $"Làm bù vào thứ Bảy và Chủ Nhật chỉ được phép từ 08:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
+                        }
+                    }
+                    else
+                    {
+                        return BadRequest(new { success = false, message = $"Không được phép làm bù vào ngày {ngayLamViec}." });
+                    }
+
+                    // Check for conflicts with overtime (TangCa)
+                    var conflictingTangCa = await _context.TangCas
+                        .Where(tc => tc.NgayTangCa == ngayLamViec && tc.MaNv == lamBu.MaNV)
+                        .ToListAsync();
+
+                    foreach (var tangCa in conflictingTangCa)
+                    {
+                        var tangCaStart = TimeOnly.Parse("18:00");
+                        var tangCaEnd = tangCaStart.AddHours((double)tangCa.SoGioTangCa);
+
+                        if ((gioVao >= tangCaStart && gioVao <= tangCaEnd) ||
+                            (gioRa >= tangCaStart && gioRa <= tangCaEnd) ||
+                            (gioVao <= tangCaStart && gioRa >= tangCaEnd))
+                        {
+                            return BadRequest(new { success = false, message = $"Làm bù vào ngày {ngayLamViec} trùng với giờ tăng ca. Vui lòng kiểm tra lại." });
+                        }
+                    }
+
+                    // Calculate hours, applying 1-hour break for weekend shifts over 4 hours
+                    if (gioVao.HasValue && gioRa.HasValue)
+                    {
+                        var hours = (gioRa.Value - gioVao.Value).TotalHours;
+                        if (hours < 0) hours += 24;
+                        if ((dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday) && hours > 4)
+                        {
+                            hours -= 1; // Apply 1-hour break
+                        }
+                        lamBu.TongGio = (decimal)Math.Round(hours, 2);
+                    }
+
+                    lamBu.TrangThai = "LB1";
+                    _context.LamBus.Add(lamBu);
                 }
 
                 await _context.SaveChangesAsync();
@@ -267,6 +207,5 @@ namespace HR_KD.ApiControllers
     public class LamBuRequest
     {
         public List<LamBu> LamBu { get; set; }
-        public List<LamBu> LamBuBanDem { get; set; }
     }
 }

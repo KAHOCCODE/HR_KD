@@ -48,32 +48,6 @@
                         </div>
                     }
 
-                    <!-- Search and Filter Controls -->
-                    @* <div class="row mb-4">
-                        <div class="col-md-8">
-                            <div class="input-group shadow-sm">
-                                <span class="input-group-text bg-white border-end-0">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
-                                <input type="text" id="tableSearch" class="form-control border-start-0" placeholder="Tìm kiếm loại ngày nghỉ...">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex justify-content-end">
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-filter me-1"></i> Lọc
-                                    </button>
-                                    <ul class="dropdown-menu shadow-sm" aria-labelledby="filterDropdown">
-                                        <li><a class="dropdown-item" href="#" data-filter="all">Tất cả</a></li>
-                                        <li><a class="dropdown-item" href="#" data-filter="huongluong">Có hưởng lương</a></li>
-                                        <li><a class="dropdown-item" href="#" data-filter="phepnam">Tính vào phép năm</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div> *@
-
                     <div class="table-responsive">
                         <table class="table table-hover align-middle" id="loaiNgayNghiTable">
                             <thead>
@@ -81,6 +55,16 @@
                                     <th class="ps-3">@Html.DisplayNameFor(model => model.MaLoaiNgayNghi)</th>
                                     <th>@Html.DisplayNameFor(model => model.TenLoai)</th>
                                     <th>@Html.DisplayNameFor(model => model.MoTa)</th>
+                                    <th class="text-center">
+                                        <span data-bs-toggle="tooltip" title="Số ngày nghỉ tối đa được phép">
+                                            <i class="fas fa-calendar-day me-1"></i> Ngày tối đa
+                                        </span>
+                                    </th>
+                                    <th class="text-center">
+                                        <span data-bs-toggle="tooltip" title="Số lần đăng ký nghỉ tối đa">
+                                            <i class="fas fa-calendar-check me-1"></i> Lần nghỉ tối đa
+                                        </span>
+                                    </th>
                                     <th class="text-center">
                                         <span data-bs-toggle="tooltip" title="Nhân viên có được hưởng lương khi nghỉ">
                                             <i class="fas fa-coins me-1"></i> Hưởng lương
@@ -103,6 +87,26 @@
                                         </td>
                                         <td class="fw-medium">@item.TenLoai</td>
                                         <td class="text-muted">@item.MoTa</td>
+                                        <td class="text-center">
+                                            @if (item.SoNgayNghiToiDa.HasValue && item.SoNgayNghiToiDa > 0)
+                                            {
+                                                <span class="badge bg-info rounded-pill">@item.SoNgayNghiToiDa ngày</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted"><i>Không giới hạn</i></span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (item.SoLanDangKyToiDa.HasValue && item.SoLanDangKyToiDa > 0)
+                                            {
+                                                <span class="badge bg-info rounded-pill">@item.SoLanDangKyToiDa lần</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted"><i>Không giới hạn</i></span>
+                                            }
+                                        </td>
                                         <td class="text-center">
                                             @if (item.HuongLuong)
                                             {
@@ -136,15 +140,10 @@
                                                 <a asp-action="Edit" asp-route-id="@item.MaLoaiNgayNghi" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Chỉnh sửa">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                               @*  <a asp-action="Details" asp-route-id="@item.MaLoaiNgayNghi" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Xem chi tiết">
-                                                    <i class="fas fa-info-circle"></i>
-                                                </a> *@
                                                 <a asp-action="Delete" asp-route-id="@item.MaLoaiNgayNghi" class="btn btn-sm btn-danger" data-toggle="tooltip" title="Xóa">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </a>
                                             </div>
-
-                                          
                                         </td>
                                     </tr>
                                 }
@@ -177,7 +176,7 @@
 
     <!-- Info cards row -->
     <div class="row">
-        <div class="col-lg-4 mb-4">
+        <div class="col-lg-3 mb-4">
             <div class="card border-0 shadow-sm h-100 bg-gradient-info text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -185,14 +184,11 @@
                             <h6 class="text-white-50 mb-1">Tổng loại ngày nghỉ</h6>
                             <h3 class="mb-0 fw-bold">@Model.Count()</h3>
                         </div>
-                      @*   <div class="rounded-circle bg-white bg-opacity-25 p-3">
-                            <i class="fas fa-calendar-alt fa-2x text-white"></i>
-                        </div> *@
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 mb-4">
+        <div class="col-lg-3 mb-4">
             <div class="card border-0 shadow-sm h-100 bg-gradient-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -200,14 +196,11 @@
                             <h6 class="text-white-50 mb-1">Loại có hưởng lương</h6>
                             <h3 class="mb-0 fw-bold">@Model.Count(m => m.HuongLuong)</h3>
                         </div>
-                       @*  <div class="rounded-circle bg-white bg-opacity-25 p-3">
-                            <i class="fas fa-coins fa-2x text-white"></i>
-                        </div> *@
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 mb-4">
+        <div class="col-lg-3 mb-4">
             <div class="card border-0 shadow-sm h-100 bg-gradient-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -215,9 +208,18 @@
                             <h6 class="text-white-50 mb-1">Tính vào phép năm</h6>
                             <h3 class="mb-0 fw-bold">@Model.Count(m => m.TinhVaoPhepNam)</h3>
                         </div>
-                     @*    <div class="rounded-circle bg-white bg-opacity-25 p-3">
-                            <i class="fas fa-calendar-check fa-2x text-white"></i>
-                        </div> *@
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm h-100 bg-gradient-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Có giới hạn ngày nghỉ</h6>
+                            <h3 class="mb-0 fw-bold">@Model.Count(m => m.SoNgayNghiToiDa.HasValue && m.SoNgayNghiToiDa > 0)</h3>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -242,7 +244,7 @@
             });
 
             // Khởi tạo tooltip
-            $('[data-toggle="tooltip"]').tooltip();
+            $('[data-bs-toggle="tooltip"]').tooltip();
 
             // Tự động đóng thông báo sau 5 giây
             setTimeout(function () {
@@ -289,6 +291,8 @@
                 var tenLoai = $('#searchTenLoai').val().toLowerCase();
                 var huongLuong = $('#searchHuongLuong').val();
                 var tinhVaoPhepNam = $('#searchTinhVaoPhepNam').val();
+                var soNgayNghiToiDa = $('#searchSoNgayNghiToiDa').val();
+                var soLanDangKyToiDa = $('#searchSoLanDangKyToiDa').val();
 
                 // Custom search DataTables
                 $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
@@ -299,9 +303,27 @@
                         match = false;
                     }
 
+                    // Tìm theo số ngày nghỉ tối đa
+                    if (soNgayNghiToiDa) {
+                        var hasLimit = data[3].indexOf('Không giới hạn') === -1;
+                        if ((soNgayNghiToiDa === 'yes' && !hasLimit) ||
+                            (soNgayNghiToiDa === 'no' && hasLimit)) {
+                            match = false;
+                        }
+                    }
+
+                    // Tìm theo số lần đăng ký tối đa
+                    if (soLanDangKyToiDa) {
+                        var hasLimit = data[4].indexOf('Không giới hạn') === -1;
+                        if ((soLanDangKyToiDa === 'yes' && !hasLimit) ||
+                            (soLanDangKyToiDa === 'no' && hasLimit)) {
+                            match = false;
+                        }
+                    }
+
                     // Tìm theo hưởng lương
                     if (huongLuong !== '') {
-                        var isHuongLuong = data[3].indexOf('Có') !== -1;
+                        var isHuongLuong = data[5].indexOf('check-circle') !== -1;
                         if ((huongLuong === 'true' && !isHuongLuong) ||
                             (huongLuong === 'false' && isHuongLuong)) {
                             match = false;
@@ -310,7 +332,7 @@
 
                     // Tìm theo tính vào phép năm
                     if (tinhVaoPhepNam !== '') {
-                        var isTinhVaoPhepNam = data[4].indexOf('Có') !== -1;
+                        var isTinhVaoPhepNam = data[6].indexOf('check-circle') !== -1;
                         if ((tinhVaoPhepNam === 'true' && !isTinhVaoPhepNam) ||
                             (tinhVaoPhepNam === 'false' && isTinhVaoPhepNam)) {
                             match = false;
@@ -332,6 +354,8 @@
                 $('#searchTenLoai').val('');
                 $('#searchHuongLuong').val('');
                 $('#searchTinhVaoPhepNam').val('');
+                $('#searchSoNgayNghiToiDa').val('');
+                $('#searchSoLanDangKyToiDa').val('');
                 table.search('').columns().search('').draw();
             });
         });
@@ -358,6 +382,10 @@
 
         .bg-gradient-info {
             background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+        }
+
+        .bg-gradient-warning {
+            background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);
         }
 
         .table th {
@@ -411,5 +439,4 @@
 
     <!-- Add Animate.css for animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-
 }

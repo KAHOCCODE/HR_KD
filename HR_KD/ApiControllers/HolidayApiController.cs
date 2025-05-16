@@ -66,7 +66,7 @@ namespace HR_KD.Controllers
                     .FirstOrDefaultAsync(h => h.NgayLe1 == holiday.NgayLe1);
                 if (existingHoliday != null)
                 {
-                    return BadRequest(new { success = false, message = "Ngày lễ đã tồn tại cho ngày này." });
+                    return BadRequest(new { success = false, message = $"Ngày lễ '{existingHoliday.TenNgayLe}' đã tồn tại cho ngày {holiday.NgayLe1}." });
                 }
 
                 // Set TrangThai based on day of week
@@ -77,7 +77,7 @@ namespace HR_KD.Controllers
                 _context.NgayLes.Add(holiday);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { success = true, message = "Thêm ngày lễ thành công." });
+                return Ok(new { success = true, message = "Thêm ngày lễ thành công.", holiday });
             }
             catch (Exception ex)
             {

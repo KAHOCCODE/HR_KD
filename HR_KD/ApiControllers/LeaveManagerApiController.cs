@@ -51,7 +51,10 @@ namespace HR_KD.ApiControllers
                         TrangThai = tt.TenTrangThai,
                         nn.FileDinhKem,
                         SoNgayConLai = sdp != null ? sdp.SoNgayConLai : 0,
-                        NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy")
+                        NgayCapNhat = nn.NgayLamDon.ToString("dd/MM/yyyy"),
+                        nn.LyDoTuChoi,
+                        nn.LyDoHuy,
+                        nn.GhiChu
                     }).ToListAsync();
 
                 // Nhóm dữ liệu theo MaDon
@@ -71,7 +74,10 @@ namespace HR_KD.ApiControllers
                         FileDinhKem = ProcessAttachmentFiles(g.First().FileDinhKem),
                         SoNgayConLai = g.First().SoNgayConLai,
                         NgayCapNhat = g.First().NgayCapNhat,
-                        TongSoNgay = g.Count()
+                        TongSoNgay = g.Count(),
+                        LyDoTuChoi = g.First().LyDoTuChoi,
+                        LyDoHuy = g.First().LyDoHuy,
+                        GhiChu = g.First().GhiChu
                     }).ToList();
 
                 // Xử lý thông tin file đính kèm và kết hợp TenLoai với LyDo
@@ -88,7 +94,10 @@ namespace HR_KD.ApiControllers
                     item.SoNgayConLai,
                     item.NgayCapNhat,
                     item.FileDinhKem,
-                    item.TongSoNgay
+                    item.TongSoNgay,
+                    item.LyDoTuChoi,
+                    item.LyDoHuy,
+                    item.GhiChu
                 }).ToList();
 
                 return Ok(new { success = true, data = processedData });
@@ -141,6 +150,20 @@ namespace HR_KD.ApiControllers
             if (ngayNghi == null)
             {
                 return NotFound(new { success = false, message = "Không tìm thấy bản ghi ngày nghỉ." });
+            }
+
+            // Kiểm tra số ngày phép còn lại nếu là duyệt đơn
+            if (request.TrangThai == "Đã duyệt")
+            {
+                bool coTheDuyet = await _phepNamService.CheckSoNgayConLaiAsync(request.MaNgayNghi);
+                if (!coTheDuyet)
+                {
+                    var soNgayConLai = await _phepNamService.GetSoNgayConLaiAsync(ngayNghi.MaNv, ngayNghi.NgayNghi1.Year);
+                    return BadRequest(new { 
+                        success = false, 
+                        message = $"Không thể duyệt đơn. Nhân viên không đủ số ngày phép còn lại. Số ngày còn lại: {soNgayConLai}" 
+                    });
+                }
             }
 
             // Lấy thông tin người duyệt (HoTen) từ bảng nhân viên
@@ -209,10 +232,15 @@ namespace HR_KD.ApiControllers
                     nn.NgayDuyet = DateTime.Now;
                     nn.NguoiDuyetId = currentMaNv;
 
-                    // Lưu lý do từ chối vào cột GhiChu nếu là từ chối
+                    // Lưu lý do từ chối vào cột LyDoTuChoi nếu là từ chối
                     if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
                     {
-                        nn.GhiChu = request.LyDo;
+                        nn.LyDoTuChoi = request.LyDo;
+                        nn.GhiChu = $"Từ chối bởi: {nguoiDuyet.HoTen}";
+                    }
+                    else if (newMaTrangThai == "NN2")
+                    {
+                        nn.GhiChu = $"Duyệt bởi: {nguoiDuyet.HoTen}";
                     }
 
                     // Cập nhật đơn nghỉ phép
@@ -426,6 +454,16 @@ namespace HR_KD.ApiControllers
                 return BadRequest(new { success = false, message = "Không tìm thấy thông tin người duyệt." });
             }
 
+            // Kiểm tra số ngày phép còn lại nếu là duyệt đơn
+            if (request.TrangThai == "Đã duyệt")
+            {
+                var (canApprove, message) = await _phepNamService.CheckBatchSoNgayConLaiAsync(request.MaNgayNghiList);
+                if (!canApprove)
+                {
+                    return BadRequest(new { success = false, message = message });
+                }
+            }
+
             // Chuyển đổi trangThai từ frontend sang mã trạng thái trong database
             string newMaTrangThai;
             switch (request.TrangThai)
@@ -489,7 +527,12 @@ namespace HR_KD.ApiControllers
                     // Lưu lý do từ chối nếu có
                     if (newMaTrangThai == "NN3" && !string.IsNullOrEmpty(request.LyDo))
                     {
-                        ngayNghi.GhiChu = request.LyDo;
+                        ngayNghi.LyDoTuChoi = request.LyDo;
+                        ngayNghi.GhiChu = $"Từ chối bởi: {nguoiDuyet.HoTen}";
+                    }
+                    else if (newMaTrangThai == "NN2")
+                    {
+                        ngayNghi.GhiChu = $"Duyệt bởi: {nguoiDuyet.HoTen}";
                     }
 
                     // Cập nhật đơn nghỉ phép

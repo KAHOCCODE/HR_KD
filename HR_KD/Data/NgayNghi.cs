@@ -26,6 +26,10 @@ public partial class NgayNghi
 
 
     public string? GhiChu { get; set; }
+    public string? LyDoTuChoi { get; set; }
+
+    public string? LyDoHuy { get; set; }
+
 
     public string? FileDinhKem { get; set; }
     public string MaDon { get; set; } = null!; // Thêm trường MaDon để nhóm đơn đăng ký

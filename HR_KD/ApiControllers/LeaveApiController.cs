@@ -224,7 +224,9 @@ namespace HR_KD.ApiControllers
                                 NgayDuyet = nl.n.NgayDuyet,
                                 GhiChu = nl.n.GhiChu,
                                 NguoiDuyetId = nl.n.NguoiDuyetId,
-                                NguoiDuyetHoTen = nv != null ? nv.HoTen : "Chưa có"
+                                NguoiDuyetHoTen = nv != null ? nv.HoTen : "Chưa có",
+                                LyDoTuChoi = nl.n.LyDoTuChoi,
+                                LyDoHuy = nl.n.LyDoHuy
                             })
                 .ToListAsync();
 
@@ -241,6 +243,8 @@ namespace HR_KD.ApiControllers
                     NgayDuyet = g.First().NgayDuyet,
                     GhiChu = g.First().GhiChu,
                     NguoiDuyetHoTen = g.First().NguoiDuyetHoTen,
+                    LyDoTuChoi = g.First().LyDoTuChoi,
+                    LyDoHuy = g.First().LyDoHuy,
                     NgayNghis = g.Select(x => new
                     {
                         id = x.id,
@@ -330,7 +334,10 @@ namespace HR_KD.ApiControllers
                 var registeredDates = await _context.NgayNghis
                     .Where(n => n.MaNv == currentMaNv.Value &&
                           (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2"))
-                    .Select(n => n.NgayNghi1.ToString("yyyy-MM-dd"))
+                    .Select(n => new {
+                        date = n.NgayNghi1.ToString("yyyy-MM-dd"),
+                        status = n.MaTrangThai == "NN1" ? "pending" : "approved"
+                    })
                     .ToListAsync();
 
                 return Ok(new { success = true, dates = registeredDates });
@@ -348,7 +355,7 @@ namespace HR_KD.ApiControllers
             try
             {
                 var holidays = await _context.NgayLes
-                    .Where(h => h.TrangThai == "Đã duyệt")
+                    .Where(h => h.TrangThai == "NL4")
                     .Select(h => new
                     {
                         ngayLe = h.NgayLe1.ToString("yyyy-MM-dd"),
@@ -379,7 +386,7 @@ namespace HR_KD.ApiControllers
 
         [HttpPatch]
         [Route("CancelLeave/{maNgayNghi}")]
-        public async Task<IActionResult> CancelLeave(int maNgayNghi)
+        public async Task<IActionResult> CancelLeave(int maNgayNghi, [FromBody] CancelLeaveRequest request)
         {
             // Lấy mã NV từ claims
             var currentMaNv = GetMaNvFromClaims();
@@ -408,7 +415,8 @@ namespace HR_KD.ApiControllers
                 // Cập nhật trạng thái thành "Đã hủy" (NN4)
                 leaveRequest.MaTrangThai = "NN4";
                 leaveRequest.NgayDuyet = DateTime.Now;
-                leaveRequest.GhiChu = "Đơn đã được hủy bởi người đăng ký";
+                leaveRequest.LyDoHuy = request.LyDoHuy;
+                leaveRequest.GhiChu = "Đơn được hủy bởi người đăng ký";
 
                 await _context.SaveChangesAsync();
 
@@ -611,6 +619,11 @@ namespace HR_KD.ApiControllers
             public int? MaLoaiNgayNghi { get; set; }
             public string LyDo { get; set; }
             // Đã remove property MaNv
+        }
+
+        public class CancelLeaveRequest
+        {
+            public string LyDoHuy { get; set; }
         }
 
     }

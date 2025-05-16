@@ -227,10 +227,22 @@
         text-decoration: none !important;
     }
 
-    .holiday {
+    .registered-day.pending {
         background-color: #fff3cd !important;
         color: #856404 !important;
         border: 2px solid #ffeeba !important;
+    }
+
+    .registered-day.approved {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        border: 2px solid #c3e6cb !important;
+    }
+
+    .holiday {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+        border: 2px solid #f5c6cb !important;
         text-decoration: none !important;
     }
 
@@ -1160,6 +1172,8 @@
                 font-size: 0.9rem;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
+                text-align: center;
+                vertical-align: middle;
             }
 
             .leave-history-modern .history-table td {
@@ -1169,6 +1183,79 @@
                 border: none;
                 font-size: 0.95rem;
                 color: #202124;
+                text-align: center;
+            }
+
+            .leave-history-modern .history-table .tooltip-cell {
+                display: inline-block;
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                text-align: center;
+            }
+
+            .leave-history-modern .history-table .dropdown {
+                display: inline-block;
+                text-align: center;
+            }
+
+            .leave-history-modern .history-table .dropdown-toggle {
+                text-align: center;
+                width: auto;
+                min-width: 100px;
+            }
+
+            .leave-history-modern .history-table .file-link {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0.5rem 1rem;
+                background: #e8f0fe;
+                border-radius: 6px;
+                transition: all 0.3s ease;
+                text-align: center;
+                width: fit-content;
+                margin: 0 auto;
+            }
+
+            .leave-history-modern .history-table .btn-cancel {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                margin: 0 auto;
+            }
+
+            .leave-history-modern .history-table .dropdown-menu {
+                text-align: left;
+                min-width: 200px;
+            }
+
+            .leave-history-modern .history-table .dropdown-item {
+                text-align: left;
+                padding: 0.5rem 1rem;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .leave-history-modern .history-table .status-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                font-weight: 500;
+                font-size: 0.85rem;
+                white-space: nowrap;
+                width: fit-content;
+                margin: 0 auto;
+            }
+
+            .leave-history-modern .history-table td:has(.status-badge) {
+                text-align: center;
             }
 
             .leave-history-modern .history-table tr {
@@ -1190,6 +1277,8 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            white-space: nowrap;
+            width: fit-content;
         }
 
             .leave-history-modern .status-badge i {
@@ -1490,7 +1579,6 @@
                         <th>Trạng thái</th>
                         <th>File đính kèm</th>
                         <th>Ngày duyệt</th>
-                        <th>Ghi chú</th>
                         <th>Người duyệt</th>
                     </tr>
                 </thead>
@@ -1516,7 +1604,7 @@
                         <th>Trạng thái</th>
                         <th>File đính kèm</th>
                         <th>Ngày duyệt</th>
-                        <th>Ghi chú</th>
+                        <th>Lý do từ chối</th>
                         <th>Người duyệt</th>
                     </tr>
                 </thead>
@@ -1542,6 +1630,7 @@
                         <th>Trạng thái</th>
                         <th>File đính kèm</th>
                         <th>Ngày hủy</th>
+                        <th>Lý do hủy đơn</th>
                     </tr>
                 </thead>
                 <tbody id="canceledLeaveBody"></tbody>
@@ -1584,10 +1673,10 @@
 
             const result = await response.json();
             if (result.success) {
-                return result.dates.map(dateStr => {
-                    const date = new Date(dateStr);
-                    return date.setHours(0, 0, 0, 0);
-                });
+                return result.dates.map(dateInfo => ({
+                    date: new Date(dateInfo.date).setHours(0, 0, 0, 0),
+                    status: dateInfo.status
+                }));
             } else {
                 console.error("API error:", result.message);
                 return [];
@@ -1614,7 +1703,7 @@
             const result = await response.json();
             if (result.success) {
                 return result.holidays
-                    .filter(holiday => holiday.trangThai === "Đã duyệt")
+                    .filter(holiday => holiday.trangThai === "NL4") // Sửa lại điều kiện lọc để khớp với backend
                     .map(holiday => ({
                         date: new Date(holiday.ngayLe).setHours(0, 0, 0, 0),
                         name: holiday.tenNgayLe,
@@ -1895,7 +1984,7 @@
                 function (date) {
                     const isWeekend = (date.getDay() === 0 || date.getDay() === 6);
                     const dateTime = date.setHours(0, 0, 0, 0);
-                    const isAlreadyRegistered = registeredDates.includes(dateTime);
+                    const isAlreadyRegistered = registeredDates.some(d => d.date === dateTime);
                     const isHoliday = expandedHolidays.some(h => h.date === dateTime);
                     return isWeekend || isAlreadyRegistered || isHoliday;
                 }
@@ -1917,9 +2006,11 @@
                     dayElem.classList.add("past-day");
                 }
 
-                if (registeredDates.includes(dateTime)) {
-                    dayElem.setAttribute("data-tooltip", "Bạn đã đăng ký nghỉ phép vào ngày này");
+                const registeredDate = registeredDates.find(d => d.date === dateTime);
+                if (registeredDate) {
                     dayElem.classList.add("registered-day");
+                    dayElem.classList.add(registeredDate.status);
+                    dayElem.setAttribute("data-tooltip", `Đã đăng ký nghỉ phép (${registeredDate.status === 'pending' ? 'Chờ duyệt' : 'Đã duyệt'})`);
                 }
 
                 const holiday = expandedHolidays.find(h => h.date === dateTime);
@@ -1932,7 +2023,7 @@
                 const validDates = selectedDates.filter(date => {
                     const dateTime = date.setHours(0, 0, 0, 0);
                     const isHoliday = expandedHolidays.some(h => h.date === dateTime);
-                    return date >= today && !registeredDates.includes(dateTime) && !isHoliday;
+                    return date >= today && !registeredDates.some(d => d.date === dateTime) && !isHoliday;
                 });
 
                 if (validDates.length !== selectedDates.length) {
@@ -2066,7 +2157,7 @@
                         function (date) {
                             const isWeekend = (date.getDay() === 0 || date.getDay() === 6);
                             const dateTime = date.setHours(0, 0, 0, 0);
-                            const isAlreadyRegistered = registeredDates.includes(dateTime);
+                            const isAlreadyRegistered = registeredDates.some(d => d.date === dateTime);
                             const isHoliday = expandedHolidays.some(h => h.date === dateTime);
                             return isWeekend || isAlreadyRegistered || isHoliday;
                         }
@@ -2087,9 +2178,11 @@
                             dayElem.classList.add("past-day");
                         }
 
-                        if (registeredDates.includes(dateTime)) {
-                            dayElem.setAttribute("data-tooltip", "Bạn đã đăng ký nghỉ phép vào ngày này");
+                        const registeredDate = registeredDates.find(d => d.date === dateTime);
+                        if (registeredDate) {
                             dayElem.classList.add("registered-day");
+                            dayElem.classList.add(registeredDate.status);
+                            dayElem.setAttribute("data-tooltip", `Đã đăng ký nghỉ phép (${registeredDate.status === 'pending' ? 'Chờ duyệt' : 'Đã duyệt'})`);
                         }
 
                         const holiday = expandedHolidays.find(h => h.date === dateTime);
@@ -2102,7 +2195,7 @@
                         const validDates = selectedDates.filter(date => {
                             const dateTime = date.setHours(0, 0, 0, 0);
                             const isHoliday = expandedHolidays.some(h => h.date === dateTime);
-                            return date >= today && !registeredDates.includes(dateTime) && !isHoliday;
+                            return date >= today && !registeredDates.some(d => d.date === dateTime) && !isHoliday;
                         });
 
                         if (validDates.length !== selectedDates.length) {
@@ -2638,6 +2731,8 @@
                                     <td>${cancelButton}</td>
                                 `;
                     } else if (tabId === 'canceled') {
+                        const lyDoHuy = item.lyDoHuy || item.LyDoHuy || "Không có lý do hủy";
+                        const lyDoHuyTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDoHuy}">${truncateText(lyDoHuy, 23)}</div>`;
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
                                     <td>${datesDropdownHtml}</td>
@@ -2645,8 +2740,9 @@
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${ngayHuyFormatted}</td>
+                                    <td>${lyDoHuyTooltip}</td>
                                 `;
-                    } else {
+                    } else if (tabId === 'approved') {
                         row.innerHTML = `
                                     <td>${tenLoai}</td>
                                     <td>${datesDropdownHtml}</td>
@@ -2654,7 +2750,19 @@
                                     <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
                                     <td>${fileDisplayHtml}</td>
                                     <td>${ngayDuyetFormatted}</td>
-                                    <td>${ghiChuTooltip}</td>
+                                    <td>${nguoiDuyetHoTen}</td>
+                                `;
+                    } else {
+                        const lyDoTuChoi = item.lyDoTuChoi || item.LyDoTuChoi || "Không có lý do từ chối";
+                        const lyDoTuChoiTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDoTuChoi}">${truncateText(lyDoTuChoi, 23)}</div>`;
+                        row.innerHTML = `
+                                    <td>${tenLoai}</td>
+                                    <td>${datesDropdownHtml}</td>
+                                    <td>${lyDoTooltip}</td>
+                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                                    <td>${fileDisplayHtml}</td>
+                                    <td>${ngayDuyetFormatted}</td>
+                                    <td>${lyDoTuChoiTooltip}</td>
                                     <td>${nguoiDuyetHoTen}</td>
                                 `;
                     }
@@ -2830,47 +2938,68 @@
 
     async function cancelLeaveRequest(leaveId) {
         try {
-            const result = await Swal.fire({
-                title: 'Xác nhận hủy đơn',
-                text: "Bạn có chắc chắn muốn hủy đơn nghỉ phép này?",
-                icon: 'warning',
+            const { value: lyDoHuy } = await Swal.fire({
+                title: 'Nhập lý do hủy đơn',
+                input: 'textarea',
+                inputLabel: 'Lý do hủy đơn',
+                inputPlaceholder: 'Nhập lý do hủy đơn của bạn...',
+                inputAttributes: {
+                    'aria-label': 'Nhập lý do hủy đơn'
+                },
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Đồng ý hủy',
-                cancelButtonText: 'Không'
+                confirmButtonText: 'Tiếp tục',
+                cancelButtonText: 'Hủy',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Vui lòng nhập lý do hủy đơn!';
+                    }
+                }
             });
 
-            if (result.isConfirmed) {
-                const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
-                        'Content-Type': 'application/json'
-                    }
+            if (lyDoHuy) {
+                const result = await Swal.fire({
+                    title: 'Xác nhận hủy đơn',
+                    text: "Bạn có chắc chắn muốn hủy đơn nghỉ phép này?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Đồng ý hủy',
+                    cancelButtonText: 'Không'
                 });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`Lỗi API: ${response.status} - ${errorText}`);
-                    throw new Error(`Lỗi: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Đã hủy!',
-                        text: 'Đơn nghỉ phép đã được hủy thành công.',
-                        showConfirmButton: false,
-                        timer: 1500
+                if (result.isConfirmed) {
+                    const response = await fetch(`/api/Leave/CancelLeave/${leaveId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ lyDoHuy })
                     });
 
-                    // Refresh lại dữ liệu
-                    await fetchLeaveHistory();
-                } else {
-                    throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`Lỗi API: ${response.status} - ${errorText}`);
+                        throw new Error(`Lỗi: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Đã hủy!',
+                            text: 'Đơn nghỉ phép đã được hủy thành công.',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+
+                        // Refresh lại dữ liệu
+                        await fetchLeaveHistory();
+                    } else {
+                        throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
+                    }
                 }
             }
         } catch (error) {

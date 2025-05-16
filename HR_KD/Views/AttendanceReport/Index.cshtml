@@ -1,0 +1,298 @@
+﻿```cshtml
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Chấm Công</title>
+    <!-- External Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+</head>
+<body>
+    @if (string.IsNullOrEmpty(maNv))
+    {
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <script>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
+                    confirmButtonText: 'OK'
+                }).then(() => window.location.href = '/Account/Login');
+            </script>
+    }
+    else
+    {
+            <!-- Main Container -->
+            <div class="min-h-screen bg-gray-50 p-4 md:p-8">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-calendar-check mr-2 text-indigo-600"></i> Báo Cáo Chấm Công
+                        </h1>
+                        <p class="text-sm md:text-base text-gray-500 mt-1">Theo dõi chấm công, nghỉ phép và tăng ca hàng tháng với lịch trực quan.</p>
+                    </header>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-check-circle text-blue-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Ngày Chấm Công</h3>
+                                <p id="attendance-days" class="text-lg font-semibold text-blue-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-umbrella-beach text-gray-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Ngày Nghỉ Phép</h3>
+                                <p id="leave-days" class="text-lg font-semibold text-gray-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Ngày Thiếu</h3>
+                                <p id="missing-days" class="text-lg font-semibold text-red-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-briefcase text-green-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Ngày Làm</h3>
+                                <p id="total-working-days" class="text-lg font-semibold text-green-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-clock text-indigo-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Ngày Tăng Ca</h3>
+                                <p id="overtime-days" class="text-lg font-semibold text-indigo-600">Đang tải...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="bg-white shadow-sm rounded-lg p-4 mb-8">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Chú Thích Màu</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #28a745;"></span>
+                                <span class="text-sm text-gray-600">Đã duyệt (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #dc3545;"></span>
+                                <span class="text-sm text-gray-600">Từ chối (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #ffc107;"></span>
+                                <span class="text-sm text-gray-600">Chờ duyệt (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #17a2b8;"></span>
+                                <span class="text-sm text-gray-600">Khác (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #6c757d;"></span>
+                                <span class="text-sm text-gray-600">Nghỉ phép</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #007bff;"></span>
+                                <span class="text-sm text-gray-600">Tăng ca</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Month Picker and Calendar -->
+                    <div class="bg-white shadow-sm rounded-lg p-4 md:p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                            <h2 class="text-lg font-semibold text-gray-700 mb-2 sm:mb-0">Chọn Tháng</h2>
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="monthPicker" class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Chọn tháng">
+                                <i class="fas fa-calendar-alt absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                        </div>
+                        <div id="calendar" class="bg-gray-50 p-4 rounded-md"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- External Scripts -->
+            <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+            <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+            <!-- JavaScript Logic -->
+            <script>
+                (function () {
+                    console.log('Attendance Report script loaded');
+
+                    const maNv = '@maNv';
+                    if (!maNv) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: 'Mã nhân viên không hợp lệ.',
+                            confirmButtonText: 'OK'
+                        }).then(() => window.location.href = '/Account/Login');
+                        return;
+                    }
+
+                    document.addEventListener('DOMContentLoaded', function () {
+                        console.log('DOM fully loaded');
+
+                        const calendarEl = document.getElementById('calendar');
+                        if (!calendarEl) {
+                            console.error('Calendar element not found');
+                            return;
+                        }
+
+                        const calendar = new FullCalendar.Calendar(calendarEl, {
+                            initialView: 'dayGridMonth',
+                            events: [],
+                            eventClick: function (info) {
+                                const details = info.event.extendedProps.details;
+                                Swal.fire({
+                                    title: `Chi tiết: ${info.event.title}`,
+                                    html: `
+                                        <div class="text-left space-y-2">
+                                            <p><strong>Ngày:</strong> ${info.event.start.toLocaleDateString('vi-VN')}</p>
+                                            <p><strong>Giờ vào:</strong> ${details.gioVao || 'Không có'}</p>
+                                            <p><strong>Giờ ra:</strong> ${details.gioRa || 'Không có'}</p>
+                                            <p><strong>Tổng giờ:</strong> ${details.tongGio != null ? details.tongGio.toFixed(2) : '0'}h</p>
+                                            <p><strong>Ghi chú:</strong> ${details.ghiChu || 'Không có'}</p>
+                                        </div>
+                                    `,
+                                    icon: 'info',
+                                    confirmButtonText: 'Đóng',
+                                    customClass: {
+                                        confirmButton: 'bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700'
+                                    }
+                                });
+                            },
+                            height: 'auto',
+                            locale: 'vi',
+                            firstDay: 1,
+                            dayMaxEventRows: 3,
+                            eventOrder: 'start',
+                            views: {
+                                dayGridMonth: {
+                                    dayMaxEventRows: 3
+                                }
+                            }
+                        });
+                        calendar.render();
+                        console.log('FullCalendar initialized');
+
+                        const monthPicker = document.getElementById('monthPicker');
+                        if (!monthPicker) {
+                            console.error('Month picker element not found');
+                            return;
+                        }
+
+                        flatpickr(monthPicker, {
+                            dateFormat: "Y-m",
+                            defaultDate: new Date(),
+                            onChange: function (selectedDates) {
+                                if (selectedDates.length > 0) {
+                                    const monthYear = selectedDates[0].toISOString().slice(0, 7);
+                                    loadReport(monthYear);
+                                    calendar.gotoDate(selectedDates[0]);
+                                }
+                            }
+                        });
+                        console.log('Flatpickr initialized');
+
+                        function loadReport(monthYear) {
+                            console.log('Loading report for:', monthYear);
+                            document.getElementById('attendance-days').innerText = 'Đang tải...';
+                            document.getElementById('leave-days').innerText = 'Đang tải...';
+                            document.getElementById('missing-days').innerText = 'Đang tải...';
+                            document.getElementById('total-working-days').innerText = 'Đang tải...';
+                            document.getElementById('overtime-days').innerText = 'Đang tải...';
+
+                            axios.get('/api/AttendanceReportApi/GetMonthlyReport', {
+                                params: { monthYear: monthYear }
+                            })
+                                .then(function (response) {
+                                    console.log('API response:', response.data);
+                                    if (response.data.success) {
+                                        document.getElementById('attendance-days').innerText = response.data.summary.attendanceDays;
+                                        document.getElementById('leave-days').innerText = response.data.summary.leaveDays;
+                                        document.getElementById('missing-days').innerText = response.data.summary.missingDays;
+                                        document.getElementById('total-working-days').innerText = response.data.summary.totalWorkingDays;
+                                        document.getElementById('overtime-days').innerText = response.data.summary.overtimeDays;
+
+                                        const events = response.data.calendar.map(event => ({
+                                            title: event.status === 'Nghỉ phép' ? 'Nghỉ phép' : event.status,
+                                            start: event.date,
+                                            backgroundColor: event.color,
+                                            borderColor: event.color,
+                                            extendedProps: {
+                                                status: event.status,
+                                                details: {
+                                                    gioVao: event.details.gioVao,
+                                                    gioRa: event.details.gioRa,
+                                                    tongGio: event.details.tongGio,
+                                                    ghiChu: event.details.ghiChu
+                                                }
+                                            }
+                                        }));
+                                        calendar.getEventSources().forEach(source => source.remove());
+                                        calendar.addEventSource(events);
+                                        console.log('Calendar events updated');
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Lỗi!',
+                                            text: response.data.message,
+                                            confirmButtonText: 'OK'
+                                        });
+                                    }
+                                })
+                                .catch(function (error) {
+                                    console.error('API error:', error);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Lỗi!',
+                                        text: `Không thể tải báo cáo: ${error.response?.data?.message || error.message}`,
+                                        confirmButtonText: 'OK'
+                                    });
+                                });
+                        }
+
+                        loadReport(new Date().toISOString().slice(0, 7));
+                    });
+                })();
+            </script>
+
+            <style>
+                .fc-event {
+                    cursor: pointer;
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                }
+                .fc-daygrid-event {
+                    padding: 2px 4px;
+                }
+                .fc .fc-daygrid-day-number {
+                    color: #374151;
+                }
+                .fc .fc-daygrid-day-top {
+                    justify-content: center;
+                }
+            </style>
+    }
+</body>
+</html>
+```

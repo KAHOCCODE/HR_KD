@@ -1,0 +1,627 @@
+﻿@using DocumentFormat.OpenXml.Office2010.PowerPoint
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    ViewData["Title"] = "Phân tích lương";
+}
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Hiển thị toast
+            function showToast(message, type = 'danger') {
+                const toast = $(`
+                    <div class="toast bg-${type} text-white" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 1050;">
+                        <div class="toast-header">
+                            <strong class="mr-auto"><i class="fa fa-${type === 'danger' ? 'exclamation-circle' : 'check-circle'}"></i> Thông báo</strong>
+                            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast">&times;</button>
+                        </div>
+                        <div class="toast-body">${message}</div>
+                    </div>
+                `);
+                $('#toastContainer').append(toast);
+                toast.toast({ delay: 5000 }).toast('show');
+            }
+
+            // Hiển thị/hide loading
+            function showLoading() { $('#loading').show(); }
+            function hideLoading() { $('#loading').hide(); }
+
+            // Retry logic cho API
+            async function fetchWithRetry(url, options, retries = 3) {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        return await $.ajax(url, options);
+                    } catch (error) {
+                        if (i === retries - 1) throw error;
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+
+            // Lấy danh sách phòng ban
+            fetchWithRetry('/api/PhongBan/GetPhongBans', { method: 'GET' })
+                .then(data => {
+                    $('#phongBan').append('<option value="">Tất cả</option>');
+                    data.forEach(pb => {
+                        $('#phongBan').append(`<option value="${pb.maPhongBan}">${pb.tenPhongBan}</option>`);
+                    });
+                })
+                .catch(() => showToast('Không thể tải danh sách phòng ban.'));
+
+            // Lấy danh sách chức vụ
+            fetchWithRetry('/api/ChucVu', { method: 'GET' })
+                .then(data => {
+                    $('#chucVu').append('<option value="">Tất cả</option>');
+                    data.forEach(cv => {
+                        $('#chucVu').append(`<option value="${cv.maChucVu}">${cv.tenChucVu}</option>`);
+                    });
+                })
+                .catch(() => showToast('Không thể tải danh sách chức vụ.'));
+
+            // Tạo danh sách năm
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= currentYear - 5; year--) {
+                $('#year').append(`<option value="${year}">${year}</option>`);
+            }
+
+            // Khởi tạo DataTable
+            const table = $('#employeeTable').DataTable({
+                pageLength: 10,
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json'
+                }
+            });
+
+            // Xử lý lọc báo cáo
+            $('#filterForm').submit(function (e) {
+                e.preventDefault();
+                loadAnalytics();
+            });
+
+            // Xuất Excel
+            $('#exportExcel').click(function () {
+                const wb = XLSX.utils.table_to_book(document.getElementById('employeeTable'), { sheet: "Payroll" });
+                XLSX.writeFile(wb, `Payroll_Analytics_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            });
+
+            // Hàm tải phân tích
+            async function loadAnalytics() {
+                showLoading();
+                const year = $('#year').val();
+                const month = $('#month').val();
+                const phongBan = $('#phongBan').val();
+                const chucVu = $('#chucVu').val();
+                const compareMonths = $('#compareMonths').val() || [];
+
+                let apiUrl = '/api/Payroll/GetPayrollStatus';
+                @if (User.IsInRole("DIRECTOR")) {
+                    @: apiUrl = `/api/PayrollDirector/GetPayrolls?year=${year}&month=${month}`;
+                } else if (User.IsInRole("PAYROLL_AUDITOR")) {
+                    @: apiUrl = `/api/PayrollAccountant/GetPayrolls?year=${year}&month=${month}`;
+                } else if (User.IsInRole("LINE_MANAGER")) {
+                    @: apiUrl = `/api/PayrollManager/GetDepartmentPayrolls?year=${year}&month=${month}`;
+                }
+
+                try {
+                    const response = await fetchWithRetry(apiUrl, { method: 'GET' });
+                    renderDepartmentChart(response);
+                    renderMonthComparisonChart(response);
+                    renderPositionChart(response);
+                    renderEmployeeTable(response, phongBan, chucVu);
+
+                    const monthResponse = await fetchWithRetry(`/api/Payroll/GetPayrollStatus?year=${year}&months=${compareMonths.join(',')}`, { method: 'GET' });
+                    renderMonthComparisonChart(monthResponse);
+                } catch (error) {
+                    showToast('Không thể tải dữ liệu báo cáo. Vui lòng thử lại.');
+                    console.error(error);
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            // Biểu đồ tổng lương theo phòng ban (Pie)
+            function renderDepartmentChart(data) {
+                const ctx = $('#departmentChart')[0].getContext('2d');
+                const departments = {};
+                if (@User.IsInRole("LINE_MANAGER")) {
+                    data.forEach(item => {
+                        departments[item.tenPhongBan] = (departments[item.tenPhongBan] || 0) + item.thucNhan;
+                    });
+                } else {
+                    data.forEach(group => {
+                        group.nhanViens.forEach(nv => {
+                            if (nv.coBangLuong) {
+                                departments[group.tenPhongBan] = (departments[group.tenPhongBan] || 0) + (nv.thucNhan || 0);
+                            }
+                        });
+                    });
+                }
+
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(departments),
+                        datasets: [{
+                            label: 'Tổng lương',
+                            data: Object.values(departments),
+                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true
+                        },
+                        plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'Tổng lương theo phòng ban' },
+                            datalabels: {
+                                formatter: (value, ctx) => {
+                                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = (value * 100 / sum).toFixed(2) + "%";
+                                    return percentage;
+                                },
+                                color: '#fff'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return `Tổng lương: ${context.parsed.toLocaleString('vi-VN')} VNĐ`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Biểu đồ so sánh lương theo tháng (Line)
+            function renderMonthComparisonChart(data) {
+                const ctx = $('#monthChart')[0].getContext('2d');
+                const months = {};
+                if (@User.IsInRole("LINE_MANAGER")) {
+                    data.forEach(item => {
+                        const monthKey = `${item.thangNam.month}/${item.thangNam.year}`;
+                        months[monthKey] = (months[monthKey] || 0) + item.thucNhan;
+                    });
+                } else {
+                    data.forEach(group => {
+                        group.nhanViens.forEach(nv => {
+                            if (nv.coBangLuong && nv.thangNam) {
+                                const monthKey = `${nv.thangNam.month}/${nv.thangNam.year}`;
+                                months[monthKey] = (months[monthKey] || 0) + (nv.thucNhan || 0);
+                            }
+                        });
+                    });
+                }
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(months),
+                        datasets: [{
+                            label: 'Tổng lương',
+                            data: Object.values(months),
+                            borderColor: '#36A2EB',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        animation: {
+                            duration: 2000,
+                            easing: 'easeInOutQuart'
+                        },
+                        plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'So sánh lương theo tháng' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return `Tổng lương: ${context.parsed.y.toLocaleString('vi-VN')} VNĐ`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Biểu đồ tổng lương theo chức vụ (Bar)
+            function renderPositionChart(data) {
+                const ctx = $('#positionChart')[0].getContext('2d');
+                const positions = {};
+                if (@User.IsInRole("LINE_MANAGER")) {
+                    data.forEach(item => {
+                        const chucVu = item.chucVu || 'Không xác định';
+                        positions[chucVu] = (positions[chucVu] || 0) + item.thucNhan;
+                    });
+                } else {
+                    data.forEach(group => {
+                        group.nhanViens.forEach(nv => {
+                            if (nv.coBangLuong) {
+                                const chucVu = nv.chucVu || 'Không xác định';
+                                positions[chucVu] = (positions[chucVu] || 0) + (nv.thucNhan || 0);
+                            }
+                        });
+                    });
+                }
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(positions),
+                        datasets: [{
+                            label: 'Tổng lương',
+                            data: Object.values(positions),
+                            backgroundColor: '#4BC0C0'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        animation: {
+                            duration: 1500,
+                            easing: 'easeOutBounce'
+                        },
+                        plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'Tổng lương theo chức vụ' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return `Tổng lương: ${context.parsed.y.toLocaleString('vi-VN')} VNĐ`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Bảng phân tích theo nhân viên
+            function renderEmployeeTable(data, phongBanFilter, chucVuFilter) {
+                table.clear();
+                if (@User.IsInRole("LINE_MANAGER")) {
+                    data.forEach(item => {
+                        if ((!phongBanFilter || item.tenPhongBan === $('#phongBan option:selected').text()) &&
+                            (!chucVuFilter || item.chucVu === $('#chucVu option:selected').text())) {
+                            table.row.add([
+                                item.maLuong,
+                                item.maNv,
+                                item.hoTen,
+                                item.tenPhongBan,
+                                item.chucVu || 'N/A',
+                                `${item.thucNhan.toLocaleString('vi-VN')} VNĐ`,
+                                `<span class="badge badge-${item.trangThai === 'BL5' ? 'success' : item.trangThai === 'BL1R' ? 'danger' : 'warning'}">${item.tenTrangThai}</span>`,
+                                `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${item.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
+                            ]);
+                        }
+                    });
+                } else {
+                    data.forEach(group => {
+                        group.nhanViens.forEach(nv => {
+                            if (nv.coBangLuong &&
+                                (!phongBanFilter || group.tenPhongBan === $('#phongBan option:selected').text()) &&
+                                (!chucVuFilter || nv.chucVu === $('#chucVu option:selected').text())) {
+                                table.row.add([
+                                    nv.maLuong,
+                                    nv.maNv,
+                                    nv.hoTen,
+                                    group.tenPhongBan,
+                                    nv.chucVu || 'N/A',
+                                    `${nv.thucNhan.toLocaleString('vi-VN')} VNĐ`,
+                                    `<span class="badge badge-${nv.trangThai === 'BL5' ? 'success' : nv.trangThai === 'BL1R' ? 'danger' : 'warning'}">${nv.tenTrangThai}</span>`,
+                                    `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${nv.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
+                                ]);
+                            }
+                        });
+                    });
+                }
+                table.draw();
+                $('#rowCount').html(`<i class="fa fa-list"></i> Tổng số bảng lương: ${table.rows().count()}`);
+            }
+
+            // Xử lý xem chi tiết bảng lương
+            $(document).on('click', '.view-detail', async function () {
+                const maLuong = $(this).data('ma-luong');
+                showLoading();
+                try {
+                    const data = await fetchWithRetry(`/api/Payroll/GetPayrollDetail/${maLuong}`, { method: 'GET' });
+                    $('#detailModal .modal-body').html(`
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5><i class="fa fa-user"></i> Thông tin nhân viên</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Mã NV:</strong> ${data.maNv}</p>
+                                <p><strong>Họ tên:</strong> ${data.hoTen}</p>
+                                <p><strong>Giới tính:</strong> ${data.gioiTinh}</p>
+                                <p><strong>Phòng ban:</strong> ${data.phongBan}</p>
+                                <p><strong>Chức vụ:</strong> ${data.chucVu}</p>
+                                <p><strong>Loại hợp đồng:</strong> ${data.loaiHopDong}</p>
+                                <p><strong>Tháng năm:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN')}</p>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header bg-success text-white">
+                                <h5><i class="fa fa-money"></i> Thu nhập</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Lương cơ bản:</strong> ${data.thuNhap.luongCoBan.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>Phụ cấp cố định:</strong> ${data.thuNhap.phuCapCoDinh.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>Thưởng cố định:</strong> ${data.thuNhap.thuongCoDinh.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>Phụ cấp thêm:</strong> ${data.thuNhap.phuCapThem.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>Lương thêm:</strong> ${data.thuNhap.luongThem.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>Lương tăng ca:</strong> ${data.thuNhap.luongTangCa.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>Tổng lương:</strong> ${data.thuNhap.tongLuong.toLocaleString('vi-VN')} VNĐ</p>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header bg-warning text-white">
+                                <h5><i class="fa fa-minus-circle"></i> Khấu trừ</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>BHXH:</strong> ${data.khauTru.bhxh.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>BHYT:</strong> ${data.khauTru.bhyt.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>BHTN:</strong> ${data.khauTru.bhtn.toLocaleString('vi-VN')} VNĐ</p>
+                                <p><strong>Thuế TNCN:</strong> ${data.khauTru.thueTNCN.toLocaleString('vi-VN')} VNĐ</p>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header bg-info text-white">
+                                <h5><i class="fa fa-hand-holding-usd"></i> Thực nhận</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Thực nhận:</strong> ${data.thucNhan.toLocaleString('vi-VN')} VNĐ</p>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5><i class="fa fa-university"></i> Thông tin tài khoản</h5>
+                            </div>
+                            <div class="card-body">
+                                ${data.taiKhoanNganHang ? `
+                                    <p><strong>Ngân hàng:</strong> ${data.taiKhoanNganHang.tenNganHang}</p>
+                                    <p><strong>Chi nhánh:</strong> ${data.taiKhoanNganHang.chiNhanh}</p>
+                                    <p><strong>Số tài khoản:</strong> ${data.taiKhoanNganHang.soTaiKhoan}</p>
+                                ` : '<p>Chưa có thông tin tài khoản</p>'}
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header bg-dark text-white">
+                                <h5><i class="fa fa-sticky-note"></i> Ghi chú</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>${data.ghiChu || 'Không có'}</p>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header bg-primary text-white">
+                                <h5><i class="fa fa-info-circle"></i> Trạng thái</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Trạng thái:</strong> ${data.tenTrangThai}</p>
+                            </div>
+                        </div>
+                    `);
+                    $('#detailModal').modal('show');
+                } catch (error) {
+                    showToast('Không thể tải chi tiết bảng lương.');
+                    console.error(error);
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Tải phân tích mặc định
+            loadAnalytics();
+        });
+    </script>
+}
+
+<link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css" rel="stylesheet">
+
+<style>
+    .card {
+        transition: transform 0.2s;
+        border-radius: 10px;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .badge-success { background-color: #28a745; }
+    .badge-warning { background-color: #ffc107; }
+    .badge-danger { background-color: #dc3545; }
+    #loading {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+    }
+    Media
+    (max-width: 768px) {
+    .card {
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            height: 300px !important;
+        }
+    }
+</style>
+
+<div class="container mt-4">
+    <h2><i class="fa fa-chart-bar"></i> Phân tích lương</h2>
+
+    <!-- Toast container -->
+    <div id="toastContainer"></div>
+
+    <!-- Loading spinner -->
+    <div id="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Đang tải...</span>
+        </div>
+    </div>
+
+    <!-- Form lọc -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5><i class="fa fa-filter"></i> Lọc báo cáo</h5>
+        </div>
+        <div class="card-body">
+            <form id="filterForm">
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label for="year"><i class="fa fa-calendar"></i> Năm</label>
+                        <select id="year" class="form-control">
+                            <!-- Được điền động bằng JS -->
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label for="month"><i class="fa fa-calendar-alt"></i> Tháng</label>
+                        <select id="month" class="form-control">
+                            <option value="1">Tháng 1</option>
+                            <option value="2">Tháng 2</option>
+                            <option value="3">Tháng 3</option>
+                            <option value="4">Tháng 4</option>
+                            <option value="5">Tháng 5</option>
+                            <option value="6">Tháng 6</option>
+                            <option value="7">Tháng 7</option>
+                            <option value="8">Tháng 8</option>
+                            <option value="9">Tháng 9</option>
+                            <option value="10">Tháng 10</option>
+                            <option value="11">Tháng 11</option>
+                            <option value="12">Tháng 12</option>
+                        </select>
+                    </div>
+                    @if (User.IsInRole("DIRECTOR") || User.IsInRole("EMPLOYEE_MANAGER") || User.IsInRole("PAYROLL_AUDITOR"))
+                    {
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <label for="phongBan"><i class="fa fa-building"></i> Phòng ban</label>
+                            <select id="phongBan" class="form-control">
+                                <!-- Được điền động bằng JS -->
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <label for="chucVu"><i class="fa fa-user-tie"></i> Chức vụ</label>
+                            <select id="chucVu" class="form-control">
+                                <!-- Được điền động bằng JS -->
+                            </select>
+                        </div>
+                    }
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <label for="compareMonths"><i class="fa fa-calendar-check"></i> So sánh tháng</label>
+                        <select id="compareMonths" class="form-control" multiple>
+                            <option value="1">Tháng 1</option>
+                            <option value="2">Tháng 2</option>
+                            <option value="3">Tháng 3</option>
+                            <option value="4">Tháng 4</option>
+                            <option value="5">Tháng 5</option>
+                            <option value="6">Tháng 6</option>
+                            <option value="7">Tháng 7</option>
+                            <option value="8">Tháng 8</option>
+                            <option value="9">Tháng 9</option>
+                            <option value="10">Tháng 10</option>
+                            <option value="11">Tháng 11</option>
+                            <option value="12">Tháng 12</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3 align-self-end">
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-search"></i> Lọc</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Biểu đồ -->
+    <div class="row mb-4">
+        <div class="col-md-4 col-sm-12">
+            <div class="card chart-container">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fa fa-pie-chart"></i> Tổng lương theo phòng ban</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="departmentChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-12">
+            <div class="card chart-container">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fa fa-line-chart"></i> So sánh lương theo tháng</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-12">
+            <div class="card chart-container">
+                <div class="card-header bg-warning text-white">
+                    <h5><i class="fa fa-bar-chart"></i> Tổng lương theo chức vụ</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="positionChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng phân tích -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5><i class="fa fa-table"></i> Phân tích chi tiết</h5>
+        </div>
+        <div class="card-body">
+            <button id="exportExcel" class="btn btn-success mb-3"><i class="fa fa-file-excel-o"></i> Xuất Excel</button>
+            <table id="employeeTable" class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Mã bảng lương</th>
+                        <th>Mã NV</th>
+                        <th>Họ tên</th>
+                        <th>Phòng ban</th>
+                        <th>Chức vụ</th>
+                        <th>Thực nhận</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Được điền động bằng JS -->
+                </tbody>
+            </table>
+            <p id="rowCount"><i class="fa fa-list"></i> Tổng số bảng lương: 0</p>
+        </div>
+    </div>
+
+    <!-- Modal chi tiết -->
+    <div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fa fa-info-circle"></i> Chi tiết bảng lương</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Được điền động bằng JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fa fa-times"></i> Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

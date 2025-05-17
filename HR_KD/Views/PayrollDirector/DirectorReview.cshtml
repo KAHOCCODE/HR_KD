@@ -49,7 +49,6 @@
     </div>
 </div>
 
-<!-- Tích hợp partial view -->
 @await Html.PartialAsync("_PayrollDetailModal", new { ShowDownloadPdf = true })
 
 <div class="modal fade" id="returnReasonModal" tabindex="-1">
@@ -93,7 +92,7 @@
 
                     data.forEach(payroll => {
                         const departmentName = payroll.maPhongBanNavigation?.tenPhongBan || "Chưa xác định";
-                        console.log("Department Name:", departmentName); // Debug
+                        console.log("Department Name:", departmentName);
                         if (!departments[departmentName]) {
                             departments[departmentName] = {
                                 name: departmentName,
@@ -110,56 +109,56 @@
                         const department = departments[departmentName];
                         const safeDepartmentId = department.name ? department.name.replace(/\s+/g, '') : 'Unknown';
                         html += `<div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-                                            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                                <h3 class="text-lg font-semibold text-gray-700"><i class="fas fa-building mr-2"></i> ${department.name}</h3>
-                                            </div>
-                                            <div class="overflow-x-auto">
-                                                <table class="min-w-full leading-normal">
-                                                    <thead class="bg-gray-100">
-                                                        <tr>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                                <input type="checkbox" id="checkAll-${safeDepartmentId}" onclick="toggleCheckboxes(this, '${safeDepartmentId}')">
-                                                            </th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mã NV</th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ tên</th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thực nhận</th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hành động</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>`;
+                                                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                                        <h3 class="text-lg font-semibold text-gray-700"><i class="fas fa-building mr-2"></i> ${department.name}</h3>
+                                                    </div>
+                                                    <div class="overflow-x-auto">
+                                                        <table class="min-w-full leading-normal">
+                                                            <thead class="bg-gray-100">
+                                                                <tr>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                                        <input type="checkbox" id="checkAll-${safeDepartmentId}" onclick="toggleCheckboxes(this, '${safeDepartmentId}')">
+                                                                    </th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mã NV</th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ tên</th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thực nhận</th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hành động</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>`;
                         department.payrolls.forEach(payroll => {
                             const statusClass = getTailwindStatusClass(payroll.trangThai);
                             html += `<tr>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                                    <input type="checkbox" class="payroll-checkbox ${safeDepartmentId}" value="${payroll.maLuong}" ${payroll.trangThai !== 'BL3' && payroll.trangThai !== 'BL4' ? 'disabled' : ''}>
-                                                </td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.maNv}</td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.hoTen}</td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.thucNhan ? formatCurrency(payroll.thucNhan) : ''}</td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm"><span class="${statusClass}">${payroll.tenTrangThai}</span></td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                                    <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2" onclick="showPayrollDetail(${payroll.maLuong}, true)">
-                                                        <i class="fas fa-eye mr-2"></i> Chi tiết
-                                                    </button>
-                                                    ${payroll.trangThai === 'BL3' ? `
-                                                    <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 mr-2" onclick="approveByDirector([${payroll.maLuong}])">
-                                                        <i class="fas fa-check mr-2"></i> Duyệt
-                                                    </button>
-                                                    <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="openReturnModal([${payroll.maLuong}])">
-                                                        <i class="fas fa-undo mr-2"></i> Trả về
-                                                    </button>` : ''}
-                                                    ${payroll.trangThai === 'BL4' ? `
-                                                    <button class="inline-flex items-center px-3 py-2 bg-indigo-500 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 mr-2" onclick="sendToEmployee(${payroll.maLuong})">
-                                                        <i class="fas fa-paper-plane mr-2"></i> Gửi nhân viên
-                                                    </button>` : ''}
-                                                </td>
-                                            </tr>`;
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                            <input type="checkbox" class="payroll-checkbox ${safeDepartmentId}" value="${payroll.maLuong}" ${payroll.trangThai !== 'BL3' && payroll.trangThai !== 'BL4' ? 'disabled' : ''}>
+                                                        </td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.maNv}</td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.hoTen}</td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.thucNhan ? formatCurrency(payroll.thucNhan) : ''}</td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm"><span class="${statusClass}">${payroll.tenTrangThai}</span></td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                            <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2" onclick="showPayrollDetail(${payroll.maLuong}, true)">
+                                                                <i class="fas fa-eye mr-2"></i> Chi tiết
+                                                            </button>
+                                                            ${payroll.trangThai === 'BL3' ? `
+                                                            <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 mr-2" onclick="approveByDirector([${payroll.maLuong}])">
+                                                                <i class="fas fa-check mr-2"></i> Duyệt
+                                                            </button>
+                                                            <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="openReturnModal([${payroll.maLuong}])">
+                                                                <i class="fas fa-undo mr-2"></i> Trả về
+                                                            </button>` : ''}
+                                                            ${payroll.trangThai === 'BL4' ? `
+                                                            <button class="inline-flex items-center px-3 py-2 bg-indigo-500 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 mr-2" onclick="sendToEmployee(${payroll.maLuong})">
+                                                                <i class="fas fa-paper-plane mr-2"></i> Gửi nhân viên
+                                                            </button>` : ''}
+                                                        </td>
+                                                    </tr>`;
                         });
                         html += `</tbody>
-                                        </table>
-                                    </div>
-                                </div>`;
+                                                </table>
+                                            </div>
+                                        </div>`;
                     }
 
                     $('#finalApproveButton').prop('disabled', hasBL5);
@@ -183,9 +182,9 @@
                 $('#payrollsForDirectorContainer').html(html);
             }).fail(function (xhr) {
                 $('#payrollsForDirectorContainer').html(`<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                            <strong class="font-bold"><i class="fas fa-times-circle mr-2"></i> Lỗi!</strong>
-                            <span class="block sm:inline">Lỗi khi tải bảng lương: ${xhr.responseText}</span>
-                        </div>`);
+                                    <strong class="font-bold"><i class="fas fa-times-circle mr-2"></i> Lỗi!</strong>
+                                    <span class="block sm:inline">Lỗi khi tải bảng lương: ${xhr.responseText}</span>
+                                </div>`);
                 console.error("Lỗi tải bảng lương cho giám đốc:", xhr);
             });
         }
@@ -193,7 +192,7 @@
         function approveByDirector(maLuongList) {
             Swal.fire({
                 title: 'Duyệt bảng lương?',
-                text: 'Bạn có chắc chắn muốn duyệt bảng lương này?',
+                text: `Bạn có chắc chắn muốn duyệt ${maLuongList.length} bảng lương này?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Duyệt',
@@ -211,7 +210,12 @@
                             });
                         },
                         error: function (xhr) {
-                            Swal.fire('Lỗi!', xhr.responseText, 'error');
+                            console.error('Lỗi duyệt bảng lương:', {
+                                status: xhr.status,
+                                responseText: xhr.responseText,
+                                responseJSON: xhr.responseJSON ? JSON.stringify(xhr.responseJSON, null, 2) : 'No responseJSON'
+                            });
+                            Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi duyệt bảng lương.', 'error');
                         }
                     });
                 }
@@ -226,26 +230,44 @@
                 showCancelButton: true,
                 confirmButtonText: 'Gửi',
                 cancelButtonText: 'Hủy',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    console.log('Sending payroll to employee:', { maLuong });
+                    return $.ajax({
                         url: `/api/PayrollDirectorApi/SendToEmployees`,
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify([maLuong]),
                         success: function (response) {
-                            if (response.errors && response.errors.length > 0) {
-                                Swal.fire('Cảnh báo!', response.message + '<br>' + response.errors.join('<br>'), 'warning');
-                            } else {
-                                Swal.fire('Thành công!', response.message || response, 'success');
-                            }
-                            loadPayrollsForDirector();
+                            console.log('SendToEmployees response:', response);
+                            return response;
                         },
                         error: function (xhr) {
-                            Swal.fire('Lỗi!', xhr.responseText, 'error');
+                            console.error('Lỗi gửi bảng lương:', {
+                                status: xhr.status,
+                                responseText: xhr.responseText,
+                                responseJSON: xhr.responseJSON ? JSON.stringify(xhr.responseJSON, null, 2) : 'No responseJSON'
+                            });
+                            throw new Error(xhr.responseText || 'Đã xảy ra lỗi khi gửi bảng lương.');
                         }
                     });
                 }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const response = result.value;
+                    if (response.errors && response.errors.length > 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Cảnh báo!',
+                            html: response.message + '<br>' + response.errors.join('<br>')
+                        });
+                    } else {
+                        Swal.fire('Thành công!', response.message || 'Gửi phiếu lương thành công.', 'success');
+                    }
+                    loadPayrollsForDirector();
+                }
+            }).catch((error) => {
+                Swal.fire('Lỗi!', error.message, 'error');
             });
         }
 
@@ -289,13 +311,19 @@
                     });
                 },
                 error: function (xhr) {
-                    Swal.fire('Lỗi!', xhr.responseText, 'error');
+                    console.error('Lỗi trả về bảng lương:', {
+                        status: xhr.status,
+                        responseText: xhr.responseText,
+                        responseJSON: xhr.responseJSON ? JSON.stringify(xhr.responseJSON, null, 2) : 'No responseJSON'
+                    });
+                    Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi trả về bảng lương.', 'error');
                 }
             });
         }
 
         function finalApproveAndSend(all = false) {
             let maLuongList = [];
+            let totalPayrolls = 0;
             if (!all) {
                 maLuongList = $('.payroll-checkbox:checked').map(function () {
                     return parseInt(this.value);
@@ -304,37 +332,72 @@
                     Swal.fire('Cảnh báo!', 'Vui lòng chọn các bảng lương để duyệt và gửi.', 'warning');
                     return;
                 }
+                totalPayrolls = maLuongList.length;
+            } else {
+                // Fetch total payrolls for confirmation
+                const year = $('#yearSelect').val();
+                const month = $('#monthSelect').val();
+                $.ajax({
+                    url: `/api/PayrollDirectorApi/GetPayrolls?year=${year}&month=${month}`,
+                    type: 'GET',
+                    async: false,
+                    success: function (data) {
+                        totalPayrolls = data.filter(p => p.trangThai === 'BL3' || p.trangThai === 'BL4').length;
+                    }
+                });
+                if (totalPayrolls === 0) {
+                    Swal.fire('Cảnh báo!', 'Không có bảng lương nào để duyệt và gửi.', 'warning');
+                    return;
+                }
             }
 
             Swal.fire({
                 title: 'Duyệt và gửi bảng lương?',
-                text: all
-                    ? 'Bạn có chắc chắn muốn duyệt và gửi TẤT CẢ bảng lương?'
-                    : 'Bạn có chắc chắn muốn duyệt và gửi CÁC BẢNG LƯƠNG ĐÃ CHỌN?',
+                html: all
+                    ? `Bạn có chắc chắn muốn duyệt và gửi <strong>${totalPayrolls}</strong> bảng lương?`
+                    : `Bạn có chắc chắn muốn duyệt và gửi <strong>${totalPayrolls}</strong> bảng lương đã chọn?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Duyệt và gửi',
                 cancelButtonText: 'Hủy',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    console.log('Sending payrolls:', { maLuongList, all });
+                    return $.ajax({
                         url: `/api/PayrollDirectorApi/SendToEmployees`,
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify(maLuongList),
                         success: function (response) {
-                            if (response.errors && response.errors.length > 0) {
-                                Swal.fire('Cảnh báo!', response.message + '<br>' + response.errors.join('<br>'), 'warning');
-                            } else {
-                                Swal.fire('Thành công!', response.message || response, 'success');
-                            }
-                            loadPayrollsForDirector();
+                            console.log('SendToEmployees response:', response);
+                            return response;
                         },
                         error: function (xhr) {
-                            Swal.fire('Lỗi!', xhr.responseText, 'error');
+                            console.error('Lỗi gửi bảng lương:', {
+                                status: xhr.status,
+                                responseText: xhr.responseText,
+                                responseJSON: xhr.responseJSON ? JSON.stringify(xhr.responseJSON, null, 2) : 'No responseJSON'
+                            });
+                            throw new Error(xhr.responseText || 'Đã xảy ra lỗi khi gửi bảng lương.');
                         }
                     });
                 }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const response = result.value;
+                    if (response.errors && response.errors.length > 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Cảnh báo!',
+                            html: response.message + '<br>' + response.errors.join('<br>')
+                        });
+                    } else {
+                        Swal.fire('Thành công!', response.message || 'Gửi phiếu lương thành công.', 'success');
+                    }
+                    loadPayrollsForDirector();
+                }
+            }).catch((error) => {
+                Swal.fire('Lỗi!', error.message, 'error');
             });
         }
 

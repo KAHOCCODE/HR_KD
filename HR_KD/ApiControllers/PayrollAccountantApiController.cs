@@ -291,5 +291,202 @@ namespace HR_KD.ApiControllers
             await _context.SaveChangesAsync();
             return Ok("Bảng lương đã được trả về cho quản lý thành công.");
         }
+
+        [HttpGet("GetMissingAttendance")]
+        public async Task<IActionResult> GetMissingAttendance(int maNv, int year, int month)
+        {
+            var startOfMonth = new DateOnly(year, month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+
+            var attendanceRecords = await _context.ChamCongs
+                .Where(c => c.MaNv == maNv && c.NgayLamViec.Year == year && c.NgayLamViec.Month == month)
+                .Select(c => c.NgayLamViec)
+                .ToListAsync();
+
+            var standardHoursRecord = await _context.GioChuans
+                .FirstOrDefaultAsync(g => g.Nam == year && g.KichHoat == true);
+
+            if (standardHoursRecord == null)
+                return BadRequest("Không tìm thấy thông tin giờ chuẩn.");
+
+            decimal standardHours = month switch
+            {
+                1 => standardHoursRecord.Thang1,
+                2 => standardHoursRecord.Thang2,
+                3 => standardHoursRecord.Thang3,
+                4 => standardHoursRecord.Thang4,
+                5 => standardHoursRecord.Thang5,
+                6 => standardHoursRecord.Thang6,
+                7 => standardHoursRecord.Thang7,
+                8 => standardHoursRecord.Thang8,
+                9 => standardHoursRecord.Thang9,
+                10 => standardHoursRecord.Thang10,
+                11 => standardHoursRecord.Thang11,
+                12 => standardHoursRecord.Thang12,
+                _ => 0
+            };
+
+            var workingHoursRecord = await _context.ChamCongGioRaVaos
+                .Where(c => c.KichHoat == true)
+                .OrderByDescending(c => c.Id)
+                .FirstOrDefaultAsync();
+
+            if (workingHoursRecord == null)
+                return BadRequest("Không tìm thấy cấu hình giờ làm việc.");
+
+            decimal dailyWorkingHours = workingHoursRecord.TongGio;
+            int expectedDays = (int)(standardHours / dailyWorkingHours);
+
+            var missingDays = new List<DateOnly>();
+            for (var day = startOfMonth; day <= endOfMonth; day = day.AddDays(1))
+            {
+                if (day.ToDateTime(TimeOnly.MinValue).DayOfWeek != DayOfWeek.Sunday && // Exclude Sundays
+                    !attendanceRecords.Contains(day) &&
+                    missingDays.Count < expectedDays)
+                {
+                    missingDays.Add(day);
+                }
+            }
+
+            return Ok(missingDays.Select(d => d.ToString("yyyy-MM-dd")).ToList());
+        }
+
+        [HttpPost("UpdateBankAccount")]
+        public async Task<IActionResult> UpdateBankAccount([FromBody] BankAccountUpdateModel model)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var bankAccount = await _context.TaiKhoanNganHangs
+                .FirstOrDefaultAsync(t => t.MaNv == model.MaNv);
+
+            if (bankAccount == null)
+            {
+                bankAccount = new TaiKhoanNganHang
+                {
+                    MaNv = model.MaNv,
+                    TenNganHang = model.TenNganHang,
+                    ChiNhanh = model.ChiNhanh,
+                    SoTaiKhoan = model.SoTaiKhoan
+                };
+                _context.TaiKhoanNganHangs.Add(bankAccount);
+            }
+            else
+            {
+                bankAccount.TenNganHang = model.TenNganHang;
+                bankAccount.ChiNhanh = model.ChiNhanh;
+                bankAccount.SoTaiKhoan = model.SoTaiKhoan;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok("Cập nhật tài khoản ngân hàng thành công.");
+        }
+
+        [HttpPost("AddAttendance")]
+        public async Task<IActionResult> AddAttendance([FromBody] ChamCong attendance)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            attendance.TrangThai = AttendanceStatus.Approved;
+            attendance.MaNvDuyet = int.Parse(User.Identity?.Name ?? "0");
+            attendance.NgayDuyet = DateTime.Now;
+
+            _context.ChamCongs.Add(attendance);
+            await _context.SaveChangesAsync();
+
+            // Recalculate payroll
+            var payroll = await _context.BangLuongs
+                .FirstOrDefaultAsync(b => b.MaNv == attendance.MaNv && b.ThangNam.Year == attendance.NgayLamViec.Year && b.ThangNam.Month == attendance.NgayLamViec.Month);
+
+            if (payroll != null)
+            {
+                var salaryInfo = await _context.ThongTinLuongNVs
+                    .FirstOrDefaultAsync(t => t.MaNv == attendance.MaNv && t.IsActive);
+
+                if (salaryInfo != null)
+                {
+                    var attendanceRecords = await _context.ChamCongs
+                        .Where(c => c.MaNv == attendance.MaNv && c.NgayLamViec.Year == attendance.NgayLamViec.Year && c.NgayLamViec.Month == attendance.NgayLamViec.Month)
+                        .ToListAsync();
+
+                    var updatedPayroll = await _payrollCalculator.CalculatePayroll(
+                        attendance.MaNv,
+                        new DateTime(attendance.NgayLamViec.Year, attendance.NgayLamViec.Month, 1),
+                        attendanceRecords,
+                        salaryInfo
+                    );
+
+                    payroll.TongLuong = updatedPayroll.TongLuong;
+                    payroll.LuongTangCa = updatedPayroll.LuongTangCa;
+                    payroll.PhuCapThem = updatedPayroll.PhuCapThem;
+                    payroll.LuongThem = updatedPayroll.LuongThem;
+                    payroll.ThueTNCN = updatedPayroll.ThueTNCN;
+                    payroll.ThucNhan = updatedPayroll.ThucNhan;
+                    payroll.TrangThai = "BL2";
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            return Ok("Thêm chấm công và cập nhật bảng lương thành công.");
+        }
+
+        [HttpPost("AddOvertime")]
+        public async Task<IActionResult> AddOvertime([FromBody] TangCa overtime)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            overtime.TrangThai = OvertimeStatus.Approved;
+            overtime.MaNvDuyet = int.Parse(User.Identity?.Name ?? "0");
+
+            _context.TangCas.Add(overtime);
+            await _context.SaveChangesAsync();
+
+            // Recalculate payroll
+            var payroll = await _context.BangLuongs
+                .FirstOrDefaultAsync(b => b.MaNv == overtime.MaNv && b.ThangNam.Year == overtime.NgayTangCa.Year && b.ThangNam.Month == overtime.NgayTangCa.Month);
+
+            if (payroll != null)
+            {
+                var salaryInfo = await _context.ThongTinLuongNVs
+                    .FirstOrDefaultAsync(t => t.MaNv == overtime.MaNv && t.IsActive);
+
+                if (salaryInfo != null)
+                {
+                    var attendanceRecords = await _context.ChamCongs
+                        .Where(c => c.MaNv == overtime.MaNv && c.NgayLamViec.Year == overtime.NgayTangCa.Year && c.NgayLamViec.Month == overtime.NgayTangCa.Month)
+                        .ToListAsync();
+
+                    var updatedPayroll = await _payrollCalculator.CalculatePayroll(
+                        overtime.MaNv,
+                        new DateTime(overtime.NgayTangCa.Year, overtime.NgayTangCa.Month, 1),
+                        attendanceRecords,
+                        salaryInfo
+                    );
+
+                    payroll.TongLuong = updatedPayroll.TongLuong;
+                    payroll.LuongTangCa = updatedPayroll.LuongTangCa;
+                    payroll.PhuCapThem = updatedPayroll.PhuCapThem;
+                    payroll.LuongThem = updatedPayroll.LuongThem;
+                    payroll.ThueTNCN = updatedPayroll.ThueTNCN;
+                    payroll.ThucNhan = updatedPayroll.ThucNhan;
+                    payroll.TrangThai = "BL2";
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            return Ok("Thêm tăng ca và cập nhật bảng lương thành công.");
+        }
+    }
+
+    public class BankAccountUpdateModel
+    {
+        public int MaNv { get; set; }
+        public string TenNganHang { get; set; }
+        public string ChiNhanh { get; set; }
+        public string SoTaiKhoan { get; set; }
     }
 }

@@ -1,3 +1,999 @@
-﻿@{
+﻿@using HR_KD.Data
+@using Microsoft.AspNetCore.Http
+@using Microsoft.EntityFrameworkCore
+@inject IHttpContextAccessor HttpContextAccessor
+@inject HrDbContext DbContext
+@{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+    var nhanVien = DbContext.NhanViens
+        .Include(nv => nv.MaPhongBanNavigation)
+        .Include(nv => nv.MaChucVuNavigation)
+        .FirstOrDefault(nv => nv.MaNv.ToString() == maNv);
+    var currentDateTime = DateTime.Now;
+    var currentDateOnly = DateOnly.FromDateTime(currentDateTime);
+    var currentYear = DateTime.Now.Year;
+    var currentMonth = DateTime.Now.Month;
+
+    // Get attendance records for current month
+    var attendanceRecords = DbContext.ChamCongs
+        .Where(a => a.MaNv.ToString() == maNv && 
+                    a.NgayLamViec.Year == currentYear && 
+                    a.NgayLamViec.Month == currentMonth)
+        .OrderByDescending(a => a.NgayLamViec)
+        .Take(5)
+        .ToList();
+
+    // Get today's attendance
+    var todayAttendance = attendanceRecords.FirstOrDefault(a => a.NgayLamViec == currentDateOnly);
+
+    // Get leave requests
+    var leaveRequests = DbContext.NgayNghis
+        .Where(l => l.MaNv.ToString() == maNv)
+        .Include(l => l.MaLoaiNgayNghiNavigation)
+        .OrderByDescending(l => l.NgayLamDon)
+        .Take(5)
+        .ToList();
+
+    // Get leave balance
+    var leaveBalance = DbContext.PhepNamNhanViens
+        .FirstOrDefault(p => p.MaNv.ToString() == maNv && p.Nam == currentYear);
+
+    // Get monthly attendance data for chart (only approved records)
+    var monthlyAttendance = DbContext.ChamCongs
+        .Where(a => a.MaNv.ToString() == maNv && 
+                    a.NgayLamViec.Year == currentYear && 
+                    a.TrangThai == "CC3") // Only approved attendance
+        .GroupBy(a => a.NgayLamViec.Month)
+        .Select(g => new { 
+            Month = g.Key, 
+            TotalHours = g.Sum(a => a.TongGio ?? 0),
+            DaysWorked = g.Count()
+        })
+        .OrderBy(x => x.Month)
+        .ToList();
+
+    // Calculate average hours per day for each month
+    var monthlyAttendanceWithAverage = monthlyAttendance.Select(x => new {
+        Month = x.Month,
+        TotalHours = x.TotalHours,
+        AverageHours = x.DaysWorked > 0 ? Math.Round(x.TotalHours / x.DaysWorked, 1) : 0
+    }).ToList();
+
+    // Get monthly leave data for chart (only approved records)
+    var monthlyLeave = DbContext.NgayNghis
+        .Where(l => l.MaNv.ToString() == maNv && 
+                    l.NgayNghi1.Year == currentYear && 
+                    (l.MaTrangThai == "NN2" || l.MaTrangThai == "NN5")) // Include both NN2 and NN5 as approved
+        .GroupBy(l => l.NgayNghi1.Month)
+        .Select(g => new { Month = g.Key, TotalDays = g.Count() })
+        .OrderBy(x => x.Month)
+        .ToList();
+
+    // Get status names for attendance
+    var attendanceStatuses = new Dictionary<string, string>
+    {
+        { "CC1", "Chờ duyệt" },
+        { "CC2", "Đã duyệt lần 1" },
+        { "CC3", "Đã duyệt" },
+        { "CC4", "Từ chối" },
+        { "CC5", "Nghỉ phép có lương" },
+        { "CC6", "Nghỉ phép không lương" },
+        { "LS1", "Chờ duyệt" },
+        { "LS2", "Đã duyệt lần 1" },
+        { "LS3", "Đã duyệt" },
+        { "LS4", "Từ chối" },
+    };
+
+    // Get status names for leave requests
+    var leaveStatuses = new Dictionary<string, string>
+    {
+        { "NN1", "Chờ duyệt" },
+        { "NN2", "Đã duyệt" },
+        { "NN3", "Từ chối" },
+        { "NN4", "Đã hủy" },
+        { "NN5", "Đã duyệt" }
+    };
+    
+    // Calculate leave percentage
+    var leaveUsed = leaveBalance?.SoNgayDaSuDung ?? 0;
+    var totalLeave = leaveBalance?.SoNgayPhepDuocCap ?? 0;
+    var leavePercentage = totalLeave > 0 ? (leaveUsed / totalLeave) * 100 : 0;
+    
+    // Get current date and time
+
+    var vietnameseDayOfWeek = "";
+    switch (currentDateTime.DayOfWeek)
+    {
+        case DayOfWeek.Monday: vietnameseDayOfWeek = "Thứ hai"; break;
+        case DayOfWeek.Tuesday: vietnameseDayOfWeek = "Thứ ba"; break;
+        case DayOfWeek.Wednesday: vietnameseDayOfWeek = "Thứ tư"; break;
+        case DayOfWeek.Thursday: vietnameseDayOfWeek = "Thứ năm"; break;
+        case DayOfWeek.Friday: vietnameseDayOfWeek = "Thứ sáu"; break;
+        case DayOfWeek.Saturday: vietnameseDayOfWeek = "Thứ bảy"; break;
+        case DayOfWeek.Sunday: vietnameseDayOfWeek = "Chủ nhật"; break;
+    }
 }
+
+<!-- CSS Libraries -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" />
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2 class="welcome-text">Xin chào, <span class="text-primary">@(nhanVien?.HoTen ?? "Nhân viên")</span>!</h2>
+            <p class="current-date">@vietnameseDayOfWeek, @currentDateTime.ToString("dd/MM/yyyy")</p>
+        </div>
+        @* <div class="col-md-4 text-end">
+            <div class="profile-dropdown">
+                <img src="@(string.IsNullOrEmpty(nhanVien?.AvatarUrl) ? "/api/placeholder/40/40" : nhanVien.AvatarUrl)" class="rounded-circle" alt="Avatar" />
+                <span class="ms-2">@(nhanVien?.HoTen ?? "Nhân viên")</span>
+            </div>
+        </div> *@
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row stats-row">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon bg-primary-light">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stats-content">
+                <h4>Ngày làm tháng @currentMonth</h4>
+                <h2>@monthlyAttendance.Sum(x => x.TotalHours).ToString("0.0") giờ</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon bg-success-light">
+                <i class="fas fa-business-time"></i>
+            </div>
+            <div class="stats-content">
+                <h4>Giờ làm hôm nay</h4>
+                <h2>@(todayAttendance?.TongGio?.ToString("0.0") ?? "0.0") giờ</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon bg-warning-light">
+                <i class="fas fa-plane-departure"></i>
+            </div>
+            <div class="stats-content">
+                <h4>Phép còn lại</h4>
+                <h2>@(leaveBalance != null ? (leaveBalance.SoNgayPhepDuocCap - leaveBalance.SoNgayDaSuDung).ToString() : "0") ngày</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon bg-info-light">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="stats-content">
+                <h4>Phòng ban</h4>
+                <h2>@nhanVien?.MaPhongBanNavigation?.TenPhongBan</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Employee Info Card -->
+    <div class="col-md-4">
+        <div class="custom-card">
+            <div class="card-header">
+                <h4><i class="fas fa-user me-2"></i>Thông tin nhân viên</h4>
+            </div>
+            <div class="card-body">
+                @if (nhanVien != null)
+                {
+                    <div class="profile-info">
+                        <div class="profile-avatar">
+                            <img src="@(string.IsNullOrEmpty(nhanVien?.AvatarUrl) ? "/api/placeholder/100/100" : nhanVien.AvatarUrl)" alt="Avatar" />
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-id-card"></i> Họ tên:</span>
+                            <span class="info-value">@nhanVien.HoTen</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-envelope"></i> Email:</span>
+                            <span class="info-value">@nhanVien.Email</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-phone"></i> Số điện thoại:</span>
+                            <span class="info-value">@nhanVien.Sdt</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-building"></i> Phòng ban:</span>
+                            <span class="info-value">@nhanVien.MaPhongBanNavigation?.TenPhongBan</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-user-tie"></i> Chức vụ:</span>
+                            <span class="info-value">@nhanVien.MaChucVuNavigation?.TenChucVu</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Balance Card -->
+    <div class="col-md-4">
+        <div class="custom-card">
+            <div class="card-header">
+                <h4><i class="fas fa-calendar-alt me-2"></i>Số dư phép năm @currentYear</h4>
+            </div>
+            <div class="card-body">
+                @if (leaveBalance != null)
+                {
+                    <div class="leave-balance">
+                        <div class="leave-progress">
+                            <div class="progress">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: @leavePercentage%"
+                                    aria-valuenow="@leavePercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span>@leaveUsed/@totalLeave ngày đã sử dụng</span>
+                            </div>
+                        </div>
+                        <div class="leave-stats-vertical">
+                            <div class="leave-stat-row">
+                                <span class="stat-label">Tổng phép:</span>
+                                <span class="stat-value">@leaveBalance.SoNgayPhepDuocCap</span>
+                            </div>
+                            <div class="leave-stat-row">
+                                <span class="stat-label">Đã sử dụng:</span>
+                                <span class="stat-value">@leaveBalance.SoNgayDaSuDung</span>
+                            </div>
+                            <div class="leave-stat-row">
+                                <span class="stat-label">Còn lại:</span>
+                                <span class="stat-value">@(leaveBalance.SoNgayPhepDuocCap - leaveBalance.SoNgayDaSuDung)</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>Chưa có thông tin phép năm</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="col-md-4">
+        <div class="custom-card">
+            <div class="card-header">
+                <h4><i class="fas fa-bolt me-2"></i>Thao tác nhanh</h4>
+            </div>
+            <div class="card-body">
+                <div class="quick-actions">
+                    <a href="~/Attendance" class="action-btn attendance-btn">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>Chấm công</span>
+                    </a>
+                    <a href="~/Leave/Index" class="action-btn leave-btn">
+                        <i class="fas fa-umbrella-beach"></i>
+                        <span>Đăng ký nghỉ phép</span>
+                    </a>
+                    <a href="~/LamBu/Index" class="action-btn overtime-btn">
+                        <i class="fas fa-business-time"></i>
+                        <span>Đăng ký làm bù</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Attendance Records -->
+    <div class="col-md-6">
+        <div class="custom-card">
+            <div class="card-header">
+                <h4><i class="fas fa-history me-2"></i>Lịch sử chấm công gần đây</h4>
+                <a href="~/Attendance/Attendance" class="view-all">Xem tất cả <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table custom-table">
+                        <thead>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Giờ vào</th>
+                                <th>Giờ ra</th>
+                                <th>Tổng giờ</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (attendanceRecords.Any())
+                            {
+                                foreach (var record in attendanceRecords)
+                                {
+                                    <tr>
+                                        <td><strong>@record.NgayLamViec.ToString("dd/MM/yyyy")</strong></td>
+                                        <td>@(record.GioVao?.ToString("HH:mm") ?? "-")</td>
+                                        <td>@(record.GioRa?.ToString("HH:mm") ?? "-")</td>
+                                        <td>@(record.TongGio?.ToString("0.0") ?? "-")</td>
+                                        <td>
+                                            <span class="status-badge @(record.TrangThai == "CC3" ? "status-success" : 
+                                                        record.TrangThai == "CC4" ? "status-danger" : 
+                                                        record.TrangThai == "CC5" ? "status-warning" : 
+                                                        record.TrangThai == "CC6" ? "status-info" : 
+                                                        "status-secondary")">
+                                                @(attendanceStatuses.ContainsKey(record.TrangThai) ? attendanceStatuses[record.TrangThai] : record.TrangThai)
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center">Không có dữ liệu</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Leave Requests -->
+    <div class="col-md-6">
+        <div class="custom-card">
+            <div class="card-header">
+                <h4><i class="fas fa-umbrella-beach me-2"></i>Đơn nghỉ phép gần đây</h4>
+                <a href="~/Leave/Index" class="view-all">Xem tất cả <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table custom-table">
+                        <thead>
+                            <tr>
+                                <th>Ngày nghỉ</th>
+                                <th>Loại nghỉ</th>
+                                <th>Lý do</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (leaveRequests.Any())
+                            {
+                                foreach (var request in leaveRequests)
+                                {
+                                    <tr>
+                                        <td><strong>@request.NgayNghi1.ToString("dd/MM/yyyy")</strong></td>
+                                        <td>@request.MaLoaiNgayNghiNavigation?.TenLoai</td>
+                                        <td>
+                                            <span class="text-truncate d-inline-block" style="max-width: 150px;" title="@request.LyDo">
+                                                @request.LyDo
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge @(request.MaTrangThai == "NN2" || request.MaTrangThai == "NN5" ? "status-success" : 
+                                                        request.MaTrangThai == "NN3" ? "status-danger" : 
+                                                        request.MaTrangThai == "NN4" ? "status-warning" : 
+                                                        "status-secondary")">
+                                                @(leaveStatuses.ContainsKey(request.MaTrangThai) ? leaveStatuses[request.MaTrangThai] : request.MaTrangThai)
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center">Không có dữ liệu</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="custom-card">
+            <div class="card-header">
+                <h4><i class="fas fa-chart-bar me-2"></i>Thống kê giờ làm theo tháng</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="custom-card">
+            <div class="card-header">
+                <h4><i class="fas fa-chart-pie me-2"></i>Thống kê ngày nghỉ theo tháng</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="leaveChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Custom chart color palette
+        const colors = {
+            primary: '#4e73df',
+            success: '#1cc88a',
+            info: '#36b9cc',
+            warning: '#f6c23e',
+            danger: '#e74a3b',
+            secondary: '#858796',
+            light: '#f8f9fc',
+            dark: '#5a5c69'
+        };
+        
+        // Attendance Chart
+        const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+        const months = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
+                       'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+        
+        // Get attendance data and fill in missing months
+        const attendanceData = Array(12).fill(0);
+        const averageHoursData = Array(12).fill(0);
+        @foreach (var item in monthlyAttendanceWithAverage)
+        {
+            @:attendanceData[@(item.Month - 1)] = @item.TotalHours;
+            @:averageHoursData[@(item.Month - 1)] = @item.AverageHours;
+        }
+        
+        new Chart(attendanceCtx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Tổng giờ làm',
+                    data: attendanceData,
+                    backgroundColor: colors.primary + '80',
+                    borderColor: colors.primary,
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Trung bình giờ/ngày',
+                    data: averageHoursData,
+                    type: 'line',
+                    borderColor: colors.success,
+                    backgroundColor: colors.success + '20',
+                    borderWidth: 2,
+                    yAxisID: 'y1',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Tổng giờ'
+                        },
+                        grid: {
+                            borderDash: [2, 2],
+                            color: '#e9ecef'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Giờ/ngày'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.datasetIndex === 0) {
+                                    label += context.parsed.y.toFixed(1) + ' giờ';
+                                } else {
+                                    label += context.parsed.y.toFixed(1) + ' giờ/ngày';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Leave Chart
+        const leaveCtx = document.getElementById('leaveChart').getContext('2d');
+        
+        // Get leave data and fill in missing months
+        const leaveData = Array(12).fill(0);
+        @foreach (var item in monthlyLeave)
+        {
+            @:leaveData[@(item.Month - 1)] = @item.TotalDays;
+        }
+        
+        new Chart(leaveCtx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Số ngày nghỉ',
+                    data: leaveData,
+                    backgroundColor: colors.warning + '80',
+                    borderColor: colors.warning,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Ngày'
+                        },
+                        grid: {
+                            borderDash: [2, 2],
+                            color: '#e9ecef'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+}
+
+<style>
+    :root {
+        --primary: #4e73df;
+        --secondary: #858796;
+        --success: #1cc88a;
+        --info: #36b9cc;
+        --warning: #f6c23e;
+        --danger: #e74a3b;
+        --light: #f8f9fc;
+        --dark: #5a5c69;
+        --primary-light: rgba(78, 115, 223, 0.1);
+        --success-light: rgba(28, 200, 138, 0.1);
+        --info-light: rgba(54, 185, 204, 0.1);
+        --warning-light: rgba(246, 194, 62, 0.1);
+        --danger-light: rgba(231, 74, 59, 0.1);
+        --gray-100: #f8f9fc;
+        --gray-200: #eaecf4;
+        --gray-300: #dddfeb;
+        --gray-400: #d1d3e2;
+        --gray-500: #b7b9cc;
+        --gray-600: #858796;
+        --gray-700: #6e707e;
+        --gray-800: #5a5c69;
+        --gray-900: #3a3b45;
+        --card-border-radius: 0.75rem;
+        --transition-speed: 0.3s;
+    }
+
+    body {
+        background-color: #f8f9fc;
+        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 14px;
+        color: var(--gray-800);
+    }
+    
+    /* Dashboard Header */
+    .dashboard-header {
+        margin-bottom: 1.5rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .welcome-text {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .current-date {
+        color: var(--gray-600);
+        font-size: 1rem;
+        margin-bottom: 0;
+    }
+    
+    .profile-dropdown {
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    /* Stats Cards */
+    .stats-row {
+        margin-bottom: 1.5rem;
+    }
+    
+    .stats-card {
+        display: flex;
+        align-items: center;
+        padding: 1.25rem;
+        border-radius: var(--card-border-radius);
+        background-color: white;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 1.5rem;
+        transition: transform var(--transition-speed);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .stats-icon {
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    
+    .stats-icon i {
+        font-size: 1.5rem;
+        color: var(--primary);
+    }
+    
+    .bg-primary-light {
+        background-color: var(--primary-light);
+    }
+    
+    .bg-success-light {
+        background-color: var(--success-light);
+    }
+    
+    .bg-warning-light {
+        background-color: var(--warning-light);
+    }
+    
+    .bg-info-light {
+        background-color: var(--info-light);
+    }
+    
+    .bg-danger-light {
+        background-color: var(--danger-light);
+    }
+    
+    .stats-content h4 {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stats-content h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+    
+    /* Custom Cards */
+    .custom-card {
+        border-radius: var(--card-border-radius);
+        background-color: white;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: box-shadow var(--transition-speed);
+    }
+    
+    .custom-card:hover {
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.15);
+    }
+    
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background-color: white;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .card-header h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--gray-700);
+        margin-bottom: 0;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .view-all {
+        font-size: 0.875rem;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .view-all:hover {
+        text-decoration: underline;
+    }
+    
+    /* Profile Info */
+    .profile-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .profile-avatar {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-item {
+        display: flex;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .info-label {
+        width: 40%;
+        color: var(--gray-600);
+        font-weight: 600;
+    }
+    
+    .info-label i {
+        width: 1.25rem;
+        margin-right: 0.5rem;
+        color: var(--primary);
+    }
+    
+    .info-value {
+        width: 60%;
+        font-weight: 500;
+    }
+    
+    /* Leave Balance */
+    .leave-balance {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .leave-progress {
+        margin-bottom: 1.5rem;
+    }
+    
+    .progress {
+        height: 0.75rem;
+        border-radius: 1rem;
+        background-color: var(--gray-200);
+        margin-bottom: 0.5rem;
+    }
+    
+    .progress-bar {
+        border-radius: 1rem;
+    }
+    
+    .progress-info {
+        text-align: right;
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+    
+    .leave-stats-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    .leave-stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    .leave-stat-row:last-child {
+        border-bottom: none;
+    }
+    .leave-stat-row .stat-label {
+        font-size: 1rem;
+        color: var(--gray-600);
+        font-weight: 500;
+    }
+    .leave-stat-row .stat-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--gray-800);
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .action-btn {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        color: white;
+        font-weight: 600;
+        transition: transform var(--transition-speed);
+    }
+    
+    .action-btn:hover {
+        transform: translateX(5px);
+        color: white;
+    }
+    
+    .action-btn i {
+        font-size: 1.25rem;
+        margin-right: 1rem;
+    }
+    
+    .attendance-btn {
+        background-color: var(--primary);
+    }
+    
+    .leave-btn {
+        background-color: var(--warning);
+    }
+    
+    .overtime-btn {
+        background-color: var(--info);
+    }
+    
+    /* Tables */
+    .custom-table {
+        margin-bottom: 0;
+    }
+    
+    .custom-table thead th {
+        background-color: var(--gray-100);
+        color: var(--gray-700);
+        font-weight: 600;
+        border-bottom: 2px solid var(--gray-200);
+        padding: 0.75rem 1rem;
+    }
+    
+    .custom-table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .custom-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .custom-table tbody tr:hover {
+        background-color: var(--gray-100);
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-success {
+        background-color: var(--success-light);
+        color: var(--success);
+    }
+    
+    .status-danger {
+        background-color: var(--danger-light);
+        color: var(--danger);
+    }
+    
+    .status-warning {
+        background-color: var(--warning-light);
+        color: #d69e00;
+    }
+    
+    .status-info {
+        background-color: var(--info-light);
+        color: var(--info);
+    }
+    
+    .status-secondary {
+        background-color: var(--gray-200);
+        color: var(--gray-600);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--gray-400);
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        color: var(--gray-600);
+        font-weight: 500;
+        margin-bottom: 0;
+    }
+    
+    .profile-avatar img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid var(--gray-200);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .profile-dropdown img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 1px solid var(--gray-200);
+    }
+</style>

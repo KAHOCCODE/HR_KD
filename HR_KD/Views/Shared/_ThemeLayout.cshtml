@@ -327,7 +327,23 @@
                             <ul style="display: none;">
                                 <li><a href="~/Reports/Employee"><i class="fa fa-users"></i> Báo cáo nhân viên</a></li>
                                 <li><a href="~/Reports/Salary"><i class="fa fa-dollar-sign"></i> Báo cáo lương</a></li>
-                                <li><a href="~/AttendanceReport/Index"><i class="fa fa-calendar-check"></i> Báo cáo chấm công</a></li>
+                                
+                                <!-- Restricted to DIRECTOR role -->
+                                @if (User.IsInRole("DIRECTOR"))
+                                {
+                                   <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
+                                   <li><a href="~/AttendanceReport/Director"><i class="fa fa-check-circle"></i> Báo cáo chấm công nhân viên</a></li>
+                                }
+                                else if (User.IsInRole("EMPLOYEE_MANAGER"))
+                                { 
+                                    <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
+                                    <li><a href="~/AttendanceReport/Manager"><i class="fa fa-tasks"></i> Báo cáo chấm công nhân viên</a></li>
+								}
+                                else if (User.IsInRole("EMPLOYEE"))
+                                { 
+                                     <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
+                                }
+                                
                             </ul>
                         </li>
 

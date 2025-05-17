@@ -714,17 +714,30 @@ namespace HR_KD.ApiControllers
             try
             {
                 // Define the base queries with aligned anonymous types
-                var chamCongQuery = _context.LichSuChamCongs
+                var lichsuchamCongQuery = _context.LichSuChamCongs
+                    .Where(c => c.MaNv == maNv.Value && c.TrangThai == "LS4")
+                    .Select(c => new
+                    {
+                        Loai = "Chấm Công lần 1",
+                        Ngay = c.Ngay,
+                        GioVao = c.GioVao,
+                        GioRa = c.GioRa,
+                        TongGio = c.TongGio,
+                        GhiChu = c.GhiChu ?? "",
+                        TrangThai = c.TrangThai
+                    });
+
+                var chamCongQuery = _context.ChamCongs
                     .Where(c => c.MaNv == maNv.Value && c.TrangThai == "CC4")
                     .Select(c => new
                     {
                         Loai = "Chấm Công",
-                        Ngay = c.Ngay, // DateOnly
-                        GioVao = c.GioVao, // TimeOnly?
-                        GioRa = c.GioRa, // TimeOnly?
-                        TongGio = c.TongGio, // decimal?
-                        GhiChu = c.GhiChu ?? "", // string
-                        TrangThai = c.TrangThai // string
+                        Ngay = c.NgayLamViec,
+                        GioVao = c.GioVao,
+                        GioRa = c.GioRa,
+                        TongGio = c.TongGio,
+                        GhiChu = c.GhiChu ?? "",
+                        TrangThai = c.TrangThai
                     });
 
                 var tangCaQuery = _context.TangCas
@@ -732,12 +745,12 @@ namespace HR_KD.ApiControllers
                     .Select(c => new
                     {
                         Loai = "Tăng Ca",
-                        Ngay = c.NgayTangCa, // DateOnly
-                        GioVao = c.GioVao, // TimeOnly?
-                        GioRa = c.GioRa, // TimeOnly?
-                        TongGio = (decimal?)c.SoGioTangCa, // Cast to decimal? to align types
-                        GhiChu = c.GhiChu ?? "", // string
-                        TrangThai = c.TrangThai // string
+                        Ngay = c.NgayTangCa,
+                        GioVao = c.GioVao,
+                        GioRa = c.GioRa,
+                        TongGio = (decimal?)c.SoGioTangCa,
+                        GhiChu = c.GhiChu ?? "",
+                        TrangThai = c.TrangThai
                     });
 
                 var lamBuQuery = _context.LamBus
@@ -745,16 +758,17 @@ namespace HR_KD.ApiControllers
                     .Select(c => new
                     {
                         Loai = "Làm Bù",
-                        Ngay = c.NgayLamViec, // DateOnly
-                        GioVao = c.GioVao, // TimeOnly?
-                        GioRa = c.GioRa, // TimeOnly?
-                        TongGio = c.TongGio, // decimal?
-                        GhiChu = c.GhiChu ?? "", // string
-                        TrangThai = c.TrangThai // string
+                        Ngay = c.NgayLamViec,
+                        GioVao = c.GioVao,
+                        GioRa = c.GioRa,
+                        TongGio = c.TongGio,
+                        GhiChu = c.GhiChu ?? "",
+                        TrangThai = c.TrangThai
                     });
 
                 // Combine queries with Union
-                var query = chamCongQuery
+                var query = lichsuchamCongQuery
+                    .Union(chamCongQuery)
                     .Union(tangCaQuery)
                     .Union(lamBuQuery);
 
@@ -783,11 +797,11 @@ namespace HR_KD.ApiControllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message, stackTrace = ex.StackTrace });
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
         }
         [HttpDelete("DeleteRejectedRecord")]
-        public async Task<IActionResult> DeleteRejectedRecord([FromBody] DeleteRecordDTO request)
+        public async Task<IActionResult> DeleteRejectedRecord([FromBody] DeleteRecordRequest request)
         {
             var maNv = GetMaNvFromClaims();
             if (!maNv.HasValue)
@@ -795,67 +809,90 @@ namespace HR_KD.ApiControllers
                 return Unauthorized(new { success = false, message = "Không xác định được nhân viên." });
             }
 
-            if (request == null || string.IsNullOrEmpty(request.Loai) || !DateOnly.TryParse(request.Ngay, out DateOnly ngay))
-            {
-                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
-            }
-
             try
             {
-                bool deleted = false;
+                if (!DateOnly.TryParse(request.Ngay, out DateOnly ngay))
+                {
+                    return BadRequest(new { success = false, message = "Định dạng ngày không hợp lệ." });
+                }
 
-                if (request.Loai == "Chấm Công")
+                int rowsAffected = 0;
+
+                switch (request.Loai)
                 {
-                    var record = await _context.LichSuChamCongs
-                        .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.Ngay == ngay && c.TrangThai == "CC4");
-                    if (record != null)
-                    {
-                        _context.LichSuChamCongs.Remove(record);
-                        deleted = true;
-                    }
+                    case "Chấm Công lần 1":
+                        var lichSuChamCong = await _context.LichSuChamCongs
+                            .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.Ngay == ngay && c.TrangThai == "LS4");
+                        if (lichSuChamCong != null)
+                        {
+                            _context.LichSuChamCongs.Remove(lichSuChamCong);
+                            rowsAffected = await _context.SaveChangesAsync();
+                        }
+                        break;
+
+                    case "Chấm Công":
+                        var chamCong = await _context.ChamCongs
+                            .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.NgayLamViec == ngay && c.TrangThai == "CC4");
+                        if (chamCong != null)
+                        {
+                            _context.ChamCongs.Remove(chamCong);
+                            rowsAffected = await _context.SaveChangesAsync();
+
+                            // Kiểm tra và xóa bản ghi trong LichSuChamCong
+                            var lichSuChamCongToDelete = await _context.LichSuChamCongs
+                                .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.Ngay == ngay);
+                            if (lichSuChamCongToDelete != null)
+                            {
+                                _context.LichSuChamCongs.Remove(lichSuChamCongToDelete);
+                                rowsAffected += await _context.SaveChangesAsync();
+                            }
+                        }
+                        break;
+
+                    case "Tăng Ca":
+                        var tangCa = await _context.TangCas
+                            .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.NgayTangCa == ngay && c.TrangThai == "TC4");
+                        if (tangCa != null)
+                        {
+                            _context.TangCas.Remove(tangCa);
+                            rowsAffected = await _context.SaveChangesAsync();
+                        }
+                        break;
+
+                    case "Làm Bù":
+                        var lamBu = await _context.LamBus
+                            .FirstOrDefaultAsync(c => c.MaNV == maNv.Value && c.NgayLamViec == ngay && c.TrangThai == "LB4");
+                        if (lamBu != null)
+                        {
+                            _context.LamBus.Remove(lamBu);
+                            rowsAffected = await _context.SaveChangesAsync();
+                        }
+                        break;
+
+                    default:
+                        return BadRequest(new { success = false, message = "Loại bản ghi không hợp lệ." });
                 }
-                else if (request.Loai == "Tăng Ca")
+
+                if (rowsAffected > 0)
                 {
-                    var record = await _context.TangCas
-                        .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.NgayTangCa == ngay && c.TrangThai == "TC4");
-                    if (record != null)
-                    {
-                        _context.TangCas.Remove(record);
-                        deleted = true;
-                    }
-                }
-                else if (request.Loai == "Làm Bù")
-                {
-                    var record = await _context.LamBus
-                        .FirstOrDefaultAsync(c => c.MaNV == maNv.Value && c.NgayLamViec == ngay && c.TrangThai == "LB4");
-                    if (record != null)
-                    {
-                        _context.LamBus.Remove(record);
-                        deleted = true;
-                    }
+                    return Ok(new { success = true, message = "Xóa bản ghi thành công." });
                 }
                 else
                 {
-                    return BadRequest(new { success = false, message = "Loại bản ghi không hợp lệ." });
-                }
-
-                if (!deleted)
-                {
                     return NotFound(new { success = false, message = "Không tìm thấy bản ghi để xóa." });
                 }
-
-                await _context.SaveChangesAsync();
-                return Ok(new { success = true, message = "Xóa bản ghi thành công." });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
         }
-        public class DeleteRecordDTO
+
+        public class DeleteRecordRequest
         {
             public string Loai { get; set; }
             public string Ngay { get; set; }
         }
+
     }
 }

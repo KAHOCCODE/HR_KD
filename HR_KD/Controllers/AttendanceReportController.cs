@@ -8,5 +8,11 @@ namespace HR_KD.Controllers
         {
             return View();
         }
+        //chỉ Director mới có quyền truy cập vào trang này
+
+        public IActionResult Director()
+        {
+            return View();
+        }
     }
 }

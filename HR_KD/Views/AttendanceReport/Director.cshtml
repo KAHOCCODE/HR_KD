@@ -1,0 +1,452 @@
+﻿@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+    var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+    var role = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Chấm Công Giám Đốc</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+</head>
+<body class="bg-gray-50 font-sans">
+    @if (string.IsNullOrEmpty(maNv))
+    {
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <script>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
+                    confirmButtonText: 'OK'
+                }).then(() => window.location.href = '/Account/Login');
+            </script>
+    }
+    else
+    {
+            <!-- Main Container -->
+            <div class="min-h-screen p-4 md:p-8">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Header -->
+                    <header class="mb-8">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-calendar-check mr-2 text-indigo-600"></i> Báo Cáo Chấm Công Giám Đốc
+                        </h1>
+                        <p class="text-sm md:text-base text-gray-500 mt-1">Theo dõi chấm công, nghỉ phép, tăng ca và giờ làm việc của tất cả nhân viên theo tháng.</p>
+                    </header>
+
+                    <!-- Filters -->
+                    <div class="bg-white shadow-sm rounded-lg p-4 md:p-6 mb-8">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label for="departmentFilter" class="block text-sm font-medium text-gray-700">Phòng Ban</label>
+                                <select id="departmentFilter" class="mt-1 block w-full p-2.5 border rounded-md focus:ring-2 focus:ring-indigo-500 text-sm">
+                                    <option value="">Tất cả</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="positionFilter" class="block text-sm font-medium text-gray-700">Chức Vụ</label>
+                                <select id="positionFilter" class="mt-1 block w-full p-2.5 border rounded-md focus:ring-2 focus:ring-indigo-500 text-sm">
+                                    <option value="">Tất cả</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="monthPicker" class="block text-sm font-medium text-gray-700">Chọn Tháng</label>
+                                <div class="relative">
+                                    <input type="text" id="monthPicker" class="w-full p-2.5 border rounded-md focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Chọn tháng">
+                                    <i class="fas fa-calendar-alt absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-end space-x-4">
+                                <button id="filterBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Lọc</button>
+                                @* <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Xuất Excel</button> *@
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-check-circle text-blue-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Ngày Chấm Công</h3>
+                                <p id="total-attendance-days" class="text-lg font-semibold text-blue-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-umbrella-beach text-gray-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Ngày Nghỉ Phép</h3>
+                                <p id="total-leave-days" class="text-lg font-semibold text-gray-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Ngày Thiếu</h3>
+                                <p id="total-missing-days" class="text-lg font-semibold text-red-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-briefcase text-green-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Ngày Làm</h3>
+                                <p id="total-working-days" class="text-lg font-semibold text-green-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-clock text-indigo-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Ngày Tăng Ca</h3>
+                                <p id="total-overtime-days" class="text-lg font-semibold text-indigo-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-hourglass-half text-blue-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Giờ Chấm Công</h3>
+                                <p id="total-attendance-hours" class="text-lg font-semibold text-blue-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-hourglass-end text-red-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Giờ Thiếu</h3>
+                                <p id="total-missing-hours" class="text-lg font-semibold text-red-600">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="bg-white shadow-sm rounded-lg p-4 flex items-center space-x-4">
+                            <i class="fas fa-hourglass-start text-indigo-500 text-xl"></i>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600">Tổng Giờ Tăng Ca</h3>
+                                <p id="total-overtime-hours" class="text-lg font-semibold text-indigo-600">Đang tải...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="bg-white shadow-sm rounded-lg p-4 mb-8">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Chú Thích Màu</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #28a745;"></span>
+                                <span class="text-sm text-gray-600">Đã duyệt (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #dc3545;"></span>
+                                <span class="text-sm text-gray-600">Từ chối (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #ffc107;"></span>
+                                <span class="text-sm text-gray-600">Chờ duyệt (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #17a2b8;"></span>
+                                <span class="text-sm text-gray-600">Khác (Chấm công)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #6c757d;"></span>
+                                <span class="text-sm text-gray-600">Nghỉ phép</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: #007bff;"></span>
+                                <span class="text-sm text-gray-600">Tăng ca</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Table -->
+                    <div class="bg-white shadow-sm rounded-lg p-4 md:p-6 mb-8">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Danh Sách Nhân Viên</h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Mã NV</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Họ Tên</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Phòng Ban</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Chức Vụ</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Ngày Chấm Công</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Ngày Nghỉ Phép</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Ngày Thiếu</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Tổng Ngày Làm</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Ngày Tăng Ca</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Tổng Giờ Chấm Công</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Tổng Giờ Thiếu</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-gray-700">Tổng Giờ Tăng Ca</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeeTableBody" class="divide-y divide-gray-200">
+                                    <!-- Data will be populated via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Calendar -->
+                    <div class="bg-white shadow-sm rounded-lg p-4 md:p-6">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Lịch Chấm Công</h2>
+                        <div id="calendar" class="bg-gray-50 p-4 rounded-md"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- External Scripts -->
+            <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+            <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+            <!-- JavaScript Logic -->
+            <script>
+                (function () {
+                    console.log('Director Report script loaded');
+
+                    const maNv = '@maNv';
+                    if (!maNv) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: 'Mã nhân viên không hợp lệ.',
+                            confirmButtonText: 'OK'
+                        }).then(() => window.location.href = '/Account/Login');
+                        return;
+                    }
+
+                    document.addEventListener('DOMContentLoaded', function () {
+                        console.log('DOM fully loaded');
+
+                        const calendarEl = document.getElementById('calendar');
+                        if (!calendarEl) {
+                            console.error('Calendar element not found');
+                            return;
+                        }
+
+                        const calendar = new FullCalendar.Calendar(calendarEl, {
+                            initialView: 'dayGridMonth',
+                            events: [],
+                            eventClick: function (info) {
+                                const details = info.event.extendedProps.details;
+                                Swal.fire({
+                                    title: `Chi tiết: ${info.event.title}`,
+                                    html: `
+                                        <div class="text-left space-y-2">
+                                            <p><strong>Ngày:</strong> ${info.event.start.toLocaleDateString('vi-VN')}</p>
+                                            <p><strong>Giờ vào:</strong> ${details.gioVao || 'Không có'}</p>
+                                            <p><strong>Giờ ra:</strong> ${details.gioRa || 'Không có'}</p>
+                                            <p><strong>Tổng giờ:</strong> ${details.tongGio != null ? details.tongGio.toFixed(2) : '0'}h</p>
+                                            <p><strong>Ghi chú:</strong> ${details.ghiChu || 'Không có'}</p>
+                                        </div>
+                                    `,
+                                    icon: 'info',
+                                    confirmButtonText: 'Đóng',
+                                    customClass: {
+                                        confirmButton: 'bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700'
+                                    }
+                                });
+                            },
+                            height: 'auto',
+                            locale: 'vi',
+                            firstDay: 1,
+                            dayMaxEventRows: 3,
+                            eventOrder: 'start',
+                            views: {
+                                dayGridMonth: {
+                                    dayMaxEventRows: 3
+                                }
+                            }
+                        });
+                        calendar.render();
+                        console.log('FullCalendar initialized');
+
+                        const monthPicker = document.getElementById('monthPicker');
+                        if (!monthPicker) {
+                            console.error('Month picker element not found');
+                            return;
+                        }
+
+                        flatpickr(monthPicker, {
+                            dateFormat: "Y-m",
+                            defaultDate: new Date(),
+                            onChange: function (selectedDates) {
+                                if (selectedDates.length > 0) {
+                                    const monthYear = selectedDates[0].toISOString().slice(0, 7);
+                                    loadReport(monthYear);
+                                    calendar.gotoDate(selectedDates[0]);
+                                }
+                            }
+                        });
+                        console.log('Flatpickr initialized');
+
+                        // Load departments and positions
+                        function loadDepartments() {
+                            axios.get('/api/AttendanceReportApi/GetDepartmentsManager')
+                                .then(function (response) {
+                                    let options = '<option value="">Tất cả</option>';
+                                    response.data.forEach(dept => {
+                                        options += `<option value="${dept.maPhongBan}">${dept.tenPhongBan}</option>`;
+                                    });
+                                    document.getElementById('departmentFilter').innerHTML = options;
+                                })
+                                .catch(function (error) {
+                                    console.error('Error loading departments:', error);
+                                });
+                        }
+
+                        function loadPositions() {
+                            axios.get('/api/AttendanceReportApi/GetPositionsManager')
+                                .then(function (response) {
+                                    let options = '<option value="">Tất cả</option>';
+                                    response.data.forEach(pos => {
+                                        options += `<option value="${pos.maChucVu}">${pos.tenChucVu}</option>`;
+                                    });
+                                    document.getElementById('positionFilter').innerHTML = options;
+                                })
+                                .catch(function (error) {
+                                    console.error('Error loading positions:', error);
+                                });
+                        }
+
+                        // Load report data
+                        function loadReport(monthYear) {
+                            console.log('Loading report for:', monthYear);
+                            document.getElementById('total-attendance-days').innerText = 'Đang tải...';
+                            document.getElementById('total-leave-days').innerText = 'Đang tải...';
+                            document.getElementById('total-missing-days').innerText = 'Đang tải...';
+                            document.getElementById('total-working-days').innerText = 'Đang tải...';
+                            document.getElementById('total-overtime-days').innerText = 'Đang tải...';
+                            document.getElementById('total-attendance-hours').innerText = 'Đang tải...';
+                            document.getElementById('total-missing-hours').innerText = 'Đang tải...';
+                            document.getElementById('total-overtime-hours').innerText = 'Đang tải...';
+                            document.getElementById('employeeTableBody').innerHTML = '';
+
+                            const maPhongBan = document.getElementById('departmentFilter').value;
+                            const maChucVu = document.getElementById('positionFilter').value;
+
+                            axios.get('/api/AttendanceReportApi/GetAllEmployeesMonthlyReport', {
+                                params: {
+                                    monthYear: monthYear,
+                                    maPhongBan: maPhongBan || null,
+                                    maChucVu: maChucVu || null
+                                }
+                            })
+                                .then(function (response) {
+                                    console.log('API response:', response.data);
+                                    if (response.data.success) {
+                                        // Calculate totals
+                                        const totalAttendanceDays = response.data.employees.reduce((sum, emp) => sum + emp.summary.attendanceDays, 0);
+                                        const totalLeaveDays = response.data.employees.reduce((sum, emp) => sum + emp.summary.leaveDays, 0);
+                                        const totalMissingDays = response.data.employees.reduce((sum, emp) => sum + emp.summary.missingDays, 0);
+                                        const totalWorkingDays = response.data.employees.reduce((sum, emp) => sum + emp.summary.totalWorkingDays, 0);
+                                        const totalOvertimeDays = response.data.employees.reduce((sum, emp) => sum + emp.summary.overtimeDays, 0);
+                                        const totalAttendanceHours = response.data.employees.reduce((sum, emp) => sum + emp.summary.totalAttendanceHours, 0);
+                                        const totalMissingHours = response.data.employees.reduce((sum, emp) => sum + emp.summary.totalMissingHours, 0);
+                                        const totalOvertimeHours = response.data.employees.reduce((sum, emp) => sum + emp.summary.totalOvertimeHours, 0);
+
+                                        // Update summary cards
+                                        document.getElementById('total-attendance-days').innerText = totalAttendanceDays;
+                                        document.getElementById('total-leave-days').innerText = totalLeaveDays;
+                                        document.getElementById('total-missing-days').innerText = totalMissingDays;
+                                        document.getElementById('total-working-days').innerText = totalWorkingDays;
+                                        document.getElementById('total-overtime-days').innerText = totalOvertimeDays;
+                                        document.getElementById('total-attendance-hours').innerText = totalAttendanceHours.toFixed(2) + 'h';
+                                        document.getElementById('total-missing-hours').innerText = totalMissingHours.toFixed(2) + 'h';
+                                        document.getElementById('total-overtime-hours').innerText = totalOvertimeHours.toFixed(2) + 'h';
+
+                                        // Populate employee table
+                                        let rows = '';
+                                        response.data.employees.forEach(emp => {
+                                            rows += `
+                                                <tr class="hover:bg-gray-50">
+                                                    <td class="px-6 py-4">${emp.maNv}</td>
+                                                    <td class="px-6 py-4">${emp.hoTen}</td>
+                                                    <td class="px-6 py-4">${emp.tenPhongBan}</td>
+                                                    <td class="px-6 py-4">${emp.tenChucVu}</td>
+                                                    <td class="px-6 py-4">${emp.summary.attendanceDays}</td>
+                                                    <td class="px-6 py-4">${emp.summary.leaveDays}</td>
+                                                    <td class="px-6 py-4">${emp.summary.missingDays}</td>
+                                                    <td class="px-6 py-4">${emp.summary.totalWorkingDays}</td>
+                                                    <td class="px-6 py-4">${emp.summary.overtimeDays}</td>
+                                                    <td class="px-6 py-4">${emp.summary.totalAttendanceHours.toFixed(2)}</td>
+                                                    <td class="px-6 py-4">${emp.summary.totalMissingHours.toFixed(2)}</td>
+                                                    <td class="px-6 py-4">${emp.summary.totalOvertimeHours.toFixed(2)}</td>
+                                                </tr>`;
+                                        });
+                                        document.getElementById('employeeTableBody').innerHTML = rows;
+
+                                        // Note: Calendar events are not directly available from GetAllEmployeesMonthlyReport
+                                        // For simplicity, calendar is not populated in this view
+                                        calendar.getEventSources().forEach(source => source.remove());
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Lỗi!',
+                                            text: response.data.message,
+                                            confirmButtonText: 'OK'
+                                        });
+                                    }
+                                })
+                                .catch(function (error) {
+                                    console.error('API error:', error);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Lỗi!',
+                                        text: `Không thể tải báo cáo: ${error.response?.data?.message || error.message}`,
+                                        confirmButtonText: 'OK'
+                                    });
+                                });
+                        }
+
+                        // // Export to Excel
+                        // document.getElementById('exportBtn').addEventListener('click', function () {
+                        //     const maPhongBan = document.getElementById('departmentFilter').value;
+                        //     const maChucVu = document.getElementById('positionFilter').value;
+                        //     const monthYear = document.getElementById('monthPicker').value;
+
+                        //     let url = '/api/AttendanceReportApi/ExportMonthlyReport?';
+                        //     if (maPhongBan) url += `maPhongBan=${maPhongBan}&`;
+                        //     if (maChucVu) url += `maChucVu=${maChucVu}&`;
+                        //     if (monthYear) url += `monthYear=${monthYear}`;
+
+                        //     window.location.href = url;
+                        // });
+
+                        // Filter button click
+                        document.getElementById('filterBtn').addEventListener('click', function () {
+                            const monthYear = document.getElementById('monthPicker').value || new Date().toISOString().slice(0, 7);
+                            loadReport(monthYear);
+                        });
+
+                        // Initial load
+                        loadDepartments();
+                        loadPositions();
+                        loadReport(new Date().toISOString().slice(0, 7));
+                    });
+                })();
+            </script>
+
+            <style>
+                .fc-event {
+                    cursor: pointer;
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                }
+                .fc-daygrid-event {
+                    padding: 2px 4px;
+                }
+                .fc .fc-daygrid-day-number {
+                    color: #374151;
+                }
+                .fc .fc-daygrid-day-top {
+                    justify-content: center;
+                }
+            </style>
+    }
+</body>
+</html>

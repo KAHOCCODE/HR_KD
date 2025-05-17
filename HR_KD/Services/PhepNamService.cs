@@ -508,5 +508,111 @@ namespace HR_KD.Services
                 await UpdateSoNgayDaSuDungAsync(maNgayNghi);
             }
         }
+
+        public async Task<bool> CheckSoNgayConLaiAsync(int maNgayNghi)
+        {
+            // Lấy thông tin đơn nghỉ phép
+            var ngayNghi = await _context.NgayNghis
+                .Include(n => n.MaLoaiNgayNghiNavigation)
+                .FirstOrDefaultAsync(n => n.MaNgayNghi == maNgayNghi);
+
+            if (ngayNghi == null)
+            {
+                throw new InvalidOperationException("Đơn nghỉ phép không tồn tại.");
+            }
+
+            // Kiểm tra xem loại ngày nghỉ có tính vào phép năm không
+            if (ngayNghi.MaLoaiNgayNghiNavigation == null || !ngayNghi.MaLoaiNgayNghiNavigation.TinhVaoPhepNam)
+            {
+                return true; // Không tính vào phép năm, luôn cho phép duyệt
+            }
+
+            // Lấy tất cả các ngày nghỉ có cùng MaDon
+            var allNgayNghis = await _context.NgayNghis
+                .Include(n => n.MaLoaiNgayNghiNavigation)
+                .Where(n => n.MaDon == ngayNghi.MaDon)
+                .ToListAsync();
+
+            // Tính tổng số ngày nghỉ có tính vào phép năm
+            decimal tongSoNgayNghi = allNgayNghis
+                .Where(n => n.MaLoaiNgayNghiNavigation != null && n.MaLoaiNgayNghiNavigation.TinhVaoPhepNam)
+                .Count();
+
+            // Lấy số dư phép hiện tại
+            var soDuPhep = await _context.SoDuPheps
+                .FirstOrDefaultAsync(s => s.MaNv == ngayNghi.MaNv && s.Nam == ngayNghi.NgayNghi1.Year);
+
+            if (soDuPhep == null)
+            {
+                return false; // Chưa có số dư phép, không cho phép duyệt
+            }
+
+            // Kiểm tra số ngày còn lại có đủ không
+            return soDuPhep.SoNgayConLai >= tongSoNgayNghi;
+        }
+
+        public async Task<decimal> GetSoNgayConLaiAsync(int maNv, int nam)
+        {
+            var soDuPhep = await _context.SoDuPheps
+                .FirstOrDefaultAsync(s => s.MaNv == maNv && s.Nam == nam);
+
+            return soDuPhep?.SoNgayConLai ?? 0;
+        }
+
+        public async Task<(bool canApprove, string message)> CheckBatchSoNgayConLaiAsync(List<int> maNgayNghiList)
+        {
+            var result = new List<(int maNv, string hoTen, decimal soNgayConLai, decimal soNgayCanDung)>();
+
+            foreach (var maNgayNghi in maNgayNghiList)
+            {
+                var ngayNghi = await _context.NgayNghis
+                    .Include(n => n.MaLoaiNgayNghiNavigation)
+                    .Include(n => n.MaNvNavigation)
+                    .FirstOrDefaultAsync(n => n.MaNgayNghi == maNgayNghi);
+
+                if (ngayNghi == null) continue;
+
+                // Kiểm tra xem loại ngày nghỉ có tính vào phép năm không
+                if (ngayNghi.MaLoaiNgayNghiNavigation == null || !ngayNghi.MaLoaiNgayNghiNavigation.TinhVaoPhepNam)
+                {
+                    continue; // Không tính vào phép năm, bỏ qua
+                }
+
+                // Lấy tất cả các ngày nghỉ có cùng MaDon
+                var allNgayNghis = await _context.NgayNghis
+                    .Include(n => n.MaLoaiNgayNghiNavigation)
+                    .Where(n => n.MaDon == ngayNghi.MaDon)
+                    .ToListAsync();
+
+                // Tính tổng số ngày nghỉ có tính vào phép năm
+                decimal tongSoNgayNghi = allNgayNghis
+                    .Where(n => n.MaLoaiNgayNghiNavigation != null && n.MaLoaiNgayNghiNavigation.TinhVaoPhepNam)
+                    .Count();
+
+                // Lấy số dư phép hiện tại
+                var soDuPhep = await _context.SoDuPheps
+                    .FirstOrDefaultAsync(s => s.MaNv == ngayNghi.MaNv && s.Nam == ngayNghi.NgayNghi1.Year);
+
+                if (soDuPhep == null || soDuPhep.SoNgayConLai < tongSoNgayNghi)
+                {
+                    result.Add((
+                        ngayNghi.MaNv,
+                        ngayNghi.MaNvNavigation?.HoTen ?? "Không xác định",
+                        soDuPhep?.SoNgayConLai ?? 0,
+                        tongSoNgayNghi
+                    ));
+                }
+            }
+
+            if (result.Any())
+            {
+                var message = "Các nhân viên sau không đủ số ngày phép còn lại:\n" +
+                    string.Join("\n", result.Select(r => 
+                        $"- {r.hoTen}: Còn {r.soNgayConLai} ngày, cần {r.soNgayCanDung} ngày"));
+                return (false, message);
+            }
+
+            return (true, "Có thể duyệt tất cả đơn");
+        }
     }
 }

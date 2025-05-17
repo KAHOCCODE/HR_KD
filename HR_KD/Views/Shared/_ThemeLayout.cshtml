@@ -246,11 +246,24 @@
                             </ul>
                         </li>
 
-                        <li>
-                            <a href="~/Leave/Index">
-                                <i class="fa fa-bed"></i>
-                                <span>Nghỉ Phép</span>
-                            </a>
+                        <li class="submenu">
+                            <a href="~/Leave/Index"><i class="fa fa-bed"></i> <span>Nghỉ Phép</span> <span class="menu-arrow"></span></a>
+                            <ul style="display: none;">
+                                <!-- Accessible to all users -->
+                                <li><a href="~/Leave/Index"><i class="fa fa-list"></i> Danh sách nghỉ phép</a></li>
+                                
+                                <!-- Restricted to EMPLOYEE_MANAGER role -->
+                                @if (User.IsInRole("EMPLOYEE_MANAGER"))
+                                {
+                                    <li><a href="~/LeaveManager/Index"><i class="fa fa-tasks"></i> Quản lý nghỉ phép</a></li>
+                                }
+                                
+                                <!-- Restricted to DIRECTOR role -->
+                                @if (User.IsInRole("DIRECTOR"))
+                                {
+                                    <li><a href="~/LeaveManager/Director"><i class="fa fa-check-circle"></i> Duyệt nghỉ phép</a></li>
+                                }
+                            </ul>
                         </li>
                         <!-- Quản lý lương -->
                         @{

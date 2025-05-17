@@ -900,8 +900,12 @@
                             <div class="detail-value" id="detail-fileDinhKem">--</div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">Lý Do Từ Chối</div>
+                            <div class="detail-label">Lý Do Hủy</div>
                             <div class="detail-value rejection-reason" id="detail-lyDoTuChoi">--</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Người Xử Lý</div>
+                            <div class="detail-value" id="detail-ghiChu">--</div>
                         </div>
                     </div>
                 </div>
@@ -928,12 +932,14 @@
                     lyDo: lyDo
                 })
             })
-                .then(res => {
-                    if (!res.ok) {
-                        throw new Error("Lỗi kết nối: " + res.statusText);
-                    }
-                    return res.json();
-                });
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => {
+                        throw new Error(err.message || "Lỗi kết nối: " + res.statusText);
+                    });
+                }
+                return res.json();
+            });
         }
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -1133,7 +1139,8 @@
                         document.getElementById('detail-lyDo').textContent = item.lyDo ?? 'Không xác định';
                         document.getElementById('detail-trangThai').textContent = item.trangThai ?? '--';
                         document.getElementById('detail-soNgayConLai').textContent = item.soNgayConLai != null ? item.soNgayConLai : '--';
-                        document.getElementById('detail-lyDoTuChoi').textContent = item.lyDo ?? '--';
+                        document.getElementById('detail-lyDoTuChoi').textContent = item.trangThai === 'Đã hủy' ? (item.lyDoHuy ?? '--') : (item.lyDoTuChoi ?? '--');
+                        document.getElementById('detail-ghiChu').textContent = item.ghiChu ?? '--';
                         document.getElementById('detail-tongSoNgay').textContent = item.tongSoNgay ?? '--';
 
                         // Hiển thị danh sách ngày nghỉ
@@ -1205,9 +1212,9 @@
                             fileDinhKemElement.textContent = 'Không có';
                         }
 
-                        const isPending = item.trangThai === 'Chờ duyệt';
-                        document.getElementById('modal-approve').style.display = isPending ? 'block' : 'none';
-                        document.getElementById('modal-reject').style.display = isPending ? 'block' : 'none';
+                        const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không hưởng lương)" || item.trangThai === "Từ chối" || item.trangThai === "Đã hủy";
+                        document.getElementById('modal-approve').style.display = isProcessed ? 'none' : 'block';
+                        document.getElementById('modal-reject').style.display = isProcessed ? 'none' : 'block';
                         document.getElementById('modal-reject').setAttribute('data-ma-don', item.maNgayNghi);
                         detailsModal.setAttribute('data-ma-don', item.maNgayNghi);
 
@@ -1233,51 +1240,6 @@
                     }
                 });
             }
-
-            document.getElementById('modal-approve').addEventListener('click', function () {
-                const maNgayNghi = detailsModal.getAttribute('data-ma-don');
-                Swal.fire({
-                    title: 'Xác nhận duyệt',
-                    text: 'Bạn có chắc chắn muốn duyệt đơn nghỉ phép này?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Xác nhận',
-                    cancelButtonText: 'Hủy'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        updateStatus(maNgayNghi, 'Đã duyệt')
-                            .then(res => {
-                                if (res.success) {
-                                    Swal.fire({
-                                        title: 'Thành công',
-                                        text: res.message,
-                                        icon: 'success',
-                                        confirmButtonText: 'OK'
-                                    }).then(() => {
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        title: 'Lỗi',
-                                        text: res.message,
-                                        icon: 'error',
-                                        confirmButtonText: 'OK'
-                                    });
-                                }
-                            })
-                            .catch(err => {
-                                Swal.fire({
-                                    title: 'Lỗi',
-                                    text: 'Có lỗi xảy ra.',
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
-                                });
-                            });
-                    }
-                });
-                const modalInstance = bootstrap.Modal.getInstance(detailsModal);
-                modalInstance.hide();
-            });
 
             function updateBatchButtonState() {
                 const selectedItems = document.querySelectorAll(".select-item:checked");
@@ -1335,35 +1297,41 @@
                                 trangThai: 'Đã duyệt'
                             })
                         })
-                            .then(res => res.json())
-                            .then(res => {
-                                if (res.success) {
-                                    Swal.fire({
-                                        title: 'Thành công',
-                                        text: res.message,
-                                        icon: 'success',
-                                        confirmButtonText: 'OK'
-                                    }).then(() => {
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        title: 'Lỗi',
-                                        text: res.message,
-                                        icon: 'error',
-                                        confirmButtonText: 'OK'
-                                    });
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
+                        .then(res => {
+                            if (!res.ok) {
+                                return res.json().then(err => {
+                                    throw new Error(err.message || "Lỗi kết nối");
+                                });
+                            }
+                            return res.json();
+                        })
+                        .then(res => {
+                            if (res.success) {
+                                Swal.fire({
+                                    title: 'Thành công',
+                                    text: res.message,
+                                    icon: 'success',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
                                 Swal.fire({
                                     title: 'Lỗi',
-                                    text: 'Có lỗi xảy ra khi xử lý yêu cầu.',
+                                    text: res.message,
                                     icon: 'error',
                                     confirmButtonText: 'OK'
                                 });
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                title: 'Cảnh báo',
+                                text: error.message,
+                                icon: 'warning',
+                                confirmButtonText: 'OK'
                             });
+                        });
                     }
                 });
             });
@@ -1397,8 +1365,7 @@
 
                 const currentMonth = currentDate.getMonth();
                 const currentYear = currentDate.getFullYear();
-                const monthLabels = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
-                    "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
+                const monthLabels = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
 
                 for (let i = 0; i < 6; i++) {
                     let month = currentMonth - i;
@@ -1568,7 +1535,7 @@
                 }
 
                 dataList.slice(start, end).forEach(item => {
-                    const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không hưởng lương)" || item.trangThai === "Từ chối";
+                    const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không lương)" || item.trangThai === "Từ chối" || item.trangThai === "Đã hủy";
                     const actionContent = `
                         <div class="action-buttons">
                             ${isProcessed ? 'Đã xử lý' : `
@@ -1583,11 +1550,28 @@
                                     if (result.isConfirmed) {
                                         updateStatus(${item.maNgayNghi}, 'Đã duyệt').then(res => {
                                             if (res.success) {
-                                                Swal.fire({ title: 'Thành công', text: res.message, icon: 'success', confirmButtonText: 'OK' }).then(() => location.reload());
+                                                Swal.fire({ 
+                                                    title: 'Thành công', 
+                                                    text: res.message, 
+                                                    icon: 'success', 
+                                                    confirmButtonText: 'OK' 
+                                                }).then(() => location.reload());
                                             } else {
-                                                Swal.fire({ title: 'Lỗi', text: res.message, icon: 'error', confirmButtonText: 'OK' });
+                                                Swal.fire({ 
+                                                    title: 'Lỗi', 
+                                                    text: res.message, 
+                                                    icon: 'error', 
+                                                    confirmButtonText: 'OK' 
+                                                });
                                             }
-                                        }).catch(err => Swal.fire({ title: 'Lỗi', text: 'Có lỗi xảy ra.', icon: 'error', confirmButtonText: 'OK' }));
+                                        }).catch(err => {
+                                            Swal.fire({ 
+                                                title: 'Cảnh báo', 
+                                                text: err.message, 
+                                                icon: 'warning',
+                                                confirmButtonText: 'OK'
+                                            });
+                                        });
                                     }
                                 });"></i>
                                 <button class="btn action-icon reject" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-bs-placement="top" title="Từ chối" data-ma-don="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">

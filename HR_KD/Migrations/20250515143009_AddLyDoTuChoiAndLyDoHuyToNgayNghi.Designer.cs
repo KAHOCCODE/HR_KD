@@ -4,6 +4,7 @@ using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HR_KD.Migrations
 {
     [DbContext(typeof(HrDbContext))]
-    partial class HrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250515143009_AddLyDoTuChoiAndLyDoHuyToNgayNghi")]
+    partial class AddLyDoTuChoiAndLyDoHuyToNgayNghi
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,9 +254,6 @@ namespace HR_KD.Migrations
 
                     b.Property<int>("MaNvDuyet")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("NgayDuyet")
-                        .HasColumnType("datetime2");
 
                     b.Property<DateOnly>("NgayLamViec")
                         .HasColumnType("date");
@@ -1077,9 +1077,6 @@ namespace HR_KD.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("QuyenChiTiet")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("TenQuyenHan")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -1374,9 +1371,6 @@ namespace HR_KD.Migrations
 
                     b.Property<string>("GhiChu")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
 
                     b.Property<decimal>("LuongCoBan")
                         .HasColumnType("decimal(18,2)");

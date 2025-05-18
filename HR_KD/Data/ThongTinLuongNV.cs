@@ -29,6 +29,8 @@ namespace HR_KD.Data
 
         public string? GhiChu { get; set; }
 
+        public bool IsActive { get; set; }
+
         public virtual NhanVien NhanVien { get; set; } = null!;
     }
 }

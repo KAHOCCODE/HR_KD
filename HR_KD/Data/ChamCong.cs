@@ -20,6 +20,9 @@ public partial class ChamCong
     public string? TrangThai { get; set; }
 
     public string? GhiChu { get; set; }
+
     public int MaNvDuyet { get; set; }
+
+    public DateTime? NgayDuyet { get; set; }
     public virtual NhanVien MaNvNavigation { get; set; } = null!;
 }

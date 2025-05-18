@@ -33,34 +33,58 @@
                 <option value="">Tất cả</option>
             </select>
         </div>
-        <button class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" onclick="loadPayrollsForAccountant()">
+        <button class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" onclick="loadAllData()">
             <i class="fas fa-search mr-2"></i> Tải dữ liệu
         </button>
     </div>
 
-    <div class="mb-4 flex gap-3">
-        <button id="approveAllButton" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" onclick="approveAllPayrolls()">
-            <i class="fas fa-check-double mr-2"></i> Duyệt tất cả
-        </button>
-        <button id="returnSelectedButton" class="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="openReturnModal()">
-            <i class="fas fa-undo mr-2"></i> Trả về đã chọn
-        </button>
-    </div>
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="payrollTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="payrolls-tab" data-bs-toggle="tab" data-bs-target="#payrolls" type="button" role="tab" aria-controls="payrolls" aria-selected="true">Bảng lương cần duyệt</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="revision-requests-tab" data-bs-toggle="tab" data-bs-target="#revision-requests" type="button" role="tab" aria-controls="revision-requests" aria-selected="false">Yêu cầu chỉnh sửa</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="director-rejections-tab" data-bs-toggle="tab" data-bs-target="#director-rejections" type="button" role="tab" aria-controls="director-rejections" aria-selected="false">Trả về từ giám đốc</button>
+        </li>
+    </ul>
 
-    <div id="payrollsForAccountantContainer"></div>
+    <!-- Tab Content -->
+    <div class="tab-content" id="payrollTabsContent">
+        <div class="tab-pane fade show active" id="payrolls" role="tabpanel" aria-labelledby="payrolls-tab">
+            <div class="mb-4 flex gap-3">
+                <button id="approveAllButton" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" onclick="approveAllPayrolls()">
+                    <i class="fas fa-check-double mr-2"></i> Duyệt tất cả
+                </button>
+                <button id="returnSelectedButton" class="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="openReturnModal()">
+                    <i class="fas fa-undo mr-2"></i> Trả về đã chọn
+                </button>
+            </div>
+            <div id="payrollsForAccountantContainer"></div>
+        </div>
+        <div class="tab-pane fade" id="revision-requests" role="tabpanel" aria-labelledby="revision-requests-tab">
+            <div id="revisionRequestsContainer"></div>
+        </div>
+        <div class="tab-pane fade" id="director-rejections" role="tabpanel" aria-labelledby="director-rejections-tab">
+            <div id="directorRejectionsContainer"></div>
+        </div>
+    </div>
 </div>
 
 @await Html.PartialAsync("_PayrollDetailModal", new { ShowDownloadPdf = true })
 
-<div class="modal fade" id="returnReasonModal" tabindex="-1">
+<!-- Modal trả về bảng lương -->
+<div class="modal fade" id="returnReasonModal" tabindex="-1" aria-labelledby="returnReasonModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-yellow-100 border-b border-yellow-200">
-                <h5 class="modal-title text-yellow-700 font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i> Lý do trả về</h5>
+                <h5 class="modal-title text-yellow-700 font-semibold" id="returnReasonModalLabel"><i class="fas fa-exclamation-triangle mr-2"></i> Lý do trả về</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <textarea class="form-control" id="returnReason" rows="3" placeholder="Nhập lý do trả về" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                <textarea class="form-control" id="returnReason" rows="3" placeholder="Nhập lý do trả về"></textarea>
                 <input type="hidden" id="selectedPayrollIds" />
             </div>
             <div class="modal-footer bg-gray-100 border-t border-gray-200 p-3">
@@ -71,24 +95,131 @@
     </div>
 </div>
 
+<!-- Modal xử lý yêu cầu chỉnh sửa -->
+<div class="modal fade" id="revisionRequestModal" tabindex="-1" aria-labelledby="revisionRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-blue-100 border-b border-blue-200">
+                <h5 class="modal-title text-blue-700 font-semibold" id="revisionRequestModalLabel"><i class="fas fa-edit mr-2"></i> Xử lý yêu cầu chỉnh sửa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p><strong>Nhân viên:</strong> <span id="revisionEmployeeName"></span></p>
+                <p><strong>Lý do yêu cầu:</strong> <span id="revisionReason"></span></p>
+                <div class="mt-4">
+                    <h6 class="font-semibold text-gray-700">Ngày chấm công thiếu:</h6>
+                    <div id="missingDaysList" class="mt-2"></div>
+                </div>
+                <div class="mt-4">
+                    <label for="addAttendanceDate" class="block text-gray-700 text-sm font-bold mb-2">Thêm chấm công:</label>
+                    <div class="flex gap-2">
+                        <input type="date" id="addAttendanceDate" class="form-control w-1/3" />
+                        <input type="time" id="addAttendanceIn" class="form-control w-1/4" value="08:00" />
+                        <input type="time" id="addAttendanceOut" class="form-control w-1/4" value="17:00" />
+                        <button class="btn btn-primary" onclick="addAttendance()"><i class="fas fa-plus mr-2"></i> Thêm</button>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label for="addOvertimeDate" class="block text-gray-700 text-sm font-bold mb-2">Thêm tăng ca:</label>
+                    <div class="flex gap-2">
+                        <input type="date" id="addOvertimeDate" class="form-control w-1/3" />
+                        <input type="number" id="addOvertimeHours" class="form-control w-1/4" placeholder="Số giờ" min="1" step="0.5" />
+                        <input type="number" id="addOvertimeRate" class="form-control w-1/4" placeholder="Tỷ lệ" value="1.5" step="0.1" />
+                        <button class="btn btn-primary" onclick="addOvertime()"><i class="fas fa-plus mr-2"></i> Thêm</button>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label for="managerReason" class="block text-gray-700 text-sm font-bold mb-2">Lý do xử lý:</label>
+                    <textarea id="managerReason" class="w-full p-2 border rounded" rows="4" placeholder="Nhập lý do phê duyệt/từ chối..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-gray-100 border-t border-gray-200 p-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times mr-2"></i> Hủy</button>
+                <button type="button" class="btn btn-success" id="approveRevisionBtn"><i class="fas fa-check mr-2"></i> Phê duyệt</button>
+                <button type="button" class="btn btn-warning" id="rejectRevisionBtn"><i class="fas fa-times mr-2"></i> Từ chối</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal gửi lại bảng lương cho giám đốc -->
+<div class="modal fade" id="resendToDirectorModal" tabindex="-1" aria-labelledby="resendToDirectorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-indigo-100 border-b border-indigo-200">
+                <h5 class="modal-title text-indigo-700 font-semibold" id="resendToDirectorModalLabel"><i class="fas fa-paper-plane mr-2"></i> Gửi lại bảng lương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p><strong>Nhân viên:</strong> <span id="resendEmployeeName"></span></p>
+                <p><strong>Lý do trả về:</strong> <span id="resendReason"></span></p>
+                <div class="mt-4">
+                    <label for="adjustmentNote" class="block text-gray-700 text-sm font-bold mb-2">Ghi chú chỉnh sửa:</label>
+                    <textarea id="adjustmentNote" class="w-full p-2 border rounded" rows="4" placeholder="Nhập ghi chú về các chỉnh sửa đã thực hiện..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-gray-100 border-t border-gray-200 p-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times mr-2"></i> Hủy</button>
+                <button type="button" class="btn btn-primary" id="resendToDirectorBtn"><i class="fas fa-paper-plane mr-2"></i> Gửi lại</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal chỉnh sửa tài khoản ngân hàng -->
+<div class="modal fade" id="editBankAccountModal" tabindex="-1" aria-labelledby="editBankAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-blue-100 border-b border-blue-200">
+                <h5 class="modal-title text-blue-700 font-semibold" id="editBankAccountModalLabel"><i class="fas fa-university mr-2"></i> Chỉnh sửa tài khoản ngân hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="bankAccountMaNv" />
+                <div class="mb-3">
+                    <label for="bankName" class="block text-gray-700 text-sm font-bold mb-2">Tên ngân hàng:</label>
+                    <input type="text" id="bankName" class="form-control" placeholder="VD: Vietcombank" />
+                </div>
+                <div class="mb-3">
+                    <label for="bankBranch" class="block text-gray-700 text-sm font-bold mb-2">Chi nhánh:</label>
+                    <input type="text" id="bankBranch" class="form-control" placeholder="VD: Hà Nội" />
+                </div>
+                <div class="mb-3">
+                    <label for="bankAccountNumber" class="block text-gray-700 text-sm font-bold mb-2">Số tài khoản:</label>
+                    <input type="text" id="bankAccountNumber" class="form-control" placeholder="VD: 1234567890" />
+                </div>
+            </div>
+            <div class="modal-footer bg-gray-100 border-t border-gray-200 p-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times mr-2"></i> Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="saveBankAccount()"><i class="fas fa-save mr-2"></i> Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        let currentMaLuong, currentMaNv, currentYear, currentMonth;
+
         $(document).ready(function () {
             loadDepartments();
-            loadPayrollsForAccountant();
-            $('#monthSelect, #yearSelect, #departmentSelect').on('change', loadPayrollsForAccountant);
+            loadAllData();
+            $('#monthSelect, #yearSelect, #departmentSelect').on('change', loadAllData);
         });
+
+        function loadAllData() {
+            loadPayrollsForAccountant();
+            loadRevisionRequests();
+            loadDirectorRejections();
+        }
 
         function loadDepartments() {
             $.get("/api/PhongBanApi/GetPhongBans", function (data) {
                 const departmentSelect = $('#departmentSelect');
                 departmentSelect.empty();
-                departmentSelect.append($('<option>', {
-                    value: '',
-                    text: 'Tất cả'
-                }));
+                departmentSelect.append($('<option>', { value: '', text: 'Tất cả' }));
                 $.each(data, function (index, item) {
                     departmentSelect.append($('<option>', {
                         value: item.maPhongBan,
@@ -96,11 +227,10 @@
                     }));
                 });
             }).fail(function (xhr) {
-                console.error("Lỗi khi tải phòng ban:", xhr);
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Không thể tải danh sách phòng ban. Vui lòng kiểm tra lại kết nối. Chi tiết lỗi: ' + xhr.responseText
+                    text: 'Không thể tải danh sách phòng ban: ' + (xhr.responseText || 'Đã xảy ra lỗi.')
                 });
             });
         }
@@ -108,127 +238,220 @@
         function loadPayrollsForAccountant() {
             const year = $('#yearSelect').val();
             const month = $('#monthSelect').val();
-            const departmentId = $('#departmentSelect').val();
+            const departmentId = $('#departmentSelect').val() || '';
 
             $.get(`/api/PayrollAccountantApi/GetPayrolls?year=${year}&month=${month}&departmentId=${departmentId}`, function (data) {
                 let html = '';
                 if (data && data.length > 0) {
                     data.forEach(phongBan => {
                         html += `<div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-                                            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                                <h3 class="text-lg font-semibold text-gray-700"><i class="fas fa-building mr-2"></i> ${phongBan.tenPhongBan}</h3>
-                                            </div>
-                                            <div class="overflow-x-auto">
-                                                <table class="min-w-full leading-normal">
-                                                    <thead class="bg-gray-100">
-                                                        <tr>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                                <input type="checkbox" id="checkAll-${phongBan.maPhongBan}" class="mr-2" onchange="toggleCheckboxes('${phongBan.maPhongBan}')">
-                                                                Mã NV
-                                                            </th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ tên</th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thực nhận</th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
-                                                            <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hành động</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>`;
+                                                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                                        <h3 class="text-lg font-semibold text-gray-700"><i class="fas fa-building mr-2"></i> ${phongBan.tenPhongBan}</h3>
+                                                    </div>
+                                                    <div class="overflow-x-auto">
+                                                        <table class="min-w-full leading-normal">
+                                                            <thead class="bg-gray-100">
+                                                                <tr>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                                        <input type="checkbox" id="checkAll-${phongBan.maPhongBan}" class="mr-2" onchange="toggleCheckboxes('${phongBan.maPhongBan}')">
+                                                                        Mã NV
+                                                                    </th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ tên</th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thực nhận</th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
+                                                                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hành động</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>`;
                         phongBan.payrolls.forEach(payroll => {
                             const statusClass = getTailwindStatusClass(payroll.trangThai);
                             html += `<tr>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                                    <input type="checkbox" class="payroll-checkbox checkbox-${phongBan.maPhongBan} mr-2" value="${payroll.maLuong}">
-                                                    ${payroll.maNv}
-                                                </td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.hoTen}</td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.thucNhan ? formatCurrency(payroll.thucNhan) : ''}</td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm"><span class="${statusClass}">${payroll.tenTrangThai}</span></td>
-                                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                                    <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2" onclick="viewPayrollDetail(${payroll.maLuong})">
-                                                        <i class="fas fa-eye mr-2"></i> Chi tiết
-                                                    </button>
-                                                    <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 mr-2" onclick="approveByAccountant([${payroll.maLuong}])">
-                                                        <i class="fas fa-check mr-2"></i> Duyệt
-                                                    </button>
-                                                    <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="openReturnModal([${payroll.maLuong}])">
-                                                        <i class="fas fa-undo mr-2"></i> Trả về
-                                                    </button>
-                                                </td>
-                                            </tr>`;
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                            <input type="checkbox" class="payroll-checkbox checkbox-${phongBan.maPhongBan} mr-2" value="${payroll.maLuong}">
+                                                            ${payroll.maNv}
+                                                        </td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.hoTen}</td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.thucNhan ? formatCurrency(payroll.thucNhan) : ''}</td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm"><span class="${statusClass}">${payroll.tenTrangThai}</span></td>
+                                                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                            <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2" onclick="viewPayrollDetail(${payroll.maLuong})">
+                                                                <i class="fas fa-eye mr-2"></i> Chi tiết
+                                                            </button>
+                                                            <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 mr-2" onclick="approveByAccountant([${payroll.maLuong}])">
+                                                                <i class="fas fa-check mr-2"></i> Duyệt
+                                                            </button>
+                                                            <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="openReturnModal([${payroll.maLuong}])">
+                                                                <i class="fas fa-undo mr-2"></i> Trả về
+                                                            </button>
+                                                        </td>
+                                                    </tr>`;
                         });
-                        html += `</tbody>
-                                                </table>
-                                            </div>
-                                        </div>`;
+                        html += `</tbody></table></div></div>`;
                     });
                 } else {
-                    html += '<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">' +
-                        '<strong class="font-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Chú ý!</strong>' +
-                        '<span class="block sm:inline">Không có bảng lương nào chờ duyệt.</span>' +
-                        '</div>';
+                    html += `<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+                                                <strong class="font-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Chú ý!</strong>
+                                                <span class="block sm:inline">Không có bảng lương nào chờ duyệt.</span>
+                                            </div>`;
                 }
                 $('#payrollsForAccountantContainer').html(html);
             }).fail(function (xhr) {
                 $('#payrollsForAccountantContainer').html(`<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                            <strong class="font-bold"><i class="fas fa-times-circle mr-2"></i> Lỗi!</strong>
-                            <span class="block sm:inline">Lỗi khi tải bảng lương: ${xhr.responseText}</span>
-                        </div>`);
-                console.error("Lỗi tải bảng lương cho kế toán:", xhr);
+                                            <strong class="font-bold"><i class="fas fa-times-circle mr-2"></i> Lỗi!</strong>
+                                            <span class="block sm:inline">Lỗi khi tải bảng lương: ${xhr.responseText || 'Đã xảy ra lỗi.'}</span>
+                                        </div>`);
             });
         }
 
-        function viewPayrollReport(maLuong) {
-            const pdfUrl = `/api/PayrollEmployeeApi/CreatePayrollDetailReport/${maLuong}`;
-            window.open(pdfUrl, '_blank');
+        function loadRevisionRequests() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+            const departmentId = $('#departmentSelect').val() || '';
+
+            $.get(`/api/PayrollAccountantApi/GetRevisionRequests?year=${year}&month=${month}&departmentId=${departmentId}`, function (data) {
+                let html = '<div class="overflow-x-auto">';
+                html += '<table class="min-w-full leading-normal bg-white shadow-md rounded-lg overflow-hidden">';
+                html += '<thead class="bg-gray-100">';
+                html += '<tr>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mã NV</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ tên</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thực nhận</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lý do yêu cầu</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hành động</th>';
+                html += '</tr></thead><tbody>';
+
+                if (data && data.length > 0) {
+                    data.forEach(payroll => {
+                        const statusClass = getTailwindStatusClass(payroll.trangThai);
+                        html += `<tr>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.maNv}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.hoTen}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.thucNhan ? formatCurrency(payroll.thucNhan) : ''}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.ghiChu || 'Không có'}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                        <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2" onclick="viewPayrollDetail(${payroll.maLuong})">
+                                                            <i class="fas fa-eye mr-2"></i> Chi tiết
+                                                        </button>
+                                                        <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" onclick="handleRevisionRequest(${payroll.maLuong}, ${payroll.maNv}, '${payroll.hoTen}', '${payroll.ghiChu || ''}')">
+                                                            <i class="fas fa-edit mr-2"></i> Xử lý
+                                                        </button>
+                                                    </td>
+                                                </tr>`;
+                    });
+                } else {
+                    html += `<tr><td colspan="5" class="px-5 py-5 text-center text-sm text-gray-600">Không có yêu cầu chỉnh sửa từ nhân viên.</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+                $('#revisionRequestsContainer').html(html);
+            }).fail(function (xhr) {
+                $('#revisionRequestsContainer').html(`<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                            <strong class="font-bold"><i class="fas fa-times-circle mr-2"></i> Lỗi!</strong>
+                                            <span class="block sm:inline">Lỗi khi tải yêu cầu chỉnh sửa: ${xhr.responseText || 'Đã xảy ra lỗi.'}</span>
+                                        </div>`);
+            });
         }
 
-        function viewPayrollDetail(maLuong, isManager = false) {
-            console.log('viewPayrollDetail called with maLuong:', maLuong);
+        function loadDirectorRejections() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+            const departmentId = $('#departmentSelect').val() || '';
+
+            $.get(`/api/PayrollAccountantApi/GetDirectorRejections?year=${year}&month=${month}&departmentId=${departmentId}`, function (data) {
+                let html = '<div class="overflow-x-auto">';
+                html += '<table class="min-w-full leading-normal bg-white shadow-md rounded-lg overflow-hidden">';
+                html += '<thead class="bg-gray-100">';
+                html += '<tr>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mã NV</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Họ tên</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Thực nhận</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lý do trả về</th>';
+                html += '<th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Hành động</th>';
+                html += '</tr></thead><tbody>';
+
+                if (data && data.length > 0) {
+                    data.forEach(payroll => {
+                        const statusClass = getTailwindStatusClass(payroll.trangThai);
+                        html += `<tr>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.maNv}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.hoTen}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.thucNhan ? formatCurrency(payroll.thucNhan) : ''}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">${payroll.ghiChu || 'Không có'}</td>
+                                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">
+                                                        <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2" onclick="viewPayrollDetail(${payroll.maLuong})">
+                                                            <i class="fas fa-eye mr-2"></i> Chi tiết
+                                                        </button>
+                                                        <button class="inline-flex items-center px-3 py-2 bg-indigo-500 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" onclick="openResendToDirectorModal(${payroll.maLuong}, '${payroll.hoTen}', '${payroll.ghiChu || ''}')">
+                                                            <i class="fas fa-paper-plane mr-2"></i> Gửi lại
+                                                        </button>
+                                                    </td>
+                                                </tr>`;
+                    });
+                } else {
+                    html += `<tr><td colspan="5" class="px-5 py-5 text-center text-sm text-gray-600">Không có bảng lương bị trả về từ giám đốc.</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+                $('#directorRejectionsContainer').html(html);
+            }).fail(function (xhr) {
+                $('#directorRejectionsContainer').html(`<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                            <strong class="font-bold"><i class="fas fa-times-circle mr-2"></i> Lỗi!</strong>
+                                            <span class="block sm:inline">Lỗi khi tải bảng lương trả về: ${xhr.responseText || 'Đã xảy ra lỗi.'}</span>
+                                        </div>`);
+            });
+        }
+
+        function viewPayrollDetail(maLuong) {
             $.get(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, function (data) {
-                console.log('API response:', data);
+                currentMaLuong = maLuong;
+                currentMaNv = data.maNv;
+                currentYear = new Date(data.thangNam).getFullYear();
+                currentMonth = new Date(data.thangNam).getMonth() + 1;
+
                 const html = `
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Thông tin nhân viên</h6>
-                                    <div class="mb-2"><strong>Mã lương:</strong> ${data.maLuong}</div>
-                                    <div class="mb-2"><strong>Mã NV:</strong> ${data.maNv}</div>
-                                    <div class="mb-2"><strong>Họ tên:</strong> ${data.hoTen}</div>
-                                    <div class="mb-2"><strong>Giới tính:</strong> ${data.gioiTinh}</div>
-                                    <div class="mb-2"><strong>Phòng ban:</strong> ${data.phongBan}</div>
-                                    <div class="mb-2"><strong>Chức vụ:</strong> ${data.chucVu}</div>
-                                    <div class="mb-2"><strong>Loại hợp đồng:</strong> ${data.loaiHopDong}</div>
-                                    <div class="mb-2"><strong>Tháng lương:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
-                                </div>
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Thu nhập</h6>
-                                    <div class="mb-2"><strong>Lương cơ bản:</strong> ${formatCurrency(data.thuNhap.luongCoBan)}</div>
-                                    <div class="mb-2"><strong>Phụ cấp cố định:</strong> ${formatCurrency(data.thuNhap.phuCapCoDinh)}</div>
-                                    <div class="mb-2"><strong>Thưởng cố định:</strong> ${formatCurrency(data.thuNhap.thuongCoDinh)}</div>
-                                    <div class="mb-2"><strong>Phụ cấp thêm:</strong> ${formatCurrency(data.thuNhap.phuCapThem)}</div>
-                                    <div class="mb-2"><strong>Lương thêm:</strong> ${formatCurrency(data.thuNhap.luongThem)}</div>
-                                    <div class="mb-2"><strong>Lương tăng ca:</strong> ${formatCurrency(data.thuNhap.luongTangCa)}</div>
-                                    <div class="mb-2"><strong>Tổng lương:</strong> ${formatCurrency(data.thuNhap.tongLuong)}</div>
-                                </div>
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Khấu trừ</h6>
-                                    <div class="mb-2"><strong>BHXH:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhxh)}</span></div>
-                                    <div class="mb-2"><strong>BHYT:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhyt)}</span></div>
-                                    <div class="mb-2"><strong>BHTN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhtn)}</span></div>
-                                    <div class="mb-2"><strong>Thuế TNCN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.thueTNCN)}</span></div>
-                                </div>
-                                <div>
-                                    <h6 class="font-semibold text-indigo-600 mb-2">Thực nhận & Tài khoản</h6>
-                                    <div class="mb-2"><strong>Thực nhận:</strong> <span class="text-green-600">${formatCurrency(data.thucNhan)}</span></div>
-                                    ${data.taiKhoanNganHang ? `
-                                    <div class="mb-2"><strong>Ngân hàng:</strong> ${data.taiKhoanNganHang.tenNganHang}</div>
-                                    <div class="mb-2"><strong>Chi nhánh:</strong> ${data.taiKhoanNganHang.chiNhanh}</div>
-                                    <div class="mb-2"><strong>Số tài khoản:</strong> ${data.taiKhoanNganHang.soTaiKhoan}</div>
-                                    ` : '<div class="mb-2"><strong>Tài khoản:</strong> Chưa có thông tin</div>'}
-                                </div>
-                            </div>
-                            ${data.ghiChu ? `<div class="mt-4"><strong>Ghi chú:</strong> <p class="italic">${data.ghiChu}</p></div>` : ''}
-                            <div class="mt-4"><strong>Trạng thái:</strong> ${data.tenTrangThai}</div>
-                        `;
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <h6 class="font-semibold text-indigo-600 mb-2">Thông tin nhân viên</h6>
+                                            <div class="mb-2"><strong>Mã lương:</strong> ${data.maLuong}</div>
+                                            <div class="mb-2"><strong>Mã NV:</strong> ${data.maNv}</div>
+                                            <div class="mb-2"><strong>Họ tên:</strong> ${data.hoTen}</div>
+                                            <div class="mb-2"><strong>Giới tính:</strong> ${data.gioiTinh}</div>
+                                            <div class="mb-2"><strong>Phòng ban:</strong> ${data.phongBan}</div>
+                                            <div class="mb-2"><strong>Chức vụ:</strong> ${data.chucVu}</div>
+                                            <div class="mb-2"><strong>Loại hợp đồng:</strong> ${data.loaiHopDong}</div>
+                                            <div class="mb-2"><strong>Tháng lương:</strong> ${new Date(data.thangNam).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</div>
+                                        </div>
+                                        <div>
+                                            <h6 class="font-semibold text-indigo-600 mb-2">Thu nhập</h6>
+                                            <div class="mb-2"><strong>Lương cơ bản:</strong> ${formatCurrency(data.thuNhap.luongCoBan)}</div>
+                                            <div class="mb-2"><strong>Phụ cấp cố định:</strong> ${formatCurrency(data.thuNhap.phuCapCoDinh)}</div>
+                                            <div class="mb-2"><strong>Thưởng cố định:</strong> ${formatCurrency(data.thuNhap.thuongCoDinh)}</div>
+                                            <div class="mb-2"><strong>Phụ cấp thêm:</strong> ${formatCurrency(data.thuNhap.phuCapThem)}</div>
+                                            <div class="mb-2"><strong>Lương thêm:</strong> ${formatCurrency(data.thuNhap.luongThem)}</div>
+                                            <div class="mb-2"><strong>Lương tăng ca:</strong> ${formatCurrency(data.thuNhap.luongTangCa)}</div>
+                                            <div class="mb-2"><strong>Tổng lương:</strong> ${formatCurrency(data.thuNhap.tongLuong)}</div>
+                                        </div>
+                                        <div>
+                                            <h6 class="font-semibold text-indigo-600 mb-2">Khấu trừ</h6>
+                                            <div class="mb-2"><strong>BHXH:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhxh)}</span></div>
+                                            <div class="mb-2"><strong>BHYT:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhyt)}</span></div>
+                                            <div class="mb-2"><strong>BHTN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.bhtn)}</span></div>
+                                            <div class="mb-2"><strong>Thuế TNCN:</strong> <span class="text-red-600">-${formatCurrency(data.khauTru.thueTNCN)}</span></div>
+                                        </div>
+                                        <div>
+                                            <h6 class="font-semibold text-indigo-600 mb-2">Thực nhận & Tài khoản</h6>
+                                            <div class="mb-2"><strong>Thực nhận:</strong> <span class="text-green-600">${formatCurrency(data.thucNhan)}</span></div>
+                                            ${data.taiKhoanNganHang ? `
+                                            <div class="mb-2"><strong>Ngân hàng:</strong> ${data.taiKhoanNganHang.tenNganHang}</div>
+                                            <div class="mb-2"><strong>Chi nhánh:</strong> ${data.taiKhoanNganHang.chiNhanh}</div>
+                                            <div class="mb-2"><strong>Số tài khoản:</strong> ${data.taiKhoanNganHang.soTaiKhoan}</div>
+                                            ` : '<div class="mb-2"><strong>Tài khoản:</strong> Chưa có thông tin</div>'}
+                                            <button class="inline-flex items-center px-3 py-2 bg-blue-500 hover:bg-blue-700 text-white text-sm rounded-md mt-2" onclick="openEditBankAccountModal(${data.maNv}, '${data.taiKhoanNganHang?.tenNganHang || ''}', '${data.taiKhoanNganHang?.chiNhanh || ''}', '${data.taiKhoanNganHang?.soTaiKhoan || ''}')">
+                                                <i class="fas fa-edit mr-2"></i> Chỉnh sửa tài khoản
+                                            </button>
+                                        </div>
+                                    </div>
+                                    ${data.ghiChu ? `<div class="mt-4"><strong>Ghi chú:</strong> <p class="italic">${data.ghiChu}</p></div>` : ''}
+                                    <div class="mt-4"><strong>Trạng thái:</strong> ${data.tenTrangThai}</div>
+                                `;
                 $('#payrollDetailContent').html(html);
 
                 const showDownloadPdf = true;
@@ -242,18 +465,30 @@
                     $('#viewPayrollBtn').hide();
                 }
 
-                if (!isManager && data.trangThai === 'BL2') {
-                    $('#actionButtons').html(`
-                                <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm rounded-md" onclick="approveByAccountant([${data.maLuong}])">
-                                    <i class="fas fa-check mr-2"></i> Duyệt
-                                </button>
-                                <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm rounded-md" onclick="openReturnModal([${data.maLuong}])">
-                                    <i class="fas fa-undo mr-2"></i> Trả về
-                                </button>
-                            `);
-                } else {
-                    $('#actionButtons').html('');
+                let actionButtons = '';
+                if (data.trangThai === 'BL2') {
+                    actionButtons = `
+                                        <button class="inline-flex items-center px-3 py-2 bg-green-500 hover:bg-green-700 text-white text-sm rounded-md" onclick="approveByAccountant([${data.maLuong}])">
+                                            <i class="fas fa-check mr-2"></i> Duyệt
+                                        </button>
+                                        <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm rounded-md" onclick="openReturnModal([${data.maLuong}])">
+                                            <i class="fas fa-undo mr-2"></i> Trả về
+                                        </button>
+                                    `;
+                } else if (data.trangThai === 'BL1R') {
+                    actionButtons = `
+                                        <button class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-700 text-white text-sm rounded-md" onclick="handleRevisionRequest(${data.maLuong}, ${data.maNv}, '${data.hoTen}', '${data.ghiChu || ''}')">
+                                            <i class="fas fa-edit mr-2"></i> Xử lý
+                                        </button>
+                                    `;
+                } else if (data.trangThai === 'BL3R') {
+                    actionButtons = `
+                                        <button class="inline-flex items-center px-3 py-2 bg-indigo-500 hover:bg-indigo-700 text-white text-sm rounded-md" onclick="openResendToDirectorModal(${data.maLuong}, '${data.hoTen}', '${data.ghiChu || ''}')">
+                                            <i class="fas fa-paper-plane mr-2"></i> Gửi lại
+                                        </button>
+                                    `;
                 }
+                $('#actionButtons').html(actionButtons);
 
                 const modal = new bootstrap.Modal(document.getElementById('payrollDetailModal'), { backdrop: 'static' });
                 modal.show();
@@ -263,18 +498,209 @@
                     title: 'Lỗi!',
                     text: xhr.responseText || 'Không thể tải chi tiết bảng lương.'
                 });
-                console.error('Lỗi tải chi tiết bảng lương:', xhr);
+            });
+        }
+
+        function openEditBankAccountModal(maNv, tenNganHang, chiNhanh, soTaiKhoan) {
+            $('#bankAccountMaNv').val(maNv);
+            $('#bankName').val(tenNganHang);
+            $('#bankBranch').val(chiNhanh);
+            $('#bankAccountNumber').val(soTaiKhoan);
+
+            const modal = new bootstrap.Modal(document.getElementById('editBankAccountModal'), { backdrop: 'static' });
+            modal.show();
+        }
+
+        function saveBankAccount() {
+            const maNv = $('#bankAccountMaNv').val();
+            const tenNganHang = $('#bankName').val();
+            const chiNhanh = $('#bankBranch').val();
+            const soTaiKhoan = $('#bankAccountNumber').val();
+
+            if (!tenNganHang || !chiNhanh || !soTaiKhoan) {
+                Swal.fire('Cảnh báo!', 'Vui lòng điền đầy đủ thông tin tài khoản ngân hàng.', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: '/api/PayrollAccountantApi/UpdateBankAccount',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    MaNv: parseInt(maNv),
+                    TenNganHang: tenNganHang,
+                    ChiNhanh: chiNhanh,
+                    SoTaiKhoan: soTaiKhoan
+                }),
+                success: function (response) {
+                    Swal.fire('Thành công!', response, 'success').then(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editBankAccountModal'));
+                        modal.hide();
+                        viewPayrollDetail(currentMaLuong);
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi cập nhật tài khoản.', 'error');
+                }
+            });
+        }
+
+        function handleRevisionRequest(maLuong, maNv, hoTen, ghiChu) {
+            currentMaLuong = maLuong;
+            currentMaNv = maNv;
+            currentYear = $('#yearSelect').val();
+            currentMonth = $('#monthSelect').val();
+
+            $('#revisionEmployeeName').text(hoTen);
+            $('#revisionReason').text(ghiChu || 'Không có');
+            $('#managerReason').val('');
+
+            // Load missing days
+            $.get(`/api/PayrollAccountantApi/GetMissingAttendance?maNv=${maNv}&year=${currentYear}&month=${currentMonth}`, function (data) {
+                let html = '';
+                if (data && data.length > 0) {
+                    html = '<ul class="list-disc pl-5">';
+                    data.forEach(day => {
+                        html += `<li>${day}</li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html = '<p class="text-gray-600">Không có ngày chấm công thiếu.</p>';
+                }
+                $('#missingDaysList').html(html);
+            }).fail(function (xhr) {
+                $('#missingDaysList').html('<p class="text-red-600">Lỗi khi tải danh sách ngày thiếu.</p>');
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById('revisionRequestModal'), { backdrop: 'static' });
+            modal.show();
+
+            $('#approveRevisionBtn').off('click').on('click', function () {
+                const reason = $('#managerReason').val();
+                if (!reason) {
+                    Swal.fire('Cảnh báo!', 'Vui lòng nhập lý do phê duyệt.', 'warning');
+                    return;
+                }
+                $.ajax({
+                    url: `/api/PayrollAccountantApi/HandleEmployeeRevisionRequest/${maLuong}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ Action: 'APPROVE', Reason: reason }),
+                    success: function (response) {
+                        modal.hide();
+                        Swal.fire('Thành công!', response, 'success').then(() => {
+                            loadRevisionRequests();
+                            loadPayrollsForAccountant();
+                        });
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi xử lý yêu cầu.', 'error');
+                    }
+                });
+            });
+
+            $('#rejectRevisionBtn').off('click').on('click', function () {
+                const reason = $('#managerReason').val();
+                if (!reason) {
+                    Swal.fire('Cảnh báo!', 'Vui lòng nhập lý do từ chối.', 'warning');
+                    return;
+                }
+                $.ajax({
+                    url: `/api/PayrollAccountantApi/HandleEmployeeRevisionRequest/${maLuong}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ Action: 'REJECT', Reason: reason }),
+                    success: function (response) {
+                        modal.hide();
+                        Swal.fire('Thành công!', response, 'success').then(() => {
+                            loadRevisionRequests();
+                            loadPayrollsForAccountant();
+                        });
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi xử lý yêu cầu.', 'error');
+                    }
+                });
+            });
+        }
+
+        function addAttendance() {
+            const date = $('#addAttendanceDate').val();
+            const gioVao = $('#addAttendanceIn').val();
+            const gioRa = $('#addAttendanceOut').val();
+
+            if (!date || !gioVao || !gioRa) {
+                Swal.fire('Cảnh báo!', 'Vui lòng điền đầy đủ thông tin chấm công.', 'warning');
+                return;
+            }
+
+            const [hoursIn, minutesIn] = gioVao.split(':').map(Number);
+            const [hoursOut, minutesOut] = gioRa.split(':').map(Number);
+            const tongGio = (hoursOut * 60 + minutesOut - (hoursIn * 60 + minutesIn)) / 60;
+
+            $.ajax({
+                url: '/api/PayrollAccountantApi/AddAttendance',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    MaNv: currentMaNv,
+                    NgayLamViec: date,
+                    GioVao: gioVao,
+                    GioRa: gioRa,
+                    TongGio: tongGio,
+                    TrangThai: 'Approved'
+                }),
+                success: function (response) {
+                    Swal.fire('Thành công!', response, 'success').then(() => {
+                        handleRevisionRequest(currentMaLuong, currentMaNv, $('#revisionEmployeeName').text(), $('#revisionReason').text());
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi thêm chấm công.', 'error');
+                }
+            });
+        }
+
+        function addOvertime() {
+            const date = $('#addOvertimeDate').val();
+            const soGio = $('#addOvertimeHours').val();
+            const tyLe = $('#addOvertimeRate').val();
+
+            if (!date || !soGio || !tyLe) {
+                Swal.fire('Cảnh báo!', 'Vui lòng điền đầy đủ thông tin tăng ca.', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: '/api/PayrollAccountantApi/AddOvertime',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    MaNv: currentMaNv,
+                    NgayTangCa: date,
+                    SoGioTangCa: parseFloat(soGio),
+                    TyLeTangCa: parseFloat(tyLe),
+                    TrangThai: 'Approved'
+                }),
+                success: function (response) {
+                    Swal.fire('Thành công!', response, 'success').then(() => {
+                        handleRevisionRequest(currentMaLuong, currentMaNv, $('#revisionEmployeeName').text(), $('#revisionReason').text());
+                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi thêm tăng ca.', 'error');
+                }
             });
         }
 
         function approveByAccountant(maLuongList) {
             Swal.fire({
                 title: 'Duyệt bảng lương?',
-                text: 'Bạn có chắc chắn muốn duyệt các bảng lương này?',
+                text: `Bạn có chắc chắn muốn duyệt ${maLuongList.length} bảng lương?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Duyệt',
-                cancelButtonText: 'Hủy',
+                cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -288,7 +714,7 @@
                             });
                         },
                         error: function (xhr) {
-                            Swal.fire('Lỗi!', xhr.responseText, 'error');
+                            Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi duyệt.', 'error');
                         }
                     });
                 }
@@ -302,21 +728,22 @@
                     checkedValues.push(parseInt($(this).val()));
                 });
                 if (checkedValues.length === 0) {
-                    Swal.fire('Cảnh báo!', 'Vui lòng chọn các bảng lương cần trả về.', 'warning');
+                    Swal.fire('Cảnh báo!', 'Vui lòng chọn ít nhất một bảng lương để trả về.', 'warning');
                     return;
                 }
                 $('#selectedPayrollIds').val(JSON.stringify(checkedValues));
             } else {
                 $('#selectedPayrollIds').val(JSON.stringify(maLuongList));
             }
-            const modal = new bootstrap.Modal(document.getElementById('returnReasonModal'));
+            $('#returnReason').val('');
+            const modal = new bootstrap.Modal(document.getElementById('returnReasonModal'), { backdrop: 'static' });
             modal.show();
         }
 
         function confirmReturnToManager() {
             const maLuongList = JSON.parse($('#selectedPayrollIds').val());
             const lyDo = $('#returnReason').val();
-            if (lyDo.trim() === '') {
+            if (!lyDo.trim()) {
                 Swal.fire('Cảnh báo!', 'Vui lòng nhập lý do trả về.', 'warning');
                 return;
             }
@@ -331,12 +758,63 @@
                         const modal = bootstrap.Modal.getInstance(document.getElementById('returnReasonModal'));
                         modal.hide();
                         loadPayrollsForAccountant();
-                        $('#returnReason').val('');
                     });
                 },
                 error: function (xhr) {
-                    Swal.fire('Lỗi!', xhr.responseText, 'error');
+                    Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi trả về.', 'error');
                 }
+            });
+        }
+
+        function openResendToDirectorModal(maLuong, hoTen, ghiChu) {
+            $('#resendEmployeeName').text(hoTen);
+            $('#resendReason').text(ghiChu || 'Không có');
+            $('#adjustmentNote').val('');
+
+            const modal = new bootstrap.Modal(document.getElementById('resendToDirectorModal'), { backdrop: 'static' });
+            modal.show();
+
+            $('#resendToDirectorBtn').off('click').on('click', function () {
+                const adjustmentNote = $('#adjustmentNote').val();
+                if (!adjustmentNote) {
+                    Swal.fire('Cảnh báo!', 'Vui lòng nhập ghi chú chỉnh sửa.', 'warning');
+                    return;
+                }
+                $.ajax({
+                    url: `/api/PayrollAccountantApi/ResendToDirector/${maLuong}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(adjustmentNote),
+                    success: function (response) {
+                        modal.hide();
+                        Swal.fire('Thành công!', response, 'success').then(() => {
+                            loadDirectorRejections();
+                            loadPayrollsForAccountant();
+                        });
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Lỗi!', xhr.responseText || 'Đã xảy ra lỗi khi gửi lại.', 'error');
+                    }
+                });
+            });
+        }
+
+        function approveAllPayrolls() {
+            const allCheckboxes = document.querySelectorAll('.payroll-checkbox:checked');
+            if (allCheckboxes.length === 0) {
+                Swal.fire('Cảnh báo!', 'Vui lòng chọn ít nhất một bảng lương để duyệt.', 'warning');
+                return;
+            }
+
+            const maLuongList = Array.from(allCheckboxes).map(checkbox => parseInt(checkbox.value));
+            approveByAccountant(maLuongList);
+        }
+
+        function toggleCheckboxes(phongBanId) {
+            const checkAll = document.getElementById(`checkAll-${phongBanId}`);
+            const checkboxes = document.querySelectorAll(`.checkbox-${phongBanId}`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checkAll.checked;
             });
         }
 
@@ -359,23 +837,9 @@
             return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
         }
 
-        function toggleCheckboxes(phongBanId) {
-            const checkAll = document.getElementById(`checkAll-${phongBanId}`);
-            const checkboxes = document.querySelectorAll(`.checkbox-${phongBanId}`);
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = checkAll.checked;
-            });
-        }
-
-        function approveAllPayrolls() {
-            const allCheckboxes = document.querySelectorAll('.payroll-checkbox:checked');
-            if (allCheckboxes.length === 0) {
-                Swal.fire('Cảnh báo!', 'Vui lòng chọn các bảng lương cần duyệt.', 'warning');
-                return;
-            }
-
-            const maLuongList = Array.from(allCheckboxes).map(checkbox => parseInt(checkbox.value));
-            approveByAccountant(maLuongList);
+        function viewPayrollReport(maLuong) {
+            const pdfUrl = `/api/PayrollEmployeeApi/CreatePayrollDetailReport/${maLuong}`;
+            window.open(pdfUrl, '_blank');
         }
     </script>
 }

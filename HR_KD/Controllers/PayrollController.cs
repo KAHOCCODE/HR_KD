@@ -20,5 +20,12 @@ namespace HR_KD.Controllers
         }
         #endregion
 
+        #region view report lương 
+        [Authorize(Roles = "DIRECTOR,EMPLOYEE_MANAGER,LINE_MANAGER,PAYROLL_AUDITOR")]
+        public IActionResult PayrollReport()
+        {
+            return View();
+        }
+        #endregion
     }
 }

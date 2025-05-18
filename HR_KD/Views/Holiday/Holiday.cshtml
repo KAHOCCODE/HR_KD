@@ -19,105 +19,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Danh sách ngày lễ</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f3f4f6;
-        }
-        .table-container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-        }
-        .table th, .table td {
-            vertical-align: middle;
-            text-align: center;
-        }
-        .table th {
-            background-color: #1e40af;
-            color: white;
-        }
-        .table tbody tr:hover {
-            background-color: #e5e7eb;
-        }
-        .search-box {
-            max-width: 300px;
-        }
-        .no-data {
-            text-align: center;
-            color: #dc2626;
-            font-weight: 500;
-        }
-        div.search-box {
-  display: none;
-}
-    </style>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <div class="table-container">
-        <h1 class="text-2xl font-bold text-center text-blue-900 mb-4">Danh Sách Ngày Lễ - Trạng Thái NL4 & NL5</h1>
-
-        <!-- Search, Year Select, and Sort Controls -->
-        <div class="flex justify-between mb-4">
-            <div class="search-box">
-                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm theo tên ngày lễ...">
+<body class="bg-gray-50">
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <!-- Header Card -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-800 px-6 py-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-white text-center">
+                    <i class="fas fa-calendar-alt mr-2"></i>Danh Sách Ngày Lễ
+                </h1>
+                <p class="text-blue-100 text-center mt-1">Trạng Thái NL4 & NL5</p>
             </div>
-            <div class="flex space-x-2">
-                <select id="yearSelect" class="form-select">
-                    <!-- Options will be populated dynamically -->
-                </select>
-                <button id="sortByDate" class="btn btn-primary">Sắp xếp theo ngày</button>
+
+            <!-- Controls Section -->
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                    <!-- Search Box -->
+                    <div class="relative w-full md:w-64">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                        <input id="searchInput" type="text"
+                               class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
+                               placeholder="Tìm kiếm theo tên ngày lễ...">
+                    </div>
+
+                    <!-- Year and Sort Controls -->
+                    <div class="flex items-center space-x-3 w-full md:w-auto">
+                        <div class="relative w-40">
+                            <select id="yearSelect"
+                                    class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md appearance-none bg-white">
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+
+                        <button id="sortByDate"
+                                class="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                            <i class="fas fa-sort mr-2"></i>
+                            <span>Sắp xếp</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="px-6 py-4 overflow-x-auto">
+                <div class="inline-block min-w-full align-middle">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="px-6 py-3 bg-blue-700 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-tag mr-2"></i>
+                                        Tên Ngày Lễ
+                                    </div>
+                                </th>
+                                <th scope="col" class="px-6 py-3 bg-blue-700 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-calendar mr-2"></i>
+                                        Ngày Lễ
+                                    </div>
+                                </th>
+                                <th scope="col" class="px-6 py-3 bg-blue-700 text-left text-xs font-medium text-white uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-clock mr-2"></i>
+                                        Số Ngày Nghỉ
+                                    </div>
+                                </th>
+                                <th scope="col" class="px-6 py-3 bg-blue-700 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tr-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        Mô Tả
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="holidayTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Table rows will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- No Data Message -->
+                <div id="noDataMessage" class="hidden py-8 text-center">
+                    <div class="inline-flex items-center justify-center">
+                        <i class="fas fa-exclamation-circle text-red-500 text-2xl mr-2"></i>
+                        <span class="text-red-500 font-medium">Không tìm thấy ngày lễ.</span>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="py-8 text-center">
+                    <div class="inline-flex items-center justify-center">
+                        <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="ml-2 text-blue-600 font-medium">Đang tải dữ liệu...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500">
+                <div>Cập nhật: <span id="lastUpdated"></span></div>
+                <div>Hệ thống quản lý ngày lễ</div>
             </div>
         </div>
-
-        <!-- Holiday Table -->
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>Tên Ngày Lễ</th>
-                    <th>Ngày Lễ</th>
-                    <th>Số Ngày Nghỉ</th>
-                    <th>Mô Tả</th>
-                </tr>
-            </thead>
-            <tbody id="holidayTableBody"></tbody>
-        </table>
-        <p id="noDataMessage" class="no-data hidden">Không tìm thấy ngày lễ.</p>
     </div>
 
-    <!-- Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         let holidays = [];
         let sortAscending = true;
         let selectedYear = new Date().getFullYear(); // Mặc định là năm hiện tại
 
+        // Hiển thị loading indicator
+        const showLoading = (show) => {
+            document.getElementById('loadingIndicator').classList.toggle('hidden', !show);
+        }
+
+        // Hiển thị thông báo lỗi
+        const showError = (message) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: message,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3B82F6'
+            });
+        }
+
         // Fetch holidays from API
         async function fetchHolidays() {
+            showLoading(true);
             try {
                 const response = await fetch('/api/Holidays/GetAll');
                 if (!response.ok) throw new Error('Lỗi khi tải dữ liệu');
                 holidays = await response.json();
+
+                // Cập nhật thời gian
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString('vi-VN');
+
                 populateYearDropdown();
                 filterAndRenderHolidays();
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('noDataMessage').textContent = 'Lỗi khi tải dữ liệu. Vui lòng thử lại.';
                 document.getElementById('noDataMessage').classList.remove('hidden');
+                showError('Không thể tải dữ liệu ngày lễ. Vui lòng thử lại sau.');
+            } finally {
+                showLoading(false);
             }
         }
 
         // Populate year dropdown
         function populateYearDropdown() {
             const yearSelect = document.getElementById('yearSelect');
-            const years = [...new Set(holidays.map(h => new Date(h.ngayLe1).getFullYear()))].sort((a, b) => a - b);
-            yearSelect.innerHTML = years.map(year => `<option value="${year}" ${year === selectedYear ? 'selected' : ''}>${year}</option>`).join('');
+            const years = [...new Set(holidays.map(h => new Date(h.ngayLe1).getFullYear()))].sort((a, b) => b - a); // Sắp xếp giảm dần
+
+            if (years.length === 0) {
+                years.push(new Date().getFullYear()); // Thêm năm hiện tại nếu không có dữ liệu
+            }
+
+            yearSelect.innerHTML = years.map(year =>
+                `<option value="${year}" ${year === selectedYear ? 'selected' : ''}>${year}</option>`
+            ).join('');
         }
 
         // Filter and render holidays based on selected year and search term
@@ -134,26 +208,57 @@
         function renderHolidays(holidayList) {
             const tbody = document.getElementById('holidayTableBody');
             tbody.innerHTML = '';
+
             if (holidayList.length === 0) {
                 document.getElementById('noDataMessage').classList.remove('hidden');
                 return;
             }
+
             document.getElementById('noDataMessage').classList.add('hidden');
-            holidayList.forEach(holiday => {
+
+            holidayList.forEach((holiday, index) => {
                 const row = document.createElement('tr');
+                row.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                row.classList.add('hover:bg-blue-50', 'transition-colors', 'duration-150');
+
+                const holidayDate = new Date(holiday.ngayLe1);
+                const today = new Date();
+                const isUpcoming = holidayDate > today;
+                const isPast = holidayDate < today && holidayDate.getFullYear() === today.getFullYear();
+                const isCurrent = holidayDate.toDateString() === today.toDateString();
+
+                let dateClass = '';
+                if (isUpcoming) dateClass = 'text-blue-600 font-medium';
+                if (isPast) dateClass = 'text-gray-500';
+                if (isCurrent) dateClass = 'text-green-500 font-bold';
+
                 row.innerHTML = `
-                    <td>${holiday.tenNgayLe}</td>
-                    <td>${new Date(holiday.ngayLe1).toLocaleDateString('vi-VN')}</td>
-                    <td>${holiday.soNgayNghi}</td>
-                    <td>${holiday.moTa || 'Không có mô tả'}</td>
-                `;
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                ${holiday.tenNgayLe}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${dateClass}">
+                                ${holidayDate.toLocaleDateString('vi-VN')}
+                                ${isCurrent ? '<span class="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">Hôm nay</span>' : ''}
+                                ${isUpcoming ? '<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">Sắp tới</span>' : ''}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">${holiday.soNgayNghi} ngày</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                                ${holiday.moTa || 'Không có mô tả'}
+                            </td>
+                        `;
                 tbody.appendChild(row);
             });
         }
 
-        // Search functionality
+        // Search functionality with debounce
+        let searchTimeout;
         document.getElementById('searchInput').addEventListener('input', function () {
-            filterAndRenderHolidays();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterAndRenderHolidays();
+            }, 300);
         });
 
         // Year selection
@@ -171,11 +276,19 @@
                 return sortAscending ? dateA - dateB : dateB - dateA;
             });
             filterAndRenderHolidays();
-            this.textContent = `Sắp xếp theo ngày (${sortAscending ? 'Tăng dần' : 'Giảm dần'})`;
+
+            const sortIcon = this.querySelector('i');
+            if (sortAscending) {
+                sortIcon.className = 'fas fa-sort-up mr-2';
+                this.querySelector('span').textContent = 'Tăng dần';
+            } else {
+                sortIcon.className = 'fas fa-sort-down mr-2';
+                this.querySelector('span').textContent = 'Giảm dần';
+            }
         });
 
         // Initial fetch
-        fetchHolidays();
+        document.addEventListener('DOMContentLoaded', fetchHolidays);
     </script>
 </body>
 </html>

@@ -4,62 +4,79 @@
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-<div class="container-fluid p-0">
-    <div class="row mb-2 mb-xl-3">
-        <div class="col-auto d-none d-sm-block">
-            <h3>Xóa chính sách phép năm</h3>
-        </div>
-        <div class="col-auto ms-auto text-end mt-n1">
-            <a asp-action="Index" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Quay lại danh sách
-            </a>
-        </div>
+<div class="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-8">
+        <h3 class="text-3xl font-extrabold text-blue-900">
+            <svg class="w-6 h-6 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+            Xóa chính sách phép năm
+        </h3>
+        <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 rounded-full hover:bg-blue-50 transition-all duration-300 shadow-md">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Quay lại danh sách
+        </a>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="alert alert-danger">
-                        <h5>Bạn có chắc chắn muốn xóa chính sách phép năm này?</h5>
-                    </div>
-
-                    <dl class="row">
-                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.TenChinhSach)</dt>
-                        <dd class="col-sm-9">@Html.DisplayFor(model => model.TenChinhSach)</dd>
-
-                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SoNam)</dt>
-                        <dd class="col-sm-9">@Html.DisplayFor(model => model.SoNam)</dd>
-
-                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SoNgayCongThem)</dt>
-                        <dd class="col-sm-9">@Html.DisplayFor(model => model.SoNgayCongThem)</dd>
-
-                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ApDungTuNam)</dt>
-                        <dd class="col-sm-9">@Html.DisplayFor(model => model.ApDungTuNam)</dd>
-
-                        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ConHieuLuc)</dt>
-                        <dd class="col-sm-9">
-                            <span class="badge @(Model.ConHieuLuc ? "bg-success" : "bg-danger")">
-                                @(Model.ConHieuLuc ? "Còn hiệu lực" : "Hết hiệu lực")
-                            </span>
-                        </dd>
-                    </dl>
-
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <form asp-action="Delete" method="post">
-                                <input type="hidden" asp-for="Id" />
-                                <button type="submit" class="btn btn-danger">
-                                    <i class="fas fa-trash"></i> Xóa
-                                </button>
-                                <a asp-action="Index" class="btn btn-secondary">
-                                    <i class="fas fa-times"></i> Hủy
-                                </a>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+    <!-- Main Card -->
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-blue-100 animate__animated animate__fadeIn">
+        <div class="p-6">
+            <div class="p-4 bg-red-50 text-red-800 rounded-lg mb-6 animate__animated animate__fadeIn">
+                <h5 class="text-lg font-semibold flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Bạn có chắc chắn muốn xóa chính sách phép năm này?
+                </h5>
             </div>
+
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <dt class="text-sm font-medium text-blue-900">@Html.DisplayNameFor(model => model.TenChinhSach)</dt>
+                    <dd class="mt-1 text-blue-800">@Html.DisplayFor(model => model.TenChinhSach)</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-blue-900">@Html.DisplayNameFor(model => model.SoNam)</dt>
+                    <dd class="mt-1 text-blue-800">@Html.DisplayFor(model => model.SoNam)</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-blue-900">@Html.DisplayNameFor(model => model.SoNgayCongThem)</dt>
+                    <dd class="mt-1 text-blue-800">@Html.DisplayFor(model => model.SoNgayCongThem)</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-blue-900">@Html.DisplayNameFor(model => model.ApDungTuNam)</dt>
+                    <dd class="mt-1 text-blue-800">@Html.DisplayFor(model => model.ApDungTuNam)</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-blue-900">@Html.DisplayNameFor(model => model.ConHieuLuc)</dt>
+                    <dd class="mt-1">
+                        <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full @(Model.ConHieuLuc ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")">
+                            @(Model.ConHieuLuc ? "Còn hiệu lực" : "Hết hiệu lực")
+                        </span>
+                    </dd>
+                </div>
+            </dl>
+
+            <form asp-action="Delete" method="post" class="mt-6">
+                <input type="hidden" asp-for="Id" />
+                <div class="flex justify-end space-x-4">
+                    <a asp-action="Index" class="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        Hủy
+                    </a>
+                    <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-md">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+                        Xóa
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Optional: Add any custom JavaScript if needed
+        });
+    </script>
+}

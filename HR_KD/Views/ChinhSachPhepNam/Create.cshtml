@@ -1,323 +1,162 @@
-﻿<---Create chinhsach-->
-    @model HR_KD.Models.ChinhSachPhepNamViewModel
-    @{
-        ViewData["Title"] = "Thêm mới chính sách phép năm";
-    }
-    @{
-        Layout = "~/Views/Shared/_ThemeLayout.cshtml";
-    }
+﻿@model HR_KD.Models.ChinhSachPhepNamViewModel
+@{
+    ViewData["Title"] = "Thêm mới chính sách phép năm";
+}
+@{
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
 
-    <div class="container-fluid p-0">
-        <!-- Header Section with Gradient Background -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card bg-gradient-primary shadow-sm">
-                    <div class="card-body py-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <h4 class="text-white mb-0">
-                                    <i class="fas fa-calendar-plus me-2"></i>Thêm mới chính sách phép năm
-                                </h4>
-                                <p class="text-white-50 mb-0 small">Tạo chính sách phép năm mới cho nhân viên</p>
-                            </div>
-                            <a asp-action="Index" class="btn btn-light btn-sm rounded-pill">
-                                <i class="fas fa-arrow-left me-1"></i> Quay lại
-                            </a>
-                        </div>
-                    </div>
+<div class="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-2xl font-extrabold">
+                        <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Thêm mới chính sách phép năm
+                    </h4>
+                    <p class="text-blue-100 text-sm mt-1">Tạo chính sách phép năm mới cho nhân viên</p>
                 </div>
-            </div>
-        </div>
-
-        <!-- Main Form Card with Animation -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow border-0 animate__animated animate__fadeIn">
-                    <div class="card-header bg-white border-bottom-0 py-2">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-file-alt text-primary me-2"></i>Thông tin chính sách
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form asp-action="Create" method="post" class="needs-validation" novalidate>
-                            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 fade show mb-3" role="alert">
-                                <i class="fas fa-exclamation-triangle me-1"></i> Vui lòng kiểm tra lại thông tin
-                            </div>
-
-                            <!-- Form Section: Basic Info -->
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <div class="card bg-light border-0 mb-0">
-                                        <div class="card-body py-2">
-                                            <h6 class="card-subtitle mb-2 text-primary">
-                                                <i class="fas fa-info-circle me-2"></i>Thông tin cơ bản
-                                            </h6>
-
-                                            <div class="row g-2">
-                                                <div class="col-md-6">
-                                                    <div class="form-floating mb-2">
-                                                        <input asp-for="TenChinhSach" class="form-control border shadow-sm" placeholder="Tên chính sách" />
-                                                        <label asp-for="TenChinhSach">Tên chính sách</label>
-                                                        <span asp-validation-for="TenChinhSach" class="text-danger small"></span>
-                                                        <div class="form-text small">Nhập tên chính sách phép năm áp dụng</div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-floating mb-2">
-                                                        <input asp-for="ApDungTuNam" class="form-control border shadow-sm" type="number" placeholder="Áp dụng từ năm" />
-                                                        <label asp-for="ApDungTuNam">Áp dụng từ năm</label>
-                                                        <span asp-validation-for="ApDungTuNam" class="text-danger small"></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Form Section: Policy Details -->
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <div class="card bg-light border-0 mb-0">
-                                        <div class="card-body py-2">
-                                            <h6 class="card-subtitle mb-2 text-primary">
-                                                <i class="fas fa-sliders-h me-2"></i>Thông số chi tiết
-                                            </h6>
-
-                                            <div class="row g-2">
-                                                <div class="col-md-6">
-                                                    <div class="card shadow-sm h-100">
-                                                        <div class="card-body py-2">
-                                                            <h6 class="card-subtitle mb-2 small">Số năm làm việc</h6>
-                                                            <div class="form-floating">
-                                                                <input asp-for="SoNam" class="form-control border" type="number" min="1" placeholder="Số năm" />
-                                                                <label asp-for="SoNam">Số năm</label>
-                                                                <span asp-validation-for="SoNam" class="text-danger small"></span>
-                                                            </div>
-                                                            <div class="form-text mt-1 small">
-                                                                <i class="fas fa-info-circle text-info me-1"></i>
-                                                                Số năm làm việc để được hưởng phép
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="card shadow-sm h-100">
-                                                        <div class="card-body py-2">
-                                                            <h6 class="card-subtitle mb-2 small">Số ngày công thêm</h6>
-                                                            <div class="form-floating">
-                                                                <input asp-for="SoNgayCongThem" class="form-control border" type="number" min="0" placeholder="Số ngày cộng thêm" />
-                                                                <label asp-for="SoNgayCongThem">Số ngày công thêm</label>
-                                                                <span asp-validation-for="SoNgayCongThem" class="text-danger small"></span>
-                                                            </div>
-                                                            <div class="form-text mt-1 small">
-                                                                <i class="fas fa-info-circle text-info me-1"></i>
-                                                                Số ngày phép được cộng thêm sau khi đạt điều kiện
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Form Section: Status with Modern Toggle -->
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <div class="card bg-light border-0">
-                                        <div class="card-body py-2">
-                                            <h6 class="card-subtitle mb-2 text-primary">
-                                                <i class="fas fa-toggle-on me-2"></i>Trạng thái
-                                            </h6>
-
-                                            <div class="modern-toggle-container d-flex align-items-center">
-                                                <div class="modern-toggle">
-                                                    <input asp-for="ConHieuLuc" class="toggle-checkbox" type="checkbox" id="ConHieuLuc" />
-                                                    <label class="toggle-label" for="ConHieuLuc">
-                                                        <span class="toggle-inner"></span>
-                                                        <span class="toggle-switch"></span>
-                                                    </label>
-                                                </div>
-                                                <div class="toggle-status ms-3">
-                                                    <span id="statusText" class="fw-bold text-success small">Có hiệu lực</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Form Actions -->
-                            <div class="row">
-                                <div class="col-12 d-flex justify-content-between">
-                                    <a asp-action="Index" class="btn btn-outline-secondary btn-sm px-3">
-                                        <i class="fas fa-times me-1"></i> Hủy
-                                    </a>
-                                    <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm">
-                                        <i class="fas fa-save me-1"></i> Lưu chính sách
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 rounded-full hover:bg-blue-50 transition-all duration-300 shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Quay lại
+                </a>
             </div>
         </div>
     </div>
 
-    <style>
-        /* Custom styles */
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
-        }
+    <!-- Main Form Card -->
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-blue-100 animate__animated animate__fadeIn">
+        <div class="p-6 border-b border-blue-100">
+            <h5 class="text-lg font-semibold text-blue-900">
+                <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Thông tin chính sách
+            </h5>
+        </div>
+        <div class="p-6">
+            <form asp-action="Create" method="post" class="space-y-6" novalidate>
+                <div asp-validation-summary="ModelOnly" class="p-4 bg-red-50 text-red-800 rounded-lg hidden animate__animated animate__fadeIn" role="alert">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Vui lòng kiểm tra lại thông tin
+                </div>
 
-        .card {
-            border-radius: 0.5rem;
-        }
+                <!-- Basic Info Section -->
+                <div class="bg-blue-50 rounded-xl p-5">
+                    <h6 class="text-sm font-semibold text-blue-900 mb-4">
+                        <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Thông tin cơ bản
+                    </h6>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label asp-for="TenChinhSach" class="block text-sm font-medium text-blue-900 mb-1">Tên chính sách</label>
+                            <input asp-for="TenChinhSach" class="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-blue-900 placeholder-blue-400" placeholder="Nhập tên chính sách" />
+                            <span asp-validation-for="TenChinhSach" class="text-red-600 text-xs mt-1"></span>
+                            <p class="text-xs text-blue-600 mt-1">Nhập tên chính sách phép năm áp dụng</p>
+                        </div>
+                        <div>
+                            <label asp-for="ApDungTuNam" class="block text-sm font-medium text-blue-900 mb-1">Áp dụng từ năm</label>
+                            <input asp-for="ApDungTuNam" type="number" class="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-blue-900 placeholder-blue-400" placeholder="Nhập năm áp dụng" />
+                            <span asp-validation-for="ApDungTuNam" class="text-red-600 text-xs mt-1"></span>
+                        </div>
+                    </div>
+                </div>
 
-        .form-control {
-            font-size: 0.875rem;
-            height: calc(2rem + 2px);
-        }
+                <!-- Policy Details Section -->
+                <div class="bg-blue-50 rounded-xl p-5">
+                    <h6 class="text-sm font-semibold text-blue-900 mb-4">
+                        <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        Thông số chi tiết
+                    </h6>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white rounded-lg shadow-sm p-4">
+                            <label asp-for="SoNam" class="block text-sm font-medium text-blue-900 mb-1">Số năm làm việc</label>
+                            <input asp-for="SoNam" type="number" min="1" class="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-blue-900 placeholder-blue-400" placeholder="Nhập số năm" />
+                            <span asp-validation-for="SoNam" class="text-red-600 text-xs mt-1"></span>
+                            <p class="text-xs text-blue-600 mt-1">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Số năm làm việc để được hưởng phép
+                            </p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm p-4">
+                            <label asp-for="SoNgayCongThem" class="block text-sm font-medium text-blue-900 mb-1">Số ngày công thêm</label>
+                            <input asp-for="SoNgayCongThem" type="number" min="0" class="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-blue-900 placeholder-blue-400" placeholder="Nhập số ngày" />
+                            <span asp-validation-for="SoNgayCongThem" class="text-red-600 text-xs mt-1"></span>
+                            <p class="text-xs text-blue-600 mt-1">
+                                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Số ngày phép được cộng thêm
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
-        .form-floating > .form-control {
-            padding-top: 1.125rem;
-            padding-bottom: 0.125rem;
-            height: calc(2.5rem + 2px);
-        }
+                <!-- Status Section -->
+                <div class="bg-blue-50 rounded-xl p-5">
+                    <h6 class="text-sm font-semibold text-blue-900 mb-4">
+                        <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Trạng thái
+                    </h6>
+                    <div class="flex items-center space-x-4">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input asp-for="ConHieuLuc" type="checkbox" class="sr-only peer" id="ConHieuLuc" />
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 transition-all duration-300"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition-all duration-300"></div>
+                        </label>
+                        <span id="statusText" class="text-sm font-medium text-blue-900"></span>
+                    </div>
+                </div>
 
-        .form-floating > label {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-        }
+                <!-- Form Actions -->
+                <div class="flex justify-between mt-6">
+                    <a asp-action="Index" class="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        Hủy
+                    </a>
+                    <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        Lưu chính sách
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-        .animate__animated {
-            animation-duration: 0.75s;
-        }
-
-        /* Modern Toggle Switch Styles - Smaller Size */
-        .modern-toggle-container {
-            margin: 5px 0;
-        }
-
-        .modern-toggle {
-            position: relative;
-            display: inline-block;
-        }
-
-        .toggle-checkbox {
-            height: 0;
-            width: 0;
-            visibility: hidden;
-            position: absolute;
-        }
-
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            width: 50px;
-            height: 24px;
-            background: #e8e8e8;
-            border-radius: 100px;
-            position: relative;
-            transition: background-color 0.4s;
-            margin: 0;
-        }
-
-            .toggle-label .toggle-inner {
-                display: block;
-                width: 100%;
-                height: 100%;
-                border-radius: 24px;
-                background-color: #e8e8e8;
-                transition: 0.4s;
-                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-            }
-
-            .toggle-label .toggle-switch {
-                position: absolute;
-                top: 2px;
-                left: 2px;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                transition: 0.4s;
-                background: white;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-        .toggle-checkbox:checked + .toggle-label .toggle-inner {
-            background-color: #2196F3;
-        }
-
-        .toggle-checkbox:checked + .toggle-label .toggle-switch {
-            left: calc(100% - 2px);
-            transform: translateX(-100%);
-            background-color: #ffffff;
-        }
-
-        .toggle-checkbox:active + .toggle-label .toggle-switch {
-            width: 28px;
-        }
-
-        .toggle-status {
-            font-size: 0.875rem;
-        }
-    </style>
-
-    @section Scripts {
-        @{
-            await Html.RenderPartialAsync("_ValidationScriptsPartial");
-        }
-
-        <script>
-            // Add animation library
-            var animationLink = document.createElement("link");
-            animationLink.rel = "stylesheet";
-            animationLink.href = "https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css";
-            document.head.appendChild(animationLink);
-
-            $(document).ready(function () {
-                // Update status text based on toggle
-                $('#ConHieuLuc').change(function () {
-                    if ($(this).is(':checked')) {
-                        $('#statusText').text('Có hiệu lực').removeClass('text-danger').addClass('text-success');
-                    } else {
-                        $('#statusText').text('Không hiệu lực').removeClass('text-success').addClass('text-danger');
-                    }
-                });
-
-                // Trigger change event to set initial state
-                $('#ConHieuLuc').trigger('change');
-
-                // Add floating label effect
-                $('.form-control').on('focus blur', function (e) {
-                    $(this).parents('.form-floating').toggleClass('focused', (e.type === 'focus'));
-                }).trigger('blur');
-
-                // Form validation styling
-                $('form').on('submit', function () {
-                    if (!this.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    $(this).addClass('was-validated');
-                });
-            });
-        </script>
-        <!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-        <!-- Add Font Awesome if not already in your layout -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-
-        <!-- Add Animate.css for animations -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+@section Scripts {
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Update toggle status text
+            const toggle = document.getElementById('ConHieuLuc');
+            const statusText = document.getElementById('statusText');
+            function updateStatus() {
+                statusText.textContent = toggle.checked ? 'Có hiệu lực' : 'Không hiệu lực';
+                statusText.classList.toggle('text-green-600', toggle.checked);
+                statusText.classList.toggle('text-red-600', !toggle.checked);
+            }
+            toggle.addEventListener('change', updateStatus);
+            updateStatus();
+
+            // Form validation
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function (e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.querySelector('.alert').classList.remove('hidden');
+                }
+                form.classList.add('was-validated');
+            });
+
+            // Input focus effect
+            document.querySelectorAll('.form-control').forEach(input => {
+                input.addEventListener('focus', () => input.classList.add('ring-2', 'ring-blue-500'));
+                input.addEventListener('blur', () => input.classList.remove('ring-2', 'ring-blue-500'));
+            });
+        });
+    </script>
+}

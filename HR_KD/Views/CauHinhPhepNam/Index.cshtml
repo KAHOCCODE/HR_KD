@@ -1,394 +1,235 @@
-﻿```cshtml
-@model HR_KD.ViewModels.CauHinhPhepNamListViewModel
+﻿@model HR_KD.ViewModels.CauHinhPhepNamListViewModel
 @{
     ViewData["Title"] = "Danh sách cấu hình phép năm";
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-<div class="container-fluid p-0">
-    <!-- Header Section with Dashboard Style -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card bg-gradient-primary shadow-sm">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h4 class="text-white mb-0">
-                                <i class="fas fa-calendar-alt me-2"></i>Cấu hình phép năm
-                            </h4>
-                            <p class="text-white-50 mb-0 small">Quản lý cấu hình phép năm cho nhân viên</p>
-                        </div>
-                        <div>
-                            <a asp-action="Create" class="btn btn-light btn-sm rounded-pill shadow-sm">
-                                <i class="fas fa-plus me-1"></i> Thêm mới
-                            </a>
-                        </div>
-                    </div>
+<div class="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-2xl font-extrabold">
+                        <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Cấu hình phép năm
+                    </h4>
+                    <p class="text-blue-100 text-sm mt-1">Quản lý cấu hình phép năm cho nhân viên</p>
                 </div>
+                <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 rounded-full hover:bg-blue-50 transition-all duration-300 shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Thêm mới
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Display TempData messages if present -->
+    <!-- Alerts -->
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="p-4 bg-red-50 text-red-800 rounded-lg mb-6 alert animate__animated animate__fadeIn relative" role="alert">
+            <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            @TempData["Error"]
+            <button type="button" class="absolute top-3 right-3 text-red-600 hover:text-red-800" data-bs-dismiss="alert" aria-label="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
     }
     @if (TempData["Warning"] != null)
     {
-        <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Warning"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="p-4 bg-yellow-50 text-yellow-800 rounded-lg mb-6 alert animate__animated animate__fadeIn relative" role="alert">
+            <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            @TempData["Warning"]
+            <button type="button" class="absolute top-3 right-3 text-yellow-600 hover:text-yellow-800" data-bs-dismiss="alert" aria-label="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
     }
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="p-4 bg-green-50 text-green-800 rounded-lg mb-6 alert animate__animated animate__fadeIn relative" role="alert">
+            <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            @TempData["Success"]
+            <button type="button" class="absolute top-3 right-3 text-green-600 hover:text-green-800" data-bs-dismiss="alert" aria-label="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
     }
 
     <!-- Stats Cards -->
-    <div class="row mb-3">
-        <div class="col-md-4">
-            <div class="card border-left-primary shadow-sm h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Tổng cấu hình
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.DanhSachCauHinh.Count()</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-md p-5 flex items-center">
+            <div class="flex-1">
+                <h6 class="text-xs font-semibold text-blue-600 uppercase">Tổng cấu hình</h6>
+                <p class="text-2xl font-bold text-blue-900">@Model.DanhSachCauHinh.Count()</p>
             </div>
+            <svg class="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
         </div>
-
-        <div class="col-md-4">
-            <div class="card border-left-success shadow-sm h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Năm hiện tại
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@DateTime.Now.Year</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clock fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
+        <div class="bg-white rounded-xl shadow-md p-5 flex items-center">
+            <div class="flex-1">
+                <h6 class="text-xs font-semibold text-green-600 uppercase">Năm hiện tại</h6>
+                <p class="text-2xl font-bold text-blue-900">@DateTime.Now.Year</p>
             </div>
+            <svg class="w-12 h-12 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         </div>
-
-        <div class="col-md-4">
-            <div class="card border-left-info shadow-sm h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Cấu hình hiện hành
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                @(Model.DanhSachCauHinh.FirstOrDefault(c => c.Nam == DateTime.Now.Year)?.SoNgayPhepMacDinh ?? 0) ngày
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
+        <div class="bg-white rounded-xl shadow-md p-5 flex items-center">
+            <div class="flex-1">
+                <h6 class="text-xs font-semibold text-cyan-600 uppercase">Cấu hình hiện hành</h6>
+                <p class="text-2xl font-bold text-blue-900">@(Model.DanhSachCauHinh.FirstOrDefault(c => c.Nam == DateTime.Now.Year)?.SoNgayPhepMacDinh ?? 0) ngày</p>
             </div>
+            <svg class="w-12 h-12 text-cyan-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path></svg>
         </div>
     </div>
 
     <!-- Main Table Card -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 animate__animated animate__fadeIn">
-                <div class="card-header py-3 bg-white">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="m-0 font-weight-bold text-primary">
-                            <i class="fas fa-list me-2"></i>Danh sách cấu hình phép năm
-                        </h5>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped border" id="dataTable" width="100%" cellspacing="0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="text-center" style="width: 10%">
-                                        <i class="far fa-calendar-alt me-1"></i>Năm
-                                    </th>
-                                    <th class="text-center" style="width: 20%">
-                                        <i class="fas fa-calendar-day me-1"></i>Số ngày phép mặc định
-                                    </th>
-                                    <th style="width: 50%">
-                                        <i class="fas fa-cogs me-1"></i>Chính sách áp dụng
-                                    </th>
-                                    <th class="text-center" style="width: 20%">
-                                        <i class="fas fa-tools me-1"></i>Thao tác
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Model.DanhSachCauHinh)
-                                {
-                                    bool isCurrentYear = item.Nam == DateTime.Now.Year;
-                                    <tr class="@(isCurrentYear ? "table-active" : "")">
-                                        <td class="text-center align-middle fw-bold">
-                                            @item.Nam
-                                            @if (isCurrentYear)
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-blue-100 animate__animated animate__fadeIn">
+        <div class="p-6 border-b border-blue-100">
+            <h5 class="text-lg font-semibold text-blue-900">
+                <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Danh sách cấu hình phép năm
+            </h5>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                    <thead class="bg-blue-50 text-blue-900">
+                        <tr>
+                            <th class="px-6 py-4 text-center text-sm font-semibold w-1/12">
+                                <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Năm
+                            </th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold w-2/12">
+                                <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                Số ngày phép mặc định
+                            </th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold w-6/12">
+                                <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                Chính sách áp dụng
+                            </th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold w-3/12">
+                                <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                Thao tác
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-blue-100">
+                        @foreach (var item in Model.DanhSachCauHinh)
+                        {
+                            bool isCurrentYear = item.Nam == DateTime.Now.Year;
+                            <tr class="@(isCurrentYear ? "bg-blue-50" : "") hover:bg-blue-50 transition-all duration-200">
+                                <td class="px-6 py-4 text-center text-blue-800 font-bold">
+                                    @item.Nam
+                                    @if (isCurrentYear)
+                                    {
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 ml-2">Hiện tại</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="inline-flex px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">@item.SoNgayPhepMacDinh ngày</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (item.DanhSachTenChinhSach != null && item.DanhSachTenChinhSach.Any())
+                                    {
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach (var tenChinhSach in item.DanhSachTenChinhSach)
                                             {
-                                                <span class="badge bg-success ms-1">Hiện tại</span>
+                                                <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-cyan-100 text-cyan-800">@tenChinhSach</span>
                                             }
-                                        </td>
-                                        <td class="text-center align-middle">
-                                            <span class="badge bg-primary rounded-pill px-3 py-2">@item.SoNgayPhepMacDinh ngày</span>
-                                        </td>
-                                        <td class="align-middle">
-                                            @if (item.DanhSachTenChinhSach != null && item.DanhSachTenChinhSach.Any())
-                                            {
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    @foreach (var tenChinhSach in item.DanhSachTenChinhSach)
-                                                    {
-                                                        <span class="badge bg-info text-dark rounded-pill">@tenChinhSach</span>
-                                                    }
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Không có chính sách</span>
-                                            }
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="btn-group">
-                                                @if (!isCurrentYear)
-                                                {
-                                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Chỉnh sửa">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                }
-                                                else
-                                                {
-                                                    <button type="button" class="btn btn-sm btn-outline-primary disabled" data-bs-toggle="tooltip" title="Không thể chỉnh sửa cấu hình năm hiện tại">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                }
-                                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="Xem chi tiết">
-                                                    <i class="fas fa-info-circle"></i>
-                                                </a>
-                                                @if (!isCurrentYear)
-                                                {
-                                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Xóa">
-                                                        <i class="fas fa-trash"></i>
-                                                    </a>
-                                                }
-                                                else
-                                                {
-                                                    <button type="button" class="btn btn-sm btn-danger disabled" data-bs-toggle="tooltip" title="Không thể xóa cấu hình năm hiện tại">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer small text-muted py-2">
-                    <i class="far fa-clock me-1"></i>Cập nhật lần cuối: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
-                </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-blue-600 text-sm flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Không có chính sách
+                                        </span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex justify-center space-x-2">
+                                        @if (!isCurrentYear)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 hover:shadow-md transition-all duration-200" title="Chỉnh sửa">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="p-2 bg-gray-100 text-gray-400 rounded-full cursor-not-allowed" disabled title="Không thể chỉnh sửa cấu hình năm hiện tại">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            </button>
+                                        }
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 hover:shadow-md transition-all duration-200" title="Xem chi tiết">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </a>
+                                        @if (!isCurrentYear)
+                                        {
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 hover:shadow-md transition-all duration-200" title="Xóa">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="p-2 bg-gray-100 text-gray-400 rounded-full cursor-not-allowed" disabled title="Không thể xóa cấu hình năm hiện tại">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
+        </div>
+        <div class="p-4 bg-blue-50 text-blue-600 text-sm flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Cập nhật lần cuối: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         </div>
     </div>
 </div>
 
-
-<style>
-    /* Custom styles */
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
-        border: none;
-    }
-
-    .card {
-        border-radius: 0.5rem;
-        transition: all 0.2s ease-in-out;
-    }
-
-    .animate__animated {
-        animation-duration: 0.5s;
-    }
-
-    .border-left-primary {
-        border-left: 4px solid #4e73df;
-    }
-
-    .border-left-success {
-        border-left: 4px solid #1cc88a;
-    }
-
-    .border-left-info {
-        border-left: 4px solid #36b9cc;
-    }
-
-    .text-gray-300 {
-        color: #dddfeb !important;
-    }
-
-    .text-gray-800 {
-        color: #5a5c69 !important;
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: rgba(78, 115, 223, 0.05);
-    }
-
-    .btn-group .btn {
-        margin: 0 2px;
-    }
-
-    /* Badge styling */
-    .badge {
-        font-weight: 500;
-        letter-spacing: 0.5px;
-    }
-
-    /* Year highlight for current year */
-    .table-active {
-        background-color: rgba(78, 115, 223, 0.05);
-    }
-
-    /* Add subtle shadow to table */
-    .table {
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-
-    /* Custom scrollbar for table */
-    .table-responsive::-webkit-scrollbar {
-        height: 8px;
-        width: 8px;
-    }
-
-    .table-responsive::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-    }
-
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 4px;
-    }
-
-        .table-responsive::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
-        }
-
-    /* DataTables custom styling */
-    .dataTables_wrapper .dataTables_length select,
-    .dataTables_wrapper .dataTables_filter input {
-        border: 1px solid #e3e6f0;
-        border-radius: 0.35rem;
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: #4e73df;
-        color: white !important;
-        border: none;
-    }
-
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-        background: #e2e6f9;
-        color: #4e73df !important;
-        border: none;
-    }
-
-    .dataTables_wrapper .dataTables_info {
-        font-size: 0.875rem;
-    }
-</style>
-
 @section Scripts {
-    <!-- Add Bootstrap 5 JS if not included in layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Add Font Awesome if not included in layout -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-
-    <!-- Add Animate.css for animations -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
     <script>
-        // Initialize DataTable with Vietnamese language
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-dismiss alerts after 4 seconds
+            setTimeout(function () {
+                document.querySelectorAll('.alert').forEach(alert => {
+                    alert.classList.add('animate__animated', 'animate__fadeOut');
+                    setTimeout(() => {
+                        const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                        bsAlert.close();
+                    }, 500);
+                });
+            }, 4000);
+
             // Initialize tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl)
+            document.querySelectorAll('[title]').forEach(element => {
+                new bootstrap.Tooltip(element);
             });
 
             // Initialize DataTable
-            var table = $('#dataTable').DataTable({
+            $('#dataTable').DataTable({
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Vietnamese.json"
                 },
                 "order": [[0, "desc"]],
                 "pageLength": 10,
                 "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Tất cả"]],
-                "dom": '<"top d-flex justify-content-between align-items-center mb-3"lf>rt<"bottom d-flex justify-content-between align-items-center mt-3"ip><"clear">',
+                "dom": '<"flex justify-between items-center mb-4"lf>rt<"flex justify-between items-center mt-4"ip>',
                 "responsive": true,
                 "stateSave": true,
                 "drawCallback": function () {
-                    $('.dataTables_paginate > .pagination').addClass('pagination-sm');
+                    $('.dataTables_paginate > .pagination').addClass('pagination-sm flex space-x-1');
+                    $('.dataTables_paginate .paginate_button').addClass('px-3 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all duration-200');
+                    $('.dataTables_paginate .paginate_button.current').addClass('bg-blue-600 text-white');
                 }
             });
-
-            // Handle delete button click
-            $('.delete-btn').on('click', function () {
-                var id = $(this).data('id');
-                var year = $(this).data('year');
-
-                $('#deleteId').val(id);
-                $('#deleteYear').text(year);
-                $('#deleteForm').attr('action', '/CauHinhPhepNam/Delete/' + id); // Adjust the URL as needed
-
-                var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-                deleteModal.show();
-            });
-
-            // Refresh button functionality
-            $('#refreshBtn').on('click', function () {
-                $(this).addClass('animate__animated animate__rotateIn');
-                setTimeout(function () {
-                    location.reload();
-                }, 500);
-            });
-
-            // Row highlight effect on hover
-            $('#dataTable tbody tr').hover(
-                function () {
-                    $(this).addClass('animate__animated animate__pulse');
-                },
-                function () {
-                    $(this).removeClass('animate__animated animate__pulse');
-                }
-            );
         });
     </script>
 }
-```

@@ -1,337 +1,162 @@
-﻿```cshtml
-@model HR_KD.ViewModels.CauHinhPhepNamViewModel
+﻿@model HR_KD.ViewModels.CauHinhPhepNamViewModel
 @{
     ViewData["Title"] = "Chi tiết cấu hình phép năm";
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-<div class="container-fluid p-0">
-    <!-- Header with breadcrumb -->
-    <div class="row align-items-center mb-4">
-        <div class="col">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a href="/QuanLyNghi">Quản lý nghỉ phép</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index">Cấu hình phép năm</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
-                </ol>
-            </nav>
-            <div class="d-flex align-items-center mt-2">
-                <h2 class="fw-bold text-primary mb-0">Chi tiết cấu hình phép năm @Model.Nam</h2>
+<div class="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <!-- Header Section with Breadcrumb -->
+    <div class="mb-8">
+        <nav aria-label="breadcrumb" class="flex items-center text-sm text-blue-600 mb-4">
+            <ol class="flex space-x-2">
+                <li><a href="/" class="hover:text-blue-800">Trang chủ</a></li>
+                <li><span class="text-blue-400">/</span></li>
+                <li><a href="/QuanLyNghi" class="hover:text-blue-800">Quản lý nghỉ phép</a></li>
+                <li><span class="text-blue-400">/</span></li>
+                <li><a asp-action="Index" class="hover:text-blue-800">Cấu hình phép năm</a></li>
+                <li><span class="text-blue-400">/</span></li>
+                <li class="text-blue-900 font-medium">Chi tiết</li>
+            </ol>
+        </nav>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <h2 class="text-3xl font-extrabold text-blue-900">
+                    <svg class="w-6 h-6 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Chi tiết cấu hình phép năm @Model.Nam
+                </h2>
                 @if (Model.IsCurrentYear)
                 {
-                    <span class="badge ms-3 bg-info fs-6" style="padding: 0.5em 1em;">
-                        <i class="fas fa-lock me-1"></i> Đang áp dụng
+                    <span class="inline-flex px-3 py-1 ml-4 text-sm font-medium rounded-full bg-cyan-100 text-cyan-800">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Đang áp dụng
                     </span>
                 }
             </div>
-        </div>
-        <div class="col-auto">
-            <a asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center">
-                <i class="fas fa-arrow-left me-2"></i> Quay lại danh sách
+            <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 rounded-full hover:bg-blue-50 transition-all duration-300 shadow-md">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Quay lại danh sách
             </a>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-white py-3 border-bottom border-light">
-                    <h5 class="card-title mb-0 text-dark">
-                        <i class="fas fa-info-circle me-2 text-primary"></i>Thông tin cấu hình
-                    </h5>
+    <!-- Main Card -->
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-blue-100 animate__animated animate__fadeIn">
+        <div class="p-6 border-b border-blue-100">
+            <h5 class="text-lg font-semibold text-blue-900">
+                <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Thông tin cấu hình
+            </h5>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <dt class="text-sm font-semibold text-blue-900 uppercase">Năm áp dụng</dt>
+                    <dd class="mt-2 text-xl font-medium text-blue-800">@Html.DisplayFor(model => model.Nam)</dd>
                 </div>
-                <div class="card-body p-4">
-                    <div class="row gx-5">
-                        <div class="col-lg-6">
-                            <div class="detail-item mb-4">
-                                <div class="detail-label">Năm áp dụng</div>
-                                <div class="detail-value">@Html.DisplayFor(model => model.Nam)</div>
-                            </div>
-                        </div>
+                <div>
+                    <dt class="text-sm font-semibold text-blue-900 uppercase">Số ngày phép mặc định</dt>
+                    <dd class="mt-2 text-xl font-medium text-blue-800">@Html.DisplayFor(model => model.SoNgayPhepMacDinh) ngày</dd>
+                    <p class="text-xs text-blue-600 mt-1">
+                        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Số ngày phép cơ bản mà mỗi nhân viên được hưởng
+                    </p>
+                </div>
+            </div>
 
-                        <div class="col-lg-6">
-                            <div class="detail-item mb-4">
-                                <div class="detail-label">Số ngày phép mặc định</div>
-                                <div class="detail-value">@Html.DisplayFor(model => model.SoNgayPhepMacDinh) ngày</div>
-                                <div class="detail-hint">Số ngày phép cơ bản mà mỗi nhân viên được hưởng</div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="mt-8">
+                <h5 class="text-lg font-semibold text-blue-900 mb-4">
+                    <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    Chính sách phép năm áp dụng
+                </h5>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead class="bg-blue-50 text-blue-900">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">Tên chính sách</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">Số năm làm việc</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">Số ngày cộng thêm</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">Năm bắt đầu áp dụng</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-blue-100">
+                            @foreach (var item in Model.DanhSachChinhSach.Where(c => c.IsSelected))
+                            {
+                                <tr class="hover:bg-blue-50 transition-all duration-200">
+                                    <td class="px-6 py-4 text-blue-800">@item.TenChinhSach</td>
+                                    <td class="px-6 py-4 text-blue-800">@item.SoNam năm</td>
+                                    <td class="px-6 py-4 text-blue-800">@item.SoNgayCongThem ngày</td>
+                                    <td class="px-6 py-4 text-blue-800">@item.ApDungTuNam</td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full @(item.ConHieuLuc ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")">
+                                            @(item.ConHieuLuc ? "Còn hiệu lực" : "Hết hiệu lực")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!Model.DanhSachChinhSach.Any(c => c.IsSelected))
+                            {
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-blue-600">
+                                        <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Không có chính sách nào được áp dụng
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                    <div class="mt-4">
-                        <h5 class="fw-bold">Chính sách phép năm áp dụng</h5>
-                        <div class="table-responsive mt-3">
-                            <table class="table table-hover table-striped">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Tên chính sách</th>
-                                        <th>Số năm làm việc</th>
-                                        <th>Số ngày cộng thêm</th>
-                                        <th>Năm bắt đầu áp dụng</th>
-                                        <th>Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in Model.DanhSachChinhSach.Where(c => c.IsSelected))
-                                    {
-                                        <tr>
-                                            <td>@item.TenChinhSach</td>
-                                            <td>@item.SoNam năm</td>
-                                            <td>@item.SoNgayCongThem ngày</td>
-                                            <td>@item.ApDungTuNam</td>
-                                            <td>
-                                                <span class="badge @(item.ConHieuLuc ? "bg-success" : "bg-danger")">
-                                                    @(item.ConHieuLuc ? "Còn hiệu lực" : "Hết hiệu lực")
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    }
-                                    @if (!Model.DanhSachChinhSach.Any(c => c.IsSelected))
-                                    {
-                                        <tr>
-                                            <td colspan="5" class="text-center py-3">Không có chính sách nào được áp dụng</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    @if (Model.IsCurrentYear)
-                    {
-                        <div class="policy-status-card mt-4 mb-4 in-use">
-                            <div class="status-icon">
-                                <i class="fas fa-lock text-info"></i>
-                            </div>
-                            <div class="status-content">
-                                <div class="status-title">Trạng thái sử dụng</div>
-                                <div class="status-value text-info">
-                                    Cấu hình này đang được áp dụng cho năm hiện tại
-                                </div>
-                                <div class="status-note mt-1">
-                                    <i class="fas fa-info-circle me-1"></i> Không thể chỉnh sửa hoặc xóa cấu hình đang được áp dụng
-                                </div>
-                            </div>
-                        </div>
-                    }
-
-                    <hr class="my-4" />
-
-                    <div class="d-flex justify-content-end gap-2">
-                        <a asp-action="Index" class="btn btn-outline-secondary px-4">
-                            <i class="fas fa-list me-2"></i> Danh sách
-                        </a>
-                        @if (!Model.IsCurrentYear)
-                        {
-                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary px-4 d-flex align-items-center">
-                                <i class="fas fa-edit me-2"></i> Chỉnh sửa
-                            </a>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-secondary px-4 d-flex align-items-center" disabled
-                                    data-bs-toggle="tooltip" data-bs-placement="top"
-                                    title="Không thể chỉnh sửa cấu hình của năm hiện tại">
-                                <i class="fas fa-lock me-2"></i> Chỉnh sửa
-                            </button>
-                        }
+            @if (Model.IsCurrentYear)
+            {
+                <div class="mt-6 p-5 bg-cyan-50 rounded-xl flex items-start space-x-4">
+                    <svg class="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <div>
+                        <h6 class="text-sm font-semibold text-cyan-900 uppercase">Trạng thái sử dụng</h6>
+                        <p class="text-cyan-800 font-medium">Cấu hình này đang được áp dụng cho năm hiện tại</p>
+                        <p class="text-xs text-cyan-600 mt-1 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Không thể chỉnh sửa hoặc xóa cấu hình đang được áp dụng
+                        </p>
                     </div>
                 </div>
+            }
+
+            <div class="flex justify-end space-x-4 mt-6">
+                <a asp-action="Index" class="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    Danh sách
+                </a>
+                @if (!Model.IsCurrentYear)
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Chỉnh sửa
+                    </a>
+                }
+                else
+                {
+                    <button type="button" disabled class="inline-flex items-center px-5 py-2.5 bg-gray-200 text-gray-400 rounded-full cursor-not-allowed" title="Không thể chỉnh sửa cấu hình của năm hiện tại">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Chỉnh sửa
+                    </button>
+                }
             </div>
         </div>
     </div>
 </div>
 
-@section Styles {
-    <style>
-        /* Card styling */
-        .card {
-            transition: all 0.2s ease;
-        }
-
-        /* Detail item styling */
-        .detail-item {
-            position: relative;
-        }
-
-        .detail-label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #6c757d;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .detail-value {
-            font-size: 1.25rem;
-            font-weight: 500;
-            color: #212529;
-            padding-bottom: 0.25rem;
-        }
-
-        .detail-hint {
-            font-size: 0.75rem;
-            color: #6c757d;
-            margin-top: 0.25rem;
-        }
-
-        /* Status card styling */
-        .policy-status-card {
-            display: flex;
-            align-items: center;
-            background-color: #f8f9fa;
-            border-radius: 0.5rem;
-            padding: 1.25rem;
-            border-left: 4px solid;
-        }
-
-            .policy-status-card.active {
-                border-left-color: #28a745;
-                background-color: rgba(40, 167, 69, 0.08);
-            }
-
-            .policy-status-card.inactive {
-                border-left-color: #dc3545;
-                background-color: rgba(220, 53, 69, 0.08);
-            }
-
-            .policy-status-card.in-use {
-                border-left-color: #17a2b8;
-                background-color: rgba(23, 162, 184, 0.08);
-            }
-
-        .status-icon {
-            font-size: 2rem;
-            margin-right: 1rem;
-        }
-
-        .status-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #495057;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.25rem;
-        }
-
-        .status-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .status-note {
-            font-size: 0.85rem;
-            color: #495057;
-        }
-
-        /* Badge and text color styling */
-        .badge.bg-success {
-            background-color: #28a745 !important;
-            color: white;
-        }
-
-        .badge.bg-danger {
-            background-color: #dc3545 !important;
-            color: white;
-        }
-
-        .badge.bg-info {
-            background-color: #17a2b8 !important;
-            color: white;
-        }
-
-        .text-success {
-            color: #28a745 !important;
-        }
-
-        .text-danger {
-            color: #dc3545 !important;
-        }
-
-        .text-info {
-            color: #17a2b8 !important;
-        }
-
-        .badge {
-            padding: 0.5em 0.85em;
-            font-weight: 500;
-        }
-
-        /* Button styling */
-        .btn-primary {
-            background-color: #3b7ddd;
-            border-color: #3b7ddd;
-        }
-
-            .btn-primary:hover {
-                background-color: #326abc;
-                border-color: #2f64b1;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 6px rgba(59, 125, 221, 0.2);
-            }
-
-        .btn-secondary {
-            background-color: #adb5bd;
-            border-color: #adb5bd;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        /* Colors */
-        .text-primary {
-            color: #3b7ddd !important;
-        }
-
-        /* Breadcrumb styling */
-        .breadcrumb-item a {
-            color: #6c757d;
-            text-decoration: none;
-        }
-
-            .breadcrumb-item a:hover {
-                color: #3b7ddd;
-                text-decoration: none;
-            }
-
-        .breadcrumb-item.active {
-            color: #3b7ddd;
-        }
-
-        .breadcrumb-item + .breadcrumb-item::before {
-            color: #6c757d;
-        }
-
-        /* Table styling */
-        .table {
-            margin-bottom: 0;
-        }
-
-        .table-striped tbody tr:nth-of-type(odd) {
-            background-color: rgba(0, 0, 0, 0.02);
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: rgba(59, 125, 221, 0.05);
-        }
-    </style>
-}
-
 @section Scripts {
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Initialize tooltips
         document.addEventListener('DOMContentLoaded', function () {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
+            // Initialize tooltips
+            document.querySelectorAll('[title]').forEach(element => {
+                new bootstrap.Tooltip(element);
             });
         });
     </script>
 }
-```

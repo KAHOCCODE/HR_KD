@@ -1,58 +1,96 @@
 ﻿@model HR_KD.ViewModels.CauHinhPhepNamItemViewModel
-
 @{
     ViewData["Title"] = "Xóa cấu hình phép năm";
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
-<div class="container-fluid">
-    <h1 class="mt-4">Xóa cấu hình phép năm</h1>
+<div class="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-extrabold text-blue-900">
+            <svg class="w-6 h-6 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+            Xóa cấu hình phép năm
+        </h1>
+        <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 rounded-full hover:bg-blue-50 transition-all duration-300 shadow-md">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Quay lại danh sách
+        </a>
+    </div>
 
-    <div class="alert alert-danger">
-        <h4><i class="fas fa-exclamation-triangle"></i> Cảnh báo</h4>
+    <!-- Warning Alert -->
+    <div class="p-4 bg-red-50 text-red-800 rounded-lg mb-6 animate__animated animate__fadeIn">
+        <h4 class="text-lg font-semibold flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Cảnh báo
+        </h4>
         <p>Bạn có chắc chắn muốn xóa cấu hình phép năm này?</p>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-info-circle mr-1"></i>
-            Thông tin cấu hình
+    <!-- Main Card -->
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-blue-100 animate__animated animate__fadeIn">
+        <div class="p-6 border-b border-blue-100">
+            <h5 class="text-lg font-semibold text-blue-900">
+                <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Thông tin cấu hình
+            </h5>
         </div>
-        <div class="card-body">
-            <dl class="row">
-                <dt class="col-sm-3">Năm:</dt>
-                <dd class="col-sm-9">@Model.Nam</dd>
-
-                <dt class="col-sm-3">Số ngày phép mặc định:</dt>
-                <dd class="col-sm-9">@Model.SoNgayPhepMacDinh</dd>
-
-                <dt class="col-sm-3">Chính sách áp dụng:</dt>
-                <dd class="col-sm-9">
-                    @if (Model.DanhSachTenChinhSach != null && Model.DanhSachTenChinhSach.Any())
-                    {
-                        <ul>
-                            @foreach (var tenChinhSach in Model.DanhSachTenChinhSach)
-                            {
-                                <li>@tenChinhSach</li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <span class="text-muted">Không có chính sách</span>
-                    }
-                </dd>
+        <div class="p-6">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <dt class="text-sm font-semibold text-blue-900 uppercase">Năm</dt>
+                    <dd class="mt-2 text-xl font-medium text-blue-800">@Model.Nam</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-semibold text-blue-900 uppercase">Số ngày phép mặc định</dt>
+                    <dd class="mt-2 text-xl font-medium text-blue-800">@Model.SoNgayPhepMacDinh ngày</dd>
+                </div>
+                <div class="col-span-1 md:col-span-2">
+                    <dt class="text-sm font-semibold text-blue-900 uppercase">Chính sách áp dụng</dt>
+                    <dd class="mt-2 text-blue-800">
+                        @if (Model.DanhSachTenChinhSach != null && Model.DanhSachTenChinhSach.Any())
+                        {
+                            <ul class="list-disc pl-5 space-y-1">
+                                @foreach (var tenChinhSach in Model.DanhSachTenChinhSach)
+                                {
+                                    <li>@tenChinhSach</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <span class="text-blue-600 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Không có chính sách
+                            </span>
+                        }
+                    </dd>
+                </div>
             </dl>
         </div>
     </div>
 
-    <form asp-action="Delete">
+    <!-- Form Actions -->
+    <form asp-action="Delete" method="post" class="mt-6">
         <input type="hidden" asp-for="Id" />
-        <button type="submit" class="btn btn-danger">
-            <i class="fas fa-trash"></i> Xác nhận xóa
-        </button>
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Quay lại danh sách
-        </a>
+        <div class="flex justify-end space-x-4">
+            <a asp-action="Index" class="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                Hủy
+            </a>
+            <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-md">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+                Xác nhận xóa
+            </button>
+        </div>
     </form>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Optional: Add any custom JavaScript if needed
+        });
+    </script>
+}

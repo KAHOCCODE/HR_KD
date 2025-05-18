@@ -1,379 +1,309 @@
-﻿
-    @model HR_KD.ViewModels.CauHinhPhepNamViewModel
+﻿@model HR_KD.ViewModels.CauHinhPhepNamViewModel
+@{
+    ViewData["Title"] = "Thêm mới cấu hình phép năm";
+    Layout = "~/Views/Shared/_ThemeLayout.cshtml";
+}
 
-    @{
-        ViewData["Title"] = "Thêm mới cấu hình phép năm";
-        Layout = "~/Views/Shared/_ThemeLayout.cshtml";
-    }
-
-    <div class="container-fluid p-0">
-        <!-- Header Section -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card bg-gradient-primary shadow">
-                    <div class="card-body py-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <h4 class="text-white mb-0">
-                                    <i class="fas fa-plus-circle me-2"></i>Thêm mới cấu hình phép năm
-                                </h4>
-                                <p class="text-white-50 mb-0 small">Thiết lập cấu hình phép năm mới cho nhân viên</p>
-                            </div>
-                            <div>
-                                <a asp-action="Index" class="btn btn-light btn-sm rounded-pill shadow-sm">
-                                    <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+<div class="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-2xl font-extrabold">
+                        <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Thêm mới cấu hình phép năm
+                    </h4>
+                    <p class="text-blue-100 text-sm mt-1">Thiết lập cấu hình phép năm mới cho nhân viên</p>
                 </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <!-- Info Card -->
-                <div class="card border-0 shadow h-100">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="m-0 font-weight-bold text-primary">
-                            <i class="fas fa-info-circle me-2"></i>Hướng dẫn
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info bg-light border-info border-start border-4 border-0 rounded-0">
-                            <h6 class="alert-heading"><i class="fas fa-lightbulb me-2"></i>Lưu ý quan trọng</h6>
-                            <hr>
-                            <p class="mb-2">Cấu hình phép năm sẽ được áp dụng cho tất cả nhân viên trong năm đã chọn.</p>
-                            <p class="mb-2">Số ngày phép mặc định sẽ được áp dụng cho nhân viên mới.</p>
-                            <p class="mb-0">Bạn có thể chọn thêm các chính sách phép theo thâm niên để áp dụng.</p>
-                        </div>
-
-                        <div class="mt-4">
-                            <h6 class="text-primary"><i class="fas fa-cogs me-2"></i>Các bước thực hiện</h6>
-                            <ol class="ps-3 text-muted small">
-                                <li class="mb-2">Chọn năm cần cấu hình</li>
-                                <li class="mb-2">Thiết lập số ngày phép mặc định</li>
-                                <li class="mb-2">Chọn các chính sách phép năm áp dụng</li>
-                                <li>Lưu lại cấu hình</li>
-                            </ol>
-                        </div>
-
-                        <div class="alert alert-warning bg-light border-warning border-start border-4 border-0 rounded-0 mt-3">
-                            <p class="mb-0 small"><i class="fas fa-exclamation-triangle me-2"></i>Sau khi cấu hình được tạo và áp dụng, mọi thay đổi sẽ ảnh hưởng đến quyền lợi phép năm của nhân viên.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-8 mb-4">
-                <!-- Form Card -->
-                <div class="card border-0 shadow animate__animated animate__fadeIn">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="m-0 font-weight-bold text-primary">
-                            <i class="fas fa-edit me-2"></i>Thông tin cấu hình
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form asp-action="Create" id="configForm">
-                            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
-
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <div class="form-floating mb-3">
-                                        <input asp-for="Nam" class="form-control" id="yearInput" placeholder="2025" min="@DateTime.Now.Year" />
-                                        <label asp-for="Nam">Năm</label>
-                                        <span asp-validation-for="Nam" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating mb-3">
-                                        <input asp-for="SoNgayPhepMacDinh" class="form-control" id="defaultDaysInput" placeholder="12" min="0" />
-                                        <label asp-for="SoNgayPhepMacDinh">Số ngày phép mặc định</label>
-                                        <span asp-validation-for="SoNgayPhepMacDinh" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">
-                                    <i class="fas fa-cogs me-1"></i>Chính sách áp dụng:
-                                </label>
-                                <div class="table-responsive mt-2">
-                                    <table class="table table-hover table-striped border" id="policyTable" width="100%" cellspacing="0">
-                                        <thead class="bg-light">
-                                            <tr>
-                                                <th style="width: 5%">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="selectAll">
-                                                        <label class="form-check-label" for="selectAll"></label>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 30%">Tên chính sách</th>
-                                                <th style="width: 15%" class="text-center">Số năm</th>
-                                                <th style="width: 20%" class="text-center">Ngày cộng thêm</th>
-                                                <th style="width: 15%" class="text-center">Áp dụng từ</th>
-                                                <th style="width: 15%" class="text-center">Trạng thái</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if (Model.DanhSachChinhSach != null && Model.DanhSachChinhSach.Any())
-                                            {
-                                                @for (int i = 0; i < Model.DanhSachChinhSach.Count; i++)
-                                                {
-                                                    var chinhSach = Model.DanhSachChinhSach[i];
-                                                    <tr class="@(!chinhSach.ConHieuLuc ? "text-muted" : "")">
-                                                        <td>
-                                                            <div class="form-check">
-                                                                <input class="form-check-input policy-check"
-                                                                       type="checkbox"
-                                                                       id="chinhsach-@chinhSach.Id"
-                                                                       name="ChinhSachPhepNamIds"
-                                                                       value="@chinhSach.Id"
-                                                                @(chinhSach.IsSelected ? "checked" : "")
-                                                                @(!chinhSach.ConHieuLuc ? "disabled" : "") />
-                                                                <label class="form-check-label" for="chinhsach-@chinhSach.Id"></label>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <label for="chinhsach-@chinhSach.Id" class="mb-0 cursor-pointer">
-                                                                @chinhSach.TenChinhSach
-                                                            </label>
-                                                        </td>
-                                                        <td class="text-center">@chinhSach.SoNam</td>
-                                                        <td class="text-center">
-                                                            <span class="badge bg-primary rounded-pill">+@chinhSach.SoNgayCongThem ngày</span>
-                                                        </td>
-                                                        <td class="text-center">@chinhSach.ApDungTuNam</td>
-                                                        <td class="text-center">
-                                                            @if (chinhSach.ConHieuLuc)
-                                                            {
-                                                                <span class="badge bg-success rounded-pill px-3">Còn hiệu lực</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <span class="badge bg-danger rounded-pill px-3">Hết hiệu lực</span>
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <tr>
-                                                    <td colspan="6" class="text-center py-3 text-muted">
-                                                        <i class="fas fa-info-circle me-1"></i> Chưa có chính sách phép năm nào được thiết lập
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Summary Card -->
-                            <div class="card bg-light border mb-4">
-                                <div class="card-body">
-                                    <h6 class="card-title"><i class="fas fa-calculator me-2"></i>Tóm tắt cấu hình</h6>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <ul class="list-group list-group-flush bg-transparent">
-                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
-                                                    <span>Năm áp dụng:</span>
-                                                    <span class="fw-bold" id="summaryYear">-</span>
-                                                </li>
-                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
-                                                    <span>Số ngày phép mặc định:</span>
-                                                    <span class="fw-bold" id="summaryDays">-</span>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <ul class="list-group list-group-flush bg-transparent">
-                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
-                                                    <span>Chính sách đã chọn:</span>
-                                                    <span class="fw-bold" id="summaryPolicies">0</span>
-                                                </li>
-                                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between">
-                                                    <span>Tối đa có thể cộng thêm:</span>
-                                                    <span class="fw-bold text-success" id="summaryMaxDays">0 ngày</span>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-between">
-                                <a asp-action="Index" class="btn btn-outline-secondary">
-                                    <i class="fas fa-arrow-left me-1"></i> Quay lại
-                                </a>
-
-                                <div>
-                                    <button type="reset" class="btn btn-outline-secondary me-2">
-                                        <i class="fas fa-undo me-1"></i> Đặt lại
-                                    </button>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save me-1"></i> Lưu cấu hình
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 rounded-full hover:bg-blue-50 transition-all duration-300 shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Quay lại danh sách
+                </a>
             </div>
         </div>
     </div>
 
-    <style>
-        /* Custom styles */
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
-            border: none;
-        }
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Info Card -->
+        <div class="lg:col-span-1">
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-blue-100 animate__animated animate__fadeIn h-full">
+                <div class="p-6 border-b border-blue-100">
+                    <h5 class="text-lg font-semibold text-blue-900">
+                        <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Hướng dẫn
+                    </h5>
+                </div>
+                <div class="p-6">
+                    <div class="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-600 mb-4">
+                        <h6 class="text-sm font-semibold text-blue-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            Lưu ý quan trọng
+                        </h6>
+                        <hr class="my-2 border-blue-200">
+                        <p class="text-sm text-blue-800 mb-2">Cấu hình phép năm sẽ được áp dụng cho tất cả nhân viên trong năm đã chọn.</p>
+                        <p class="text-sm text-blue-800 mb-2">Số ngày phép mặc định sẽ được áp dụng cho nhân viên mới.</p>
+                        <p class="text-sm text-blue-800">Bạn có thể chọn thêm các chính sách phép theo thâm niên để áp dụng.</p>
+                    </div>
 
-        .card {
-            border-radius: 0.5rem;
-            transition: all 0.2s ease-in-out;
-        }
+                    <div>
+                        <h6 class="text-sm font-semibold text-blue-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            Các bước thực hiện
+                        </h6>
+                        <ol class="list-decimal pl-5 text-sm text-blue-700 space-y-1 mt-2">
+                            <li>Chọn năm cần cấu hình</li>
+                            <li>Thiết lập số ngày phép mặc định</li>
+                            <li>Chọn các chính sách phép năm áp dụng</li>
+                            <li>Lưu lại cấu hình</li>
+                        </ol>
+                    </div>
 
-        .animate__animated {
-            animation-duration: 0.5s;
-        }
+                    <div class="p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-600 mt-4">
+                        <p class="text-sm text-yellow-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Sau khi cấu hình được tạo và áp dụng, mọi thay đổi sẽ ảnh hưởng đến quyền lợi phép năm của nhân viên.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        .form-floating > .form-control:focus ~ label,
-        .form-floating > .form-control:not(:placeholder-shown) ~ label {
-            color: #4e73df;
-        }
+        <!-- Form Card -->
+        <div class="lg:col-span-2">
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-blue-100 animate__animated animate__fadeIn">
+                <div class="p-6 border-b border-blue-100">
+                    <h5 class="text-lg font-semibold text-blue-900">
+                        <svg class="w-5 h-5 inline-block mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Thông tin cấu hình
+                    </h5>
+                </div>
+                <div class="p-6">
+                    <form asp-action="Create" id="configForm">
+                        <div asp-validation-summary="ModelOnly" class="p-4 bg-red-50 text-red-800 rounded-lg mb-4 hidden" role="alert"></div>
 
-        .form-control:focus {
-            border-color: #bac8f3;
-            box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
-        }
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label asp-for="Nam" class="block text-sm font-semibold text-blue-900 mb-2">Năm</label>
+                                <input asp-for="Nam" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="yearInput" placeholder="2025" min="@DateTime.Now.Year" />
+                                <span asp-validation-for="Nam" class="text-red-600 text-sm"></span>
+                            </div>
+                            <div>
+                                <label asp-for="SoNgayPhepMacDinh" class="block text-sm font-semibold text-blue-900 mb-2">Số ngày phép mặc định</label>
+                                <input asp-for="SoNgayPhepMacDinh" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="defaultDaysInput" placeholder="12" min="0" />
+                                <span asp-validation-for="SoNgayPhepMacDinh" class="text-red-600 text-sm"></span>
+                            </div>
+                        </div>
 
-        .cursor-pointer {
-            cursor: pointer;
-        }
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-blue-900 mb-2">
+                                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                Chính sách áp dụng
+                            </label>
+                            <div class="overflow-x-auto">
+                                <table class="w-full table-auto">
+                                    <thead class="bg-blue-50 text-blue-900">
+                                        <tr>
+                                            <th class="px-6 py-4 text-left text-sm font-semibold w-1/12">
+                                                <input type="checkbox" id="selectAll" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                            </th>
+                                            <th class="px-6 py-4 text-left text-sm font-semibold w-3/12">Tên chính sách</th>
+                                            <th class="px-6 py-4 text-center text-sm font-semibold w-2/12">Số năm</th>
+                                            <th class="px-6 py-4 text-center text-sm font-semibold w-2/12">Ngày cộng thêm</th>
+                                            <th class="px-6 py-4 text-center text-sm font-semibold w-2/12">Áp dụng từ</th>
+                                            <th class="px-6 py-4 text-center text-sm font-semibold w-2/12">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-blue-100">
+                                        @if (Model.DanhSachChinhSach != null && Model.DanhSachChinhSach.Any())
+                                        {
+                                            @for (int i = 0; i < Model.DanhSachChinhSach.Count; i++)
+                                            {
+                                                var chinhSach = Model.DanhSachChinhSach[i];
+                                                <tr class="@(!chinhSach.ConHieuLuc ? "text-gray-500" : "text-blue-800") hover:bg-blue-50 transition-all duration-200">
+                                                    <td class="px-6 py-4">
+                                                        <input class="policy-check h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                               type="checkbox"
+                                                               id="chinhsach-@chinhSach.Id"
+                                                               name="ChinhSachPhepNamIds"
+                                                               value="@chinhSach.Id"
+                                                        @(chinhSach.IsSelected ? "checked" : "")
+                                                        @(!chinhSach.ConHieuLuc ? "disabled" : "") />
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <label for="chinhsach-@chinhSach.Id" class="cursor-pointer">@chinhSach.TenChinhSach</label>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-center">@chinhSach.SoNam</td>
+                                                    <td class="px-6 py-4 text-center">
+                                                        <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 additional-days">+@chinhSach.SoNgayCongThem ngày</span>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-center">@chinhSach.ApDungTuNam</td>
+                                                    <td class="px-6 py-4 text-center">
+                                                        <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full @(chinhSach.ConHieuLuc ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")">
+                                                            @(chinhSach.ConHieuLuc ? "Còn hiệu lực" : "Hết hiệu lực")
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="6" class="px-6 py-4 text-center text-blue-600">
+                                                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    Chưa có chính sách phép năm nào được thiết lập
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
 
-        .table-hover tbody tr:hover {
-            background-color: rgba(78, 115, 223, 0.05);
-        }
+                        <!-- Summary Card -->
+                        <div class="p-5 bg-blue-50 rounded-xl mb-6">
+                            <h6 class="text-sm font-semibold text-blue-900 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"></path></svg>
+                                Tóm tắt cấu hình
+                            </h6>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <ul class="space-y-2">
+                                        <li class="flex justify-between text-sm text-blue-800">
+                                            <span>Năm áp dụng:</span>
+                                            <span class="font-bold" id="summaryYear">-</span>
+                                        </li>
+                                        <li class="flex justify-between text-sm text-blue-800">
+                                            <span>Số ngày phép mặc định:</span>
+                                            <span class="font-bold" id="summaryDays">-</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <ul class="space-y-2">
+                                        <li class="flex justify-between text-sm text-blue-800">
+                                            <span>Chính sách đã chọn:</span>
+                                            <span class="font-bold" id="summaryPolicies">0</span>
+                                        </li>
+                                        <li class="flex justify-between text-sm text-blue-800">
+                                            <span>Tối đa có thể cộng thêm:</span>
+                                            <span class="font-bold text-green-600" id="summaryMaxDays">0 ngày</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
 
-        /* Badge styling */
-        .badge {
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
+                        <div class="flex justify-between items-center">
+                            <a asp-action="Index" class="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                                Quay lại
+                            </a>
+                            <div class="flex space-x-4">
+                                <button type="reset" class="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    Đặt lại
+                                </button>
+                                <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                    Lưu cấu hình
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        /* Custom scrollbar for table */
-        .table-responsive::-webkit-scrollbar {
-            height: 8px;
-            width: 8px;
-        }
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Select all functionality
+            const selectAll = document.getElementById('selectAll');
+            const policyChecks = document.querySelectorAll('.policy-check:not(:disabled)');
 
-        .table-responsive::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .table-responsive::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-
-            .table-responsive::-webkit-scrollbar-thumb:hover {
-                background: #a1a1a1;
-            }
-    </style>
-
-    @section Scripts {
-        @{
-            await Html.RenderPartialAsync("_ValidationScriptsPartial");
-        }
-        <script>
-            $(document).ready(function () {
-                // Initialize tooltips
-                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                    return new bootstrap.Tooltip(tooltipTriggerEl)
+            selectAll.addEventListener('change', function () {
+                policyChecks.forEach(checkbox => {
+                    checkbox.checked = this.checked;
                 });
-
-                // Select all functionality
-                $("#selectAll").click(function () {
-                    $(".policy-check:not(:disabled)").prop('checked', $(this).prop('checked'));
-                    updateSummary();
-                });
-
-                // Individual checkbox change
-                $(".policy-check").change(function () {
-                    updateSummary();
-                });
-
-                // Form input changes
-                $("#yearInput, #defaultDaysInput").on('input', function () {
-                    updateSummary();
-                });
-
-                // Initialize with current values
                 updateSummary();
+            });
 
-                // Form validation before submit
-                $("#configForm").submit(function (e) {
-                    var year = $("#yearInput").val();
-                    var defaultDays = $("#defaultDaysInput").val();
+            // Individual checkbox change
+            policyChecks.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSummary);
+            });
 
-                    if (!year || year < @DateTime.Now.Year) {
-                        alert("Vui lòng nhập năm hợp lệ (từ năm hiện tại trở đi)");
-                        e.preventDefault();
-                        return false;
-                    }
+            // Form input changes
+            const yearInput = document.getElementById('yearInput');
+            const defaultDaysInput = document.getElementById('defaultDaysInput');
+            [yearInput, defaultDaysInput].forEach(input => {
+                input.addEventListener('input', updateSummary);
+            });
 
-                    if (!defaultDays || defaultDays < 0) {
-                        alert("Vui lòng nhập số ngày phép mặc định hợp lệ");
-                        e.preventDefault();
-                        return false;
-                    }
+            // Initialize with current values
+            updateSummary();
 
-                    return true;
-                });
+            // Form validation before submit
+            const configForm = document.getElementById('configForm');
+            configForm.addEventListener('submit', function (e) {
+                const year = yearInput.value;
+                const defaultDays = defaultDaysInput.value;
 
-                // Reset button handler
-                $("button[type='reset']").click(function () {
-                    setTimeout(function () {
-                        updateSummary();
-                    }, 10);
-                });
+                if (!year || year < @DateTime.Now.Year) {
+                    e.preventDefault();
+                    const errorDiv = document.querySelector('.alert');
+                    errorDiv.textContent = 'Vui lòng nhập năm hợp lệ (từ năm hiện tại trở đi)';
+                    errorDiv.classList.remove('hidden');
+                    return false;
+                }
 
-                // Function to update summary panel
-                function updateSummary() {
-                    var year = $("#yearInput").val() || "-";
-                    var defaultDays = $("#defaultDaysInput").val() || "-";
-                    var selectedPolicies = $(".policy-check:checked").length;
-
-                    // Calculate max additional days
-                    var maxAdditionalDays = 0;
-                    $(".policy-check:checked").each(function () {
-                        var rowIndex = $(this).closest('tr').index();
-                        var additionalDays = parseInt($("tbody tr").eq(rowIndex).find("td:eq(3) .badge").text());
-                        if (!isNaN(additionalDays)) {
-                            maxAdditionalDays += additionalDays;
-                        }
-                    });
-
-                    $("#summaryYear").text(year);
-                    $("#summaryDays").text(defaultDays !== "-" ? defaultDays + " ngày" : "-");
-                    $("#summaryPolicies").text(selectedPolicies);
-                    $("#summaryMaxDays").text(maxAdditionalDays + " ngày");
+                if (!defaultDays || defaultDays < 0) {
+                    e.preventDefault();
+                    const errorDiv = document.querySelector('.alert');
+                    errorDiv.textContent = 'Vui lòng nhập số ngày phép mặc định hợp lệ';
+                    errorDiv.classList.remove('hidden');
+                    return false;
                 }
             });
-        </script>
-        </script>
-        <!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-        <!-- Add Font Awesome if not already in your layout -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+            // Reset button handler
+            configForm.querySelector('button[type="reset"]').addEventListener('click', function () {
+                setTimeout(updateSummary, 10);
+                const errorDiv = document.querySelector('.alert');
+                errorDiv.classList.add('hidden');
+            });
 
-        <!-- Add Animate.css for animations -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    }
+            // Function to update summary panel
+            function updateSummary() {
+                const year = yearInput.value || '-';
+                const defaultDays = defaultDaysInput.value || '-';
+                const selectedPolicies = document.querySelectorAll('.policy-check:checked').length;
+
+                // Calculate max additional days
+                let maxAdditionalDays = 0;
+                document.querySelectorAll('.policy-check:checked').forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    const additionalDaysText = row.querySelector('.additional-days').textContent;
+                    const additionalDays = parseInt(additionalDaysText.match(/\d+/)[0]);
+                    if (!isNaN(additionalDays)) {
+                        maxAdditionalDays += additionalDays;
+                    }
+                });
+
+                document.getElementById('summaryYear').textContent = year;
+                document.getElementById('summaryDays').textContent = defaultDays !== '-' ? defaultDays + ' ngày' : '-';
+                document.getElementById('summaryPolicies').textContent = selectedPolicies;
+                document.getElementById('summaryMaxDays').textContent = maxAdditionalDays + ' ngày';
+            }
+        });
+    </script>
+}

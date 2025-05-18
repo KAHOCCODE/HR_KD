@@ -1,380 +1,214 @@
 ﻿@model HR_KD.Data.LoaiNgayNghi
 @{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
-}
-@{
     ViewData["Title"] = "Xóa loại ngày nghỉ";
 }
 
-<style>
-    .delete-page-container {
-        max-width: 1200px;
-        margin: 2rem auto;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .card-header-custom {
-        background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
-        color: white;
-        padding: 1.5rem;
-        border-bottom: none;
-    }
-
-    .page-title {
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        margin: 0;
-    }
-
-    .go-back-btn {
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        transition: all 0.3s ease;
-    }
-
-        .go-back-btn:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: translateX(-3px);
-        }
-
-    .content-container {
-        padding: 2rem;
-        background-color: #fff;
-    }
-
-    .warning-alert {
-        background-color: #fff3cd;
-        border-left: 4px solid #ffc107;
-        padding: 1.25rem;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .info-card {
-        background-color: #f9f9f9;
-        border-radius: 8px;
-        padding: 1.5rem;
-        height: 100%;
-        border: 1px solid #eee;
-        transition: all 0.3s ease;
-    }
-
-        .info-card:hover {
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-        }
-
-    .info-label {
-        color: #555;
-        font-weight: 600;
-        font-size: 0.9rem;
-    }
-
-    .info-value {
-        color: #333;
-        font-weight: 500;
-    }
-
-    .badge-custom-yes {
-        background-color: #4caf50;
-        padding: 0.5em 0.8em;
-        font-weight: 500;
-    }
-
-    .badge-custom-no {
-        background-color: #9e9e9e;
-        padding: 0.5em 0.8em;
-        font-weight: 500;
-    }
-
-    .actions-container {
-        padding: 1.5rem 0 0.5rem 0;
-        border-top: 1px solid #eee;
-        margin-top: 1.5rem;
-    }
-
-    .delete-btn {
-        background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
-        border: none;
-        padding: 0.6rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-        .delete-btn:hover {
-            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-
-    .cancel-btn {
-        background-color: #f5f5f5;
-        color: #333;
-        border: 1px solid #ddd;
-        padding: 0.6rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-        .cancel-btn:hover {
-            background-color: #eeeeee;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-        }
-
-    .icon-shake {
-        animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-        animation-delay: 0.2s;
-    }
-</style>
-
-<div class="delete-page-container">
-    <div class="card-header-custom">
-        <div class="d-flex justify-content-between align-items-center">
-            <h4 class="page-title">
-                <i class="fas fa-trash-alt mr-2"></i> @ViewData["Title"]
-            </h4>
-            <a asp-action="Index" class="btn go-back-btn">
-                <i class="fas fa-arrow-left mr-1"></i> Quay lại danh sách
-            </a>
+<div class="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <div class="mb-6">
+        <div class="bg-gradient-to-r from-red-600 to-red-700 text-white rounded-2xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <h4 class="text-2xl font-extrabold">
+                    <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+                    @ViewData["Title"]
+                </h4>
+                <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-white text-red-700 rounded-full hover:bg-red-50 transition-all duration-300 shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Quay lại danh sách
+                </a>
+            </div>
         </div>
     </div>
 
-    <div class="content-container">
-        <div class="warning-alert">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-triangle text-warning mr-3 icon-shake" style="font-size: 1.8rem;"></i>
-                <div>
-                    <strong style="font-size: 1.1rem;">Xác nhận xóa loại ngày nghỉ</strong>
-                    <p class="mt-1 mb-0">Bạn đang chuẩn bị xóa một loại ngày nghỉ. Dữ liệu sau khi xóa sẽ không thể khôi phục. Vui lòng xác nhận thông tin trước khi thực hiện.</p>
+    <!-- Main Content -->
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-red-100 animate__animated animate__fadeIn">
+        <div class="p-6">
+            <!-- Warning Alert -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg mb-6 shadow-sm">
+                <div class="flex items-center">
+                    <svg class="w-8 h-8 text-yellow-600 mr-3 animate__animated animate__shakeX" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <div>
+                        <h5 class="text-lg font-semibold text-yellow-800">Xác nhận xóa loại ngày nghỉ</h5>
+                        <p class="text-yellow-700">Bạn đang chuẩn bị xóa một loại ngày nghỉ. Dữ liệu sau khi xóa sẽ không thể khôi phục. Vui lòng xác nhận thông tin trước khi thực hiện.</p>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row mt-4">
-            <div class="col-md-6 mb-4">
-                <div class="info-card">
-                    <h5 class="mb-3 text-primary">
-                        <i class="fas fa-info-circle mr-2"></i> Thông tin cơ bản
+            <!-- Information Sections -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Basic Information -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-blue-50 hover:shadow-md transition-shadow duration-300">
+                    <h5 class="text-lg font-semibold text-blue-900 mb-4 pb-3 border-b border-blue-100 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Thông tin cơ bản
                     </h5>
-                    <div class="row mb-3">
-                        <div class="col-sm-4 info-label">Mã loại ngày nghỉ:</div>
-                        <div class="col-sm-8 info-value">@Model.MaLoaiNgayNghi</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-4 info-label">Tên loại:</div>
-                        <div class="col-sm-8 info-value"><strong>@Model.TenLoai</strong></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-4 info-label">Mô tả:</div>
-                        <div class="col-sm-8 info-value">
-                            @if (string.IsNullOrEmpty(Model.MoTa))
-                            {
-                                <span class="text-muted">Không có mô tả</span>
-                            }
-                            else
-                            {
-                                @Model.MoTa
-                            }
+                    <div class="space-y-3">
+                        <div class="flex">
+                            <span class="w-1/3 text-sm font-semibold text-blue-900">Mã loại ngày nghỉ:</span>
+                            <span class="w-2/3 text-sm text-blue-700">@Model.MaLoaiNgayNghi</span>
+                        </div>
+                        <div class="flex">
+                            <span class="w-1/3 text-sm font-semibold text-blue-900">Tên loại:</span>
+                            <span class="w-2/3 text-sm font-bold text-blue-700">@Model.TenLoai</span>
+                        </div>
+                        <div class="flex">
+                            <span class="w-1/3 text-sm font-semibold text-blue-900">Mô tả:</span>
+                            <span class="w-2/3 text-sm text-blue-700">
+                                @if (string.IsNullOrEmpty(Model.MoTa))
+                                {
+                                    <span class="text-blue-500">Không có mô tả</span>
+                                }
+                                else
+                                {
+                                    @Model.MoTa
+                                }
+                            </span>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-6 mb-4">
-                <div class="info-card">
-                    <h5 class="mb-3 text-primary">
-                        <i class="fas fa-cog mr-2"></i> Cấu hình lương và phép
-                    </h5>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 info-label">Được hưởng lương:</div>
-                        <div class="col-sm-6 info-value">
-                            @if (Model.HuongLuong)
-                            {
-                                <span class="badge badge-custom-yes"><i class="fas fa-check mr-1"></i> Có</span>
-                            }
-                            else
-                            {
-                                <span class="badge badge-custom-no"><i class="fas fa-times mr-1"></i> Không</span>
-                            }
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 info-label">Tính vào phép năm:</div>
-                        <div class="col-sm-6 info-value">
-                            @if (Model.TinhVaoPhepNam)
-                            {
-                                <span class="badge badge-custom-yes"><i class="fas fa-check mr-1"></i> Có</span>
-                            }
-                            else
-                            {
-                                <span class="badge badge-custom-no"><i class="fas fa-times mr-1"></i> Không</span>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Thêm phần Thông tin giới hạn -->
-        <div class="row mt-2">
-            <div class="col-md-6 mb-4">
-                <div class="info-card">
-                    <h5 class="mb-3 text-primary">
-                        <i class="fas fa-sliders-h mr-2"></i> Giới hạn ngày nghỉ
+                <!-- Leave Configuration -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-blue-50 hover:shadow-md transition-shadow duration-300">
+                    <h5 class="text-lg font-semibold text-blue-900 mb-4 pb-3 border-b border-blue-100 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Cấu hình lương và phép
                     </h5>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 info-label">Số ngày nghỉ tối đa:</div>
-                        <div class="col-sm-6 info-value">
+                    <div class="space-y-3">
+                        <div class="flex">
+                            <span class="w-1/2 text-sm font-semibold text-blue-900">Được hưởng lương:</span>
+                            <span class="w-1/2 text-sm">
+                                @if (Model.HuongLuong)
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        Có
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        Không
+                                    </span>
+                                }
+                            </span>
+                        </div>
+                        <div class="flex">
+                            <span class="w-1/2 text-sm font-semibold text-blue-900">Tính vào phép năm:</span>
+                            <span class="w-1/2 text-sm">
+                                @if (Model.TinhVaoPhepNam)
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        Có
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        Không
+                                    </span>
+                                }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leave Limits -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-blue-50 hover:shadow-md transition-shadow duration-300 mt-6">
+                <h5 class="text-lg font-semibold text-blue-900 mb-4 pb-3 border-b border-blue-100 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Giới hạn ngày nghỉ
+                </h5>
+                <div class="space-y-3">
+                    <div class="flex">
+                        <span class="w-1/2 text-sm font-semibold text-blue-900">Số ngày nghỉ tối đa:</span>
+                        <span class="w-1/2 text-sm">
                             @if (Model.SoNgayNghiToiDa.HasValue && Model.SoNgayNghiToiDa.Value > 0)
                             {
-                                <span class="badge bg-info text-white">@Model.SoNgayNghiToiDa ngày</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">@Model.SoNgayNghiToiDa ngày</span>
                             }
                             else
                             {
-                                <span class="text-muted">Không giới hạn</span>
+                                <span class="text-blue-500">Không giới hạn</span>
                             }
-                        </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-6 info-label">Số lần đăng ký tối đa:</div>
-                        <div class="col-sm-6 info-value">
+                    <div class="flex">
+                        <span class="w-1/2 text-sm font-semibold text-blue-900">Số lần đăng ký tối đa:</span>
+                        <span class="w-1/2 text-sm">
                             @if (Model.SoLanDangKyToiDa.HasValue && Model.SoLanDangKyToiDa.Value > 0)
                             {
-                                <span class="badge bg-info text-white">@Model.SoLanDangKyToiDa lần</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">@Model.SoLanDangKyToiDa lần</span>
                             }
                             else
                             {
-                                <span class="text-muted">Không giới hạn</span>
+                                <span class="text-blue-500">Không giới hạn</span>
                             }
-                        </div>
+                        </span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="actions-container">
-            <form asp-action="Delete" id="deleteForm" class="text-center">
-                <input type="hidden" asp-for="MaLoaiNgayNghi" />
-                <div class="d-flex justify-content-center gap-3">
-                    <button type="button" class="btn delete-btn mr-2" onclick="confirmDelete()">
-                        <i class="fas fa-trash-alt mr-2"></i> Xác nhận xóa
+            <!-- Actions -->
+            <div class="mt-6 pt-6 border-t border-gray-100 flex justify-center space-x-4">
+                <form asp-action="Delete" id="deleteForm">
+                    <input type="hidden" asp-for="MaLoaiNgayNghi" />
+                    <button type="button" onclick="confirmDelete()" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-md">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>
+                        Xác nhận xóa
                     </button>
-                    <a asp-action="Index" class="btn cancel-btn">
-                        <i class="fas fa-times mr-2"></i> Hủy thao tác
-                    </a>
-                </div>
-            </form>
+                </form>
+                <a asp-action="Index" class="inline-flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all duration-300">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    Hủy thao tác
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
-<script>
-
-    // Thêm thư viện SweetAlert2 và Animate.css
-    document.addEventListener('DOMContentLoaded', function () {
-        // Thêm SweetAlert2 script vào header nếu chưa có
-        if (!document.querySelector('script[src*="sweetalert2"]')) {
-            const sweetalertScript = document.createElement('script');
-            sweetalertScript.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-            document.head.appendChild(sweetalertScript);
+@section Scripts {
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmDelete() {
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                html: '<div class="text-left"><p>Bạn có chắc chắn muốn xóa loại ngày nghỉ này?</p><p class="text-red-600"><svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg><strong>Dữ liệu sau khi xóa sẽ không thể khôi phục.</strong></p></div>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: '<svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"></path></svg>Xác nhận xóa',
+                cancelButtonText: '<svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>Hủy thao tác',
+                focusCancel: true,
+                reverseButtons: true,
+                showClass: {
+                    popup: 'animate__animated animate__fadeInDown animate__faster'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOutUp animate__faster'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteForm').submit();
+                }
+            });
         }
 
-        // Thêm Animate.css nếu chưa có
-        if (!document.querySelector('link[href*="animate.css"]')) {
-            const animateCss = document.createElement('link');
-            animateCss.rel = 'stylesheet';
-            animateCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
-            document.head.appendChild(animateCss);
-        }
-
-        // Thêm style mới cho SweetAlert2
-        const customStyle = document.createElement('style');
-        customStyle.textContent = `
-                        .swal2-popup {
-                            border-radius: 15px;
-                            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-                        }
-                        .swal2-title {
-                            font-size: 1.6rem;
-                            font-weight: 600;
-                            color: #333;
-                        }
-                        .swal2-html-container {
-                            margin-top: 1.5rem;
-                            text-align: left;
-                            padding: 0 1rem;
-                        }
-                        .swal2-confirm {
-                            border-radius: 8px !important;
-                            padding: 12px 24px !important;
-                            font-weight: 500 !important;
-                        }
-                        .swal2-cancel {
-                            border-radius: 8px !important;
-                            padding: 12px 24px !important;
-                            font-weight: 500 !important;
-                        }
-                        .text-danger {
-                            color: #d32f2f;
-                        }
-                        .text-left {
-                            text-align: left;
-                        }
-                    `;
-        document.head.appendChild(customStyle);
-    });
-
-    function confirmDelete() {
-        // Kiểm tra nếu SweetAlert2 đã được load
-        if (typeof Swal === 'undefined') {
-            console.error('SweetAlert2 is not loaded');
-            // Fallback đến confirm thông thường nếu SweetAlert2 không load được
-            if (confirm('Bạn có chắc chắn muốn xóa loại ngày nghỉ này? Dữ liệu sau khi xóa sẽ không thể khôi phục.')) {
-                document.getElementById('deleteForm').submit();
-            }
-            return false;
-        }
-
-        // Hiển thị SweetAlert2
-        Swal.fire({
-            title: 'Xác nhận xóa?',
-            html: '<div class="text-left"><p>Bạn có chắc chắn muốn xóa loại ngày nghỉ này?</p><p class="text-danger"><i class="fas fa-exclamation-triangle mr-2"></i><strong>Dữ liệu sau khi xóa sẽ không thể khôi phục.</strong></p></div>',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fas fa-trash-alt mr-2"></i>Xác nhận xóa',
-            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy thao tác',
-            focusCancel: true,
-            customClass: {
-                confirmButton: 'btn btn-danger',
-                cancelButton: 'btn btn-secondary'
-            },
-            buttonsStyling: true,
-            reverseButtons: true,
-            background: '#fff',
-            backdrop: `rgba(0,0,0,0.4)`,
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown animate__faster'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp animate__faster'
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Nếu xác nhận, submit form
-                document.getElementById('deleteForm').submit();
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize animations
+            const warningIcon = document.querySelector('.animate__shakeX');
+            if (warningIcon) {
+                warningIcon.classList.add('animate__animated', 'animate__shakeX');
+                setTimeout(() => {
+                    warningIcon.classList.remove('animate__animated', 'animate__shakeX');
+                }, 1000);
             }
         });
-
-        return false;
-    }
-</script>
-
-<!-- Optional: Add Bootstrap 5 JS if not already in your layout -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Add Font Awesome if not already in your layout -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-
-<!-- Add Animate.css for animations -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    </script>
+}

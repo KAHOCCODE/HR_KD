@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -283,6 +282,124 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, records });
         }
+
+        // New Endpoints for NgayLeCoDinh
+        [HttpGet("GetNgayLeCoDinh")]
+        public IActionResult GetNgayLeCoDinh()
+        {
+            var data = _context.NgayLeCoDinhs
+                .OrderByDescending(x => x.MaNgayLe)
+                .Select(x => new
+                {
+                    x.MaNgayLe,
+                    x.TenNgayLe,
+                    NgayLe1 = x.NgayLe1.ToString("yyyy-MM-dd"),
+                    x.SoNgayNghi,
+                    x.MoTa
+                })
+                .ToList();
+            return Json(data);
+        }
+
+        [HttpPost("CreateNgayLeCoDinh")]
+        public async Task<IActionResult> CreateNgayLeCoDinh([FromBody] NgayLeCoDinhDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.TenNgayLe) || !DateOnly.TryParse(model.NgayLe1, out var ngayLe))
+            {
+                return BadRequest("Invalid data or date format");
+            }
+
+            try
+            {
+                var newRecord = new NgayLeCoDinh
+                {
+                    TenNgayLe = model.TenNgayLe,
+                    NgayLe1 = ngayLe,
+                    SoNgayNghi = model.SoNgayNghi,
+                    MoTa = model.MoTa
+                };
+                _context.NgayLeCoDinhs.Add(newRecord);
+
+                await _context.SaveChangesAsync();
+                return Json(newRecord);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("UpdateNgayLeCoDinh/{id}")]
+        public async Task<IActionResult> UpdateNgayLeCoDinh(int id, [FromBody] NgayLeCoDinhDto model)
+        {
+            if (model == null || id != model.MaNgayLe || !DateOnly.TryParse(model.NgayLe1, out var ngayLe))
+            {
+                return BadRequest("Invalid data or date format");
+            }
+
+            var existing = await _context.NgayLeCoDinhs.FindAsync(id);
+            if (existing == null)
+            {
+                return NotFound("Fixed holiday not found");
+            }
+
+            try
+            {
+                existing.TenNgayLe = model.TenNgayLe;
+                existing.NgayLe1 = ngayLe;
+                existing.SoNgayNghi = model.SoNgayNghi;
+                existing.MoTa = model.MoTa;
+                _context.NgayLeCoDinhs.Update(existing);
+
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("DeleteNgayLeCoDinh/{id}")]
+        public async Task<IActionResult> DeleteNgayLeCoDinh(int id)
+        {
+            var holiday = await _context.NgayLeCoDinhs.FindAsync(id);
+            if (holiday == null)
+            {
+                return NotFound("Fixed holiday not found");
+            }
+
+            try
+            {
+                _context.NgayLeCoDinhs.Remove(holiday);
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetNgayLeCoDinh/{id}")]
+        public async Task<IActionResult> GetNgayLeCoDinh(int id)
+        {
+            var holiday = await _context.NgayLeCoDinhs.FindAsync(id);
+            if (holiday == null)
+            {
+                return NotFound("Fixed holiday not found");
+            }
+
+            var data = new
+            {
+                holiday.MaNgayLe,
+                holiday.TenNgayLe,
+                NgayLe1 = holiday.NgayLe1.ToString("yyyy-MM-dd"),
+                holiday.SoNgayNghi,
+                holiday.MoTa
+            };
+            return Json(data);
+        }
     }
 
     // DTO to handle JSON deserialization
@@ -292,5 +409,15 @@ namespace HR_KD.ApiControllers
         public string GioRa { get; set; }
         public bool KichHoat { get; set; }
         public decimal TongGio { get; set; }
+    }
+
+    // DTO for NgayLeCoDinh
+    public class NgayLeCoDinhDto
+    {
+        public int MaNgayLe { get; set; }
+        public string TenNgayLe { get; set; }
+        public string NgayLe1 { get; set; }
+        public int? SoNgayNghi { get; set; }
+        public string? MoTa { get; set; }
     }
 }

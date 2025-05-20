@@ -1,4 +1,5 @@
-﻿@{
+﻿
+@{
     ViewData["Title"] = "Work Time Settings";
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
@@ -21,7 +22,7 @@
             <!-- Tab Navigation -->
             <div class="border-b border-gray-200 bg-gray-50">
                 <div class="flex flex-wrap justify-center sm:justify-start">
-                     <button class="tablinks px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 active" onclick="openTab(event, 'ChamCongGioRaVao')">
+                    <button class="tablinks px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 active" onclick="openTab(event, 'ChamCongGioRaVao')">
                         Chấm Công Giờ Ra Vào
                     </button> 
                     <button class="tablinks px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" onclick="openTab(event, 'TangCaTiLe')">
@@ -38,7 +39,8 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800">Chấm Công Giờ Ra Vào</h3>
                 </div>
-                <form id="chamCongGioRaVaoForm" class="space-y-4">
+                <!-- Form for Adding/Updating Attendance Times -->
+                <form id="chamCongGioRaVaoForm" class="space-y-4 mb-8">
                     <div class="flex flex-col sm:flex-row sm:space-x-4">
                         <div class="flex-1">
                             <label for="thoiGianVao" class="block text-sm font-medium text-gray-700">Thời Gian Vào:</label>
@@ -54,6 +56,21 @@
                         <i class="fas fa-save mr-1"></i>Lưu
                     </button>
                 </form>
+                <!-- Attendance Records Table -->
+                <div class="overflow-x-auto">
+                    <table id="chamCongGioRaVaoTable" class="min-w-full bg-white border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Giờ Vào</th>
+                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Giờ Ra</th>
+                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Tổng Giờ</th>
+                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Trạng Thái</th>
+                                <th class="px-4 py-2 text-sm font-medium text-gray-700 border-b">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="TangCaTiLe" class="tabcontent p-4 sm:p-6 hidden">
@@ -83,21 +100,20 @@
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Lịch Làm Việc Tuần</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                        <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T6</h4>
-                        <button onclick="activateSchedule('T2 - T6')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-2">Đang tải...</button>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                        <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - Nửa T7</h4>
-                        <button onclick="activateSchedule('T2 - Nửa T7')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-3">Đang tải...</button>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                        <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T7</h4>
-                        <button onclick="activateSchedule('T2 - T7')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-4">Đang tải...</button>
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T6</h4>
+                            <button onclick="activateSchedule('T2 - T6')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-2">Đang tải...</button>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - Nửa T7</h4>
+                            <button onclick="activateSchedule('T2 - Nửa T7')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-3">Đang tải...</button>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">T2 - T7</h4>
+                            <button onclick="activateSchedule('T2 - T7')" class="toggle-btn w-full px-3 py-1.5 rounded-lg text-sm transition-colors" id="schedule-4">Đang tải...</button>
+                        </div>
                     </div>
                 </div>
-                </div>
-
                 <!-- Monthly Standard Hours Section -->
                 <div>
                     <div class="flex justify-between items-center mb-4">
@@ -243,13 +259,12 @@
                     error: function (xhr) {
                         console.error("Error loading schedules:", xhr);
                         Swal.fire("Lỗi!", "Không thể tải lịch làm việc.", "error");
-                        // Fallback to default states
                         updateToggleButtons([]);
                     }
                 });
             }
 
-               function updateToggleButtons() {
+            function updateToggleButtons() {
                 const buttons = [
                     { tenLich: "T2 - T6", element: $("#schedule-2") },
                     { tenLich: "T2 - Nửa T7", element: $("#schedule-3") },
@@ -266,22 +281,22 @@
                 });
             }
 
-               function activateSchedule(scheduleName) {
-                    $.ajax({
-                        url: `/api/AttendanceSettingApi/ActivateLichLamViec/${encodeURIComponent(scheduleName)}`,
-                        method: "POST",
-                        success: function (data) {
-                            schedules = data;
-                            updateToggleButtons();
-                            Swal.fire("Thành công!", "Đã kích hoạt lịch làm việc.", "success");
-                            loadGioChuan(); // Reload GioChuan data after changing the schedule
-                        },
-                        error: function (xhr) {
-                            console.error("Error activating schedule:", xhr);
-                            Swal.fire("Lỗi!", "Không thể kích hoạt lịch làm việc.", "error");
-                        }
-                    });
-                }
+            function activateSchedule(scheduleName) {
+                $.ajax({
+                    url: `/api/AttendanceSettingApi/ActivateLichLamViec/${encodeURIComponent(scheduleName)}`,
+                    method: "POST",
+                    success: function (data) {
+                        schedules = data;
+                        updateToggleButtons();
+                        Swal.fire("Thành công!", "Đã kích hoạt lịch làm việc.", "success");
+                        loadGioChuan();
+                    },
+                    error: function (xhr) {
+                        console.error("Error activating schedule:", xhr);
+                        Swal.fire("Lỗi!", "Không thể kích hoạt lịch làm việc.", "error");
+                    }
+                });
+            }
 
             // Load Data for Tables
             function loadData(tabName) {
@@ -291,20 +306,45 @@
 
                 switch (tabName) {
                     case "ChamCongGioRaVao":
+                        // Load form data (latest record) and table data
                         $.ajax({
                             url: "/api/AttendanceSettingApi/GetChamCongGioRaVao",
                             method: "GET",
                             success: function (data) {
                                 if (data && data.length > 0) {
                                     var latestRecord = data.sort((a, b) => b.id - a.id)[0];
-                                    $("#thoiGianVao").val(latestRecord.gioVao ? new Date(latestRecord.gioVao).toTimeString().slice(0, 5) : "");
-                                    $("#thoiGianRa").val(latestRecord.gioRa ? new Date(latestRecord.gioRa).toTimeString().slice(0, 5) : "");
+                                    $("#thoiGianVao").val(latestRecord.gioVao ? latestRecord.gioVao.slice(0, 5) : "");
+                                    $("#thoiGianRa").val(latestRecord.gioRa ? latestRecord.gioRa.slice(0, 5) : "");
                                     updateWorkHoursInfo();
                                 }
+                                // Load table data
+                                tableId = "#chamCongGioRaVaoTable tbody";
+                                $(tableId).empty();
+                                if (data && data.length > 0) {
+                                    data.forEach(function(item) {
+                                        html += `<tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2 text-sm text-gray-600 border-b">${item.gioVao ? item.gioVao.slice(0, 5) : 'N/A'}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-600 border-b">${item.gioRa ? item.gioRa.slice(0, 5) : 'N/A'}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-600 border-b">${item.tongGio.toFixed(1)}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-600 border-b">
+                                                <span class="px-2 py-1 rounded-full text-xs ${item.kichHoat ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                                    ${item.kichHoat ? 'Đã Kích Hoạt' : 'Chưa Kích Hoạt'}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-2 text-sm border-b">
+                                                <button class="inline-flex items-center px-2 py-1 rounded-lg ${item.kichHoat ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white transition-colors text-xs" onclick="activateChamCongGioRaVao(${item.id})">
+                                                    <i class="fas ${item.kichHoat ? 'fa-times' : 'fa-check'} mr-1"></i>${item.kichHoat ? 'Hủy Kích Hoạt' : 'Kích Hoạt'}
+                                                </button>
+                                            </td>
+                                        </tr>`;
+                                    });
+                                }
+                                $(tableId).html(html || "<tr><td colspan='5' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Không có dữ liệu</td></tr>");
                             },
                             error: function (xhr) {
                                 console.error("Error loading data for ChamCongGioRaVao:", xhr);
                                 Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể tải dữ liệu.", "error");
+                                $("#chamCongGioRaVaoTable tbody").html("<tr><td colspan='5' class='px-4 py-2 text-sm text-gray-600 border-b text-center'>Lỗi tải dữ liệu</td></tr>");
                             }
                         });
                         break;
@@ -381,107 +421,115 @@
             }
 
             // Calculate Standard Work Hours
-                function calculateWorkHours() {
-        var activeSchedule = schedules.find(s => s.kichHoat) || { tenLich: "T2 - T6" };
-        if (!activeSchedule) {
-            Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi tạo lịch.", "error");
-            return;
-        }
-
-        var year = parseInt($("#selectYear").val());
-        workHoursData = Array(12).fill(0);
-
-        for (var month = 0; month < 12; month++) {
-            var daysInMonth = new Date(year, month + 1, 0).getDate();
-            var sundayCount = 0;
-            var saturdayCount = 0;
-            var weekdayCount = 0;
-
-            for (var day = 1; day <= daysInMonth; day++) {
-                var date = new Date(year, month, day);
-                var dayOfWeek = date.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
-
-                if (dayOfWeek === 0) {
-                    sundayCount++;
-                } else if (dayOfWeek === 6) {
-                    saturdayCount++;
-                } else {
-                    weekdayCount++;
+            function calculateWorkHours() {
+                var activeSchedule = schedules.find(s => s.kichHoat) || { tenLich: "T2 - T6" };
+                if (!activeSchedule) {
+                    Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi tạo lịch.", "error");
+                    return;
                 }
+
+                var year = parseInt($("#selectYear").val());
+                workHoursData = Array(12).fill(0);
+
+                for (var month = 0; month < 12; month++) {
+                    var daysInMonth = new Date(year, month + 1, 0).getDate();
+                    var sundayCount = 0;
+                    var saturdayCount = 0;
+                    var weekdayCount = 0;
+
+                    for (var day = 1; day <= daysInMonth; day++) {
+                        var date = new Date(year, month, day);
+                        var dayOfWeek = date.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+
+                        if (dayOfWeek === 0) {
+                            sundayCount++;
+                        } else if (dayOfWeek === 6) {
+                            saturdayCount++;
+                        } else {
+                            weekdayCount++;
+                        }
+                    }
+
+                    if (activeSchedule.tenLich === "T2 - T6") {
+                        var workingDays = weekdayCount;
+                        workHoursData[month] = workingDays * 8;
+                    } else if (activeSchedule.tenLich === "T2 - Nửa T7") {
+                        workHoursData[month] = (weekdayCount * 8) + (saturdayCount * 4);
+                    } else if (activeSchedule.tenLich === "T2 - T7") {
+                        var workingDays = weekdayCount + saturdayCount;
+                        workHoursData[month] = workingDays * 8;
+                    }
+                }
+
+                var rowHtml = workHoursData.map(hours => `<td class="px-4 py-2 text-sm text-gray-600 border-b text-center">${hours.toFixed(1)}</td>`).join("");
+                $("#workHoursRow").html(rowHtml);
+                Swal.fire("Thành công!", "Đã tạo lịch giờ chuẩn.", "success");
             }
 
-            if (activeSchedule.tenLich === "T2 - T6") {
-                var workingDays = weekdayCount;
-                workHoursData[month] = workingDays * 8;
-            } else if (activeSchedule.tenLich === "T2 - Nửa T7") {
-                workHoursData[month] = (weekdayCount * 8) + (saturdayCount * 4);
-            } else if (activeSchedule.tenLich === "T2 - T7") {
-                var workingDays = weekdayCount + saturdayCount;
-                workHoursData[month] = workingDays * 8;
+            // Save GioChuan
+            function saveGioChuan() {
+                var activeSchedule = schedules.find(s => s.kichHoat);
+                if (!activeSchedule) {
+                    Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi lưu.", "error");
+                    return;
+                }
+
+                var year = parseInt($("#selectYear").val());
+                var data = {
+                    thang1: Math.round(workHoursData[0]),
+                    thang2: Math.round(workHoursData[1]),
+                    thang3: Math.round(workHoursData[2]),
+                    thang4: Math.round(workHoursData[3]),
+                    thang5: Math.round(workHoursData[4]),
+                    thang6: Math.round(workHoursData[5]),
+                    thang7: Math.round(workHoursData[6]),
+                    thang8: Math.round(workHoursData[7]),
+                    thang9: Math.round(workHoursData[8]),
+                    thang10: Math.round(workHoursData[9]),
+                    thang11: Math.round(workHoursData[10]),
+                    thang12: Math.round(workHoursData[11]),
+                    nam: year,
+                    idLichLamViec: activeSchedule.id,
+                    kichHoat: true
+                };
+
+                $.ajax({
+                    url: "/api/AttendanceSettingApi/SaveGioChuan",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function () {
+                        Swal.fire("Thành công!", "Đã lưu giờ chuẩn.", "success");
+                    },
+                    error: function (xhr) {
+                        console.error("Error saving GioChuan:", xhr);
+                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể lưu dữ liệu.", "error");
+                    }
+                });
             }
-        }
-
-        var rowHtml = workHoursData.map(hours => `<td class="px-4 py-2 text-sm text-gray-600 border-b text-center">${hours.toFixed(1)}</td>`).join("");
-        $("#workHoursRow").html(rowHtml);
-        Swal.fire("Thành công!", "Đã tạo lịch giờ chuẩn.", "success");
-    }
-
-    function saveGioChuan() {
-        var activeSchedule = schedules.find(s => s.kichHoat);
-        if (!activeSchedule) {
-            Swal.fire("Lỗi!", "Vui lòng kích hoạt một lịch làm việc trước khi lưu.", "error");
-            return;
-        }
-
-        var year = parseInt($("#selectYear").val());
-        var data = {
-            thang1: Math.round(workHoursData[0]),
-            thang2: Math.round(workHoursData[1]),
-            thang3: Math.round(workHoursData[2]),
-            thang4: Math.round(workHoursData[3]),
-            thang5: Math.round(workHoursData[4]),
-            thang6: Math.round(workHoursData[5]),
-            thang7: Math.round(workHoursData[6]),
-            thang8: Math.round(workHoursData[7]),
-            thang9: Math.round(workHoursData[8]),
-            thang10: Math.round(workHoursData[9]),
-            thang11: Math.round(workHoursData[10]),
-            thang12: Math.round(workHoursData[11]),
-            nam: year,
-            idLichLamViec: activeSchedule.id, // Still using id here for the database reference
-            kichHoat: true
-        };
-
-        $.ajax({
-            url: "/api/AttendanceSettingApi/SaveGioChuan",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify(data),
-            success: function () {
-                Swal.fire("Thành công!", "Đã lưu giờ chuẩn.", "success");
-            },
-            error: function (xhr) {
-                console.error("Error saving GioChuan:", xhr);
-                Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể lưu dữ liệu.", "error");
-            }
-        });
-    }
-
-          
 
             // Update Work Hours Info and Validate
             function updateWorkHoursInfo() {
                 var startTime = $("#thoiGianVao").val();
                 var endTime = $("#thoiGianRa").val();
                 if (startTime && endTime) {
-                    var start = new Date("2000-01-01 " + startTime + ":00");
-                    var end = new Date("2000-01-01 " + endTime + ":00");
-                    if (end <= start) {
-                        end.setDate(end.getDate() + 1); // Handle next day if end time is earlier
+                    // Parse times to calculate hours
+                    var startParts = startTime.split(":");
+                    var endParts = endTime.split(":");
+                    var startHours = parseInt(startParts[0]);
+                    var startMinutes = parseInt(startParts[1]);
+                    var endHours = parseInt(endParts[0]);
+                    var endMinutes = parseInt(endParts[1]);
+
+                    var startTotalMinutes = startHours * 60 + startMinutes;
+                    var endTotalMinutes = endHours * 60 + endMinutes;
+
+                    if (endTotalMinutes <= startTotalMinutes) {
+                        endTotalMinutes += 24 * 60; // Handle next day
                     }
 
-                    var diffMs = end - start; // Difference in milliseconds
-                    var diffHours = diffMs / (1000 * 60 * 60); // Convert to hours
+                    var diffMinutes = endTotalMinutes - startTotalMinutes;
+                    var diffHours = diffMinutes / 60;
                     var lunchBreak = 2; // 2-hour lunch break
                     var workingHours = diffHours - lunchBreak;
 
@@ -502,14 +550,23 @@
                 var thoiGianVao = $("#thoiGianVao").val();
                 var thoiGianRa = $("#thoiGianRa").val();
 
-                var start = new Date("2000-01-01 " + thoiGianVao + ":00");
-                var end = new Date("2000-01-01 " + thoiGianRa + ":00");
-                if (end <= start) {
-                    end.setDate(end.getDate() + 1); // Handle next day if end time is earlier
+                // Parse times to calculate hours
+                var startParts = thoiGianVao.split(":");
+                var endParts = thoiGianRa.split(":");
+                var startHours = parseInt(startParts[0]);
+                var startMinutes = parseInt(startParts[1]);
+                var endHours = parseInt(endParts[0]);
+                var endMinutes = parseInt(endParts[1]);
+
+                var startTotalMinutes = startHours * 60 + startMinutes;
+                var endTotalMinutes = endHours * 60 + endMinutes;
+
+                if (endTotalMinutes <= startTotalMinutes) {
+                    endTotalMinutes += 24 * 60; // Handle next day
                 }
 
-                var diffMs = end - start;
-                var diffHours = diffMs / (1000 * 60 * 60);
+                var diffMinutes = endTotalMinutes - startTotalMinutes;
+                var diffHours = diffMinutes / 60;
                 var lunchBreak = 2; // 2-hour lunch break
                 var workingHours = diffHours - lunchBreak;
 
@@ -523,9 +580,8 @@
                 }
 
                 var data = {
-                    id: 1, // Assuming we're updating an existing record
-                    gioVao: `2000-01-01T${thoiGianVao}:00`,
-                    gioRa: `2000-01-01T${thoiGianRa}:00`,
+                    gioVao: `${thoiGianVao}:00`,
+                    gioRa: `${thoiGianRa}:00`,
                     kichHoat: true,
                     tongGio: workingHours
                 };
@@ -537,6 +593,9 @@
                     data: JSON.stringify(data),
                     success: function () {
                         Swal.fire("Thành công!", "Cập nhật giờ ra vào thành công!", "success");
+                        loadData("ChamCongGioRaVao"); // Refresh table
+                        $("#chamCongGioRaVaoForm")[0].reset();
+                        $("#workHoursInfo").text("");
                     },
                     error: function (xhr) {
                         console.error("Error saving ChamCongGioRaVao:", xhr);
@@ -544,6 +603,22 @@
                     }
                 });
             });
+
+            // Activate ChamCongGioRaVao
+            function activateChamCongGioRaVao(id) {
+                $.ajax({
+                    url: `/api/AttendanceSettingApi/ActivateChamCongGioRaVao/${id}`,
+                    method: "POST",
+                    success: function () {
+                        Swal.fire("Thành công!", "Đã cập nhật trạng thái kích hoạt.", "success");
+                        loadData("ChamCongGioRaVao");
+                    },
+                    error: function (xhr) {
+                        console.error("Error activating ChamCongGioRaVao:", xhr);
+                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể cập nhật trạng thái kích hoạt.", "error");
+                    }
+                });
+            }
 
             // Modal Handlers
             function openCreateTangCaTiLeModal() {
@@ -588,12 +663,65 @@
                 updateWorkHoursInfo();
             });
 
-            // Update the activateTiLeTangCa function
+            // Submit Create TangCaTiLe Form
+            $("#createTangCaTiLeForm").submit(function (e) {
+                e.preventDefault();
+                var data = {
+                    tenTiLeTangCa: $("#createTangCaName").val(),
+                    tiLe: parseFloat($("#createTangCa").val()),
+                    kichHoat: false
+                };
+
+                $.ajax({
+                    url: "/api/AttendanceSettingApi/CreateTiLeTangCa",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function () {
+                        Swal.fire("Thành công!", "Đã tạo tỉ lệ tăng ca.", "success");
+                        closeModal("createTangCaTiLeModal");
+                        loadData("TangCaTiLe");
+                    },
+                    error: function (xhr) {
+                        console.error("Error creating TangCaTiLe:", xhr);
+                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể tạo dữ liệu.", "error");
+                    }
+                });
+            });
+
+            // Submit Edit TangCaTiLe Form
+            $("#editTangCaTiLeForm").submit(function (e) {
+                e.preventDefault();
+                var data = {
+                    id: parseInt($("#editTangCaTiLeId").val()),
+                    tenTiLeTangCa: $("#editTangCaName").val(),
+                    tiLe: parseFloat($("#editTangCa").val()),
+                    kichHoat: false // Preserve current activation status or set as needed
+                };
+
+                $.ajax({
+                    url: `/api/AttendanceSettingApi/UpdateTiLeTangCa/${data.id}`,
+                    method: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function () {
+                        Swal.fire("Thành công!", "Đã cập nhật tỉ lệ tăng ca.", "success");
+                        closeModal("editTangCaTiLeModal");
+                        loadData("TangCaTiLe");
+                    },
+                    error: function (xhr) {
+                        console.error("Error updating TangCaTiLe:", xhr);
+                        Swal.fire("Lỗi!", xhr.responseJSON?.message || "Không thể cập nhật dữ liệu.", "error");
+                    }
+                });
+            });
+
+            // Activate TiLeTangCa
             function activateTiLeTangCa(id) {
                 $.ajax({
                     url: `/api/AttendanceSettingApi/ActivateTiLeTangCa/${id}`,
                     method: "POST",
-                    success: function (data) {
+                    success: function () {
                         Swal.fire("Thành công!", "Đã cập nhật trạng thái kích hoạt.", "success");
                         loadData("TangCaTiLe");
                     },

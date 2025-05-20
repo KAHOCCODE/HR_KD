@@ -4,22 +4,22 @@
     var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
     if (string.IsNullOrEmpty(maNv))
     {
-                        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-                        <script>
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi!',
-                                text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
-                                confirmButtonText: 'OK'
-                            });
-                        </script>
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
+                        confirmButtonText: 'OK'
+                    });
+                </script>
         return;
     }
 }
 <style>
     div.select-box {
-  display: none;
-}
+        display: none;
+    }
 </style>
 <!-- External Styles -->
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -33,11 +33,10 @@
         <!-- Header -->
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-gray-800 flex items-center">
-                <i class="fas fa-calendar-alt mr-3 text-blue-500"></i>  Chấm Công
+                <i class="fas fa-calendar-alt mr-3 text-blue-500"></i> Chấm Công
             </h1>
             <p class="text-gray-600 mt-2">Theo dõi và quản lý thời gian làm việc và tăng ca một cách dễ dàng.</p>
         </div>
-
 
         <!-- Tab Content -->
         <div class="tab-content">
@@ -205,7 +204,7 @@
                                     <th class="p-3 text-left">Giờ ra</th>
                                     <th class="p-3 text-left">Tổng giờ</th>
                                     <th class="p-3 text-left">Ghi chú</th>
-                                    <th class="p-3 text-left.ToolbarItemInfo">Trạng thái</th>
+                                    <th class="p-3 text-left">Trạng thái</th>
                                 </tr>
                             </thead>
                             <tbody id="pendingRecords"></tbody>
@@ -253,6 +252,7 @@
     let overtimeRates = [];
     let holidayData = {};
     let attendanceStatusData = {};
+    let workTimeConfig = null; // Store ChamCongGioRaVao active record
 
     document.addEventListener('DOMContentLoaded', async () => {
         if (!maNv) {
@@ -265,12 +265,25 @@
             return;
         }
         try {
+            // Load ChamCongGioRaVao active record
+            const workTimeResponse = await fetch('/api/AttendanceSettingApi/GetChamCongGioRaVao');
+            const workTimeResult = await workTimeResponse.json();
+            workTimeConfig = workTimeResult.find(r => r.kichHoat);
+            if (!workTimeConfig) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cảnh báo!',
+                    text: 'Không tìm thấy cấu hình giờ ra vào đang kích hoạt. Vui lòng thiết lập trong cài đặt.',
+                    confirmButtonText: 'OK'
+                });
+            }
+
             // Load remaining hours
-            const response = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`);
-            const result = await response.json();
-            if (result.success) {
-                document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
-                toggleOvertimeSection(result.remainingHours);
+            const remainingHoursResponse = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`);
+            const remainingHoursResult = await remainingHoursResponse.json();
+            if (remainingHoursResult.success) {
+                document.getElementById('_remainingHours').textContent = `${remainingHoursResult.remainingHours.toFixed(2)}h`;
+                toggleOvertimeSection(remainingHoursResult.remainingHours);
             } else {
                 document.getElementById('_remainingHours').textContent = `0.00h`;
                 toggleOvertimeSection(0);
@@ -299,6 +312,12 @@
             document.getElementById('_remainingHours').textContent = `0.00h`;
             toggleOvertimeSection(0);
             console.error('Error loading data:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Có lỗi xảy ra khi tải dữ liệu.',
+                confirmButtonText: 'OK'
+            });
         }
     });
 
@@ -370,7 +389,7 @@
                     workScheduleData[dateStr] = {
                         selected: false,
                         checkIn: '',
-                       队: '',
+                        checkOut: '',
                         totalHours: 0,
                         overtimeHours: 0,
                         overtimeStart: '',
@@ -482,7 +501,7 @@
         const end = new Date(`2000-01-01T${endTime}`);
         let hours = (end - start) / (1000 * 60 * 60);
         if (hours < 0) hours += 24;
-        if (hours >= 8) hours -= 2;
+        if (hours >= 8) hours -= 2; // Account for 2-hour lunch break
         return Math.max(0, parseFloat(hours.toFixed(2)));
     }
 
@@ -491,15 +510,50 @@
         const checkOut = document.getElementById('checkOutTime').value;
         const totalHoursInput = document.getElementById('totalHours');
         totalHoursInput.value = checkIn && checkOut ? `${calculateHours(checkIn, checkOut)}h` : '';
+
+        // Validate against workTimeConfig
+        if (workTimeConfig && checkIn && checkOut) {
+            const gioVao = workTimeConfig.gioVao.slice(0, 5);
+            const gioRa = workTimeConfig.gioRa.slice(0, 5);
+            if (checkIn < gioVao) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: `Giờ vào không được sớm hơn ${gioVao}.`,
+                    confirmButtonText: 'OK'
+                });
+                document.getElementById('checkInTime').value = '';
+                totalHoursInput.value = '';
+            }
+            if (checkOut > gioRa) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: `Giờ ra không được muộn hơn ${gioRa}.`,
+                    confirmButtonText: 'OK'
+                });
+                document.getElementById('checkOutTime').value = '';
+                totalHoursInput.value = '';
+            }
+        }
     }
 
     document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
     document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
 
     document.getElementById('set8hBtn').addEventListener('click', () => {
-        document.getElementById('checkInTime').value = '08:00';
-        document.getElementById('checkOutTime').value = '18:00';
-        updateTotalHours();
+        if (workTimeConfig) {
+            document.getElementById('checkInTime').value = workTimeConfig.gioVao.slice(0, 5);
+            document.getElementById('checkOutTime').value = workTimeConfig.gioRa.slice(0, 5);
+            updateTotalHours();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
+                confirmButtonText: 'OK'
+            });
+        }
     });
 
     document.getElementById('cancelOT').addEventListener('click', () => {
@@ -508,6 +562,14 @@
         document.getElementById('otNote').value = '';
         document.getElementById('overtimeRate').value = '';
     });
+
+    function addHours(time, hours) {
+        if (!time) return '';
+        const [hoursStr, minutesStr] = time.split(':');
+        let newHours = parseInt(hoursStr) + hours;
+        if (newHours >= 24) newHours -= 24;
+        return `${newHours.toString().padStart(2, '0')}:${minutesStr}`;
+    }
 
     ['1h', '2h', '3h', '4h', '8h'].forEach(hours => {
         document.getElementById(`ot${hours}`).addEventListener('click', () => {
@@ -526,9 +588,29 @@
                 return;
             }
 
+            if (!workTimeConfig) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
             const allHolidays = selectedDates.every(date => holidayData[date] && holidayData[date].trangThai === 'NL4');
             const allWeekends = selectedDates.every(date => [0, 6].includes(new Date(date).getDay()));
             const allWeekdays = selectedDates.every(date => [1, 2, 3, 4, 5].includes(new Date(date).getDay()));
+
+            if (!allHolidays && !allWeekends && !allWeekdays) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể áp dụng tăng ca cho các ngày khác loại',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
 
             let defaultRate = '';
             if (allHolidays) {
@@ -537,14 +619,6 @@
                 defaultRate = overtimeRates.find(r => r.tenTiLeTangCa.includes('Cuối tuần'))?.id;
             } else if (allWeekdays) {
                 defaultRate = overtimeRates.find(r => r.tenTiLeTangCa.includes('Ngày thường'))?.id;
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: 'Không thể áp dụng tăng ca cho các ngày khác loại',
-                    confirmButtonText: 'OK'
-                });
-                return;
             }
 
             if (defaultRate) {
@@ -555,47 +629,55 @@
                 }
             }
 
-            if (hours === '8h') {
-                document.getElementById('otStartTime').value = '08:00';
-                document.getElementById('otEndTime').value = '18:00';
-            } else {
-                if (allHolidays || allWeekends) {
-                    document.getElementById('otStartTime').value = '08:00';
-                    const endTime = addHours('08:00', overtimeHours);
-                    if (endTime > '18:00') {
+            const gioVao = workTimeConfig.gioVao.slice(0, 5);
+            const gioRa = workTimeConfig.gioRa.slice(0, 5);
+            let otStartTime, otEndTime;
+
+            if (allHolidays || allWeekends) {
+                if (hours === '8h') {
+                    otStartTime = gioVao;
+                    otEndTime = gioRa;
+                } else {
+                    otStartTime = gioVao;
+                    otEndTime = addHours(gioVao, overtimeHours);
+                    if (otEndTime > gioRa) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Lỗi!',
-                            text: 'Giờ tăng ca phải trong khoảng từ 08:00 đến 18:00',
+                            text: `Giờ tăng ca trong ngày lễ/cuối tuần phải trong khoảng ${gioVao} đến ${gioRa}`,
                             confirmButtonText: 'OK'
                         });
                         return;
                     }
-                    document.getElementById('otEndTime').value = endTime;
-                } else if (allWeekdays) {
-                    document.getElementById('otStartTime').value = '18:00';
-                    const endTime = addHours('18:00', overtimeHours);
-                    if (endTime > '22:00') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Lỗi!',
-                            text: 'Giờ tăng ca phải trong khoảng từ 18:00 đến 22:00',
-                            confirmButtonText: 'OK'
-                        });
-                        return;
-                    }
-                    document.getElementById('otEndTime').value = endTime;
+                }
+            } else if (allWeekdays) {
+                otStartTime = gioRa;
+                otEndTime = addHours(gioRa, overtimeHours);
+                if (overtimeHours > 4) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Tăng ca trong ngày thường không được vượt quá 4 giờ',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+                if (otEndTime > '22:00') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Giờ tăng ca trong ngày thường phải kết thúc trước 22:00',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
                 }
             }
+
+            document.getElementById('otStartTime').value = otStartTime;
+            document.getElementById('otEndTime').value = otEndTime;
             updateOvertime();
         });
     });
-
-    function addHours(time, hours) {
-        const [hoursStr, minutesStr] = time.split(':');
-        let newHours = parseInt(hoursStr) + hours;
-        return `${newHours.toString().padStart(2, '0')}:${minutesStr}`;
-    }
 
     function calculateOvertimeHours(startTime, endTime) {
         if (!startTime || !endTime) return 0;
@@ -646,74 +728,62 @@
             return;
         }
 
-        const allHolidays = selectedDates.every(date => holidayData[date] && holidayData[date].trangThai === 'NL4');
-        const allWeekends = selectedDates.every(date => [0, 6].includes(new Date(date).getDay()));
-        const allWeekdays = selectedDates.every(date => [1, 2, 3, 4, 5].includes(new Date(date).getDay()));
-
-        let defaultRate = '';
-        if (allHolidays) {
-            defaultRate = overtimeRates.find(r => r.tenTiLeTangCa.includes('Ngày lễ'))?.id;
-        } else if (allWeekends) {
-            defaultRate = overtimeRates.find(r => r.tenTiLeTangCa.includes('Cuối tuần'))?.id;
-        } else if (allWeekdays) {
-            defaultRate = overtimeRates.find(r => r.tenTiLeTangCa.includes('Ngày thường'))?.id;
-        } else {
+        if (!workTimeConfig) {
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Không thể áp dụng tăng ca cho các ngày khác loại',
+                text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
                 confirmButtonText: 'OK'
             });
             return;
         }
 
-        if (defaultRate && !otRate) {
-            document.getElementById('overtimeRate').value = defaultRate;
-            const selectedRate = overtimeRates.find(rate => rate.id == defaultRate);
-            if (selectedRate) {
-                document.getElementById('otNote').value = selectedRate.tenTiLeTangCa;
-            }
-        }
+        const allHolidays = selectedDates.every(date => holidayData[date] && holidayData[date].trangThai === 'NL4');
+        const allWeekends = selectedDates.every(date => [0, 6].includes(new Date(date).getDay()));
+        const allWeekdays = selectedDates.every(date => [1, 2, 3, 4, 5].includes(new Date(date).getDay()));
 
-        if (allHolidays) {
-            if (otStartTime && (otStartTime < '08:00' || otStartTime > '18:00')) {
+        const gioVao = workTimeConfig.gioVao.slice(0, 5);
+        const gioRa = workTimeConfig.gioRa.slice(0, 5);
+
+        if (allHolidays || allWeekends) {
+            if (otStartTime && (otStartTime < gioVao || otStartTime > gioRa)) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày lễ phải trong khoảng từ 08:00 đến 18:00',
+                    text: `Giờ tăng ca trong ngày lễ/cuối tuần phải trong khoảng ${gioVao} đến ${gioRa}`,
                     confirmButtonText: 'OK'
                 });
                 document.getElementById('otStartTime').value = '';
                 document.getElementById('otEndTime').value = '';
                 return;
             }
-            if (otEndTime && (otEndTime < '08:00' || otEndTime > '18:00')) {
+            if (otEndTime && (otEndTime < gioVao || otEndTime > gioRa)) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày lễ phải trong khoảng từ 08:00 đến 18:00',
+                    text: `Giờ tăng ca trong ngày lễ/cuối tuần phải trong khoảng ${gioVao} đến ${gioRa}`,
                     confirmButtonText: 'OK'
                 });
                 document.getElementById('otEndTime').value = '';
                 return;
             }
         } else if (allWeekdays) {
-            if (otStartTime && (otStartTime < '18:00' || otStartTime > '22:00')) {
+            if (otStartTime && otStartTime < gioRa) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày thường phải bắt đầu từ 18:00',
+                    text: `Giờ tăng ca trong ngày thường phải bắt đầu từ ${gioRa}`,
                     confirmButtonText: 'OK'
                 });
                 document.getElementById('otStartTime').value = '';
                 document.getElementById('otEndTime').value = '';
                 return;
             }
-            if (otEndTime && (otEndTime < '18:00' || otEndTime > '22:00')) {
+            if (otEndTime && otEndTime > addHours(gioRa, 4)) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày thường phải kết thúc trước 22:00',
+                    text: `Giờ tăng ca trong ngày thường phải kết thúc trước ${addHours(gioRa, 4)}`,
                     confirmButtonText: 'OK'
                 });
                 document.getElementById('otEndTime').value = '';
@@ -729,23 +799,11 @@
                 document.getElementById('otEndTime').value = '';
                 return;
             }
-        } else if (allWeekends) {
-            if (otStartTime && (otStartTime < '08:00' || otStartTime > '18:00')) {
+            if (otEndTime > '22:00') {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày cuối tuần phải trong khoảng từ 08:00 đến 18:00',
-                    confirmButtonText: 'OK'
-                });
-                document.getElementById('otStartTime').value = '';
-                document.getElementById('otEndTime').value = '';
-                return;
-            }
-            if (otEndTime && (otEndTime < '08:00' || otEndTime > '18:00')) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: 'Giờ tăng ca trong ngày cuối tuần phải trong khoảng từ 08:00 đến 18:00',
+                    text: 'Giờ tăng ca trong ngày thường phải kết thúc trước 22:00',
                     confirmButtonText: 'OK'
                 });
                 document.getElementById('otEndTime').value = '';
@@ -761,7 +819,7 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Lỗi!',
-                        text: 'Tổng số giờ tăng ca trong tuần không được vượt quá 12 giờ cho trạng thái TC3',
+                        text: 'Tổng số giờ tăng ca trong tuần không được vượt quá 12 giờ',
                         confirmButtonText: 'OK'
                     });
                     document.getElementById('otEndTime').value = '';
@@ -892,6 +950,132 @@
             return;
         }
 
+        if (!workTimeConfig && (hasAttendanceInput || hasOvertimeInput)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        // Validate attendance hours and check-in/check-out times
+        if (hasAttendanceInput) {
+            const totalHours = calculateHours(checkIn, checkOut);
+            if (totalHours > 8) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Tổng giờ chấm công không được vượt quá 8 giờ.',
+                    confirmButtonText: 'OK'
+                });
+                document.getElementById('checkInTime').value = '';
+                document.getElementById('checkOutTime').value = '';
+                document.getElementById('totalHours').value = '';
+                return;
+            }
+            const gioVao = workTimeConfig.gioVao.slice(0, 5);
+            const gioRa = workTimeConfig.gioRa.slice(0, 5);
+            if (checkIn < gioVao) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: `Giờ vào không được sớm hơn ${gioVao}.`,
+                    confirmButtonText: 'OK'
+                });
+                document.getElementById('checkInTime').value = '';
+                document.getElementById('totalHours').value = '';
+                return;
+            }
+            if (checkOut > gioRa) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: `Giờ ra không được muộn hơn ${gioRa}.`,
+                    confirmButtonText: 'OK'
+                });
+                document.getElementById('checkOutTime').value = '';
+                document.getElementById('totalHours').value = '';
+                return;
+            }
+        }
+
+        // Validate overtime hours
+        if (hasOvertimeInput) {
+            const allHolidays = selectedDates.every(date => holidayData[date] && holidayData[date].trangThai === 'NL4');
+            const allWeekends = selectedDates.every(date => [0, 6].includes(new Date(date).getDay()));
+            const allWeekdays = selectedDates.every(date => [1, 2, 3, 4, 5].includes(new Date(date).getDay()));
+            const gioVao = workTimeConfig.gioVao.slice(0, 5);
+            const gioRa = workTimeConfig.gioRa.slice(0, 5);
+
+            if (allHolidays || allWeekends) {
+                if (otStartTime < gioVao || otStartTime > gioRa) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: `Giờ tăng ca trong ngày lễ/cuối tuần phải trong khoảng ${gioVao} đến ${gioRa}`,
+                        confirmButtonText: 'OK'
+                    });
+                    document.getElementById('otStartTime').value = '';
+                    document.getElementById('otEndTime').value = '';
+                    return;
+                }
+                if (otEndTime < gioVao || otEndTime > gioRa) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: `Giờ tăng ca trong ngày lễ/cuối tuần phải trong khoảng ${gioVao} đến ${gioRa}`,
+                        confirmButtonText: 'OK'
+                    });
+                    document.getElementById('otEndTime').value = '';
+                    return;
+                }
+            } else if (allWeekdays) {
+                if (otStartTime < gioRa) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: `Giờ tăng ca trong ngày thường phải bắt đầu từ ${gioRa}`,
+                        confirmButtonText: 'OK'
+                    });
+                    document.getElementById('otStartTime').value = '';
+                    document.getElementById('otEndTime').value = '';
+                    return;
+                }
+                if (otEndTime > addHours(gioRa, 4)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: `Giờ tăng ca trong ngày thường phải kết thúc trước ${addHours(gioRa, 4)}`,
+                        confirmButtonText: 'OK'
+                    });
+                    document.getElementById('otEndTime').value = '';
+                    return;
+                }
+                if (otRawHours > 4) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Số giờ tăng ca không được vượt quá 4 giờ trong ngày thường',
+                        confirmButtonText: 'OK'
+                    });
+                    document.getElementById('otEndTime').value = '';
+                    return;
+                }
+                if (otEndTime > '22:00') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Giờ tăng ca trong ngày thường phải kết thúc trước 22:00',
+                        confirmButtonText: 'OK'
+                    });
+                    document.getElementById('otEndTime').value = '';
+                    return;
+                }
+            }
+        }
+
         const allHolidays = selectedDates.every(date => holidayData[date] && holidayData[date].trangThai === 'NL4');
         const allWeekends = selectedDates.every(date => [0, 6].includes(new Date(date).getDay()));
         const allWeekdays = selectedDates.every(date => [1, 2, 3, 4, 5].includes(new Date(date).getDay()));
@@ -976,8 +1160,6 @@
         });
         return totalWeeklyOvertime;
     }
-
-
 
     window.addEventListener('load', loadOvertimeRates);
 </script>

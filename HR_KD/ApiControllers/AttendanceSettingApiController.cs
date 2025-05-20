@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿
+using Microsoft.AspNetCore.Mvc;
 using HR_KD.Data;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HR_KD.ApiControllers
 {
@@ -17,48 +21,97 @@ namespace HR_KD.ApiControllers
         [HttpGet("GetChamCongGioRaVao")]
         public IActionResult GetChamCongGioRaVao()
         {
-            var data = _context.ChamCongGioRaVaos.OrderByDescending(x => x.Id).ToList();
+            var data = _context.ChamCongGioRaVaos
+                .OrderByDescending(x => x.Id)
+                .Select(x => new
+                {
+                    x.Id,
+                    GioVao = x.GioVao.ToString("HH:mm:ss"),
+                    GioRa = x.GioRa.ToString("HH:mm:ss"),
+                    x.KichHoat,
+                    x.TongGio
+                })
+                .ToList();
             return Json(data);
         }
 
         [HttpPost("SetChamCongGioRaVao")]
-        public async Task<IActionResult> SetChamCongGioRaVao([FromBody] ChamCongGioRaVao model)
+        public async Task<IActionResult> SetChamCongGioRaVao([FromBody] ChamCongGioRaVaoDto model)
         {
-            if (model == null)
+            if (model == null || !TimeOnly.TryParse(model.GioVao, out var gioVao) || !TimeOnly.TryParse(model.GioRa, out var gioRa))
             {
-                return BadRequest("Invalid data");
+                return BadRequest("Invalid data or time format");
             }
 
-            // Look for the most recent active record
-            var existing = await _context.ChamCongGioRaVaos
-                .Where(x => x.KichHoat)
-                .OrderByDescending(x => x.Id)
-                .FirstOrDefaultAsync();
+            try
+            {
+                // If the new record is marked as active, deactivate all other records
+                if (model.KichHoat)
+                {
+                    var activeRecords = await _context.ChamCongGioRaVaos
+                        .Where(x => x.KichHoat)
+                        .ToListAsync();
+                    foreach (var record in activeRecords)
+                    {
+                        record.KichHoat = false;
+                    }
+                }
 
-            if (existing != null)
-            {
-                // Update the existing record
-                existing.GioVao = model.GioVao;
-                existing.GioRa = model.GioRa;
-                existing.KichHoat = model.KichHoat;
-                existing.TongGio = model.TongGio;
-                _context.ChamCongGioRaVaos.Update(existing);
-            }
-            else
-            {
-                // Create a new record (do not set Id manually)
+                // Create a new record
                 var newRecord = new ChamCongGioRaVao
                 {
-                    GioVao = model.GioVao,
-                    GioRa = model.GioRa,
+                    GioVao = gioVao,
+                    GioRa = gioRa,
                     KichHoat = model.KichHoat,
                     TongGio = model.TongGio
                 };
                 _context.ChamCongGioRaVaos.Add(newRecord);
-            }
 
-            await _context.SaveChangesAsync();
-            return Ok();
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("ActivateChamCongGioRaVao/{id}")]
+        public async Task<IActionResult> ActivateChamCongGioRaVao(int id)
+        {
+            try
+            {
+                var record = await _context.ChamCongGioRaVaos.FindAsync(id);
+                if (record == null)
+                {
+                    return NotFound("Attendance record not found");
+                }
+
+                // If activating this record, deactivate all others
+                if (!record.KichHoat)
+                {
+                    var activeRecords = await _context.ChamCongGioRaVaos
+                        .Where(x => x.KichHoat && x.Id != id)
+                        .ToListAsync();
+                    foreach (var otherRecord in activeRecords)
+                    {
+                        otherRecord.KichHoat = false;
+                    }
+                    record.KichHoat = true;
+                }
+                else
+                {
+                    record.KichHoat = false;
+                }
+
+                _context.ChamCongGioRaVaos.Update(record);
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         [HttpGet("GetLichLamViec")]
@@ -102,8 +155,8 @@ namespace HR_KD.ApiControllers
                 return BadRequest("Invalid data");
             }
 
-            model.KichHoat = false; // Set default value
-            _context.TiLeTangCas.Add(model); // Let EF Core generate the Id
+            model.KichHoat = false;
+            _context.TiLeTangCas.Add(model);
             await _context.SaveChangesAsync();
 
             return Json(model);
@@ -141,7 +194,6 @@ namespace HR_KD.ApiControllers
                 return NotFound("Overtime rate not found");
             }
 
-            // Toggle the activation status for the selected rate
             rate.KichHoat = !rate.KichHoat;
             _context.TiLeTangCas.Update(rate);
             await _context.SaveChangesAsync();
@@ -157,11 +209,9 @@ namespace HR_KD.ApiControllers
                 return BadRequest("Invalid data");
             }
 
-            // Check if a record exists for the given year and IdLichLamViec
             var existing = await _context.GioChuans
                 .FirstOrDefaultAsync(x => x.Nam == model.Nam && x.IdLichLamViec == model.IdLichLamViec);
 
-            // Get the active LichLamViec
             var activeLichLamViec = await _context.LichLamViecs
                 .FirstOrDefaultAsync(x => x.KichHoat);
             if (activeLichLamViec == null || !activeLichLamViec.KichHoat)
@@ -171,7 +221,6 @@ namespace HR_KD.ApiControllers
 
             if (existing != null)
             {
-                // Update existing record
                 existing.Thang1 = model.Thang1;
                 existing.Thang2 = model.Thang2;
                 existing.Thang3 = model.Thang3;
@@ -184,13 +233,12 @@ namespace HR_KD.ApiControllers
                 existing.Thang10 = model.Thang10;
                 existing.Thang11 = model.Thang11;
                 existing.Thang12 = model.Thang12;
-                existing.KichHoat = true; // Activate the updated record
+                existing.KichHoat = true;
                 _context.GioChuans.Update(existing);
             }
             else
             {
-                // Create new record with the active LichLamViec ID
-                if (activeLichLamViec.KichHoat) // Explicit check for KichHoat = true
+                if (activeLichLamViec.KichHoat)
                 {
                     model.IdLichLamViec = activeLichLamViec.Id;
                 }
@@ -199,7 +247,7 @@ namespace HR_KD.ApiControllers
                     return BadRequest("The work schedule is not active.");
                 }
                 model.KichHoat = true;
-                _context.GioChuans.Add(model); // Let EF Core generate the Id
+                _context.GioChuans.Add(model);
             }
 
             await _context.SaveChangesAsync();
@@ -215,7 +263,7 @@ namespace HR_KD.ApiControllers
                 .FirstOrDefaultAsync();
             return Json(data);
         }
-        // 🔹 Lấy danh sách chấm công của nhân viên
+
         [HttpGet("GetAttendanceManagerRecords")]
         public IActionResult GetAttendanceRecords(int maNv)
         {
@@ -235,5 +283,14 @@ namespace HR_KD.ApiControllers
 
             return Ok(new { success = true, records });
         }
+    }
+
+    // DTO to handle JSON deserialization
+    public class ChamCongGioRaVaoDto
+    {
+        public string GioVao { get; set; }
+        public string GioRa { get; set; }
+        public bool KichHoat { get; set; }
+        public decimal TongGio { get; set; }
     }
 }

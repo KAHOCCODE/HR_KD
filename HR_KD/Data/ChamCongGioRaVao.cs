@@ -4,8 +4,8 @@
     {
 
         public int Id { get; set; }
-        public DateTime GioVao { get; set; }
-        public DateTime GioRa { get; set; } 
+        public TimeOnly GioVao { get; set; }
+        public TimeOnly GioRa { get; set; } 
         public bool KichHoat { get; set; } = false;
         public decimal TongGio { get; set; }
     }

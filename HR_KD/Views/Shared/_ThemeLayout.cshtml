@@ -352,8 +352,11 @@
                             <ul style="display: none;">
                                 <li><a href="~/PayrollSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình lương</a></li>
                                 <li><a href="~/LoaiNgayNghi"><i class="fa fa-cog"></i> Cài đặt cấu hình loại ngày nghỉ</a></li>
-                                <li><a href="~/AttendanceSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình chắm công</a></li>
-                                <li><a href="~/ChinhSachPhepNam"><i class="fa fa-cog"></i> Cài đặt cấu hình chính sách chấm công</a></li>
+                                @if (User.IsInRole("DIRECTOR"))
+                                {
+                                    <li><a href="~/AttendanceSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình chắm công</a></li>
+                                }
+                                <li><a href="~/ChinhSachPhepNam"><i class="fa fa-cog"></i> Cài đặt cấu hình chính sách ngày phép</a></li>
                                 <li><a href="~/CauHinhPhepnam"><i class="fa fa-cog"></i> Cài đặt cấu hình phép năm</a></li>
                             </ul>
                         </li>

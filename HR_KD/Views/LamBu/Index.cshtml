@@ -24,6 +24,28 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <!-- Custom Styles -->
+<style>
+    .invalid-input {
+        border-color: #ef4444 !important;
+        background-color: #fee2e2 !important;
+    }
+    .disabled-section {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    .spinner::before {
+        content: '';
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ccc;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+    }
+
+</style>
 
 <!-- Main Container -->
 <div class="min-h-screen bg-gray-50 p-6">
@@ -31,7 +53,7 @@
         <!-- Header -->
         <div class="mb-8">
             <h1 class="text-4xl font-bold text-gray-900 flex items-center">
-                <i class="fas fa-calendar-alt mr-3 text-blue-600"></i>  Làm Bù
+                <i class="fas fa-calendar-alt mr-3 text-blue-600"></i> Làm Bù
             </h1>
             <p class="text-gray-600 mt-2 text-lg">Đăng ký và quản lý lịch làm bù của bạn một cách dễ dàng.</p>
         </div>
@@ -98,12 +120,10 @@
                 <button id="applyToSelected" class="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 flex items-center">
                     <i class="fas fa-check mr-2"></i> Áp dụng
                 </button>
-                
                 <button id="submitAll" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 flex items-center">
                     <i class="fas fa-save mr-2"></i> Lưu Tất Cả
                 </button>
-            
-            </button>
+            </div>
         </div>
 
         <!-- Work Schedule Table -->
@@ -116,6 +136,7 @@
                             <th class="p-4 text-left text-sm font-semibold text-gray-700">
                                 <input type="checkbox" id="selectAll">
                             </th>
+                            <th class="p-4 text-left text-sm font-semibold text-gray-700">Thứ</th>
                             <th class="p-4 text-left text-sm font-semibold text-gray-700">Ngày làm bù</th>
                             <th class="p-4 text-left text-sm font-semibold text-gray-700">Giờ làm bù</th>
                             <th class="p-4 text-left text-sm font-semibold text-gray-700">Tổng giờ</th>
@@ -123,11 +144,10 @@
                         </tr>
                     </thead>
                     <tbody id="workScheduleBody">
-                        <tr><td colspan="5" class="p-4 text-center text-gray-600">Chưa có dữ liệu</td></tr>
+                        <tr><td colspan="6" class="p-4 text-center text-gray-600">Chưa có dữ liệu</td></tr>
                     </tbody>
                 </table>
             </div>
-           
         </div>
     </div>
 </div>
@@ -139,113 +159,140 @@
 
 <!-- JavaScript Logic -->
 <script>
-    const maNv = '@maNv';
-    let selectedWorkDays = [];
-    let workScheduleData = {};
+const maNv = '@maNv';
+let selectedWorkDays = [];
+let workScheduleData = {};
+let workTimeConfig = null; // Store ChamCongGioRaVao active record
+let holidayData = {}; // Store holiday data
 
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!maNv) {
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!maNv) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Mã nhân viên không hợp lệ.',
+            confirmButtonText: 'OK'
+        }).then(() => {
+            window.location.href = '/Login';
+        });
+        return;
+    }
+
+    try {
+        // Load ChamCongGioRaVao active record
+        const workTimeResponse = await fetch('/api/AttendanceSettingApi/GetChamCongGioRaVao', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const workTimeResult = await workTimeResponse.json();
+        workTimeConfig = workTimeResult.find(r => r.kichHoat);
+        if (!workTimeConfig) {
             Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Mã nhân viên không hợp lệ.',
+                icon: 'warning',
+                title: 'Cảnh báo!',
+                text: 'Không tìm thấy cấu hình giờ ra vào đang kích hoạt. Vui lòng thiết lập trong cài đặt.',
                 confirmButtonText: 'OK'
-            }).then(() => {
-                window.location.href = '/Login';
             });
+            disableControls();
             return;
         }
 
-        // Initialize Flatpickr
-        flatpickr("#workDateRange", {
-            mode: "range",
-            dateFormat: "d/m/Y",
-            weekNumbers: true,
-            locale: { firstDayOfWeek: 1 },
-            onClose: handleDateRangeClose
+        // Load holiday data
+        const holidayResponse = await fetch('/api/Attendance/GetHolidays', {
+            headers: { 'Accept': 'application/json' }
         });
+        const holidayResult = await holidayResponse.json();
+        if (holidayResult.success) {
+            holidayData = holidayResult.holidays.reduce((acc, holiday) => {
+                acc[holiday.ngayLe] = holiday;
+                return acc;
+            }, {});
+        }
 
         // Fetch remaining hours
-        fetchRemainingHours();
-    });
+        await fetchRemainingHours();
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Có lỗi xảy ra khi tải dữ liệu: ' + error.message,
+            confirmButtonText: 'OK'
+        });
+        disableControls();
+    }
 
-    async function fetchRemainingHours() {
-        try {
-            const response = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`, {
-                headers: { 'Accept': 'application/json' }
-            });
-            const result = await response.json();
-            if (result.success) {
-                document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
-                document.getElementById('_tongGioConThieu').textContent = `${result.tongGioConThieu.toFixed(2)}h`;
-                document.getElementById('_tongGioLamBu').textContent = `${result.tongGioLamBu.toFixed(2)}h`;
-                if (result.remainingHours === 0) {
-                    disableControls();
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Thông báo',
-                        text: 'Bạn không có giờ cần bù, các chức năng đã bị khóa.',
-                        confirmButtonText: 'OK'
-                    });
-                }
-            } else {
-                document.getElementById('_remainingHours').textContent = `0.00h`;
-                document.getElementById('_tongGioConThieu').textContent = `0.00h`;
-                document.getElementById('_tongGioLamBu').textContent = `0.00h`;
+    // Initialize Flatpickr
+    flatpickr("#workDateRange", {
+        mode: "range",
+        dateFormat: "d/m/Y",
+        weekNumbers: true,
+        locale: { firstDayOfWeek: 1 },
+        onClose: handleDateRangeClose
+    });
+});
+
+async function fetchRemainingHours() {
+    try {
+        const response = await fetch(`/api/LamBu/GetRemainingHours/${maNv}`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('_remainingHours').textContent = `${result.remainingHours.toFixed(2)}h`;
+            document.getElementById('_tongGioConThieu').textContent = `${result.tongGioConThieu.toFixed(2)}h`;
+            document.getElementById('_tongGioLamBu').textContent = `${result.tongGioLamBu.toFixed(2)}h`;
+            if (result.remainingHours === 0) {
                 disableControls();
                 Swal.fire({
                     icon: 'info',
                     title: 'Thông báo',
-                    text: 'Không có dữ liệu giờ cần bù, các chức năng đã bị khóa.',
+                    text: 'Bạn không có giờ cần bù, các chức năng đã bị khóa.',
                     confirmButtonText: 'OK'
                 });
             }
-        } catch (error) {
+        } else {
             document.getElementById('_remainingHours').textContent = `0.00h`;
             document.getElementById('_tongGioConThieu').textContent = `0.00h`;
             document.getElementById('_tongGioLamBu').textContent = `0.00h`;
             disableControls();
             Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Không thể tải dữ liệu giờ cần bù: ' + error.message,
+                icon: 'info',
+                title: 'Thông báo',
+                text: 'Không có dữ liệu giờ cần bù, các chức năng đã bị khóa.',
                 confirmButtonText: 'OK'
             });
         }
-    }
-
-    function disableControls() {
-        document.querySelectorAll('#workDateRange, #checkInTime, #checkOutTime, #totalHours, #attendanceNote, #set4hBtn, #set8hBtn, #applyToSelected, #submitAll, #selectAll').forEach(element => {
-            element.disabled = true;
+    } catch (error) {
+        document.getElementById('_remainingHours').textContent = `0.00h`;
+        document.getElementById('_tongGioConThieu').textContent = `0.00h`;
+        document.getElementById('_tongGioLamBu').textContent = `0.00h`;
+        disableControls();
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Không thể tải dữ liệu giờ cần bù: ' + error.message,
+            confirmButtonText: 'OK'
         });
-        document.querySelectorAll('.date-checkbox').forEach(checkbox => {
-            checkbox.disabled = true;
-        });
-        document.getElementById('compensatoryControls').classList.add('disabled-section');
-        flatpickr("#workDateRange").disable();
     }
+}
 
-    function handleDateRangeClose(selectedDates) {
-        selectedWorkDays = [];
-        if (selectedDates.length === 2) {
-            let currentDate = new Date(selectedDates[0]);
-            const endDate = new Date(selectedDates[1]);
-            while (currentDate <= endDate) {
-                const dateStr = formatDateToYMD(currentDate);
-                selectedWorkDays.push(dateStr);
-                if (!workScheduleData[dateStr]) {
-                    workScheduleData[dateStr] = {
-                        selected: false,
-                        checkIn: '',
-                        checkOut: '',
-                        totalHours: 0,
-                        attendanceNote: ''
-                    };
-                }
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-        } else if (selectedDates.length === 1) {
-            const dateStr = formatDateToYMD(selectedDates[0]);
+function disableControls() {
+    document.querySelectorAll('#workDateRange, #checkInTime, #checkOutTime, #totalHours, #attendanceNote, #set4hBtn, #set8hBtn, #applyToSelected, #submitAll, #selectAll').forEach(element => {
+        element.disabled = true;
+    });
+    document.querySelectorAll('.date-checkbox').forEach(checkbox => {
+        checkbox.disabled = true;
+    });
+    document.getElementById('compensatoryControls').classList.add('disabled-section');
+    flatpickr("#workDateRange").disable();
+}
+
+function handleDateRangeClose(selectedDates) {
+    selectedWorkDays = [];
+    if (selectedDates.length === 2) {
+        let currentDate = new Date(selectedDates[0]);
+        const endDate = new Date(selectedDates[1]);
+        while (currentDate <= endDate) {
+            const dateStr = formatDateToYMD(currentDate);
             selectedWorkDays.push(dateStr);
             if (!workScheduleData[dateStr]) {
                 workScheduleData[dateStr] = {
@@ -256,314 +303,531 @@
                     attendanceNote: ''
                 };
             }
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-        updateWorkScheduleTable();
-    }
-
-    function formatDateToYMD(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    function formatDate(date) {
-        return moment(date).format('DD/MM/YYYY');
-    }
-
-    function updateWorkScheduleTable() {
-        const tbody = document.getElementById('workScheduleBody');
-        tbody.innerHTML = '';
-        if (selectedWorkDays.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-600">Chưa có dữ liệu</td></tr>';
-            return;
-        }
-        selectedWorkDays.forEach(date => {
-            const data = workScheduleData[date];
-            const row = document.createElement('tr');
-            row.className = 'border-b border-gray-200';
-            row.innerHTML = `
-                <td class="p-4"><input type="checkbox" class="date-checkbox" data-date="${date}" ${data.selected ? 'checked' : ''}></td>
-                <td class="p-4 text-gray-800">${formatDate(new Date(date))}</td>
-                <td class="p-4 text-gray-800">${data.checkIn ? `${data.checkIn} - ${data.checkOut}` : '-'}</td>
-                <td class="p-4 text-gray-800">${data.totalHours > 0 ? `${data.totalHours.toFixed(2)}h` : '-'}</td>
-                <td class="p-4 text-gray-800">${data.attendanceNote || '-'}</td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        document.querySelectorAll('.date-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                workScheduleData[this.dataset.date].selected = this.checked;
-            });
-        });
-    }
-
-    function calculateHours(startTime, endTime) {
-        if (!startTime || !endTime) return 0;
-        const start = new Date(`2000-01-01T${startTime}`);
-        let end = new Date(`2000-01-01T${endTime}`);
-        if (end < start) end.setDate(end.getDate() + 1);
-        let hours = (end - start) / (1000 * 60 * 60);
-        if (hours > 4) hours -= 1; // Apply 1-hour break for shifts over 4 hours
-        return Math.max(0, parseFloat(hours.toFixed(2)));
-    }
-
-    function updateTotalHours() {
-        const checkIn = document.getElementById('checkInTime');
-        const checkOut = document.getElementById('checkOutTime');
-        const totalHoursInput = document.getElementById('totalHours');
-        checkIn.classList.remove('invalid-input');
-        checkOut.classList.remove('invalid-input');
-
-        if (checkIn.value && checkOut.value) {
-            const hours = calculateHours(checkIn.value, checkOut.value);
-            totalHoursInput.value = `${hours.toFixed(2)}h`;
-        } else {
-            totalHoursInput.value = '';
-        }
-    }
-
-    function validateHours(checkIn, checkOut, date) {
-        const dateObj = new Date(date);
-        const dayOfWeek = dateObj.getDay();
-        const checkInInput = document.getElementById('checkInTime');
-        const checkOutInput = document.getElementById('checkOutTime');
-        const hours = calculateHours(checkIn, checkOut);
-
-        if (checkIn && checkOut) {
-            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                if (checkIn < '18:00' || checkIn > '22:00' || checkOut < '18:00' || checkOut > '22:00' || hours > 4) {
-                    checkInInput.classList.add('invalid-input');
-                    checkOutInput.classList.add('invalid-input');
-                    return false;
-                }
-            } else if (dayOfWeek === 0 || dayOfWeek === 6) {
-                if (checkIn < '08:00' || checkIn > '22:00' || checkOut < '08:00' || checkOut > '22:00') {
-                    checkInInput.classList.add('invalid-input');
-                    checkOutInput.classList.add('invalid-input');
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
-    document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
-
-    function addHours(time, hours) {
-        const [hoursStr, minutesStr] = time.split(':');
-        let newHours = parseInt(hoursStr) + hours;
-        if (newHours >= 24) newHours -= 24;
-        return `${newHours.toString().padStart(2, '0')}:${minutesStr}`;
-    }
-
-    document.getElementById('set4hBtn').addEventListener('click', () => {
-        const checkIn = document.getElementById('checkInTime');
-        const checkOut = document.getElementById('checkOutTime');
-        const selectedDates = Object.entries(workScheduleData)
-            .filter(([_, data]) => data.selected)
-            .map(([date]) => date);
-
-        if (selectedDates.length === 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Vui lòng chọn ít nhất một ngày để áp dụng.',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        const date = selectedDates[0];
-        const dayOfWeek = new Date(date).getDay();
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-            checkIn.value = '18:00';
-            checkOut.value = '22:00';
-        } else {
-            checkIn.value = '08:00';
-            checkOut.value = '12:00';
-        }
-        updateTotalHours();
-    });
-
-    document.getElementById('set8hBtn').addEventListener('click', () => {
-        const checkIn = document.getElementById('checkInTime');
-        const checkOut = document.getElementById('checkOutTime');
-        const selectedDates = Object.entries(workScheduleData)
-            .filter(([_, data]) => data.selected)
-            .map(([date]) => date);
-
-        if (selectedDates.length === 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Vui lòng chọn ít nhất một ngày để áp dụng.',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        const date = selectedDates[0];
-        const dayOfWeek = new Date(date).getDay();
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Ngày thường chỉ được làm bù tối đa 4 giờ (18:00-22:00).',
-                confirmButtonText: 'OK'
-            });
-            return;
-        } else {
-            checkIn.value = '08:00';
-            checkOut.value = '18:00';
-        }
-        updateTotalHours();
-    });
-
-    document.getElementById('selectAll').addEventListener('change', function() {
-        document.querySelectorAll('.date-checkbox').forEach(checkbox => {
-            checkbox.checked = this.checked;
-            workScheduleData[checkbox.dataset.date].selected = this.checked;
-        });
-    });
-
-    document.getElementById('applyToSelected').addEventListener('click', async () => {
-        const checkIn = document.getElementById('checkInTime').value;
-        const checkOut = document.getElementById('checkOutTime').value;
-        const attendanceNote = document.getElementById('attendanceNote').value;
-
-        const selectedDates = Object.entries(workScheduleData)
-            .filter(([_, data]) => data.selected)
-            .map(([date]) => date);
-
-        if (selectedDates.length === 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Vui lòng chọn ít nhất một ngày.',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        if (checkIn && checkOut) {
-            for (const date of selectedDates) {
-                if (!validateHours(checkIn, checkOut, date)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi!',
-                        text: `Giờ làm bù không hợp lệ cho ngày ${formatDate(new Date(date))}.`,
-                        confirmButtonText: 'OK'
-                    });
-                    return;
-                }
-            }
-        }
-
-        selectedDates.forEach(date => {
-            workScheduleData[date] = {
-                ...workScheduleData[date],
-                checkIn,
-                checkOut,
-                totalHours: checkIn && checkOut ? calculateHours(checkIn, checkOut) : 0,
-                attendanceNote
+    } else if (selectedDates.length === 1) {
+        const dateStr = formatDateToYMD(selectedDates[0]);
+        selectedWorkDays.push(dateStr);
+        if (!workScheduleData[dateStr]) {
+            workScheduleData[dateStr] = {
+                selected: false,
+                checkIn: '',
+                checkOut: '',
+                totalHours: 0,
+                attendanceNote: ''
             };
+        }
+    }
+    updateWorkScheduleTable();
+}
+
+function formatDateToYMD(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatDate(date) {
+    return moment(date).format('DD/MM/YYYY');
+}
+
+function getVietnameseDayOfWeek(date) {
+    const days = [
+        'Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư',
+        'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'
+    ];
+    return days[new Date(date).getDay()];
+}
+
+function updateWorkScheduleTable() {
+    const tbody = document.getElementById('workScheduleBody');
+    tbody.innerHTML = '';
+    if (selectedWorkDays.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-600">Chưa có dữ liệu</td></tr>';
+        return;
+    }
+    selectedWorkDays.forEach(date => {
+        const data = workScheduleData[date];
+        const isHoliday = holidayData[date] && holidayData[date].trangThai === 'NL4';
+        const isBonusDay = holidayData[date] && holidayData[date].trangThai === 'NT';
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200';
+        if (isHoliday) {
+            row.style.backgroundColor = '#FFE5B4'; // Light orange for holidays
+        } else if (isBonusDay) {
+            row.style.backgroundColor = '#E6F3FF'; // Light blue for bonus days
+        }
+        row.innerHTML = `
+            <td class="p-4"><input type="checkbox" class="date-checkbox" data-date="${date}" ${data.selected ? 'checked' : ''}></td>
+            <td class="p-4 text-gray-800">${getVietnameseDayOfWeek(date)}</td>
+            <td class="p-4 text-gray-800">${formatDate(new Date(date))}</td>
+            <td class="p-4 text-gray-800">${data.checkIn ? `${data.checkIn} - ${data.checkOut}` : '-'}</td>
+            <td class="p-4 text-gray-800">${data.totalHours > 0 ? `${data.totalHours.toFixed(2)}h` : '-'}</td>
+            <td class="p-4 text-gray-800">${data.attendanceNote || '-'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    document.querySelectorAll('.date-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            workScheduleData[this.dataset.date].selected = this.checked;
         });
+    });
+}
 
-        updateWorkScheduleTable();
+function calculateHours(startTime, endTime, isHolidayOrWeekendOrBonus, date) {
+    if (!startTime || !endTime) return 0;
+    const start = new Date(`2000-01-01T${startTime}`);
+    let end = new Date(`2000-01-01T${endTime}`);
+    if (end < start) end.setDate(end.getDate() + 1);
+    let hours = (end - start) / (1000 * 60 * 60);
+    if (isHolidayOrWeekendOrBonus && hours > 4) hours -= 1; // Apply 1-hour break for shifts over 4 hours on holidays, weekends, or bonus days
+    return Math.max(0, parseFloat(hours.toFixed(2)));
+}
 
-        document.getElementById('checkInTime').value = '';
-        document.getElementById('checkOutTime').value = '';
-        document.getElementById('totalHours').value = '';
-        document.getElementById('attendanceNote').value = '';
+function addHours(time, hours) {
+    if (!time) return '';
+    const [hoursStr, minutesStr] = time.split(':');
+    let newHours = parseInt(hoursStr) + hours;
+    if (newHours >= 24) newHours -= 24;
+    return `${newHours.toString().padStart(2, '0')}:${minutesStr}`;
+}
 
-        selectedDates.forEach(date => workScheduleData[date].selected = false);
-        document.getElementById('selectAll').checked = false;
-
-        updateWorkScheduleTable();
+function validateHours(checkIn, checkOut, date) {
+    if (!workTimeConfig) {
         Swal.fire({
-            icon: 'success',
-            title: 'Thành công!',
-            text: 'Đã áp dụng dữ liệu cho các ngày đã chọn.',
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
             confirmButtonText: 'OK'
         });
-    });
+        return false;
+    }
 
-    document.getElementById('submitAll').addEventListener('click', async () => {
-        if (!maNv) {
+    const checkInInput = document.getElementById('checkInTime');
+    const checkOutInput = document.getElementById('checkOutTime');
+    checkInInput.classList.remove('invalid-input');
+    checkOutInput.classList.remove('invalid-input');
+
+    if (!checkIn || !checkOut) return true; // Allow empty inputs for validation
+
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay();
+    const isHoliday = holidayData[date] && holidayData[date].trangThai === 'NL4';
+    const isBonusDay = holidayData[date] && holidayData[date].trangThai === 'NT';
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const gioVao = workTimeConfig.gioVao.slice(0, 5);
+    const gioRa = workTimeConfig.gioRa.slice(0, 5);
+    const hours = calculateHours(checkIn, checkOut, isHoliday || isWeekend || isBonusDay, date);
+
+    if (isHoliday) {
+        // Holidays: Up to 8 hours, within gioVao to gioRa
+        if (hours > 8 || checkIn < gioVao || checkIn > gioRa || checkOut < gioVao || checkOut > gioRa) {
+            checkInInput.classList.add('invalid-input');
+            checkOutInput.classList.add('invalid-input');
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Mã nhân viên không hợp lệ.',
+                text: `Giờ làm bù trong ngày lễ phải tối đa 8 giờ và trong khoảng ${gioVao} đến ${gioRa}.`,
                 confirmButtonText: 'OK'
             });
-            return;
+            return false;
         }
+    } else if (isWeekday && isBonusDay) {
+        // Bonus days on weekdays: Up to 4 hours, start at gioRa
+        if (hours > 4 || checkIn !== gioRa) {
+            checkInInput.classList.add('invalid-input');
+            checkOutInput.classList.add('invalid-input');
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: `Giờ làm bù trong ngày thưởng phải tối đa 4 giờ và bắt đầu từ ${gioRa}.`,
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+    } else if (isWeekday) {
+        // Regular weekdays: Up to 4 hours, start at gioRa
+        if (hours > 4 || checkIn !== gioRa) {
+            checkInInput.classList.add('invalid-input');
+            checkOutInput.classList.add('invalid-input');
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: `Giờ làm bù trong ngày thường phải tối đa 4 giờ và bắt đầu từ ${gioRa}.`,
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+    } else if (isWeekend) {
+        // Weekends: Up to 8 hours, within gioVao to gioRa
+        if (hours > 8 || checkIn < gioVao || checkIn > gioRa || checkOut < gioVao || checkOut > gioRa) {
+            checkInInput.classList.add('invalid-input');
+            checkOutInput.classList.add('invalid-input');
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: `Giờ làm bù trong ngày cuối tuần phải tối đa 8 giờ và trong khoảng ${gioVao} đến ${gioRa}.`,
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+    }
+    return true;
+}
 
+function updateTotalHours() {
+    const checkIn = document.getElementById('checkInTime');
+    const checkOut = document.getElementById('checkOutTime');
+    const totalHoursInput = document.getElementById('totalHours');
+    checkIn.classList.remove('invalid-input');
+    checkOut.classList.remove('invalid-input');
+
+    if (checkIn.value && checkOut.value) {
         const selectedDates = Object.entries(workScheduleData)
             .filter(([_, data]) => data.selected)
-            .map(([date, data]) => ({ date, ...data }));
+            .map(([date]) => date);
+        const date = selectedDates[0] || Object.keys(workScheduleData)[0];
+        const dateObj = date ? new Date(date) : new Date();
+        const dayOfWeek = dateObj.getDay();
+        const isHoliday = holidayData[date] && holidayData[date].trangThai === 'NL4';
+        const isBonusDay = holidayData[date] && holidayData[date].trangThai === 'NT';
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const hours = calculateHours(checkIn.value, checkOut.value, isHoliday || isWeekend || isBonusDay, date);
+        totalHoursInput.value = `${hours.toFixed(2)}h`;
+    } else {
+        totalHoursInput.value = '';
+    }
+}
 
-        if (selectedDates.length === 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Vui lòng chọn ít nhất một ngày.',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/LamBu/SubmitLamBu', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    lamBu: selectedDates
-                        .filter(date => date.checkIn && date.checkOut)
-                        .map(date => ({
-                            NgayLamViec: date.date,
-                            GioVao: date.checkIn,
-                            GioRa: date.checkOut,
-                            TongGio: date.totalHours,
-                            TrangThai: 'LB1',
-                            GhiChu: date.attendanceNote,
-                            MaNV: parseInt(maNv)
-                        }))
-                })
-            });
-
-            const result = await response.json();
-            if (result.success) {
+document.getElementById('checkInTime').addEventListener('change', function() {
+    const selectedDate = Object.keys(workScheduleData)[0];
+    if (selectedDate) {
+        const isWeekday = new Date(selectedDate).getDay() >= 1 && new Date(selectedDate).getDay() <= 5;
+        const isHoliday = holidayData[selectedDate]?.trangThai === 'NL4';
+        if (isWeekday && !isHoliday && workTimeConfig) {
+            if (this.value !== workTimeConfig.gioRa.slice(0, 5)) {
+                this.value = workTimeConfig.gioRa.slice(0, 5);
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Thành công!',
-                    text: 'Lưu dữ liệu làm bù thành công.',
+                    icon: 'warning',
+                    title: 'Cảnh báo!',
+                    text: `Giờ vào phải là ${workTimeConfig.gioRa.slice(0, 5)} cho ngày thường hoặc ngày thưởng.`,
                     confirmButtonText: 'OK'
                 });
-                workScheduleData = {};
-                selectedWorkDays = [];
-                updateWorkScheduleTable();
-            } else {
+            }
+        }
+        updateTotalHours();
+    }
+});
+
+document.getElementById('checkOutTime').addEventListener('change', function() {
+    const selectedDate = Object.keys(workScheduleData)[0];
+    if (selectedDate) {
+        const isWeekday = new Date(selectedDate).getDay() >= 1 && new Date(selectedDate).getDay() <= 5;
+        const isHoliday = holidayData[selectedDate]?.trangThai === 'NL4';
+        if (isWeekday && !isHoliday && workTimeConfig) {
+            const checkIn = document.getElementById('checkInTime').value;
+            if (checkIn) {
+                const hours = calculateHours(checkIn, this.value, holidayData[selectedDate]?.trangThai === 'NT', selectedDate);
+                if (hours > 4) {
+                    this.value = addHours(checkIn, 4);
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Cảnh báo!',
+                        text: 'Giờ làm bù trong ngày thường hoặc ngày thưởng không được vượt quá 4 giờ.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            }
+        }
+        updateTotalHours();
+    }
+});
+
+document.getElementById('checkInTime').addEventListener('change', updateTotalHours);
+document.getElementById('checkOutTime').addEventListener('change', updateTotalHours);
+
+document.getElementById('set4hBtn').addEventListener('click', () => {
+    const checkIn = document.getElementById('checkInTime');
+    const checkOut = document.getElementById('checkOutTime');
+    const selectedDates = Object.entries(workScheduleData)
+        .filter(([_, data]) => data.selected)
+        .map(([date]) => date);
+
+    if (selectedDates.length === 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Vui lòng chọn ít nhất một ngày để áp dụng.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    if (!workTimeConfig) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    const date = selectedDates[0];
+    const dayOfWeek = new Date(date).getDay();
+    const isHoliday = holidayData[date] && holidayData[date].trangThai === 'NL4';
+    const isBonusDay = holidayData[date] && holidayData[date].trangThai === 'NT';
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const gioVao = workTimeConfig.gioVao.slice(0, 5);
+    const gioRa = workTimeConfig.gioRa.slice(0, 5);
+
+    if (isWeekday && !isHoliday) {
+        checkIn.value = gioRa;
+        checkOut.value = addHours(gioRa, 4);
+    } else if (isHoliday || isWeekend) {
+        checkIn.value = gioVao;
+        checkOut.value = addHours(gioVao, 4) <= gioRa ? addHours(gioVao, 4) : gioRa;
+    }
+    updateTotalHours();
+});
+
+document.getElementById('set8hBtn').addEventListener('click', () => {
+    const checkIn = document.getElementById('checkInTime');
+    const checkOut = document.getElementById('checkOutTime');
+    const selectedDates = Object.entries(workScheduleData)
+        .filter(([_, data]) => data.selected)
+        .map(([date]) => date);
+
+    if (selectedDates.length === 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Vui lòng chọn ít nhất một ngày để áp dụng.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    if (!workTimeConfig) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    const date = selectedDates[0];
+    const dayOfWeek = new Date(date).getDay();
+    const isHoliday = holidayData[date] && holidayData[date].trangThai === 'NL4';
+    const isBonusDay = holidayData[date] && holidayData[date].trangThai === 'NT';
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+
+    if (isWeekday && !isHoliday) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Ngày thường hoặc ngày thưởng chỉ được làm bù tối đa 4 giờ.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    } else if (isHoliday || isWeekend) {
+        checkIn.value = workTimeConfig.gioVao.slice(0, 5);
+        checkOut.value = workTimeConfig.gioRa.slice(0, 5);
+    }
+    updateTotalHours();
+});
+
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.date-checkbox').forEach(checkbox => {
+        checkbox.checked = this.checked;
+        workScheduleData[checkbox.dataset.date].selected = this.checked;
+    });
+});
+
+document.getElementById('applyToSelected').addEventListener('click', async () => {
+    const checkIn = document.getElementById('checkInTime').value;
+    const checkOut = document.getElementById('checkOutTime').value;
+    const attendanceNote = document.getElementById('attendanceNote').value;
+
+    const selectedDates = Object.entries(workScheduleData)
+        .filter(([_, data]) => data.selected)
+        .map(([date]) => date);
+
+    if (selectedDates.length === 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Vui lòng chọn ít nhất một ngày.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    if (!workTimeConfig) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    if (checkIn && checkOut) {
+        for (const date of selectedDates) {
+            if (!validateHours(checkIn, checkOut, date)) {
+                const isBonusDay = holidayData[date]?.trangThai === 'NT';
+                const hours = calculateHours(checkIn, checkOut, holidayData[date]?.trangThai === 'NL4' || new Date(date).getDay() === 0 || new Date(date).getDay() === 6 || isBonusDay, date);
+                console.log(`Validation failed for ${date}: checkIn=${checkIn}, checkOut=${checkOut}, hours=${hours}, isBonusDay=${isBonusDay}, gioRa=${workTimeConfig.gioRa}`);
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: result.message || 'Không thể lưu dữ liệu.',
+                    text: `Giờ làm bù không hợp lệ cho ngày ${formatDate(new Date(date))}. Kiểm tra giờ vào (${checkIn}) và giờ ra (${checkOut}).`,
                     confirmButtonText: 'OK'
                 });
+                return;
             }
-        } catch (error) {
+        }
+    }
+
+    selectedDates.forEach(date => {
+        const isHoliday = holidayData[date] && holidayData[date].trangThai === 'NL4';
+        const isBonusDay = holidayData[date] && holidayData[date].trangThai === 'NT';
+        const isWeekend = new Date(date).getDay() === 0 || new Date(date).getDay() === 6;
+        workScheduleData[date] = {
+            ...workScheduleData[date],
+            checkIn,
+            checkOut,
+            totalHours: checkIn && checkOut ? calculateHours(checkIn, checkOut, isHoliday || isWeekend || isBonusDay, date) : 0,
+            attendanceNote
+        };
+    });
+
+    updateWorkScheduleTable();
+
+    document.getElementById('checkInTime').value = '';
+    document.getElementById('checkOutTime').value = '';
+    document.getElementById('totalHours').value = '';
+    document.getElementById('attendanceNote').value = '';
+
+    selectedDates.forEach(date => workScheduleData[date].selected = false);
+    document.getElementById('selectAll').checked = false;
+
+    updateWorkScheduleTable();
+    Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Đã áp dụng dữ liệu cho các ngày đã chọn.',
+        confirmButtonText: 'OK'
+    });
+});
+
+document.getElementById('submitAll').addEventListener('click', async () => {
+    if (!maNv) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Mã nhân viên không hợp lệ.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    const selectedDates = Object.entries(workScheduleData)
+        .filter(([_, data]) => data.selected)
+        .map(([date, data]) => ({ date, ...data }));
+
+    if (selectedDates.length === 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Vui lòng chọn ít nhất một ngày.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    if (!workTimeConfig) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Không tìm thấy cấu hình giờ ra vào. Vui lòng thiết lập trong cài đặt.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    for (const date of selectedDates) {
+        if (date.checkIn && date.checkOut && !validateHours(date.checkIn, date.checkOut, date.date)) {
+            const isBonusDay = holidayData[date.date]?.trangThai === 'NT';
+            const hours = calculateHours(date.checkIn, date.checkOut, holidayData[date.date]?.trangThai === 'NL4' || new Date(date.date).getDay() === 0 || new Date(date.date).getDay() === 6 || isBonusDay, date.date);
+            console.log(`Validation failed for ${date.date}: checkIn=${date.checkIn}, checkOut=${date.checkOut}, hours=${hours}, isBonusDay=${isBonusDay}, gioRa=${workTimeConfig.gioRa}`);
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
-                text: 'Có lỗi xảy ra khi lưu dữ liệu: ' + error.message,
+                text: `Giờ làm bù không hợp lệ cho ngày ${formatDate(new Date(date.date))}. Kiểm tra giờ vào (${date.checkIn}) và giờ ra (${date.checkOut}).`,
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+    }
+
+    try {
+        const response = await fetch('/api/LamBu/SubmitLamBu', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                lamBu: selectedDates
+                    .filter(date => date.checkIn && date.checkOut)
+                    .map(date => ({
+                        NgayLamViec: date.date,
+                        GioVao: date.checkIn,
+                        GioRa: date.checkOut,
+                        TongGio: date.totalHours,
+                        TrangThai: 'LB1',
+                        GhiChu: date.attendanceNote,
+                        MaNV: parseInt(maNv)
+                    }))
+            })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công!',
+                text: 'Lưu dữ liệu làm bù thành công.',
+                confirmButtonText: 'OK'
+            });
+            workScheduleData = {};
+            selectedWorkDays = [];
+            updateWorkScheduleTable();
+            await fetchRemainingHours();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: result.message || 'Không thể lưu dữ liệu.',
                 confirmButtonText: 'OK'
             });
         }
-    });
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Có lỗi xảy ra khi lưu dữ liệu: ' + error.message,
+            confirmButtonText: 'OK'
+        });
+    }
+});
 </script>

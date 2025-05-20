@@ -109,6 +109,24 @@ namespace HR_KD.ApiControllers
 
             try
             {
+                // Fetch active ChamCongGioRaVao configuration
+                var workTimeConfig = await _context.ChamCongGioRaVaos
+                    .Where(c => c.KichHoat)
+                    .FirstOrDefaultAsync();
+
+                if (workTimeConfig == null)
+                {
+                    return BadRequest(new { success = false, message = "Không tìm thấy cấu hình giờ ra vào đang kích hoạt." });
+                }
+
+                var gioVaoConfig = workTimeConfig.GioVao;
+                var gioRaConfig = workTimeConfig.GioRa;
+
+                // Fetch holiday data
+                var holidays = await _context.NgayLes
+                    .Where(h => request.LamBu.Select(lb => lb.NgayLamViec).Contains(h.NgayLe1))
+                    .ToDictionaryAsync(h => h.NgayLe1, h => h.TrangThai);
+
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
                 var tongGioThieu = await _context.TongGioThieus
                     .Where(t => t.MaNv == userMaNv.Value && t.NgayBatDauThieu <= currentDate && t.NgayKetThucThieu >= currentDate)
@@ -130,30 +148,85 @@ namespace HR_KD.ApiControllers
                     var gioVao = lamBu.GioVao;
                     var gioRa = lamBu.GioRa;
 
-                    // Validation for weekdays (Monday-Friday): 18:00-22:00, max 4 hours
-                    if (dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday)
+                    // Check holiday or bonus day status
+                    var isHoliday = holidays.TryGetValue(ngayLamViec, out var trangThai) && trangThai == "NL4";
+                    var isBonusDay = holidays.TryGetValue(ngayLamViec, out trangThai) && trangThai == "NT";
+
+                    // Validation for weekdays (Monday-Friday, including bonus days)
+                    if (dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday && !isHoliday)
                     {
-                        if (gioVao < TimeOnly.Parse("18:00") || gioVao > TimeOnly.Parse("22:00") ||
-                            gioRa < TimeOnly.Parse("18:00") || gioRa > TimeOnly.Parse("22:00"))
+                        if (!gioVao.HasValue || !gioRa.HasValue)
                         {
-                            return BadRequest(new { success = false, message = $"Làm bù từ thứ Hai đến thứ Sáu chỉ được phép từ 18:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
+                            return BadRequest(new { success = false, message = $"Giờ vào và giờ ra không được để trống cho ngày {ngayLamViec}." });
                         }
 
+                        // Check that GioVao matches GioRa from ChamCongGioRaVao
+                        if (gioVao.Value != gioRaConfig)
+                        {
+                            return BadRequest(new { success = false, message = $"Giờ vào làm bù cho ngày {ngayLamViec} phải là {gioRaConfig}." });
+                        }
+
+                        // Calculate hours
                         var hours = (gioRa.Value - gioVao.Value).TotalHours;
                         if (hours < 0) hours += 24;
+                        if (isBonusDay && hours > 4) hours -= 1; // Apply 1-hour break for bonus days > 4 hours
+
+                        // Validate hours <= 4
                         if (hours > 4)
                         {
-                            return BadRequest(new { success = false, message = $"Làm bù từ thứ Hai đến thứ Sáu không được vượt quá 4 giờ. Ngày {ngayLamViec} không hợp lệ." });
+                            return BadRequest(new { success = false, message = $"Làm bù vào ngày {ngayLamViec} không được vượt quá 4 giờ." });
                         }
+
+                        lamBu.TongGio = (decimal)Math.Round(hours, 2);
                     }
-                    // Validation for weekends (Saturday-Sunday): 08:00-22:00, 1-hour break if over 4 hours
+                    // Validation for weekends (Saturday-Sunday)
                     else if (dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday)
                     {
+                        if (!gioVao.HasValue || !gioRa.HasValue)
+                        {
+                            return BadRequest(new { success = false, message = $"Giờ vào và giờ ra không được để trống cho ngày {ngayLamViec}." });
+                        }
+
                         if (gioVao < TimeOnly.Parse("08:00") || gioVao > TimeOnly.Parse("22:00") ||
                             gioRa < TimeOnly.Parse("08:00") || gioRa > TimeOnly.Parse("22:00"))
                         {
                             return BadRequest(new { success = false, message = $"Làm bù vào thứ Bảy và Chủ Nhật chỉ được phép từ 08:00 đến 22:00. Ngày {ngayLamViec} không hợp lệ." });
                         }
+
+                        var hours = (gioRa.Value - gioVao.Value).TotalHours;
+                        if (hours < 0) hours += 24;
+                        if (hours > 4) hours -= 1; // Apply 1-hour break for weekend shifts > 4 hours
+
+                        if (hours > 8)
+                        {
+                            return BadRequest(new { success = false, message = $"Làm bù vào cuối tuần không được vượt quá 8 giờ. Ngày {ngayLamViec} không hợp lệ." });
+                        }
+
+                        lamBu.TongGio = (decimal)Math.Round(hours, 2);
+                    }
+                    // Validation for holidays
+                    else if (isHoliday)
+                    {
+                        if (!gioVao.HasValue || !gioRa.HasValue)
+                        {
+                            return BadRequest(new { success = false, message = $"Giờ vào và giờ ra không được để trống cho ngày {ngayLamViec}." });
+                        }
+
+                        if (gioVao < gioVaoConfig || gioVao > gioRaConfig || gioRa < gioVaoConfig || gioRa > gioRaConfig)
+                        {
+                            return BadRequest(new { success = false, message = $"Làm bù vào ngày lễ phải trong khoảng {gioVaoConfig} đến {gioRaConfig}. Ngày {ngayLamViec} không hợp lệ." });
+                        }
+
+                        var hours = (gioRa.Value - gioVao.Value).TotalHours;
+                        if (hours < 0) hours += 24;
+                        if (hours > 4) hours -= 1; // Apply 1-hour break for holiday shifts > 4 hours
+
+                        if (hours > 8)
+                        {
+                            return BadRequest(new { success = false, message = $"Làm bù vào ngày lễ không được vượt quá 8 giờ. Ngày {ngayLamViec} không hợp lệ." });
+                        }
+
+                        lamBu.TongGio = (decimal)Math.Round(hours, 2);
                     }
                     else
                     {
@@ -167,27 +240,28 @@ namespace HR_KD.ApiControllers
 
                     foreach (var tangCa in conflictingTangCa)
                     {
-                        var tangCaStart = TimeOnly.Parse("18:00");
-                        var tangCaEnd = tangCaStart.AddHours((double)tangCa.SoGioTangCa);
+                        TimeOnly tangCaStart = tangCa.GioVao ?? TimeOnly.Parse("18:00");
+                        TimeOnly tangCaEnd = tangCa.GioRa ?? tangCaStart.AddHours((double)tangCa.SoGioTangCa);
 
-                        if ((gioVao >= tangCaStart && gioVao <= tangCaEnd) ||
-                            (gioRa >= tangCaStart && gioRa <= tangCaEnd) ||
-                            (gioVao <= tangCaStart && gioRa >= tangCaEnd))
-                        {
-                            return BadRequest(new { success = false, message = $"Làm bù vào ngày {ngayLamViec} trùng với giờ tăng ca. Vui lòng kiểm tra lại." });
-                        }
-                    }
+                        bool crossesMidnightTangCa = tangCaEnd < tangCaStart;
+                        bool crossesMidnightLamBu = gioRa < gioVao;
 
-                    // Calculate hours, applying 1-hour break for weekend shifts over 4 hours
-                    if (gioVao.HasValue && gioRa.HasValue)
-                    {
-                        var hours = (gioRa.Value - gioVao.Value).TotalHours;
-                        if (hours < 0) hours += 24;
-                        if ((dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday) && hours > 4)
+                        double lamBuStartMinutes = gioVao.Value.Hour * 60 + gioVao.Value.Minute;
+                        double lamBuEndMinutes = gioRa.Value.Hour * 60 + gioRa.Value.Minute;
+                        double tangCaStartMinutes = tangCaStart.Hour * 60 + tangCaStart.Minute;
+                        double tangCaEndMinutes = tangCaEnd.Hour * 60 + tangCaEnd.Minute;
+
+                        if (crossesMidnightLamBu) lamBuEndMinutes += 24 * 60;
+                        if (crossesMidnightTangCa) tangCaEndMinutes += 24 * 60;
+
+                        bool hasOverlap = (lamBuStartMinutes >= tangCaStartMinutes && lamBuStartMinutes <= tangCaEndMinutes) ||
+                                         (lamBuEndMinutes >= tangCaStartMinutes && lamBuEndMinutes <= tangCaEndMinutes) ||
+                                         (lamBuStartMinutes <= tangCaStartMinutes && lamBuEndMinutes >= tangCaEndMinutes);
+
+                        if (hasOverlap)
                         {
-                            hours -= 1; // Apply 1-hour break
+                            return BadRequest(new { success = false, message = $"Làm bù vào ngày {ngayLamViec} trùng với giờ tăng ca từ {tangCaStart} đến {tangCaEnd}. Vui lòng kiểm tra lại." });
                         }
-                        lamBu.TongGio = (decimal)Math.Round(hours, 2);
                     }
 
                     lamBu.TrangThai = "LB1";

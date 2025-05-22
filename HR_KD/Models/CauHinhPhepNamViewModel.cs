@@ -15,7 +15,7 @@ namespace HR_KD.ViewModels
         [Required(ErrorMessage = "Vui lòng nhập số ngày phép mặc định")]
         [Display(Name = "Số ngày phép mặc định")]
         [Range(0, 50, ErrorMessage = "Số ngày phép phải từ 0 đến 50")]
-        public int SoNgayPhepMacDinh { get; set; }
+        public int SoNgayPhepMacDinh { get; set; } = 12;
 
         [Display(Name = "Chính sách phép năm")]
         public List<int> ChinhSachPhepNamIds { get; set; } = new List<int>();

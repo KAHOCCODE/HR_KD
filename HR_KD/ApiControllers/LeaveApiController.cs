@@ -532,7 +532,8 @@ namespace HR_KD.ApiControllers
                         maLoaiNgayNghi = l.MaLoaiNgayNghi,
                         tenLoai = l.TenLoai,
                         soNgayNghiToiDa = l.SoNgayNghiToiDa,
-                        soLanDangKyToiDa = l.SoLanDangKyToiDa
+                        soLanDangKyToiDa = l.SoLanDangKyToiDa,
+                        tinhVaoPhepNam = l.TinhVaoPhepNam // Thêm trường TinhVaoPhepNam
                     })
                     .ToListAsync();
 
@@ -542,29 +543,29 @@ namespace HR_KD.ApiControllers
                 {
                     // Đếm số ngày nghỉ đã đăng ký (NN1)
                     var soNgayDaDangKy = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && 
-                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                        .Where(n => n.MaNv == currentMaNv.Value &&
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi &&
                                n.MaTrangThai == "NN1")
                         .CountAsync();
 
                     // Đếm số ngày nghỉ đã duyệt (NN2)
                     var soNgayDaDuyet = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && 
-                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                        .Where(n => n.MaNv == currentMaNv.Value &&
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi &&
                                n.MaTrangThai == "NN2")
                         .CountAsync();
 
                     // Đếm số ngày nghỉ không lương đã duyệt (NN5)
                     var soNgayKhongLuong = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && 
-                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                        .Where(n => n.MaNv == currentMaNv.Value &&
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi &&
                                n.MaTrangThai == "NN5")
                         .CountAsync();
 
                     // Đếm số lần đăng ký đang chờ duyệt (NN1)
                     var soLanDangKy = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && 
-                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                        .Where(n => n.MaNv == currentMaNv.Value &&
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi &&
                                n.MaTrangThai == "NN1" &&
                                n.NgayNghi1.Year == DateTime.Now.Year)
                         .Select(n => n.MaDon)
@@ -573,8 +574,8 @@ namespace HR_KD.ApiControllers
 
                     // Đếm số lần đăng ký đã duyệt (NN2)
                     var soLanDaDuyet = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && 
-                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                        .Where(n => n.MaNv == currentMaNv.Value &&
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi &&
                                n.MaTrangThai == "NN2" &&
                                n.NgayNghi1.Year == DateTime.Now.Year)
                         .Select(n => n.MaDon)
@@ -583,8 +584,8 @@ namespace HR_KD.ApiControllers
 
                     // Đếm số lần đăng ký không lương đã duyệt (NN5)
                     var soLanKhongLuong = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && 
-                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
+                        .Where(n => n.MaNv == currentMaNv.Value &&
+                               n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi &&
                                n.MaTrangThai == "NN5" &&
                                n.NgayNghi1.Year == DateTime.Now.Year)
                         .Select(n => n.MaDon)
@@ -592,10 +593,10 @@ namespace HR_KD.ApiControllers
                         .CountAsync();
 
                     // Kiểm tra xem có vượt quá giới hạn không
-                    var vuotQuaSoNgay = leaveType.soNgayNghiToiDa.HasValue && 
+                    var vuotQuaSoNgay = leaveType.soNgayNghiToiDa.HasValue &&
                                        (soNgayDaDangKy + soNgayDaDuyet + soNgayKhongLuong) > leaveType.soNgayNghiToiDa.Value;
-                    
-                    var vuotQuaSoLan = leaveType.soLanDangKyToiDa.HasValue && 
+
+                    var vuotQuaSoLan = leaveType.soLanDangKyToiDa.HasValue &&
                                       (soLanDangKy + soLanDaDuyet + soLanKhongLuong) >= leaveType.soLanDangKyToiDa.Value;
 
                     // Vô hiệu hóa loại nghỉ nếu đã đạt đủ số lần đăng ký
@@ -607,6 +608,7 @@ namespace HR_KD.ApiControllers
                         leaveType.tenLoai,
                         leaveType.soNgayNghiToiDa,
                         leaveType.soLanDangKyToiDa,
+                        tinhVaoPhepNam = leaveType.tinhVaoPhepNam, // Thêm vào dữ liệu trả về
                         hienTai = new
                         {
                             soNgayDaDangKy,

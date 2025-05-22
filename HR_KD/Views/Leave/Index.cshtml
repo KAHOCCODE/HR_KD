@@ -1805,7 +1805,11 @@
             const typesResult = await typesResponse.json();
             const limitsResult = await limitsResponse.json();
 
-            console.log("Leave Type Limits:", JSON.stringify(limitsResult, null, 2)); // Thêm log để kiểm tra dữ liệu
+            console.log("Leave Type Limits:", JSON.stringify(limitsResult, null, 2));
+            // Thêm log để kiểm tra giá trị tinhVaoPhepNam
+            limitsResult.leaveTypes.forEach(limit => {
+                console.log(`Loại nghỉ ${limit.tenLoai}: tinhVaoPhepNam = ${limit.tinhVaoPhepNam}`);
+            });
 
             if (typesResult.success && limitsResult.success) {
                 const leaveTypeSelect = document.getElementById("leaveTypeSelect");
@@ -1916,13 +1920,12 @@
 
         const currentValue = leaveTypeSelect.value;
 
-        // Kiểm tra và enable/disable các loại nghỉ
         let hasEnabledLeaveTypes = false;
         Array.from(leaveTypeSelect.options).forEach(option => {
             if (option.value) {
                 const limit = leaveTypeLimits[option.value];
-                if (limit && limit.kiemTra.biVoHieuHoa) {
-                    // Vô hiệu hóa nếu đã đạt giới hạn
+                if (limit && (limit.kiemTra.biVoHieuHoa || (availableLeaveBalance === 0 && limit.tinhVaoPhepNam))) {
+                    // Vô hiệu hóa nếu đạt giới hạn hoặc (số dư phép năm bằng 0 và loại nghỉ phụ thuộc vào phép năm)
                     option.disabled = true;
                     option.style.opacity = "0.5";
                     let tooltipText = "Không thể đăng ký: ";
@@ -1933,9 +1936,12 @@
                         tooltipText += limit.kiemTra.vuotQuaSoNgay ? " và " : "";
                         tooltipText += `Đã đạt giới hạn ${limit.soLanDangKyToiDa} lần đăng ký`;
                     }
+                    if (availableLeaveBalance === 0 && limit.tinhVaoPhepNam) {
+                        tooltipText += (tooltipText.includes("Không thể đăng ký: ") ? " và " : "") + "Số dư phép năm đã hết";
+                    }
                     option.title = tooltipText;
                 } else {
-                    // Kích hoạt nếu chưa đạt giới hạn
+                    // Kích hoạt nếu chưa đạt giới hạn hoặc không phụ thuộc vào phép năm
                     option.disabled = false;
                     option.style.opacity = "1";
                     option.title = "";
@@ -1944,10 +1950,10 @@
             }
         });
 
-        // Nếu không còn số dư phép và không có loại nghỉ nào khác khả dụng, chọn "Nghỉ không lương"
+        // Nếu không còn số dư phép và không có loại nghỉ nào khả dụng, chọn "Nghỉ không lương"
         if (availableLeaveBalance === 0 && !hasEnabledLeaveTypes && unpaidLeaveTypeId) {
             const unpaidLeaveOption = leaveTypeSelect.querySelector(`option[value="${unpaidLeaveTypeId}"]`);
-            if (unpaidLeaveOption && !leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
+            if (unpaidLeaveOption && !leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa && !leaveTypeLimits[unpaidLeaveTypeId]?.tinhVaoPhepNam) {
                 leaveTypeSelect.value = unpaidLeaveTypeId;
                 const description = unpaidLeaveOption.dataset.description;
                 let descriptionHtml = description;
@@ -1960,15 +1966,14 @@
                 document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
                 document.getElementById("leaveTypeDescription").classList.add('show');
             } else if (unpaidLeaveOption && leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
-                // Hiển thị cảnh báo nếu "Nghỉ không lương" cũng bị vô hiệu hóa
                 Swal.fire({
                     icon: 'warning',
                     title: 'Không thể đăng ký',
                     text: 'Tất cả các loại nghỉ đều đã đạt giới hạn, bao gồm Nghỉ không lương.'
                 });
             }
-        } else if (currentValue && !leaveTypeLimits[currentValue]?.kiemTra.biVoHieuHoa) {
-            // Khôi phục giá trị hiện tại nếu nó chưa bị vô hiệu hóa
+        } else if (currentValue && !leaveTypeLimits[currentValue]?.kiemTra.biVoHieuHoa && (!leaveTypeLimits[currentValue]?.tinhVaoPhepNam || availableLeaveBalance > 0)) {
+            // Khôi phục giá trị hiện tại nếu nó chưa bị vô hiệu hóa và (không phụ thuộc vào phép năm hoặc còn số dư phép)
             leaveTypeSelect.value = currentValue;
             const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
             const description = selectedOption?.dataset?.description;
@@ -2143,8 +2148,17 @@
             }
 
             // Kiểm tra số dư phép và loại nghỉ
-            if (availableLeaveBalance === 0 && formData.leaveType !== unpaidLeaveTypeId.toString()) {
-                Swal.fire('Lỗi', 'Số dư phép năm đã hết! Chỉ có thể chọn Nghỉ không lương hoặc loại nghỉ khác.', 'error');
+            const selectedLeaveType = leaveTypeLimits[formData.leaveType];
+            if (
+                availableLeaveBalance === 0 &&
+                selectedLeaveType &&
+                selectedLeaveType.tinhVaoPhepNam === true // Chỉ chặn nếu loại nghỉ phụ thuộc vào phép năm
+            ) {
+                Swal.fire(
+                    'Lỗi',
+                    'Số dư phép năm đã hết! Chỉ có thể chọn các loại nghỉ không phụ thuộc vào phép năm (ví dụ: Nghỉ không lương, Nghỉ ốm).',
+                    'error'
+                );
                 return;
             }
 
@@ -2248,7 +2262,7 @@
                             dayElem.classList.add("holiday");
                         }
                     },
-                    onClose: async function(selectedDates) {
+                    onClose: async function (selectedDates) {
                         const validDates = selectedDates.filter(date => {
                             const dateTime = date.setHours(0, 0, 0, 0);
                             const isHoliday = expandedHolidays.some(h => h.date === dateTime);
@@ -2273,13 +2287,13 @@
                         if (leaveTypeSelect.value) {
                             try {
                                 const limitCheck = await checkLeaveLimits(parseInt(leaveTypeSelect.value), validDates.length);
-                                
+
                                 if (limitCheck.kiemTra.vuotQuaSoNgay) {
                                     Swal.fire({
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                      Bạn đã chọn ${validDates.length} ngày, vượt quá số ngày cho phép.`
+                                          Bạn đã chọn ${validDates.length} ngày, vượt quá số ngày cho phép.`
                                     });
                                     this.clear();
                                     document.getElementById("selectedDates").textContent = "";

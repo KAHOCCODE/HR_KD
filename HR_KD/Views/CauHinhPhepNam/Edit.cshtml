@@ -1,6 +1,6 @@
 ﻿@model HR_KD.ViewModels.CauHinhPhepNamViewModel
 @{
-    ViewData["Title"] = "Thêm mới cấu hình phép năm";
+    ViewData["Title"] = "Chỉnh sửa cấu hình phép năm";
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
 }
 
@@ -11,10 +11,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h4 class="text-2xl font-extrabold">
-                        <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Thêm mới cấu hình phép năm
+                        <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Chỉnh sửa cấu hình phép năm
                     </h4>
-                    <p class="text-blue-100 text-sm mt-1">Thiết lập cấu hình phép năm mới cho nhân viên</p>
+                    <p class="text-blue-100 text-sm mt-1">Cập nhật cấu hình phép năm cho nhân viên</p>
                 </div>
                 <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 rounded-full hover:bg-blue-50 transition-all duration-300 shadow-md">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -52,8 +52,8 @@
                             Các bước thực hiện
                         </h6>
                         <ol class="list-decimal pl-5 text-sm text-blue-700 space-y-1 mt-2">
-                            <li>Chọn năm cần cấu hình</li>
-                            <li>Thiết lập số ngày phép mặc định</li>
+                            <li>Chỉnh sửa năm cần cấu hình</li>
+                            <li>Cập nhật số ngày phép mặc định</li>
                             <li>Chọn các chính sách phép năm áp dụng</li>
                             <li>Lưu lại cấu hình</li>
                         </ol>
@@ -62,7 +62,7 @@
                     <div class="p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-600 mt-4">
                         <p class="text-sm text-yellow-800 flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Sau khi cấu hình được tạo và áp dụng, mọi thay đổi sẽ ảnh hưởng đến quyền lợi phép năm của nhân viên.
+                            Thay đổi cấu hình sẽ ảnh hưởng đến quyền lợi phép năm của nhân viên trong năm được chỉnh sửa.
                         </p>
                     </div>
                 </div>
@@ -79,13 +79,14 @@
                     </h5>
                 </div>
                 <div class="p-6">
-                    <form asp-action="Create" id="configForm">
+                    <form asp-action="Edit" asp-route-id="@Model.Id" id="configForm">
+                        <input type="hidden" asp-for="Id" />
                         <div asp-validation-summary="ModelOnly" class="p-4 bg-red-50 text-red-800 rounded-lg mb-4 hidden" role="alert"></div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <label asp-for="Nam" class="block text-sm font-semibold text-blue-900 mb-2">Năm</label>
-                                <input asp-for="Nam" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="yearInput" placeholder="2025" min="@DateTime.Now.Year" />
+                                <input asp-for="Nam" class="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="yearInput" placeholder="2025" />
                                 <span asp-validation-for="Nam" class="text-red-600 text-sm"></span>
                             </div>
                             <div>
@@ -127,8 +128,8 @@
                                                                id="chinhsach-@chinhSach.Id"
                                                                name="ChinhSachPhepNamIds"
                                                                value="@chinhSach.Id"
-                                                        @(chinhSach.IsSelected ? "checked" : "")
-                                                        @(!chinhSach.ConHieuLuc ? "disabled" : "") />
+                                                               @(chinhSach.IsSelected ? "checked" : "")
+                                                               @(!chinhSach.ConHieuLuc ? "disabled" : "") />
                                                     </td>
                                                     <td class="px-6 py-4">
                                                         <label for="chinhsach-@chinhSach.Id" class="cursor-pointer">@chinhSach.TenChinhSach</label>
@@ -171,11 +172,11 @@
                                     <ul class="space-y-2">
                                         <li class="flex justify-between text-sm text-blue-800">
                                             <span>Năm áp dụng:</span>
-                                            <span class="font-bold" id="summaryYear">-</span>
+                                            <span class="font-bold" id="summaryYear">@Model.Nam</span>
                                         </li>
                                         <li class="flex justify-between text-sm text-blue-800">
                                             <span>Số ngày phép mặc định:</span>
-                                            <span class="font-bold" id="summaryDays">-</span>
+                                            <span class="font-bold" id="summaryDays">@(Model.SoNgayPhepMacDinh > 0 ? Model.SoNgayPhepMacDinh + " ngày" : "-")</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -183,7 +184,7 @@
                                     <ul class="space-y-2">
                                         <li class="flex justify-between text-sm text-blue-800">
                                             <span>Chính sách đã chọn:</span>
-                                            <span class="font-bold" id="summaryPolicies">0</span>
+                                            <span class="font-bold" id="summaryPolicies">@(Model.ChinhSachPhepNamIds?.Count ?? 0)</span>
                                         </li>
                                         <li class="flex justify-between text-sm text-blue-800">
                                             <span>Tối đa có thể cộng thêm:</span>
@@ -258,10 +259,10 @@
                 const year = yearInput.value;
                 const defaultDays = defaultDaysInput.value;
 
-                if (!year || year < @DateTime.Now.Year) {
+                if (!year || year < 1900) {
                     e.preventDefault();
                     const errorDiv = document.querySelector('.alert');
-                    errorDiv.textContent = 'Vui lòng nhập năm hợp lệ (từ năm hiện tại trở đi)';
+                    errorDiv.textContent = 'Vui lòng nhập năm hợp lệ';
                     errorDiv.classList.remove('hidden');
                     return false;
                 }
@@ -275,12 +276,13 @@
                 }
             });
 
-            // Reset button handler
+             // Reset button handler
             configForm.querySelector('button[type="reset"]').addEventListener('click', function () {
                 setTimeout(updateSummary, 10);
                 const errorDiv = document.querySelector('.alert');
                 errorDiv.classList.add('hidden');
             });
+
 
             // Function to update summary panel
             function updateSummary() {
@@ -307,3 +309,4 @@
         });
     </script>
 }
+

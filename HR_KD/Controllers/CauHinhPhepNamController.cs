@@ -75,7 +75,6 @@ namespace HR_KD.Controllers
                 IsCurrentYear = cauHinhPhepNam.Nam == DateTime.Now.Year
             };
 
-            // Lấy tất cả chính sách hiện có
             var danhSachChinhSach = await _context.ChinhSachPhepNams
                 .OrderBy(c => c.SoNam)
                 .ToListAsync();
@@ -102,7 +101,6 @@ namespace HR_KD.Controllers
                 Nam = DateTime.Now.Year
             };
 
-            // Kiểm tra xem đã có cấu hình cho năm hiện tại chưa
             var existingConfig = await _context.CauHinhPhepNams
                 .FirstOrDefaultAsync(c => c.Nam == DateTime.Now.Year);
 
@@ -111,7 +109,6 @@ namespace HR_KD.Controllers
                 TempData["Warning"] = $"Đã tồn tại cấu hình cho năm {DateTime.Now.Year}. Bạn không thể tạo thêm cấu hình cho năm hiện tại.";
             }
 
-            // Lấy tất cả chính sách hiện có
             var danhSachChinhSach = await _context.ChinhSachPhepNams
                 .Where(c => c.ConHieuLuc)
                 .OrderBy(c => c.SoNam)
@@ -138,71 +135,49 @@ namespace HR_KD.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Kiểm tra xem đã có cấu hình cho năm này chưa
                 var existingConfig = await _context.CauHinhPhepNams
                     .FirstOrDefaultAsync(c => c.Nam == viewModel.Nam);
 
                 if (existingConfig != null)
                 {
                     ModelState.AddModelError("Nam", "Đã tồn tại cấu hình cho năm này");
-
-                    // Lấy lại danh sách chính sách
-                    var danhSachChinhSach = await _context.ChinhSachPhepNams
-                        .Where(c => c.ConHieuLuc)
-                        .OrderBy(c => c.SoNam)
-                        .ToListAsync();
-
-                    viewModel.DanhSachChinhSach = danhSachChinhSach.Select(c => new ChinhSachPhepNamListItem
-                    {
-                        Id = c.Id,
-                        TenChinhSach = c.TenChinhSach,
-                        SoNam = c.SoNam,
-                        SoNgayCongThem = c.SoNgayCongThem,
-                        ApDungTuNam = c.ApDungTuNam,
-                        ConHieuLuc = c.ConHieuLuc,
-                        IsSelected = viewModel.ChinhSachPhepNamIds?.Contains(c.Id) ?? false
-                    }).ToList();
-
-                    return View(viewModel);
                 }
-
-                var cauHinhPhepNam = new CauHinhPhepNam
+                else
                 {
-                    Nam = viewModel.Nam,
-                    SoNgayPhepMacDinh = viewModel.SoNgayPhepMacDinh,
-                    CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>()
-                };
-
-                _context.CauHinhPhepNams.Add(cauHinhPhepNam);
-                await _context.SaveChangesAsync();
-
-                // Tạo các liên kết với chính sách đã chọn
-                if (viewModel.ChinhSachPhepNamIds != null && viewModel.ChinhSachPhepNamIds.Count > 0)
-                {
-                    foreach (var chinhSachId in viewModel.ChinhSachPhepNamIds)
+                    var cauHinhPhepNam = new CauHinhPhepNam
                     {
-                        var cauHinhPhep_ChinhSach = new CauHinhPhep_ChinhSach
-                        {
-                            CauHinhPhepNamId = cauHinhPhepNam.Id,
-                            ChinhSachPhepNamId = chinhSachId
-                        };
+                        Nam = viewModel.Nam,
+                        SoNgayPhepMacDinh = viewModel.SoNgayPhepMacDinh,
+                        CauHinhPhep_ChinhSachs = new List<CauHinhPhep_ChinhSach>()
+                    };
 
-                        _context.CauHinhPhep_ChinhSachs.Add(cauHinhPhep_ChinhSach);
+                    _context.CauHinhPhepNams.Add(cauHinhPhepNam);
+                    await _context.SaveChangesAsync();
+
+                    if (viewModel.ChinhSachPhepNamIds != null && viewModel.ChinhSachPhepNamIds.Count > 0)
+                    {
+                        foreach (var chinhSachId in viewModel.ChinhSachPhepNamIds)
+                        {
+                            var cauHinhPhep_ChinhSach = new CauHinhPhep_ChinhSach
+                            {
+                                CauHinhPhepNamId = cauHinhPhepNam.Id,
+                                ChinhSachPhepNamId = chinhSachId
+                            };
+                            _context.CauHinhPhep_ChinhSachs.Add(cauHinhPhep_ChinhSach);
+                        }
+                        await _context.SaveChangesAsync();
                     }
 
-                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
-
-                return RedirectToAction(nameof(Index));
             }
 
-            // Nếu có lỗi, lấy lại danh sách chính sách
-            var allChinhSach = await _context.ChinhSachPhepNams
+            var danhSachChinhSach = await _context.ChinhSachPhepNams
                 .Where(c => c.ConHieuLuc)
                 .OrderBy(c => c.SoNam)
                 .ToListAsync();
 
-            viewModel.DanhSachChinhSach = allChinhSach.Select(c => new ChinhSachPhepNamListItem
+            viewModel.DanhSachChinhSach = danhSachChinhSach.Select(c => new ChinhSachPhepNamListItem
             {
                 Id = c.Id,
                 TenChinhSach = c.TenChinhSach,
@@ -233,7 +208,6 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
-            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
             if (cauHinhPhepNam.Nam == DateTime.Now.Year)
             {
                 TempData["Error"] = "Không thể chỉnh sửa cấu hình của năm hiện tại vì đang được sử dụng.";
@@ -250,7 +224,6 @@ namespace HR_KD.Controllers
                     .ToList()
             };
 
-            // Lấy tất cả chính sách hiện có
             var danhSachChinhSach = await _context.ChinhSachPhepNams
                 .OrderBy(c => c.SoNam)
                 .ToListAsync();
@@ -276,12 +249,19 @@ namespace HR_KD.Controllers
         {
             if (id != viewModel.Id)
             {
+                return BadRequest("ID không khớp với dữ liệu gửi lên.");
+            }
+
+            var currentCauHinh = await _context.CauHinhPhepNams
+                .Include(c => c.CauHinhPhep_ChinhSachs)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (currentCauHinh == null)
+            {
                 return NotFound();
             }
 
-            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
-            var currentCauHinh = await _context.CauHinhPhepNams.FindAsync(id);
-            if (currentCauHinh != null && currentCauHinh.Nam == DateTime.Now.Year)
+            if (currentCauHinh.Nam == DateTime.Now.Year)
             {
                 TempData["Error"] = "Không thể chỉnh sửa cấu hình của năm hiện tại vì đang được sử dụng.";
                 return RedirectToAction(nameof(Details), new { id = id });
@@ -291,65 +271,39 @@ namespace HR_KD.Controllers
             {
                 try
                 {
-                    // Kiểm tra xem có cấu hình khác cho năm này không
-                    var existingConfig = await _context.CauHinhPhepNams
-                        .FirstOrDefaultAsync(c => c.Nam == viewModel.Nam && c.Id != id);
-
-                    if (existingConfig != null)
+                    if (viewModel.Nam != currentCauHinh.Nam)
                     {
-                        ModelState.AddModelError("Nam", "Đã tồn tại cấu hình cho năm này");
+                        var existingConfig = await _context.CauHinhPhepNams
+                            .FirstOrDefaultAsync(c => c.Nam == viewModel.Nam && c.Id != id);
 
-                        // Lấy lại danh sách chính sách
-                        var danhSachChinhSach = await _context.ChinhSachPhepNams
-                            .OrderBy(c => c.SoNam)
-                            .ToListAsync();
-
-                        viewModel.DanhSachChinhSach = danhSachChinhSach.Select(c => new ChinhSachPhepNamListItem
+                        if (existingConfig != null)
                         {
-                            Id = c.Id,
-                            TenChinhSach = c.TenChinhSach,
-                            SoNam = c.SoNam,
-                            SoNgayCongThem = c.SoNgayCongThem,
-                            ApDungTuNam = c.ApDungTuNam,
-                            ConHieuLuc = c.ConHieuLuc,
-                            IsSelected = viewModel.ChinhSachPhepNamIds?.Contains(c.Id) ?? false
-                        }).ToList();
-
-                        return View(viewModel);
+                            ModelState.AddModelError("Nam", "Đã tồn tại cấu hình cho năm này");
+                            return await ReloadEditView(viewModel);
+                        }
                     }
 
-                    var cauHinhPhepNam = await _context.CauHinhPhepNams
-                        .Include(c => c.CauHinhPhep_ChinhSachs)
-                        .FirstOrDefaultAsync(c => c.Id == id);
+                    currentCauHinh.Nam = viewModel.Nam;
+                    currentCauHinh.SoNgayPhepMacDinh = viewModel.SoNgayPhepMacDinh;
 
-                    if (cauHinhPhepNam == null)
-                    {
-                        return NotFound();
-                    }
+                    _context.CauHinhPhep_ChinhSachs.RemoveRange(currentCauHinh.CauHinhPhep_ChinhSachs);
 
-                    cauHinhPhepNam.Nam = viewModel.Nam;
-                    cauHinhPhepNam.SoNgayPhepMacDinh = viewModel.SoNgayPhepMacDinh;
-
-                    // Xóa các liên kết cũ
-                    _context.CauHinhPhep_ChinhSachs.RemoveRange(cauHinhPhepNam.CauHinhPhep_ChinhSachs);
-
-                    // Tạo các liên kết mới
                     if (viewModel.ChinhSachPhepNamIds != null && viewModel.ChinhSachPhepNamIds.Count > 0)
                     {
                         foreach (var chinhSachId in viewModel.ChinhSachPhepNamIds)
                         {
-                            var cauHinhPhep_ChinhSach = new CauHinhPhep_ChinhSach
+                            var lienKet = new CauHinhPhep_ChinhSach
                             {
-                                CauHinhPhepNamId = cauHinhPhepNam.Id,
+                                CauHinhPhepNamId = currentCauHinh.Id,
                                 ChinhSachPhepNamId = chinhSachId
                             };
-
-                            _context.CauHinhPhep_ChinhSachs.Add(cauHinhPhep_ChinhSach);
+                            _context.CauHinhPhep_ChinhSachs.Add(lienKet);
                         }
                     }
 
-                    _context.Update(cauHinhPhepNam);
+                    _context.Update(currentCauHinh);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -357,31 +311,11 @@ namespace HR_KD.Controllers
                     {
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+                    throw;
                 }
-                return RedirectToAction(nameof(Index));
             }
 
-            // Nếu có lỗi, lấy lại danh sách chính sách
-            var allChinhSach = await _context.ChinhSachPhepNams
-                .OrderBy(c => c.SoNam)
-                .ToListAsync();
-
-            viewModel.DanhSachChinhSach = allChinhSach.Select(c => new ChinhSachPhepNamListItem
-            {
-                Id = c.Id,
-                TenChinhSach = c.TenChinhSach,
-                SoNam = c.SoNam,
-                SoNgayCongThem = c.SoNgayCongThem,
-                ApDungTuNam = c.ApDungTuNam,
-                ConHieuLuc = c.ConHieuLuc,
-                IsSelected = viewModel.ChinhSachPhepNamIds?.Contains(c.Id) ?? false
-            }).ToList();
-
-            return View(viewModel);
+            return await ReloadEditView(viewModel);
         }
 
         // GET: CauHinhPhepNam/Delete/5
@@ -402,7 +336,6 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
-            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
             if (cauHinhPhepNam.Nam == DateTime.Now.Year)
             {
                 TempData["Error"] = "Không thể xóa cấu hình của năm hiện tại vì đang được sử dụng.";
@@ -436,19 +369,14 @@ namespace HR_KD.Controllers
                 return NotFound();
             }
 
-            // Kiểm tra xem đây có phải là cấu hình của năm hiện tại không
             if (cauHinhPhepNam.Nam == DateTime.Now.Year)
             {
                 TempData["Error"] = "Không thể xóa cấu hình của năm hiện tại vì đang được sử dụng.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Xóa các liên kết trước
             _context.CauHinhPhep_ChinhSachs.RemoveRange(cauHinhPhepNam.CauHinhPhep_ChinhSachs);
-
-            // Sau đó xóa cấu hình
             _context.CauHinhPhepNams.Remove(cauHinhPhepNam);
-
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
@@ -459,10 +387,24 @@ namespace HR_KD.Controllers
             return _context.CauHinhPhepNams.Any(e => e.Id == id);
         }
 
-        // Kiểm tra xem cấu hình có phải là của năm hiện tại không
-        private bool IsCurrentYearConfig(int nam)
+        private async Task<IActionResult> ReloadEditView(CauHinhPhepNamViewModel viewModel)
         {
-            return nam == DateTime.Now.Year;
+            var danhSachChinhSach = await _context.ChinhSachPhepNams
+                .OrderBy(c => c.SoNam)
+                .ToListAsync();
+
+            viewModel.DanhSachChinhSach = danhSachChinhSach.Select(c => new ChinhSachPhepNamListItem
+            {
+                Id = c.Id,
+                TenChinhSach = c.TenChinhSach,
+                SoNam = c.SoNam,
+                SoNgayCongThem = c.SoNgayCongThem,
+                ApDungTuNam = c.ApDungTuNam,
+                ConHieuLuc = c.ConHieuLuc,
+                IsSelected = viewModel.ChinhSachPhepNamIds?.Contains(c.Id) ?? false
+            }).ToList();
+
+            return View(viewModel);
         }
     }
 }

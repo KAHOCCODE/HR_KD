@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HR_KD.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using HR_KD.Data;
 
 namespace HR_KD.Controllers
 {
+    [Authorize(Roles = "DIRECTOR")]
     public class AttendanceSettingController : Controller
     {
         private readonly HrDbContext _context; // Replace with your actual DbContext

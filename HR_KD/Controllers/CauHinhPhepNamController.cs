@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using HR_KD.Data;
 using HR_KD.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HR_KD.Controllers
 {
+    [Authorize(Roles = "DIRECTOR")]
     public class CauHinhPhepNamController : Controller
     {
         private readonly HrDbContext _context;

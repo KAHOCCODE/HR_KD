@@ -7,11 +7,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using HR_KD.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HR_KD.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "DIRECTOR")]
     public class PayrollSettingApiController : ControllerBase
     {
         private readonly HrDbContext _context;

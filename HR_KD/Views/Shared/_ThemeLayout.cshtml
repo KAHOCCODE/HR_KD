@@ -1,3 +1,4 @@
+```cshtml
 @using HR_KD.Data
 @using Microsoft.AspNetCore.Http
 @inject IHttpContextAccessor HttpContextAccessor
@@ -212,18 +213,15 @@
                                 <li><a href="~/Attendance/Attendance"><i class="fa fa-list"></i> Danh sách chấm công</a></li>
                                 <!-- Restricted to EMPLOYEE_MANAGER role -->
                                 @if (User.IsInRole("DIRECTOR"))
-                                { 
-                                        <li><a href="~/AttendanceManager/Manager"><i class="fa fa-calendar"></i> Quản lý chắm công (cấp quản lý)</a></li>
-                                        <li><a href="~/AttendanceManager/Director"><i class="fa fa-calendar"></i> Quản lý chắm công (cấp giám đốc)</a></li>
+                                {
+                                    <li><a href="~/AttendanceManager/Manager"><i class="fa fa-calendar"></i> Quản lý chấm công (cấp quản lý)</a></li>
+                                    <li><a href="~/AttendanceManager/Director"><i class="fa fa-calendar"></i> Quản lý chấm công (cấp giám đốc)</a></li>
                                     <li><a href="~/AttendanceRequestManager/Index"><i class="fa fa-file-text"></i> Yêu cầu chấm công</a></li>
                                 }
                                 else if (User.IsInRole("EMPLOYEE_MANAGER"))
-                                { 
-                                    
-                                        <li><a href="~/AttendanceManager/Index"><i class="fa fa-calendar"></i> Quản lý chắm công (cấp quản lý)</a></li>
+                                {
+                                    <li><a href="~/AttendanceManager/Index"><i class="fa fa-calendar"></i> Quản lý chấm công (cấp quản lý)</a></li>
                                 }
-
-
                             </ul>
                         </li>
                         <!-- Updated Ngày lễ Dropdown -->
@@ -234,15 +232,13 @@
                                 <li><a href="~/Holiday/Holiday"><i class="fa fa-calendar"></i> Danh sách ngày lễ</a></li>
                                 @if (User.IsInRole("DIRECTOR"))
                                 {
-                                        <li><a href="~/HolidayManager/Index"><i class="fa fa-file-text"></i> Duyệt ngày lễ</a></li>
-                                        <li><a href="~/HolidayManager/Requests"><i class="fa fa-file-text"></i> Duyệt yêu cầu mở ngày lễ</a></li>
+                                    <li><a href="~/HolidayManager/Index"><i class="fa fa-file-text"></i> Duyệt ngày lễ</a></li>
+                                    <li><a href="~/HolidayManager/Requests"><i class="fa fa-file-text"></i> Duyệt yêu cầu mở ngày lễ</a></li>
                                 }
                                 else if (User.IsInRole("EMPLOYEE_MANAGER"))
-                                { 
-                                  <li><a href="~/Holiday/Index"><i class="fa fa-calendar"></i> Tạo ngày lễ</a></li>
+                                {
+                                    <li><a href="~/Holiday/Index"><i class="fa fa-calendar"></i> Tạo ngày lễ</a></li>
                                 }
-                                
-                               
                             </ul>
                         </li>
 
@@ -251,13 +247,11 @@
                             <ul style="display: none;">
                                 <!-- Accessible to all users -->
                                 <li><a href="~/Leave/Index"><i class="fa fa-list"></i> Danh sách nghỉ phép</a></li>
-                                
                                 <!-- Restricted to EMPLOYEE_MANAGER role -->
                                 @if (User.IsInRole("EMPLOYEE_MANAGER"))
                                 {
                                     <li><a href="~/LeaveManager/Index"><i class="fa fa-tasks"></i> Quản lý nghỉ phép</a></li>
                                 }
-                                
                                 <!-- Restricted to DIRECTOR role -->
                                 @if (User.IsInRole("DIRECTOR"))
                                 {
@@ -327,39 +321,38 @@
                             <ul style="display: none;">
                                 <li><a href="~/Reports/Employee"><i class="fa fa-users"></i> Báo cáo nhân viên</a></li>
                                 <li><a href="~/Reports/Salary"><i class="fa fa-dollar-sign"></i> Báo cáo lương</a></li>
-                                
                                 <!-- Restricted to DIRECTOR role -->
                                 @if (User.IsInRole("DIRECTOR"))
                                 {
-                                   <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
-                                   <li><a href="~/AttendanceReport/Director"><i class="fa fa-check-circle"></i> Báo cáo chấm công nhân viên</a></li>
+                                    <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
+                                    <li><a href="~/AttendanceReport/Director"><i class="fa fa-check-circle"></i> Báo cáo chấm công nhân viên</a></li>
                                 }
                                 else if (User.IsInRole("EMPLOYEE_MANAGER"))
-                                { 
+                                {
                                     <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
                                     <li><a href="~/AttendanceReport/Manager"><i class="fa fa-tasks"></i> Báo cáo chấm công nhân viên</a></li>
-								}
-                                else if (User.IsInRole("EMPLOYEE"))
-                                { 
-                                     <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
                                 }
-                                
+                                else if (User.IsInRole("EMPLOYEE"))
+                                {
+                                    <li><a href="~/AttendanceReport/Index"><i class="fa fa-bed"></i> Báo cáo chấm công</a></li>
+                                }
                             </ul>
                         </li>
 
-                        <li class="submenu">
-                            <a href="#"><i class="fa fa-cog"></i> <span>Cài Đặt</span> <span class="menu-arrow"></span></a>
-                            <ul style="display: none;">
-                                <li><a href="~/PayrollSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình lương</a></li>
-                                <li><a href="~/LoaiNgayNghi"><i class="fa fa-cog"></i> Cài đặt cấu hình loại ngày nghỉ</a></li>
-                                @if (User.IsInRole("DIRECTOR"))
-                                {
-                                    <li><a href="~/AttendanceSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình chắm công</a></li>
-                                }
-                                <li><a href="~/ChinhSachPhepNam"><i class="fa fa-cog"></i> Cài đặt cấu hình chính sách ngày phép</a></li>
-                                <li><a href="~/CauHinhPhepnam"><i class="fa fa-cog"></i> Cài đặt cấu hình phép năm</a></li>
-                            </ul>
-                        </li>
+                        <!-- Cài Đặt (Chỉ hiển thị cho DIRECTOR) -->
+                        @if (User.IsInRole("DIRECTOR"))
+                        {
+                            <li class="submenu">
+                                <a href="#"><i class="fa fa-cog"></i> <span>Cài Đặt</span> <span class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    <li><a href="~/PayrollSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình lương</a></li>
+                                    <li><a href="~/LoaiNgayNghi"><i class="fa fa-cog"></i> Cài đặt cấu hình loại ngày nghỉ</a></li>
+                                    <li><a href="~/AttendanceSetting"><i class="fa fa-cog"></i> Cài đặt cấu hình chấm công</a></li>
+                                    <li><a href="~/ChinhSachPhepNam"><i class="fa fa-cog"></i> Cài đặt cấu hình chính sách ngày phép</a></li>
+                                    <li><a href="~/CauHinhPhepnam"><i class="fa fa-cog"></i> Cài đặt cấu hình phép năm</a></li>
+                                </ul>
+                            </li>
+                        }
 
                         <li>
                             <a href="~/Calendar"><i class="fa fa-calendar"></i> <span>Lịch công tác</span></a>
@@ -421,3 +414,4 @@
 </body>
 
 </html>
+```

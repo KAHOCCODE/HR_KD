@@ -12,7 +12,6 @@ namespace HR_KD.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "DIRECTOR")]
     public class LoaiNgayNghiController : ControllerBase
     {
         private readonly HrDbContext _context;

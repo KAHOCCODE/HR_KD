@@ -1426,6 +1426,38 @@
             background-color: #e8f0fe;
             transform: translateX(5px);
         }
+
+    #selectedFilesPreview {
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+
+        #selectedFilesPreview div {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+            #selectedFilesPreview div:last-child {
+                border-bottom: none;
+            }
+
+        #selectedFilesPreview .fas {
+            margin-right: 10px;
+            color: #555;
+        }
+
+        #selectedFilesPreview button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: red;
+            font-size: 16px;
+        }
+
 </style>
 
 <div class="leave-dashboard-enhanced bg-white mt-4">
@@ -1773,12 +1805,13 @@
             const typesResult = await typesResponse.json();
             const limitsResult = await limitsResponse.json();
 
+            console.log("Leave Type Limits:", JSON.stringify(limitsResult, null, 2)); // Thêm log để kiểm tra dữ liệu
+
             if (typesResult.success && limitsResult.success) {
                 const leaveTypeSelect = document.getElementById("leaveTypeSelect");
                 const leaveTypeDescription = document.getElementById("leaveTypeDescription");
                 leaveTypeSelect.innerHTML = '<option value="">Chọn loại nghỉ</option>';
 
-                // Lưu thông tin giới hạn
                 leaveTypeLimits = {};
                 limitsResult.leaveTypes.forEach(limit => {
                     leaveTypeLimits[limit.maLoaiNgayNghi] = limit;
@@ -1790,15 +1823,10 @@
                     option.textContent = leaveType.tenLoai;
                     option.dataset.description = leaveType.moTa || "Không có mô tả";
 
-                    // Kiểm tra và thêm tooltip cho các loại nghỉ đã đạt giới hạn
                     const limit = leaveTypeLimits[leaveType.maLoaiNgayNghi];
                     if (limit && limit.kiemTra.biVoHieuHoa) {
                         let tooltipText = "Không thể đăng ký: ";
-                        // if (limit.kiemTra.vuotQuaSoNgay) {
-                        //     tooltipText += `Đã đạt giới hạn ${limit.soNgayNghiToiDa} ngày`;
-                        // }
                         if (limit.kiemTra.vuotQuaSoLan) {
-                            if (limit.kiemTra.vuotQuaSoNgay) /* tooltipText += " và " */;
                             tooltipText += `Đã đạt giới hạn ${limit.soLanDangKyToiDa} lần đăng ký`;
                         }
                         option.title = tooltipText;
@@ -1808,6 +1836,7 @@
 
                     if (leaveType.tenLoai.toLowerCase().includes('không lương')) {
                         unpaidLeaveTypeId = leaveType.maLoaiNgayNghi;
+                        console.log("Unpaid Leave Type ID:", unpaidLeaveTypeId); // Log để kiểm tra unpaidLeaveTypeId
                     }
 
                     leaveTypeSelect.appendChild(option);
@@ -1885,93 +1914,77 @@
         const leaveTypeSelect = document.getElementById("leaveTypeSelect");
         if (!leaveTypeSelect) return;
 
-        // Lưu giá trị hiện tại của dropdown trước khi cập nhật
         const currentValue = leaveTypeSelect.value;
 
-        if (availableLeaveBalance === 0) {
-            // Kiểm tra xem có loại nghỉ nào khác ngoài nghỉ không lương còn có thể chọn không
-            let hasEnabledLeaveTypes = false;
-            
-            // Disable các option khác, chỉ enable loại nghỉ không lương
-            Array.from(leaveTypeSelect.options).forEach(option => {
-                if (option.value && option.value !== unpaidLeaveTypeId.toString()) {
-                    const limit = leaveTypeLimits[option.value];
-                    if (limit && limit.kiemTra.biVoHieuHoa) {
-                        option.disabled = true;
-                        option.style.opacity = "0.5";
-                    } else {
-                        option.disabled = false;
-                        option.style.opacity = "1";
-                        hasEnabledLeaveTypes = true;
-                    }
-                }
-            });
-
-            // Kiểm tra giới hạn cho loại nghỉ không lương
-            const unpaidLeaveOption = leaveTypeSelect.querySelector(`option[value="${unpaidLeaveTypeId}"]`);
-            if (unpaidLeaveOption) {
-                const limit = leaveTypeLimits[unpaidLeaveTypeId];
+        // Kiểm tra và enable/disable các loại nghỉ
+        let hasEnabledLeaveTypes = false;
+        Array.from(leaveTypeSelect.options).forEach(option => {
+            if (option.value) {
+                const limit = leaveTypeLimits[option.value];
                 if (limit && limit.kiemTra.biVoHieuHoa) {
-                    unpaidLeaveOption.disabled = true;
-                    unpaidLeaveOption.style.opacity = "0.5";
+                    // Vô hiệu hóa nếu đã đạt giới hạn
+                    option.disabled = true;
+                    option.style.opacity = "0.5";
+                    let tooltipText = "Không thể đăng ký: ";
+                    if (limit.kiemTra.vuotQuaSoNgay) {
+                        tooltipText += `Đã đạt giới hạn ${limit.soNgayNghiToiDa} ngày`;
+                    }
+                    if (limit.kiemTra.vuotQuaSoLan) {
+                        tooltipText += limit.kiemTra.vuotQuaSoNgay ? " và " : "";
+                        tooltipText += `Đã đạt giới hạn ${limit.soLanDangKyToiDa} lần đăng ký`;
+                    }
+                    option.title = tooltipText;
                 } else {
-                    unpaidLeaveOption.disabled = false;
-                    unpaidLeaveOption.style.opacity = "1";
+                    // Kích hoạt nếu chưa đạt giới hạn
+                    option.disabled = false;
+                    option.style.opacity = "1";
+                    option.title = "";
+                    hasEnabledLeaveTypes = true;
                 }
             }
+        });
 
-            // Chỉ tự động chọn loại nghỉ không lương nếu không có loại nghỉ nào khác có thể chọn
-            if (!hasEnabledLeaveTypes && !leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
+        // Nếu không còn số dư phép và không có loại nghỉ nào khác khả dụng, chọn "Nghỉ không lương"
+        if (availableLeaveBalance === 0 && !hasEnabledLeaveTypes && unpaidLeaveTypeId) {
+            const unpaidLeaveOption = leaveTypeSelect.querySelector(`option[value="${unpaidLeaveTypeId}"]`);
+            if (unpaidLeaveOption && !leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
                 leaveTypeSelect.value = unpaidLeaveTypeId;
-                // Hiển thị mô tả cho loại nghỉ không lương
-                const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
-                const description = selectedOption?.dataset?.description;
-                if (description) {
-                    const limit = leaveTypeLimits[unpaidLeaveTypeId];
-                    let descriptionHtml = description;
-                    if (limit) {
-                        descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
-                        descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
-                        descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
-                    }
-                    document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
-                    document.getElementById("leaveTypeDescription").classList.add('show');
+                const description = unpaidLeaveOption.dataset.description;
+                let descriptionHtml = description;
+                const limit = leaveTypeLimits[unpaidLeaveTypeId];
+                if (limit) {
+                    descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
+                    descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
+                    descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
                 }
+                document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
+                document.getElementById("leaveTypeDescription").classList.add('show');
+            } else if (unpaidLeaveOption && leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
+                // Hiển thị cảnh báo nếu "Nghỉ không lương" cũng bị vô hiệu hóa
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Không thể đăng ký',
+                    text: 'Tất cả các loại nghỉ đều đã đạt giới hạn, bao gồm Nghỉ không lương.'
+                });
+            }
+        } else if (currentValue && !leaveTypeLimits[currentValue]?.kiemTra.biVoHieuHoa) {
+            // Khôi phục giá trị hiện tại nếu nó chưa bị vô hiệu hóa
+            leaveTypeSelect.value = currentValue;
+            const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+            const description = selectedOption?.dataset?.description;
+            if (description) {
+                const limit = leaveTypeLimits[currentValue];
+                let descriptionHtml = description;
+                if (limit) {
+                    descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
+                    descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
+                    descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
+                }
+                document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
+                document.getElementById("leaveTypeDescription").classList.add('show');
             }
         } else {
-            // Enable tất cả các option chưa đạt giới hạn
-            Array.from(leaveTypeSelect.options).forEach(option => {
-                if (option.value) {
-                    const limit = leaveTypeLimits[option.value];
-                    if (limit && limit.kiemTra.biVoHieuHoa) {
-                        option.disabled = true;
-                        option.style.opacity = "0.5";
-                    } else {
-                        option.disabled = false;
-                        option.style.opacity = "1";
-                    }
-                }
-            });
-            // Khôi phục giá trị hiện tại (hoặc giữ nguyên nếu đã chọn)
-            if (currentValue && !leaveTypeLimits[currentValue]?.kiemTra.biVoHieuHoa) {
-                leaveTypeSelect.value = currentValue;
-                // Cập nhật mô tả nếu có giá trị được chọn
-                const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
-                const description = selectedOption?.dataset?.description;
-                if (description) {
-                    const limit = leaveTypeLimits[currentValue];
-                    let descriptionHtml = description;
-                    if (limit) {
-                        descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
-                        descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
-                        descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
-                    }
-                    document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
-                    document.getElementById("leaveTypeDescription").classList.add('show');
-                }
-            } else {
-                document.getElementById("leaveTypeDescription").classList.remove('show');
-            }
+            document.getElementById("leaveTypeDescription").classList.remove('show');
         }
     }
 
@@ -2610,25 +2623,16 @@
             if (result?.success && Array.isArray(result.leaveHistory)) {
                 console.log(`Nhận được ${result.leaveHistory.length} bản ghi từ API.`);
 
-                // Kiểm tra chi tiết từng bản ghi
                 result.leaveHistory.forEach((item, index) => {
                     console.log(`Bản ghi ${index + 1}:`, JSON.stringify(item, null, 2));
                 });
 
                 leaveHistory = result.leaveHistory;
 
-                // Kiểm tra các trường dữ liệu quan trọng
-                const sampleRecord = leaveHistory[0];
-                if (sampleRecord) {
-                    console.log("Kiểm tra trường dữ liệu quan trọng:");
-                    console.log("- id:", sampleRecord.id);
-                    console.log("- ngayNghi:", sampleRecord.ngayNghi);
-                    console.log("- trangThai:", sampleRecord.trangThai);
-                    console.log("- tenLoai:", sampleRecord.tenLoai);
-                    console.log("- lyDo:", sampleRecord.lyDo);
-                }
-
-                tabData.pending.filteredData = leaveHistory.filter(item => item.trangThai === "Chờ duyệt");
+                // Cập nhật lọc dữ liệu cho tab "Chờ duyệt" để bao gồm cả NN6
+                tabData.pending.filteredData = leaveHistory.filter(item =>
+                    item.trangThai === "Chờ duyệt" || item.trangThai === "Chờ bổ sung"
+                );
                 tabData.approved.filteredData = leaveHistory.filter(item => item.trangThai === "Đã duyệt");
                 tabData.rejected.filteredData = leaveHistory.filter(item => item.trangThai === "Từ chối");
                 tabData.canceled.filteredData = leaveHistory.filter(item => item.trangThai === "Đã hủy");
@@ -2763,18 +2767,25 @@
                     const row = document.createElement("tr");
                     if (tabId === 'pending') {
                         const cancelButton = `<button class="btn-cancel" data-id="${ngayNghis[0]?.id}">
-                                                <i class="fas fa-times-circle"></i>
-                                                <span>Hủy đơn</span>
-                                            </button>`;
+                                <i class="fas fa-times-circle"></i>
+                                <span>Hủy đơn</span>
+                             </button>`;
+                        const supplementButton = item.trangThai === "Chờ bổ sung"
+                            ? `<button class="btn-supplement" data-id="${ngayNghis[0]?.id}">
+                   <i class="fas fa-upload"></i>
+                   <span>Bổ sung</span>
+               </button>`
+                            : '';
                         row.innerHTML = `
-                                    <td>${tenLoai}</td>
-                                    <td>${datesDropdownHtml}</td>
-                                    <td>${lyDoTooltip}</td>
-                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                                    <td>${fileDisplayHtml}</td>
-                                    <td>${cancelButton}</td>
-                                `;
-                    } else if (tabId === 'canceled') {
+            <td>${tenLoai}</td>
+            <td>${datesDropdownHtml}</td>
+            <td>${lyDoTooltip}</td>
+            <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
+            <td>${fileDisplayHtml}</td>
+            <td>${cancelButton} ${supplementButton}</td>
+        `;
+                    }
+                    else if (tabId === 'canceled') {
                         const lyDoHuy = item.lyDoHuy || item.LyDoHuy || "Không có lý do hủy";
                         const lyDoHuyTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDoHuy}">${truncateText(lyDoHuy, 23)}</div>`;
                         row.innerHTML = `
@@ -2825,6 +2836,13 @@
                 });
             });
 
+            document.querySelectorAll(`#${tableBodyId} .btn-supplement`).forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const leaveId = this.getAttribute('data-id');
+                    handleSupplementAction(leaveId);
+                });
+            });
+
             document.querySelectorAll(`#${tableBodyId} .file-link`).forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -2861,29 +2879,29 @@
             return '<span class="text-muted">Không có</span>';
         }
 
-        const files = fileDinhKem.split('-');
-        if (files.length === 0 || (files.length === 1 && !files[0].trim())) {
+        const files = fileDinhKem.split('-').filter(f => f.trim());
+        if (files.length === 0) {
             return '<span class="text-muted">Không có</span>';
         }
 
         if (files.length === 1) {
             return `<a href="#" class="file-link" data-path="/Uploads/${files[0]}">
                         <i class="fas fa-file"></i>${truncateFileName(files[0])}
-                                    </a>`;
+                    </a>`;
         } else {
             const uniqueId = `dropdown-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             let fileListHtml = `<div class="dropdown">
                                 <button class="file-link dropdown-toggle" type="button"
-                                                        id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-paperclip"></i>${files.length} files
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
             files.forEach(file => {
                 fileListHtml += `<li>
-                                                  <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
-                                    <i class="fas fa-file"></i>${truncateFileName(file)}
-                                                  </a>
-                                                </li>`;
+                                    <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
+                                        <i class="fas fa-file"></i>${truncateFileName(file)}
+                                    </a>
+                                 </li>`;
             });
             fileListHtml += `</ul></div>`;
             return fileListHtml;
@@ -3057,6 +3075,179 @@
         }
     }
 
+    // Helper functions
+    function getFileIcon(fileName) {
+        const extension = fileName.split('.').pop().toLowerCase();
+        const iconMap = {
+            'pdf': 'fas fa-file-pdf',
+            'doc': 'fas fa-file-word',
+            'docx': 'fas fa-file-word',
+            'xls': 'fas fa-file-excel',
+            'xlsx': 'fas fa-file-excel',
+            'jpg': 'fas fa-file-image',
+            'jpeg': 'fas fa-file-image',
+            'png': 'fas fa-file-image',
+            'gif': 'fas fa-file-image',
+            'txt': 'fas fa-file-alt',
+            'zip': 'fas fa-file-archive',
+            'rar': 'fas fa-file-archive'
+        };
+        return `<i class="${iconMap[extension] || 'fas fa-file'}"></i>`;
+    }
+
+    function truncateFileName(fileName) {
+        const maxLength = 15;
+        if (fileName.length <= maxLength) return fileName;
+        const extension = fileName.split('.').pop();
+        const nameWithoutExt = fileName.substring(0, fileName.length - extension.length - 1);
+        if (nameWithoutExt.length <= maxLength - 5) return fileName;
+        return `${nameWithoutExt.substring(0, maxLength - 5)}...${extension}`;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Main function
+    async function handleSupplementAction(leaveId) {
+        try {
+            let selectedFiles = [];
+
+            const { value: files } = await Swal.fire({
+                title: 'Bổ sung tài liệu',
+                html: `
+                    <input type="file" id="supplementFiles" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                    <div id="selectedFilesPreview" style="margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background-color: #f9f9f9;"></div>
+                    <p style="color: gray; font-size: 12px; margin-top: 5px;">Định dạng được phép: PDF, DOC, DOCX, JPG, JPEG, PNG (Tối đa 10MB/file)</p>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Gửi',
+                cancelButtonText: 'Hủy',
+                didOpen: () => {
+                    const fileInput = document.getElementById('supplementFiles');
+                    const selectedFilesPreview = document.getElementById('selectedFilesPreview');
+
+                    const updateFilePreview = () => {
+                        selectedFilesPreview.innerHTML = '';
+                        if (selectedFiles.length > 0) {
+                            selectedFiles.forEach((file, index) => {
+                                const fileItem = document.createElement('div');
+                                fileItem.style.display = 'flex';
+                                fileItem.style.alignItems = 'center';
+                                fileItem.style.marginBottom = '5px';
+
+                                const fileIcon = document.createElement('span');
+                                fileIcon.innerHTML = getFileIcon(file.name);
+                                fileIcon.style.marginRight = '10px';
+
+                                const fileName = document.createElement('span');
+                                fileName.textContent = truncateFileName(file.name);
+                                fileName.style.flexGrow = '1';
+
+                                const fileSize = document.createElement('span');
+                                fileSize.textContent = formatFileSize(file.size);
+                                fileSize.style.marginRight = '10px';
+
+                                const removeButton = document.createElement('button');
+                                removeButton.innerHTML = '<i class="fas fa-times"></i>';
+                                removeButton.style.background = 'none';
+                                removeButton.style.border = 'none';
+                                removeButton.style.cursor = 'pointer';
+                                removeButton.style.color = 'red';
+                                removeButton.onclick = () => {
+                                    selectedFiles.splice(index, 1);
+                                    updateFilePreview();
+                                };
+
+                                fileItem.appendChild(fileIcon);
+                                fileItem.appendChild(fileName);
+                                fileItem.appendChild(fileSize);
+                                fileItem.appendChild(removeButton);
+                                selectedFilesPreview.appendChild(fileItem);
+                            });
+                        } else {
+                            selectedFilesPreview.innerHTML = '<p style="color: gray;">Chưa chọn file nào.</p>';
+                        }
+                    };
+
+                    fileInput.addEventListener('change', () => {
+                        const newFiles = Array.from(fileInput.files);
+                        const maxSize = 10 * 1024 * 1024;
+                        let valid = true;
+
+                        newFiles.forEach(file => {
+                            if (file.size > maxSize) {
+                                Swal.showValidationMessage(`File ${file.name} vượt quá giới hạn 10MB!`);
+                                valid = false;
+                            }
+                        });
+
+                        if (valid) {
+                            newFiles.forEach(newFile => {
+                                if (!selectedFiles.some(f => f.name === newFile.name && f.size === newFile.size && f.lastModified === newFile.lastModified)) {
+                                    selectedFiles.push(newFile);
+                                }
+                            });
+                            updateFilePreview();
+                            fileInput.value = '';
+                        } else {
+                            fileInput.value = '';
+                        }
+                    });
+
+                    updateFilePreview();
+                },
+                preConfirm: () => {
+                    if (selectedFiles.length === 0) {
+                        Swal.showValidationMessage('Vui lòng chọn ít nhất một file!');
+                        return false;
+                    }
+                    return selectedFiles;
+                }
+            });
+
+            if (files) {
+                const formData = new FormData();
+                files.forEach(file => {
+                    formData.append('files', file);
+                });
+                formData.append('leaveId', leaveId);
+
+                const response = await fetch('/api/Leave/SupplementLeave', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: 'Tài liệu bổ sung đã được gửi.',
+                        timer: 1500
+                    });
+                    window.location.reload();
+                } else {
+                    throw new Error(result.message || 'Không thể gửi tài liệu bổ sung.');
+                }
+            }
+        } catch (error) {
+            console.error('Lỗi khi bổ sung tài liệu:', error);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: error.message || 'Đã xảy ra lỗi, vui lòng thử lại.'
+            });
+        }
+    }
+
     function formatDate(dateString) {
         if (!dateString) return '';
         try {
@@ -3076,6 +3267,8 @@
         switch (status) {
             case 'Chờ duyệt':
                 return 'status-badge status-pending';
+            case 'Chờ bổ sung':
+                return 'status-badge status-pending'; // Sử dụng cùng lớp với "Chờ duyệt" hoặc tạo lớp mới nếu cần
             case 'Đã duyệt':
                 return 'status-badge status-approved';
             case 'Từ chối':

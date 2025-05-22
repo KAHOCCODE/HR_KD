@@ -185,34 +185,34 @@
         }
 
         .leave-status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            border: 1px solid #bbdefb;
         }
 
         .leave-status-approved {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background-color: #e8f5e9;
+            color: #1b5e20;
+            border: 1px solid #c8e6c9;
         }
 
         .leave-status-rejected {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background-color: #ffebee;
+            color: #b71c1c;
+            border: 1px solid #ffcdd2;
         }
 
         .leave-status-canceled {
-            background-color: #e9ecef;
-            color: #6c757d;
-            border: 1px solid #dee2e6;
+            background-color: #f5f5f5;
+            color: #424242;
+            border: 1px solid #e0e0e0;
         }
 
         /* Thêm style cho trạng thái không hưởng lương */
         .leave-status-no-salary {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background-color: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffe0b2;
         }
 
         /* Style cho dòng chứa trạng thái không hưởng lương */
@@ -506,11 +506,9 @@
         }
 
             #detailsModal .detail-value.status {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                min-width: 180px;
-                max-width: 100%;
                 padding: 8px 32px;
                 border-radius: 8px;
                 font-weight: 600;
@@ -519,31 +517,44 @@
                 background-clip: padding-box;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 word-break: break-word;
-                white-space: normal;
+                white-space: nowrap;
+                margin: 0 auto;
             }
 
             #detailsModal .detail-value.status-pending {
-                background-color: #fff3cd;
-                color: #856404;
-                border: 1px solid #ffeeba;
+                background-color: #e3f2fd;
+                color: #0d47a1;
+                border: 1px solid #bbdefb;
             }
 
             #detailsModal .detail-value.status-approved {
-                background-color: #d4edda;
-                color: #155724;
-                border: 1px solid #c3e6cb;
+                background-color: #e8f5e9;
+                color: #1b5e20;
+                border: 1px solid #c8e6c9;
             }
 
             #detailsModal .detail-value.status-rejected {
-                background-color: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
+                background-color: #ffebee;
+                color: #b71c1c;
+                border: 1px solid #ffcdd2;
             }
 
             #detailsModal .detail-value.status-canceled {
-                background-color: #e9ecef;
-                color: #6c757d;
-                border: 1px solid #dee2e6;
+                background-color: #f5f5f5;
+                color: #424242;
+                border: 1px solid #e0e0e0;
+            }
+
+            #detailsModal .detail-value.status-no-salary {
+                background-color: #fff3e0;
+                color: #e65100;
+                border: 1px solid #ffe0b2;
+            }
+
+            #detailsModal .detail-value.status-request-supplement {
+                background-color: #e3f2fd;
+                color: #0d47a1;
+                border: 1px solid #bbdefb;
             }
 
             #detailsModal .detail-value.status:hover {
@@ -572,6 +583,14 @@
 
             #detailsModal .detail-value.status-canceled::before {
                 content: "\f05e";
+            }
+
+            #detailsModal .detail-value.status-no-salary::before {
+                content: "\f00c";
+            }
+
+            #detailsModal .detail-value.status-request-supplement::before {
+                content: "\f093";
             }
 
         #detailsModal .modal-footer {
@@ -733,6 +752,22 @@
             border-radius: 12px;
             font-size: 0.8rem;
         }
+
+        /* Style cho trạng thái yêu cầu bổ sung */
+        .leave-status-request-supplement {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            border: 1px solid #bbdefb;
+        }
+
+        /* Style cho dòng chứa trạng thái yêu cầu bổ sung */
+        tr[data-status="NN6"] {
+            background-color: #fff8e1 !important;
+        }
+
+        tr[data-status="NN6"]:hover {
+            background-color: #fff8e1 !important;
+        }
     </style>
 </head>
 <body>
@@ -743,6 +778,7 @@
         <div class="tab">Đã duyệt</div>
         <div class="tab">Tất cả đơn nghỉ phép</div>
         <div class="tab">Đơn bị hủy</div>
+        <div class="tab">Yêu cầu bổ sung</div>
     </div>
 
     <div class="search-bar">
@@ -775,6 +811,11 @@
         <div class="stat-card">
             <h3>Tổng đơn tháng <span id="current-month-year">--</span></h3>
             <div class="stat-number" id="current-month-count">--</div>
+        </div>
+        <div class="stat-card" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 1.1rem;">
+            <span><b id="cancel-today-count">--</b> đơn đã bị hủy hôm nay</span>
+            <span style="color: #bbb; font-weight: bold;">||</span>
+            <span><b id="supplement-all-count">--</b> đơn yêu cầu bổ sung</span>
         </div>
     </div>
 
@@ -918,362 +959,130 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        function updateStatus(maNgayNghi, trangThai, lyDo = null) {
-            return fetch('/LeaveManager/UpdateStatus', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    maNgayNghi: maNgayNghi,
-                    trangThai: trangThai,
-                    ngayCapNhat: new Date(),
-                    lyDo: lyDo
-                })
-            })
-            .then(res => {
-                if (!res.ok) {
-                    return res.json().then(err => {
-                        throw new Error(err.message || "Lỗi kết nối: " + res.statusText);
-                    });
+    <!-- Modal yêu cầu bổ sung -->
+    <div class="modal fade" id="supplementReasonModal" tabindex="-1" aria-labelledby="supplementReasonModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="supplementReasonModalLabel">Yêu cầu bổ sung giấy tờ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="supplementReason">Vui lòng nhập yêu cầu bổ sung:</label>
+                        <textarea class="form-control" id="supplementReason" rows="4" placeholder="Nhập yêu cầu bổ sung..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-warning" id="confirmSupplement">Xác nhận yêu cầu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Biến để theo dõi trạng thái loading
+    let isLoading = false;
+
+    // Hàm hiển thị loading modal
+    function showLoading() {
+        if (!isLoading) {
+            isLoading = true;
+            Swal.fire({
+                title: 'Đang xử lý...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
-                return res.json();
             });
         }
+    }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const tabs = document.querySelectorAll(".tab");
-            const leaveTableBody = document.querySelector(".leave-table tbody");
-            const searchInput = document.querySelector(".search-input");
-            const statusFilter = document.querySelectorAll(".filter-select")[0];
-            const monthFilter = document.querySelectorAll(".filter-select")[1];
-            const selectAllCheckbox = document.getElementById("selectAll");
-            const batchApproveButton = document.getElementById("batchApprove");
-            const batchRejectButton = document.getElementById("batchReject");
+    // Hàm ẩn loading modal
+    function hideLoading() {
+        if (isLoading) {
+            Swal.close();
+            isLoading = false;
+        }
+    }
 
-            let currentPage = 1;
-            const itemsPerPage = 10;
-            let dataList = [];
-            let originalData = [];
-
-            const currentDate = new Date();
-            const monthNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
-            const currentMonthYear = `${monthNames[currentDate.getMonth()]}/${currentDate.getFullYear()}`;
-            const monthYearElement = document.getElementById('current-month-year');
-            if (monthYearElement) {
-                monthYearElement.textContent = currentMonthYear;
-            }
-
-            fetchLeaveStatistics();
-            setInterval(fetchLeaveStatistics, 300000);
-            populateMonthFilter();
-
-            const rejectReasonModal = document.getElementById('rejectReasonModal');
-            if (rejectReasonModal) {
-                rejectReasonModal.addEventListener('show.bs.modal', function (event) {
-                    const button = event.relatedTarget;
-                    const maNgayNghi = button.getAttribute('data-ma-don');
-                    this.setAttribute('data-ma-don', maNgayNghi);
-                    document.getElementById('rejectReason').value = '';
-                });
-
-                document.getElementById('confirmReject').addEventListener('click', function () {
-                    const modal = document.getElementById('rejectReasonModal');
-                    const maNgayNghi = parseInt(modal.getAttribute('data-ma-don'));
-                    const lyDo = document.getElementById('rejectReason').value.trim();
-
-                    if (!lyDo) {
-                        Swal.fire({
-                            title: 'Thông báo',
-                            text: 'Vui lòng nhập lý do từ chối',
-                            icon: 'warning',
-                            confirmButtonText: 'OK'
-                        });
-                        return;
-                    }
-
-                    Swal.fire({
-                        title: 'Xác nhận từ chối',
-                        text: 'Bạn có chắc chắn muốn từ chối đơn nghỉ phép này?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Xác nhận',
-                        cancelButtonText: 'Hủy'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            updateStatus(maNgayNghi, 'Từ chối', lyDo)
-                                .then(res => {
-                                    if (res.success) {
-                                        Swal.fire({
-                                            title: 'Thành công',
-                                            text: res.message,
-                                            icon: 'success',
-                                            confirmButtonText: 'OK'
-                                        }).then(() => {
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Lỗi',
-                                            text: "Lỗi: " + res.message,
-                                            icon: 'error',
-                                            confirmButtonText: 'OK'
-                                        });
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error("Lỗi khi gửi yêu cầu:", error);
-                                    Swal.fire({
-                                        title: 'Lỗi',
-                                        text: 'Có lỗi xảy ra khi gửi yêu cầu.',
-                                        icon: 'error',
-                                        confirmButtonText: 'OK'
-                                    });
-                                });
-                        }
-                    });
-
-                    const modalInstance = bootstrap.Modal.getInstance(modal);
-                    modalInstance.hide();
+    function updateStatus(maNgayNghi, trangThai, lyDo = null) {
+        showLoading(); // Hiển thị loading
+        return fetch('/LeaveManager/UpdateStatus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                maNgayNghi: maNgayNghi,
+                trangThai: trangThai,
+                ngayCapNhat: new Date(),
+                lyDo: lyDo
+            })
+        })
+        .then(res => {
+            hideLoading(); // Ẩn loading
+            if (!res.ok) {
+                return res.json().then(err => {
+                    throw new Error(err.message || "Lỗi kết nối: " + res.statusText);
                 });
             }
+            return res.json();
+        })
+        .catch(err => {
+            hideLoading(); // Ẩn loading khi có lỗi
+            throw err;
+        });
+    }
 
-            const batchRejectReasonModal = document.getElementById('batchRejectReasonModal');
-            if (batchRejectReasonModal) {
-                batchRejectReasonModal.addEventListener('show.bs.modal', function () {
-                    document.getElementById('batchRejectReason').value = '';
-                });
+    document.addEventListener("DOMContentLoaded", function () {
+        const tabs = document.querySelectorAll(".tab");
+        const leaveTableBody = document.querySelector(".leave-table tbody");
+        const searchInput = document.querySelector(".search-input");
+        const statusFilter = document.querySelectorAll(".filter-select")[0];
+        const monthFilter = document.querySelectorAll(".filter-select")[1];
+        const selectAllCheckbox = document.getElementById("selectAll");
+        const batchApproveButton = document.getElementById("batchApprove");
+        const batchRejectButton = document.getElementById("batchReject");
 
-                document.getElementById('confirmBatchReject').addEventListener('click', function () {
-                    const lyDo = document.getElementById('batchRejectReason').value.trim();
-                    if (!lyDo) {
-                        Swal.fire({
-                            title: 'Thông báo',
-                            text: 'Vui lòng nhập lý do từ chối',
-                            icon: 'warning',
-                            confirmButtonText: 'OK'
-                        });
-                        return;
-                    }
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let dataList = [];
+        let originalData = [];
 
-                    const selectedItems = document.querySelectorAll(".select-item:checked");
-                    const maNgayNghiList = Array.from(selectedItems).map(item => parseInt(item.value));
+        const currentDate = new Date();
+        const monthNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+        const currentMonthYear = `${monthNames[currentDate.getMonth()]}/${currentDate.getFullYear()}`;
+        const monthYearElement = document.getElementById('current-month-year');
+        if (monthYearElement) {
+            monthYearElement.textContent = currentMonthYear;
+        }
 
-                    if (maNgayNghiList.length === 0) {
-                        Swal.fire({
-                            title: 'Thông báo',
-                            text: 'Vui lòng chọn ít nhất một đơn để từ chối',
-                            icon: 'warning',
-                            confirmButtonText: 'OK'
-                        });
-                        return;
-                    }
+        fetchLeaveStatistics();
+        setInterval(fetchLeaveStatistics, 300000);
+        populateMonthFilter();
 
-                    Swal.fire({
-                        title: 'Xác nhận từ chối hàng loạt',
-                        text: `Bạn có chắc chắn muốn từ chối ${maNgayNghiList.length} đơn nghỉ phép đã chọn?`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Xác nhận',
-                        cancelButtonText: 'Hủy'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            fetch('/LeaveManager/BatchUpdateStatus', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    maNgayNghiList: maNgayNghiList,
-                                    trangThai: 'Từ chối',
-                                    lyDo: lyDo
-                                })
-                            })
-                                .then(res => res.json())
-                                .then(res => {
-                                    if (res.success) {
-                                        Swal.fire({
-                                            title: 'Thành công',
-                                            text: res.message,
-                                            icon: 'success',
-                                            confirmButtonText: 'OK'
-                                        }).then(() => {
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Lỗi',
-                                            text: res.message,
-                                            icon: 'error',
-                                            confirmButtonText: 'OK'
-                                        });
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Error:', error);
-                                    Swal.fire({
-                                        title: 'Lỗi',
-                                        text: 'Có lỗi xảy ra khi xử lý yêu cầu.',
-                                        icon: 'error',
-                                        confirmButtonText: 'OK'
-                                    });
-                                });
-                        }
-                    });
-
-                    const modalInstance = bootstrap.Modal.getInstance(batchRejectReasonModal);
-                    modalInstance.hide();
-                });
-            }
-
-            const detailsModal = document.getElementById('detailsModal');
-            if (detailsModal) {
-                detailsModal.addEventListener('show.bs.modal', function (event) {
-                    const button = event.relatedTarget;
-                    const maNgayNghi = button.getAttribute('data-ma-don');
-                    const item = dataList.find(d => d.maNgayNghi == maNgayNghi);
-
-                    if (item) {
-                        document.getElementById('detail-maDon').textContent = item.maNgayNghi ?? '--';
-                        document.getElementById('detail-ngayCapNhat').textContent = item.ngayCapNhat ?? '--';
-                        document.getElementById('detail-hoTen').textContent = item.hoTen ?? '--';
-                        document.getElementById('detail-lyDo').textContent = item.lyDo ?? 'Không xác định';
-                        document.getElementById('detail-trangThai').textContent = item.trangThai ?? '--';
-                        document.getElementById('detail-soNgayConLai').textContent = item.soNgayConLai != null ? item.soNgayConLai : '--';
-                        document.getElementById('detail-lyDoTuChoi').textContent = item.trangThai === 'Đã hủy' ? (item.lyDoHuy ?? '--') : (item.lyDoTuChoi ?? '--');
-                        document.getElementById('detail-ghiChu').textContent = item.ghiChu ?? '--';
-                        document.getElementById('detail-tongSoNgay').textContent = item.tongSoNgay ?? '--';
-
-                        // Hiển thị danh sách ngày nghỉ
-                        const ngayNghiList = document.getElementById('detail-ngayNghiList').querySelector('ul');
-                        ngayNghiList.innerHTML = item.ngayNghiList.map(date => `
-                            <li class="mb-2">
-                                <i class="fas fa-calendar-alt text-primary me-2"></i>
-                                ${date}
-                            </li>
-                        `).join('');
-
-                        const fileDinhKemElement = document.getElementById('detail-fileDinhKem');
-                        if (item.fileDinhKem && Array.isArray(item.fileDinhKem) && item.fileDinhKem.length > 0) {
-                            const fileCount = item.fileDinhKem.length;
-                            let fileList = '';
-                            let modalContent = '';
-
-                            item.fileDinhKem.forEach((file, index) => {
-                                const isImage = isImageFile(file.fileName);
-                                const fileIcon = isImage ? 'fa-file-image' : 'fa-file-alt';
-                                const uniqueId = `detail-file-${item.maNgayNghi}-${index}`;
-
-                                if (isImage) {
-                                    fileList += `
-                                        <li>
-                                            <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#imageModal-${uniqueId}">
-                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
-                                            </a>
-                                        </li>`;
-                                    modalContent += `
-                                        <div class="modal fade" id="imageModal-${uniqueId}" tabindex="-1" aria-labelledby="imageModalLabel-${uniqueId}" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered modal-lg">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="imageModalLabel-${uniqueId}">${file.fileName}</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body text-center">
-                                                        <img src="${file.filePath}" alt="${file.fileName}" class="img-fluid" style="max-width: 100%;">
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>`;
-                                } else {
-                                    fileList += `
-                                        <li>
-                                            <a class="dropdown-item" href="${file.filePath}" target="_blank">
-                                                <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
-                                            </a>
-                                        </li>`;
-                                }
-                            });
-
-                            const attachmentContent = `
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownBtn-${item.maNgayNghi}" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-paperclip"></i> ${fileCount} file đính kèm
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="dropdownBtn-${item.maNgayNghi}">
-                                        ${fileList}
-                                    </ul>
-                                </div>
-                                ${modalContent}`;
-                            fileDinhKemElement.innerHTML = attachmentContent;
-                        } else {
-                            fileDinhKemElement.textContent = 'Không có';
-                        }
-
-                        const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không hưởng lương)" || item.trangThai === "Từ chối" || item.trangThai === "Đã hủy";
-                        document.getElementById('modal-approve').style.display = isProcessed ? 'none' : 'block';
-                        document.getElementById('modal-reject').style.display = isProcessed ? 'none' : 'block';
-                        document.getElementById('modal-reject').setAttribute('data-ma-don', item.maNgayNghi);
-                        detailsModal.setAttribute('data-ma-don', item.maNgayNghi);
-
-                        const statusElement = document.getElementById('detail-trangThai');
-                        statusElement.textContent = item.trangThai;
-                        statusElement.className = 'detail-value status';
-
-                        // Thêm class tương ứng với trạng thái
-                        switch (item.trangThai) {
-                            case 'Chờ duyệt':
-                                statusElement.classList.add('status-pending');
-                                break;
-                            case 'Đã duyệt':
-                                statusElement.classList.add('status-approved');
-                                break;
-                            case 'Từ chối':
-                                statusElement.classList.add('status-rejected');
-                                break;
-                            case 'Đã hủy':
-                                statusElement.classList.add('status-canceled');
-                                break;
-                        }
-                    }
-                });
-            }
-
-            function updateBatchButtonState() {
-                const selectedItems = document.querySelectorAll(".select-item:checked");
-                batchApproveButton.disabled = selectedItems.length === 0;
-                batchRejectButton.disabled = selectedItems.length === 0;
-            }
-
-            selectAllCheckbox.addEventListener("change", function () {
-                const checkboxes = document.querySelectorAll(".select-item");
-                checkboxes.forEach(checkbox => {
-                    if (!checkbox.disabled) {
-                        checkbox.checked = this.checked;
-                    }
-                });
-                updateBatchButtonState();
+        const rejectReasonModal = document.getElementById('rejectReasonModal');
+        if (rejectReasonModal) {
+            rejectReasonModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const maNgayNghi = button.getAttribute('data-ma-don');
+                this.setAttribute('data-ma-don', maNgayNghi);
+                document.getElementById('rejectReason').value = '';
             });
 
-            leaveTableBody.addEventListener("change", function (event) {
-                if (event.target.classList.contains("select-item")) {
-                    const allCheckboxes = document.querySelectorAll(".select-item");
-                    const allChecked = Array.from(allCheckboxes).every(checkbox => checkbox.checked || checkbox.disabled);
-                    selectAllCheckbox.checked = allChecked;
-                    updateBatchButtonState();
-                }
-            });
+            document.getElementById('confirmReject').addEventListener('click', function () {
+                const modal = document.getElementById('rejectReasonModal');
+                const maNgayNghi = parseInt(modal.getAttribute('data-ma-don'));
+                const lyDo = document.getElementById('rejectReason').value.trim();
 
-            batchApproveButton.addEventListener("click", function () {
-                const selectedItems = document.querySelectorAll(".select-item:checked");
-                const maNgayNghiList = Array.from(selectedItems).map(item => parseInt(item.value));
-
-                if (maNgayNghiList.length === 0) {
+                if (!lyDo) {
                     Swal.fire({
                         title: 'Thông báo',
-                        text: 'Vui lòng chọn ít nhất một đơn để duyệt',
+                        text: 'Vui lòng nhập lý do từ chối',
                         icon: 'warning',
                         confirmButtonText: 'OK'
                     });
@@ -1281,307 +1090,181 @@
                 }
 
                 Swal.fire({
-                    title: 'Xác nhận duyệt hàng loạt',
-                    text: `Bạn có chắc chắn muốn duyệt ${maNgayNghiList.length} đơn nghỉ phép đã chọn?`,
-                    icon: 'question',
+                    title: 'Xác nhận từ chối',
+                    text: 'Bạn có chắc chắn muốn từ chối đơn nghỉ phép này?',
+                    icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Xác nhận',
                     cancelButtonText: 'Hủy'
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        updateStatus(maNgayNghi, 'Từ chối', lyDo)
+                            .then(res => {
+                                if (res.success) {
+                                    Swal.fire({
+                                        title: 'Thành công',
+                                        text: res.message,
+                                        icon: 'success',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Lỗi',
+                                        text: "Lỗi: " + res.message,
+                                        icon: 'error',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                console.error("Lỗi khi gửi yêu cầu:", error);
+                                Swal.fire({
+                                    title: 'Lỗi',
+                                    text: 'Có lỗi xảy ra khi gửi yêu cầu.',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK'
+                                });
+                            });
+                    }
+                });
+
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                modalInstance.hide();
+            });
+        }
+
+        const batchRejectReasonModal = document.getElementById('batchRejectReasonModal');
+        if (batchRejectReasonModal) {
+            batchRejectReasonModal.addEventListener('show.bs.modal', function () {
+                document.getElementById('batchRejectReason').value = '';
+            });
+
+            document.getElementById('confirmBatchReject').addEventListener('click', function () {
+                const lyDo = document.getElementById('batchRejectReason').value.trim();
+                if (!lyDo) {
+                    Swal.fire({
+                        title: 'Thông báo',
+                        text: 'Vui lòng nhập lý do từ chối',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
+                const selectedItems = document.querySelectorAll(".select-item:checked");
+                const maNgayNghiList = Array.from(selectedItems).map(item => parseInt(item.value));
+
+                if (maNgayNghiList.length === 0) {
+                    Swal.fire({
+                        title: 'Thông báo',
+                        text: 'Vui lòng chọn ít nhất một đơn để từ chối',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Xác nhận từ chối hàng loạt',
+                    text: `Bạn có chắc chắn muốn từ chối ${maNgayNghiList.length} đơn nghỉ phép đã chọn?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showLoading(); // Hiển thị loading
                         fetch('/LeaveManager/BatchUpdateStatus', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 maNgayNghiList: maNgayNghiList,
-                                trangThai: 'Đã duyệt'
+                                trangThai: 'Từ chối',
+                                lyDo: lyDo
                             })
                         })
-                        .then(res => {
-                            if (!res.ok) {
-                                return res.json().then(err => {
-                                    throw new Error(err.message || "Lỗi kết nối");
-                                });
-                            }
-                            return res.json();
-                        })
-                        .then(res => {
-                            if (res.success) {
-                                Swal.fire({
-                                    title: 'Thành công',
-                                    text: res.message,
-                                    icon: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            } else {
+                            .then(res => {
+                                hideLoading(); // Ẩn loading
+                                return res.json();
+                            })
+                            .then(res => {
+                                if (res.success) {
+                                    Swal.fire({
+                                        title: 'Thành công',
+                                        text: res.message,
+                                        icon: 'success',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Lỗi',
+                                        text: res.message,
+                                        icon: 'error',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                hideLoading(); // Ẩn loading khi có lỗi
+                                console.error('Error:', error);
                                 Swal.fire({
                                     title: 'Lỗi',
-                                    text: res.message,
+                                    text: 'Có lỗi xảy ra khi xử lý yêu cầu.',
                                     icon: 'error',
                                     confirmButtonText: 'OK'
                                 });
-                            }
-                        })
-                        .catch(error => {
-                            Swal.fire({
-                                title: 'Cảnh báo',
-                                text: error.message,
-                                icon: 'warning',
-                                confirmButtonText: 'OK'
                             });
-                        });
                     }
                 });
+
+                const modalInstance = bootstrap.Modal.getInstance(batchRejectReasonModal);
+                modalInstance.hide();
             });
+        }
 
-            function fetchLeaveStatistics() {
-                fetch('/LeaveManager/GetSummary')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            document.getElementById('pending-count').textContent = data.data.pendingCount;
-                            document.getElementById('approved-today-count').textContent = data.data.approvedTodayCount;
-                            document.getElementById('current-month-count').textContent = data.data.currentMonthCount;
-                        } else {
-                            console.error('API returned success=false');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching leave statistics:', error);
-                    });
-            }
+        const detailsModal = document.getElementById('detailsModal');
+        if (detailsModal) {
+            detailsModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const maNgayNghi = button.getAttribute('data-ma-don');
+                const item = dataList.find(d => d.maNgayNghi == maNgayNghi);
 
-            function populateMonthFilter() {
-                while (monthFilter.options.length > 1) {
-                    monthFilter.remove(1);
-                }
-
-                const currentMonth = currentDate.getMonth();
-                const currentYear = currentDate.getFullYear();
-                const monthLabels = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
-
-                for (let i = 0; i < 6; i++) {
-                    let month = currentMonth - i;
-                    let year = currentYear;
-                    if (month < 0) {
-                        month = 12 + month;
-                        year -= 1;
+                if (item) {
+                    document.getElementById('detail-maDon').textContent = item.maNgayNghi ?? '--';
+                    document.getElementById('detail-ngayCapNhat').textContent = item.ngayCapNhat ?? '--';
+                    document.getElementById('detail-hoTen').textContent = item.hoTen ?? '--';
+                    document.getElementById('detail-lyDo').textContent = item.lyDo ?? 'Không xác định';
+                    document.getElementById('detail-trangThai').textContent = item.trangThai === "Đã duyệt (Không hưởng lương)" ? "Đã duyệt (Không lương)" : item.trangThai;
+                    document.getElementById('detail-soNgayConLai').textContent = item.soNgayConLai != null ? item.soNgayConLai : '--';
+                    
+                    const lyDoLabel = document.querySelector('.detail-row:has(#detail-lyDoTuChoi) .detail-label');
+                    if (item.trangThai === "Chờ bổ sung") {
+                        lyDoLabel.textContent = "Lý do cần bổ sung";
+                        document.getElementById('detail-lyDoTuChoi').textContent = item.lyDoTuChoi ?? '--';
+                    } else if (item.trangThai === "Từ chối") {
+                        lyDoLabel.textContent = "Lý do từ chối";
+                        document.getElementById('detail-lyDoTuChoi').textContent = item.lyDoTuChoi ?? '--';
+                    } else {
+                        lyDoLabel.textContent = "Lý do hủy";
+                        document.getElementById('detail-lyDoTuChoi').textContent = item.trangThai === 'Đã hủy' ? (item.lyDoHuy ?? '--') : (item.lyDoTuChoi ?? '--');
                     }
-                    const option = document.createElement("option");
-                    option.value = `${month + 1}/${year}`;
-                    option.textContent = `${monthLabels[month]} ${year}`;
-                    monthFilter.appendChild(option);
-                }
-            }
+                    
+                    document.getElementById('detail-ghiChu').textContent = item.ghiChu ?? '--';
+                    document.getElementById('detail-tongSoNgay').textContent = item.tongSoNgay ?? '--';
 
-            function parseVietnameseDate(dateStr) {
-                if (!dateStr) return null;
-                const parts = dateStr.split('/');
-                if (parts.length !== 3) return null;
-                return new Date(parts[2], parts[1] - 1, parts[0]);
-            }
+                    const ngayNghiList = document.getElementById('detail-ngayNghiList').querySelector('ul');
+                    ngayNghiList.innerHTML = item.ngayNghiList.map(date => `
+                        <li class="mb-2">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                            ${date}
+                        </li>
+                    `).join('');
 
-            function sortByCreationDate(data, activeTab) {
-                if (activeTab === "Chờ duyệt" || activeTab === null) {
-                    return data.sort((a, b) => {
-                        const ngayNghiA = parseVietnameseDate(a.ngayNghi);
-                        const ngayNghiB = parseVietnameseDate(b.ngayNghi);
-
-                        const currentDate = new Date();
-                        currentDate.setHours(0, 0, 0, 0);
-
-                        if (ngayNghiA && ngayNghiB) {
-                            const aIsFuture = ngayNghiA >= currentDate;
-                            const bIsFuture = ngayNghiB >= currentDate;
-
-                            if (aIsFuture && !bIsFuture) return 1;
-                            else if (!aIsFuture && bIsFuture) return -1;
-                            else {
-                                if (aIsFuture) return ngayNghiA - ngayNghiB;
-                                else return ngayNghiB - ngayNghiA;
-                            }
-                        }
-
-                        const dateA = parseVietnameseDate(a.ngayCapNhat);
-                        const dateB = parseVietnameseDate(b.ngayCapNhat);
-
-                        if (!dateA || !dateB) return 0;
-                        return dateA - dateB;
-                    });
-                }
-                return data;
-            }
-
-            function fetchData(statusFilter = null) {
-                fetch("/LeaveManager/GetAll")
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.success) {
-                            originalData = res.data;
-                            dataList = [...originalData];
-
-                            const statusMap = {
-                                "Chờ duyệt": "NN1",
-                                "Đã duyệt": "NN2",
-                                "Từ chối": "NN3",
-                                "Đã hủy": "NN4"
-                            };
-
-                            if (statusFilter) {
-                                const maTrangThai = statusMap[statusFilter];
-                                if (maTrangThai) {
-                                    dataList = dataList.filter(item => item.maTrangThai === maTrangThai);
-                                } else {
-                                    dataList = dataList.filter(item => item.trangThai === statusFilter);
-                                }
-                            }
-
-                            dataList = sortByCreationDate(dataList, statusFilter);
-
-                            document.querySelector(".search-input").value = "";
-                            document.querySelectorAll(".filter-select")[0].selectedIndex = 0;
-                            document.querySelectorAll(".filter-select")[1].selectedIndex = 0;
-                            currentPage = 1;
-                            renderTable(currentPage);
-                            renderPagination();
-                            updateBatchButtonState();
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error fetching data:", error);
-                    });
-            }
-
-            function filterData() {
-                const searchTerm = searchInput.value.toLowerCase().trim();
-                const selectedStatus = statusFilter.value === "Trạng thái" ? null : statusFilter.value;
-                const selectedMonth = monthFilter.value === "Tháng" ? null : monthFilter.value;
-
-                dataList = [...originalData];
-
-                if (searchTerm) {
-                    dataList = dataList.filter(item => {
-                        // Tìm kiếm theo nhiều trường
-                        return (
-                            // Tìm theo tên nhân viên
-                            (item.hoTen && item.hoTen.toLowerCase().includes(searchTerm)) ||
-                            // Tìm theo mã ngày nghỉ
-                            (item.maNgayNghi && item.maNgayNghi.toString().includes(searchTerm)) ||
-                            // Tìm theo ngày làm đơn
-                            (item.ngayCapNhat && item.ngayCapNhat.toLowerCase().includes(searchTerm)) ||
-                            // Tìm theo lý do
-                            (item.lyDo && item.lyDo.toLowerCase().includes(searchTerm)) ||
-                            // Tìm theo trạng thái
-                            (item.trangThai && item.trangThai.toLowerCase().includes(searchTerm)) ||
-                            // Tìm theo danh sách ngày nghỉ
-                            (item.ngayNghiList && item.ngayNghiList.some(date => date.toLowerCase().includes(searchTerm)))
-                        );
-                    });
-                }
-
-                if (selectedStatus) {
-                    dataList = dataList.filter(item => item.trangThai === selectedStatus);
-                }
-
-                if (selectedMonth) {
-                    const [month, year] = selectedMonth.split('/');
-                    dataList = dataList.filter(item => {
-                        // Kiểm tra tất cả các ngày nghỉ trong danh sách
-                        return item.ngayNghiList.some(dateStr => {
-                            const parts = dateStr.split('/');
-                            if (parts.length !== 3) return false;
-                            const itemDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                            return (itemDate.getMonth() + 1 == parseInt(month) && itemDate.getFullYear() == parseInt(year));
-                        });
-                    });
-                }
-
-                dataList = sortByCreationDate(dataList, selectedStatus);
-
-                currentPage = 1;
-                renderTable(currentPage);
-                renderPagination();
-                updateBatchButtonState();
-            }
-
-            searchInput.addEventListener("input", filterData);
-            statusFilter.addEventListener("change", filterData);
-            monthFilter.addEventListener("change", filterData);
-
-            function truncateReason(text, maxLength) {
-                if (!text || text === 'Không xác định') return text;
-                return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
-            }
-
-            function renderTable(page) {
-                const start = (page - 1) * itemsPerPage;
-                const end = start + itemsPerPage;
-                leaveTableBody.innerHTML = "";
-
-                if (dataList.length === 0) {
-                    const row = `
-                        <tr>
-                            <td colspan="10" style="text-align: center; padding: 20px;">Không tìm thấy dữ liệu</td>
-                        </tr>`;
-                    leaveTableBody.innerHTML = row;
-                    return;
-                }
-
-                dataList.slice(start, end).forEach(item => {
-                    const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không lương)" || item.trangThai === "Từ chối" || item.trangThai === "Đã hủy";
-                    const actionContent = `
-                        <div class="action-buttons">
-                            ${isProcessed ? 'Đã xử lý' : `
-                                <i class="fas fa-check-circle action-icon approve" data-bs-toggle="tooltip" data-bs-placement="top" title="Duyệt" onclick="Swal.fire({
-                                    title: 'Xác nhận duyệt',
-                                    text: 'Bạn có chắc chắn muốn duyệt đơn nghỉ phép này?',
-                                    icon: 'question',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'Xác nhận',
-                                    cancelButtonText: 'Hủy'
-                                }).then((result) => {
-                                    if (result.isConfirmed) {
-                                        updateStatus(${item.maNgayNghi}, 'Đã duyệt').then(res => {
-                                            if (res.success) {
-                                                Swal.fire({ 
-                                                    title: 'Thành công', 
-                                                    text: res.message, 
-                                                    icon: 'success', 
-                                                    confirmButtonText: 'OK' 
-                                                }).then(() => location.reload());
-                                            } else {
-                                                Swal.fire({ 
-                                                    title: 'Lỗi', 
-                                                    text: res.message, 
-                                                    icon: 'error', 
-                                                    confirmButtonText: 'OK' 
-                                                });
-                                            }
-                                        }).catch(err => {
-                                            Swal.fire({ 
-                                                title: 'Cảnh báo', 
-                                                text: err.message, 
-                                                icon: 'warning',
-                                                confirmButtonText: 'OK'
-                                            });
-                                        });
-                                    }
-                                });"></i>
-                                <button class="btn action-icon reject" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-bs-placement="top" title="Từ chối" data-ma-don="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
-                            `}
-                            <i class="fas fa-eye action-icon details" data-bs-toggle="modal" data-bs-target="#detailsModal" data-bs-placement="top" title="Chi tiết" data-ma-don="${item.maNgayNghi}"></i>
-                        </div>`;
-
-                    let attachmentContent;
+                    const fileDinhKemElement = document.getElementById('detail-fileDinhKem');
                     if (item.fileDinhKem && Array.isArray(item.fileDinhKem) && item.fileDinhKem.length > 0) {
                         const fileCount = item.fileDinhKem.length;
                         let fileList = '';
@@ -1626,7 +1309,7 @@
                             }
                         });
 
-                        attachmentContent = `
+                        const attachmentContent = `
                             <div class="dropdown">
                                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownBtn-${item.maNgayNghi}" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-paperclip"></i> ${fileCount} file đính kèm
@@ -1636,194 +1319,733 @@
                                 </ul>
                             </div>
                             ${modalContent}`;
+                        fileDinhKemElement.innerHTML = attachmentContent;
                     } else {
-                        attachmentContent = 'Không có';
+                        fileDinhKemElement.textContent = 'Không có';
                     }
 
-                    const checkboxContent = isProcessed
-                        ? '<input type="checkbox" disabled>'
-                        : `<input type="checkbox" class="select-item" value="${item.maNgayNghi}">`;
+                    const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không hưởng lương)" || item.trangThai === "Từ chối" || item.trangThai === "Đã hủy";
+                    document.getElementById('modal-approve').style.display = isProcessed ? 'none' : 'block';
+                    document.getElementById('modal-reject').style.display = isProcessed ? 'none' : 'block';
+                    document.getElementById('modal-reject').setAttribute('data-ma-don', item.maNgayNghi);
+                    detailsModal.setAttribute('data-ma-don', item.maNgayNghi);
 
-                    const reasonText = item.lyDo || 'Không xác định';
-                    const truncatedReason = truncateReason(reasonText, 30);
-                    const reasonContent = reasonText.length > 30
-                        ? `<span class="reason-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${reasonText}">${truncatedReason}</span>`
-                        : reasonText;
+                    const statusElement = document.getElementById('detail-trangThai');
+                    statusElement.textContent = item.trangThai === "Đã duyệt (Không hưởng lương)" ? "Đã duyệt (Không lương)" : item.trangThai;
+                    statusElement.className = 'detail-value status';
 
-                    // Tạo dropdown cho ngày nghỉ
-                    const leaveDatesContent = `
-                        <div class="leave-dates-dropdown">
-                            <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span>${item.tongSoNgay} ngày nghỉ</span>
-                                <span class="badge">${item.tongSoNgay}</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <ul class="dropdown-menu">
-                                ${item.ngayNghiList.map(date => `
-                                    <li><a class="dropdown-item" href="#">${date}</a></li>
-                                `).join('')}
-                            </ul>
-                        </div>`;
+                    switch (item.trangThai) {
+                        case 'Chờ duyệt':
+                            statusElement.classList.add('status-pending');
+                            break;
+                        case 'Đã duyệt':
+                            statusElement.classList.add('status-approved');
+                            break;
+                        case 'Từ chối':
+                            statusElement.classList.add('status-rejected');
+                            break;
+                        case 'Đã hủy':
+                            statusElement.classList.add('status-canceled');
+                            break;
+                        case 'Đã duyệt (Không hưởng lương)':
+                            statusElement.classList.add('status-no-salary');
+                            break;
+                        case 'Yêu cầu bổ sung':
+                        case 'Chờ bổ sung':
+                            statusElement.classList.add('status-request-supplement');
+                            break;
+                    }
+                }
+            });
+        }
 
-                    const row = `
-                        <tr data-status="${item.maTrangThai}">
-                            <td>${checkboxContent}</td>
-                            <td>${item.maNgayNghi}</td>
-                            <td>${item.ngayCapNhat}</td>
-                            <td>${item.hoTen}</td>
-                            <td>${leaveDatesContent}</td>
-                            <td>${reasonContent}</td>
-                            <td>${attachmentContent}</td>
-                            <td><span class="leave-status leave-status-${getStatusClass(item.trangThai)}">${item.trangThai}</span></td>
-                            <td>${item.soNgayConLai != null ? item.soNgayConLai : '--'}</td>
-                            <td>${actionContent}</td>
-                        </tr>`;
-                    leaveTableBody.innerHTML += row;
+        function updateBatchButtonState() {
+            const selectedItems = document.querySelectorAll(".select-item:checked");
+            batchApproveButton.disabled = selectedItems.length === 0;
+            batchRejectButton.disabled = selectedItems.length === 0;
+        }
+
+        selectAllCheckbox.addEventListener("change", function () {
+            const checkboxes = document.querySelectorAll(".select-item");
+            checkboxes.forEach(checkbox => {
+                if (!checkbox.disabled) {
+                    checkbox.checked = this.checked;
+                }
+            });
+            updateBatchButtonState();
+        });
+
+        leaveTableBody.addEventListener("change", function (event) {
+            if (event.target.classList.contains("select-item")) {
+                const allCheckboxes = document.querySelectorAll(".select-item");
+                const allChecked = Array.from(allCheckboxes).every(checkbox => checkbox.checked || checkbox.disabled);
+                selectAllCheckbox.checked = allChecked;
+                updateBatchButtonState();
+            }
+        });
+
+        batchApproveButton.addEventListener("click", function () {
+            const selectedItems = document.querySelectorAll(".select-item:checked");
+            const maNgayNghiList = Array.from(selectedItems).map(item => parseInt(item.value));
+
+            if (maNgayNghiList.length === 0) {
+                Swal.fire({
+                    title: 'Thông báo',
+                    text: 'Vui lòng chọn ít nhất một đơn để duyệt',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
                 });
-
-                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-                    new bootstrap.Tooltip(tooltipTriggerEl);
-                });
-
-                initializeModals();
+                return;
             }
 
-            function initializeModals() {
-                const imageModals = document.querySelectorAll('.modal[id*="imageModal-"]');
-                imageModals.forEach(modal => {
-                    modal.addEventListener('shown.bs.modal', function () {
-                        console.log('Image modal opened:', modal.id);
-                        const image = modal.querySelector('img');
-                        if (image) {
-                            console.log('Image src:', image.src);
-                            console.log('Image loaded:', !image.complete || image.naturalWidth !== 0);
+            Swal.fire({
+                title: 'Xác nhận duyệt hàng loạt',
+                text: `Bạn có chắc chắn muốn duyệt ${maNgayNghiList.length} đơn nghỉ phép đã chọn?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoading(); // Hiển thị loading
+                    fetch('/LeaveManager/BatchUpdateStatus', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            maNgayNghiList: maNgayNghiList,
+                            trangThai: 'Đã duyệt'
+                        })
+                    })
+                    .then(res => {
+                        hideLoading(); // Ẩn loading
+                        if (!res.ok) {
+                            return res.json().then(err => {
+                                throw new Error(err.message || "Lỗi kết nối");
+                            });
+                        }
+                        return res.json();
+                    })
+                    .then(res => {
+                        if (res.success) {
+                            Swal.fire({
+                                title: 'Thành công',
+                                text: res.message,
+                                icon: 'success',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Lỗi',
+                                text: res.message,
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading(); // Ẩn loading khi có lỗi
+                        Swal.fire({
+                            title: 'Cảnh báo',
+                            text: error.message,
+                            icon: 'warning',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                }
+            });
+        });
+
+        function fetchLeaveStatistics() {
+            showLoading(); // Hiển thị loading
+            fetch('/LeaveManager/GetSummary')
+                .then(response => {
+                    hideLoading(); // Ẩn loading
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('pending-count').textContent = data.data.pendingCount;
+                        document.getElementById('approved-today-count').textContent = data.data.approvedTodayCount;
+                        document.getElementById('current-month-count').textContent = data.data.currentMonthCount;
+                    } else {
+                        console.error('API returned success=false');
+                    }
+                })
+                .catch(error => {
+                    hideLoading(); // Ẩn loading khi có lỗi
+                    console.error('Error fetching leave statistics:', error);
+                });
+        }
+
+        function populateMonthFilter() {
+            while (monthFilter.options.length > 1) {
+                monthFilter.remove(1);
+            }
+
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            const monthLabels = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
+
+            for (let i = 0; i < 6; i++) {
+                let month = currentMonth - i;
+                let year = currentYear;
+                if (month < 0) {
+                    month = 12 + month;
+                    year -= 1;
+                }
+                const option = document.createElement("option");
+                option.value = `${month + 1}/${year}`;
+                option.textContent = `${monthLabels[month]} ${year}`;
+                monthFilter.appendChild(option);
+            }
+        }
+
+        function parseVietnameseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+
+        function sortByCreationDate(data, activeTab) {
+            if (activeTab === "Chờ duyệt" || activeTab === null) {
+                return data.sort((a, b) => {
+                    const ngayNghiA = parseVietnameseDate(a.ngayNghi);
+                    const ngayNghiB = parseVietnameseDate(b.ngayNghi);
+
+                    const currentDate = new Date();
+                    currentDate.setHours(0, 0, 0, 0);
+
+                    if (ngayNghiA && ngayNghiB) {
+                        const aIsFuture = ngayNghiA >= currentDate;
+                        const bIsFuture = ngayNghiB >= currentDate;
+
+                        if (aIsFuture && !bIsFuture) return 1;
+                        else if (!aIsFuture && bIsFuture) return -1;
+                        else {
+                            if (aIsFuture) return ngayNghiA - ngayNghiB;
+                            else return ngayNghiB - ngayNghiA;
+                        }
+                    }
+
+                    const dateA = parseVietnameseDate(a.ngayCapNhat);
+                    const dateB = parseVietnameseDate(b.ngayCapNhat);
+
+                    if (!dateA || !dateB) return 0;
+                    return dateA - dateB;
+                });
+            }
+            return data;
+        }
+
+        function fetchData(statusFilter = null) {
+            showLoading(); // Hiển thị loading
+            fetch("/LeaveManager/GetAll")
+                .then(res => {
+                    hideLoading(); // Ẩn loading
+                    return res.json();
+                })
+                .then(res => {
+                    if (res.success) {
+                        originalData = res.data;
+                        dataList = [...originalData];
+
+                        updateCancelAndSupplementStats(originalData);
+
+                        const statusMap = {
+                            "Chờ duyệt": "NN1",
+                            "Đã duyệt": "NN2",
+                            "Từ chối": "NN3",
+                            "Đã hủy": "NN4",
+                            "Yêu cầu bổ sung": "NN6"
+                        };
+
+                        if (statusFilter) {
+                            const maTrangThai = statusMap[statusFilter];
+                            if (maTrangThai) {
+                                dataList = dataList.filter(item => item.maTrangThai === maTrangThai);
+                            } else {
+                                dataList = dataList.filter(item => item.trangThai === statusFilter);
+                            }
+                        }
+
+                        dataList = sortByCreationDate(dataList, statusFilter);
+
+                        document.querySelector(".search-input").value = "";
+                        document.querySelectorAll(".filter-select")[0].selectedIndex = 0;
+                        document.querySelectorAll(".filter-select")[1].selectedIndex = 0;
+                        currentPage = 1;
+                        renderTable(currentPage);
+                        renderPagination();
+                        updateBatchButtonState();
+                    }
+                })
+                .catch(error => {
+                    hideLoading(); // Ẩn loading khi có lỗi
+                    console.error("Error fetching data:", error);
+                    Swal.fire({
+                        title: 'Lỗi',
+                        text: 'Không thể tải dữ liệu. Vui lòng thử lại.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                });
+        }
+
+        function filterData() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const selectedStatus = statusFilter.value === "Trạng thái" ? null : statusFilter.value;
+            const selectedMonth = monthFilter.value === "Tháng" ? null : monthFilter.value;
+
+            dataList = [...originalData];
+
+            if (searchTerm) {
+                dataList = dataList.filter(item => {
+                    return (
+                        (item.hoTen && item.hoTen.toLowerCase().includes(searchTerm)) ||
+                        (item.maNgayNghi && item.maNgayNghi.toString().includes(searchTerm)) ||
+                        (item.ngayCapNhat && item.ngayCapNhat.toLowerCase().includes(searchTerm)) ||
+                        (item.lyDo && item.lyDo.toLowerCase().includes(searchTerm)) ||
+                        (item.trangThai && item.trangThai.toLowerCase().includes(searchTerm)) ||
+                        (item.ngayNghiList && item.ngayNghiList.some(date => date.toLowerCase().includes(searchTerm)))
+                    );
+                });
+            }
+
+            if (selectedStatus) {
+                dataList = dataList.filter(item => item.trangThai === selectedStatus);
+            }
+
+            if (selectedMonth) {
+                const [month, year] = selectedMonth.split('/');
+                dataList = dataList.filter(item => {
+                    return item.ngayNghiList.some(dateStr => {
+                        const parts = dateStr.split('/');
+                        if (parts.length !== 3) return false;
+                        const itemDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                        return (itemDate.getMonth() + 1 == parseInt(month) && itemDate.getFullYear() == parseInt(year));
+                    });
+                });
+            }
+
+            dataList = sortByCreationDate(dataList, selectedStatus);
+
+            currentPage = 1;
+            renderTable(currentPage);
+            renderPagination();
+            updateBatchButtonState();
+        }
+
+        searchInput.addEventListener("input", filterData);
+        statusFilter.addEventListener("change", filterData);
+        monthFilter.addEventListener("change", filterData);
+
+        function truncateReason(text, maxLength) {
+            if (!text || text === 'Không xác định') return text;
+            return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+        }
+
+        function renderTable(page) {
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            leaveTableBody.innerHTML = "";
+
+            if (dataList.length === 0) {
+                const row = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 20px;">Không tìm thấy dữ liệu</td>
+                    </tr>`;
+                leaveTableBody.innerHTML = row;
+                return;
+            }
+
+            dataList.slice(start, end).forEach(item => {
+                const isProcessed = item.trangThai === "Đã duyệt" || item.trangThai === "Đã duyệt (Không hưởng lương)" || item.trangThai === "Từ chối" || item.trangThai === "Đã hủy";
+                const actionContent = `
+                    <div class="action-buttons">
+                        ${isProcessed ? 'Đã xử lý' : `
+                            <i class="fas fa-check-circle action-icon approve" data-bs-toggle="tooltip" data-bs-placement="top" title="Duyệt" onclick="Swal.fire({
+                                title: 'Xác nhận duyệt',
+                                text: 'Bạn có chắc chắn muốn duyệt đơn nghỉ phép này?',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonText: 'Xác nhận',
+                                cancelButtonText: 'Hủy'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    updateStatus(${item.maNgayNghi}, 'Đã duyệt').then(res => {
+                                        if (res.success) {
+                                            Swal.fire({ 
+                                                title: 'Thành công', 
+                                                text: res.message, 
+                                                icon: 'success', 
+                                                confirmButtonText: 'OK' 
+                                            }).then(() => location.reload());
+                                        } else {
+                                            Swal.fire({ 
+                                                title: 'Lỗi', 
+                                                text: res.message, 
+                                                icon: 'error', 
+                                                confirmButtonText: 'OK' 
+                                            });
+                                        }
+                                    }).catch(err => {
+                                        Swal.fire({ 
+                                            title: 'Cảnh báo', 
+                                            text: err.message, 
+                                            icon: 'warning',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    });
+                                }
+                            });"></i>
+                            <button class="btn action-icon reject" data-bs-toggle="modal" data-bs-target="#rejectReasonModal" data-bs-placement="top" title="Từ chối" data-ma-don="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                            <button class="btn action-icon supplement" data-bs-toggle="modal" data-bs-target="#supplementReasonModal" data-bs-placement="top" title="Yêu cầu bổ sung" data-ma-don="${item.maNgayNghi}" style="background: none; border: none; padding: 0;">
+                                <i class="fas fa-file-upload"></i>
+                            </button>
+                        `}
+                        <i class="fas fa-eye action-icon details" data-bs-toggle="modal" data-bs-target="#detailsModal" data-bs-placement="top" title="Chi tiết" data-ma-don="${item.maNgayNghi}"></i>
+                    </div>`;
+
+                let attachmentContent;
+                if (item.fileDinhKem && Array.isArray(item.fileDinhKem) && item.fileDinhKem.length > 0) {
+                    const fileCount = item.fileDinhKem.length;
+                    let fileList = '';
+                    let modalContent = '';
+
+                    item.fileDinhKem.forEach((file, index) => {
+                        const isImage = isImageFile(file.fileName);
+                        const fileIcon = isImage ? 'fa-file-image' : 'fa-file-alt';
+                        const uniqueId = `detail-file-${item.maNgayNghi}-${index}`;
+
+                        if (isImage) {
+                            fileList += `
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#imageModal-${uniqueId}">
+                                        <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
+                                    </a>
+                                </li>`;
+                            modalContent += `
+                                <div class="modal fade" id="imageModal-${uniqueId}" tabindex="-1" aria-labelledby="imageModalLabel-${uniqueId}" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="imageModalLabel-${uniqueId}">${file.fileName}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-center">
+                                                <img src="${file.filePath}" alt="${file.fileName}" class="img-fluid" style="max-width: 100%;">
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        } else {
+                            fileList += `
+                                <li>
+                                    <a class="dropdown-item" href="${file.filePath}" target="_blank">
+                                        <i class="fas ${fileIcon}"></i> ${truncateFileName(file.fileName, 15)}
+                                    </a>
+                                </li>`;
                         }
                     });
 
-                    const img = modal.querySelector('img');
-                    if (img) {
-                        img.onerror = function () {
-                            console.error('Failed to load image:', this.src);
-                            this.src = 'path/to/fallback-image.png';
-                            this.alt = 'Image not available';
-                        };
-                    }
-                });
-            }
-
-            function isImageFile(fileName) {
-                if (!fileName) return false;
-                const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
-                return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
-            }
-
-            function truncateFileName(fileName, maxLength) {
-                if (!fileName) return '';
-                if (fileName.length <= maxLength) return fileName;
-                const lastDotIndex = fileName.lastIndexOf('.');
-                if (lastDotIndex === -1) {
-                    return fileName.substring(0, maxLength - 3) + '...';
-                }
-                const name = fileName.substring(0, lastDotIndex);
-                const extension = fileName.substring(lastDotIndex);
-                const maxNameLength = maxLength - extension.length - 3;
-                return name.substring(0, maxNameLength) + '...' + extension;
-            }
-
-            function renderPagination() {
-                const totalPages = Math.ceil(dataList.length / itemsPerPage);
-                let paginationContainer = document.getElementById('pagination-container');
-
-                if (!paginationContainer) {
-                    paginationContainer = document.createElement('div');
-                    paginationContainer.id = 'pagination-container';
-                    paginationContainer.className = 'pagination';
-                    document.querySelector('.leave-table').parentNode.appendChild(paginationContainer);
+                    attachmentContent = `
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownBtn-${item.maNgayNghi}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-paperclip"></i> ${fileCount} file đính kèm
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownBtn-${item.maNgayNghi}">
+                                ${fileList}
+                            </ul>
+                        </div>
+                        ${modalContent}`;
                 } else {
-                    paginationContainer.innerHTML = '';
+                    attachmentContent = 'Không có';
                 }
 
-                if (totalPages <= 1) return;
+                const checkboxContent = isProcessed
+                    ? '<input type="checkbox" disabled>'
+                    : `<input type="checkbox" class="select-item" value="${item.maNgayNghi}">`;
 
-                const prevButton = document.createElement('button');
-                prevButton.textContent = 'Trước';
-                prevButton.disabled = currentPage === 1;
-                prevButton.addEventListener('click', () => {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        renderTable(currentPage);
-                        renderPagination();
-                    }
-                });
+                const reasonText = item.lyDo || 'Không xác định';
+                const truncatedReason = truncateReason(reasonText, 30);
+                const reasonContent = reasonText.length > 30
+                    ? `<span class="reason-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${reasonText}">${truncatedReason}</span>`
+                    : reasonText;
 
-                for (let i = 1; i <= totalPages; i++) {
-                    const pageButton = document.createElement('button');
-                    pageButton.textContent = i;
-                    pageButton.className = currentPage === i ? 'active' : '';
-                    pageButton.addEventListener('click', () => {
-                        currentPage = i;
-                        renderTable(currentPage);
-                        renderPagination();
-                    });
-                    paginationContainer.appendChild(pageButton);
-                }
+                const leaveDatesContent = `
+                    <div class="leave-dates-dropdown">
+                        <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span>${item.tongSoNgay} ngày nghỉ</span>
+                            <span class="badge">${item.tongSoNgay}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            ${item.ngayNghiList.map(date => `
+                                <li><a class="dropdown-item" href="#">${date}</a></li>
+                            `).join('')}
+                        </ul>
+                    </div>`;
 
-                const nextButton = document.createElement('button');
-                nextButton.textContent = 'Sau';
-                nextButton.disabled = currentPage === totalPages;
-                nextButton.addEventListener('click', () => {
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderTable(currentPage);
-                        renderPagination();
-                    }
-                });
-
-                paginationContainer.prepend(prevButton);
-                paginationContainer.appendChild(nextButton);
-            }
-
-            function getStatusClass(status) {
-                switch (status) {
-                    case 'Đã duyệt': return 'approved';
-                    case 'Đã duyệt (Không hưởng lương)': return 'no-salary';
-                    case 'Từ chối': return 'rejected';
-                    case 'Đã hủy': return 'canceled';
-                    default: return 'pending';
-                }
-            }
-
-            tabs.forEach(tab => {
-                tab.addEventListener("click", function () {
-                    tabs.forEach(t => t.classList.remove("active"));
-                    this.classList.add("active");
-                    const tabText = this.textContent.trim();
-                    let statusFilter = null;
-                    if (tabText === "Đang chờ duyệt") {
-                        statusFilter = "Chờ duyệt";
-                    } else if (tabText === "Đã duyệt") {
-                        // Lấy cả trạng thái NN2 và NN5
-                        dataList = originalData.filter(item => 
-                            item.maTrangThai === "NN2" || 
-                            item.maTrangThai === "NN5" || 
-                            item.trangThai === "Đã duyệt" || 
-                            item.trangThai === "Đã duyệt (Không hưởng lương)"
-                        );
-                        renderTable(currentPage);
-                        renderPagination();
-                        return;
-                    } else if (tabText === "Tất cả đơn nghỉ phép") {
-                        statusFilter = null;
-                    } else if (tabText === "Đơn bị hủy") {
-                        statusFilter = "Đã hủy";
-                    }
-                    fetchData(statusFilter);
-                });
+                const row = `
+                    <tr data-status="${item.maTrangThai}">
+                        <td>${checkboxContent}</td>
+                        <td>${item.maNgayNghi}</td>
+                        <td>${item.ngayCapNhat}</td>
+                        <td>${item.hoTen}</td>
+                        <td>${leaveDatesContent}</td>
+                        <td>${reasonContent}</td>
+                        <td>${attachmentContent}</td>
+                        <td><span class="leave-status leave-status-${getStatusClass(item.trangThai)}">${item.trangThai === "Đã duyệt (Không hưởng lương)" ? "Đã duyệt (Không lương)" : item.trangThai}</span></td>
+                        <td>${item.soNgayConLai != null ? item.soNgayConLai : '--'}</td>
+                        <td>${actionContent}</td>
+                    </tr>`;
+                leaveTableBody.innerHTML += row;
             });
 
-            fetchData("Chờ duyệt");
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            initializeModals();
+        }
+
+        function initializeModals() {
+            const imageModals = document.querySelectorAll('.modal[id*="imageModal-"]');
+            imageModals.forEach(modal => {
+                modal.addEventListener('shown.bs.modal', function () {
+                    console.log('Image modal opened:', modal.id);
+                    const image = modal.querySelector('img');
+                    if (image) {
+                        console.log('Image src:', image.src);
+                        console.log('Image loaded:', !image.complete || image.naturalWidth !== 0);
+                    }
+                });
+
+                const img = modal.querySelector('img');
+                if (img) {
+                    img.onerror = function () {
+                        console.error('Failed to load image:', this.src);
+                        this.src = 'path/to/fallback-image.png';
+                        this.alt = 'Image not available';
+                    };
+                }
+            });
+        }
+
+        function isImageFile(fileName) {
+            if (!fileName) return false;
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+            return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
+        }
+
+        function truncateFileName(fileName, maxLength) {
+            if (!fileName) return '';
+            if (fileName.length <= maxLength) return fileName;
+            const lastDotIndex = fileName.lastIndexOf('.');
+            if (lastDotIndex === -1) {
+                return fileName.substring(0, maxLength - 3) + '...';
+            }
+            const name = fileName.substring(0, lastDotIndex);
+            const extension = fileName.substring(lastDotIndex);
+            const maxNameLength = maxLength - extension.length - 3;
+            return name.substring(0, maxNameLength) + '...' + extension;
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(dataList.length / itemsPerPage);
+            let paginationContainer = document.getElementById('pagination-container');
+
+            if (!paginationContainer) {
+                paginationContainer = document.createElement('div');
+                paginationContainer.id = 'pagination-container';
+                paginationContainer.className = 'pagination';
+                document.querySelector('.leave-table').parentNode.appendChild(paginationContainer);
+            } else {
+                paginationContainer.innerHTML = '';
+            }
+
+            if (totalPages <= 1) return;
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'Trước';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable(currentPage);
+                    renderPagination();
+                }
+            });
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = currentPage === i ? 'active' : '';
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    renderTable(currentPage);
+                    renderPagination();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Sau';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable(currentPage);
+                    renderPagination();
+                }
+            });
+
+            paginationContainer.prepend(prevButton);
+            paginationContainer.appendChild(nextButton);
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'Đã duyệt': return 'approved';
+                case 'Đã duyệt (Không hưởng lương)': return 'no-salary';
+                case 'Từ chối': return 'rejected';
+                case 'Đã hủy': return 'canceled';
+                case 'Yêu cầu bổ sung': return 'request-supplement';
+                default: return 'pending';
+            }
+        }
+
+        const supplementReasonModal = document.getElementById('supplementReasonModal');
+        if (supplementReasonModal) {
+            supplementReasonModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const maNgayNghi = button.getAttribute('data-ma-don');
+                this.setAttribute('data-ma-don', maNgayNghi);
+                document.getElementById('supplementReason').value = '';
+            });
+
+            document.getElementById('confirmSupplement').addEventListener('click', function () {
+                const modal = document.getElementById('supplementReasonModal');
+                const maNgayNghi = parseInt(modal.getAttribute('data-ma-don'));
+                const lyDo = document.getElementById('supplementReason').value.trim();
+
+                if (!lyDo) {
+                    Swal.fire({
+                        title: 'Thông báo',
+                        text: 'Vui lòng nhập yêu cầu bổ sung',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Xác nhận yêu cầu bổ sung',
+                    text: 'Bạn có chắc chắn muốn yêu cầu bổ sung giấy tờ cho đơn nghỉ phép này?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        updateStatus(maNgayNghi, 'Yêu cầu bổ sung', lyDo)
+                            .then(res => {
+                                if (res.success) {
+                                    Swal.fire({
+                                        title: 'Thành công',
+                                        text: res.message,
+                                        icon: 'success',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Lỗi',
+                                        text: res.message,
+                                        icon: 'error',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                console.error("Lỗi khi gửi yêu cầu:", error);
+                                Swal.fire({
+                                    title: 'Lỗi',
+                                    text: 'Có lỗi xảy ra khi gửi yêu cầu.',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK'
+                                });
+                            });
+                    }
+                });
+
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                modalInstance.hide();
+            });
+        }
+
+        tabs.forEach(tab => {
+            tab.addEventListener("click", function () {
+                tabs.forEach(t => t.classList.remove("active"));
+                this.classList.add("active");
+                const tabText = this.textContent.trim();
+                let statusFilter = null;
+                if (tabText === "Đang chờ duyệt") {
+                    statusFilter = "Chờ duyệt";
+                } else if (tabText === "Đã duyệt") {
+                    dataList = originalData.filter(item => 
+                        item.maTrangThai === "NN2" || 
+                        item.maTrangThai === "NN5" || 
+                        item.trangThai === "Đã duyệt" || 
+                        item.trangThai === "Đã duyệt (Không hưởng lương)"
+                    );
+                    renderTable(currentPage);
+                    renderPagination();
+                    return;
+                } else if (tabText === "Tất cả đơn nghỉ phép") {
+                    statusFilter = null;
+                } else if (tabText === "Đơn bị hủy") {
+                    statusFilter = "Đã hủy";
+                } else if (tabText === "Yêu cầu bổ sung") {
+                    dataList = originalData.filter(item => 
+                        item.maTrangThai === "NN6" || 
+                        item.trangThai === "Yêu cầu bổ sung"
+                    );
+                    renderTable(currentPage);
+                    renderPagination();
+                    return;
+                }
+                fetchData(statusFilter);
+            });
         });
-    </script>
+
+        function updateCancelAndSupplementStats(data) {
+            const today = new Date();
+            const todayStr = today.toLocaleDateString('vi-VN');
+            const cancelTodayCount = data.filter(item => {
+                if (item.trangThai !== 'Đã hủy') return false;
+                return item.ngayCapNhat === todayStr;
+            }).length;
+            const supplementCount = data.filter(item => item.trangThai === 'Chờ bổ sung' || item.trangThai === 'Yêu cầu bổ sung').length;
+            document.getElementById('cancel-today-count').textContent = cancelTodayCount;
+            document.getElementById('supplement-all-count').textContent = supplementCount;
+        }
+
+        fetchData("Chờ duyệt");
+    });
+</script>
 </body>
 </html>

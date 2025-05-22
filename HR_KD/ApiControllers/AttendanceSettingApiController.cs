@@ -4,9 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HR_KD.ApiControllers
 {
+    [Authorize(Roles = "DIRECTOR")]
     [Route("api/AttendanceSettingApi")]
     public class AttendanceSettingApiController : Controller
     {

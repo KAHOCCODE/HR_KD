@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HR_KD.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HR_KD.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "DIRECTOR")]
     public class LoaiNgayNghiController : ControllerBase
     {
         private readonly HrDbContext _context;

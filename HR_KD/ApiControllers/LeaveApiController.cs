@@ -329,14 +329,17 @@ namespace HR_KD.ApiControllers
                     return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
                 }
 
-                // Lấy các ngày đã đăng ký nghỉ phép (chỉ lấy những ngày đang chờ duyệt hoặc đã duyệt)
+                // Lấy các ngày đã đăng ký nghỉ phép (chỉ lấy những ngày đang chờ duyệt, đã duyệt, NN5 hoặc NN6)
                 var registeredDates = await _context.NgayNghis
                     .Where(n => n.MaNv == currentMaNv.Value &&
-                          (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2") &&
+                          (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2" ||
+                           n.MaTrangThai == "NN5" || n.MaTrangThai == "NN6") &&
                           n.MaTrangThai != "NN4") // Loại bỏ các đơn đã hủy
                     .Select(n => new {
                         date = n.NgayNghi1.ToString("yyyy-MM-dd"),
-                        status = n.MaTrangThai == "NN1" ? "pending" : "approved"
+                        status = n.MaTrangThai == "NN1" ? "pending" :
+                                 n.MaTrangThai == "NN2" ? "approved" :
+                                 n.MaTrangThai == "NN5" ? "status5" : "status6" // Gán tên trạng thái cho NN5 và NN6
                     })
                     .ToListAsync();
 
@@ -629,7 +632,101 @@ namespace HR_KD.ApiControllers
                 return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
             }
         }
+        [HttpPost]
+        [Route("SupplementLeave")]
+        public async Task<IActionResult> SupplementLeave([FromForm] int leaveId, [FromForm] List<IFormFile> files)
+        {
+            // Lấy mã NV từ claims
+            var currentMaNv = GetMaNvFromClaims();
+            if (currentMaNv == null)
+            {
+                return Unauthorized(new { success = false, message = "Chưa xác thực người dùng." });
+            }
 
+            try
+            {
+                // Tìm đơn nghỉ phép với maNgayNghi và mã nhân viên tương ứng
+                var leaveRequest = await _context.NgayNghis
+                    .FirstOrDefaultAsync(n => n.MaNgayNghi == leaveId && n.MaNv == currentMaNv.Value);
+
+                if (leaveRequest == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy đơn nghỉ phép." });
+                }
+
+                // Kiểm tra trạng thái đơn (chỉ cho phép bổ sung nếu trạng thái là NN6)
+                if (leaveRequest.MaTrangThai != "NN6")
+                {
+                    return BadRequest(new { success = false, message = "Chỉ có thể bổ sung tài liệu cho đơn đang chờ bổ sung." });
+                }
+
+                // Lấy tất cả các ngày nghỉ trong cùng đơn
+                var allLeaveDays = await _context.NgayNghis
+                    .Where(n => n.MaDon == leaveRequest.MaDon && n.MaNv == currentMaNv.Value)
+                    .ToListAsync();
+
+                // Xử lý file đính kèm
+                string fileAttachments = leaveRequest.FileDinhKem ?? string.Empty;
+                if (files != null && files.Count > 0)
+                {
+                    var fileNames = new List<string>(fileAttachments.Split('-', StringSplitOptions.RemoveEmptyEntries));
+                    string uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads");
+                    Directory.CreateDirectory(uploadPath);
+
+                    foreach (var file in files)
+                    {
+                        if (file.Length > 0)
+                        {
+                            string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+                            string extension = Path.GetExtension(file.FileName);
+                            string sanitizedFileName = originalFileName + extension;
+                            string filePath = Path.Combine(uploadPath, sanitizedFileName);
+
+                            int count = 1;
+                            while (System.IO.File.Exists(filePath))
+                            {
+                                sanitizedFileName = $"{originalFileName}({count}){extension}";
+                                filePath = Path.Combine(uploadPath, sanitizedFileName);
+                                count++;
+                            }
+
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            fileNames.Add(sanitizedFileName);
+                        }
+                    }
+
+                    fileAttachments = string.Join("-", fileNames);
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "Vui lòng cung cấp ít nhất một file bổ sung." });
+                }
+
+                // Cập nhật tất cả các ngày nghỉ trong đơn
+                foreach (var leaveDay in allLeaveDays)
+                {
+                    leaveDay.FileDinhKem = fileAttachments;
+                    leaveDay.MaTrangThai = "NN1"; // Chuyển trạng thái về Chờ duyệt
+                    leaveDay.GhiChu = leaveDay.GhiChu != null
+                        ? $"{leaveDay.GhiChu}; Tài liệu bổ sung đã được gửi bởi người đăng ký"
+                        : "Tài liệu bổ sung đã được gửi bởi người đăng ký";
+                    leaveDay.LyDoTuChoi = null; // Clear the LyDoTuChoi field
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Bổ sung tài liệu thành công." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi Server: {ex}");
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống.", error = ex.Message });
+            }
+        }
         public class LeaveRequestDto
         {
             public string NgayNghi { get; set; }

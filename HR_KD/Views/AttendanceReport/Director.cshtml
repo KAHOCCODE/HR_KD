@@ -65,7 +65,7 @@
                             </div>
                             <div class="flex items-end space-x-4">
                                 <button id="filterBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Lọc</button>
-                                @* <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Xuất Excel</button> *@
+                                <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Xuất Excel</button> 
                             </div>
                         </div>
                     </div>
@@ -403,19 +403,19 @@
                                 });
                         }
 
-                        // // Export to Excel
-                        // document.getElementById('exportBtn').addEventListener('click', function () {
-                        //     const maPhongBan = document.getElementById('departmentFilter').value;
-                        //     const maChucVu = document.getElementById('positionFilter').value;
-                        //     const monthYear = document.getElementById('monthPicker').value;
+                         // Export to Excel
+                         document.getElementById('exportBtn').addEventListener('click', function () {
+                            const maPhongBan = document.getElementById('departmentFilter').value;
+                            const maChucVu = document.getElementById('positionFilter').value;
+                             const monthYear = document.getElementById('monthPicker').value;
 
-                        //     let url = '/api/AttendanceReportApi/ExportMonthlyReport?';
-                        //     if (maPhongBan) url += `maPhongBan=${maPhongBan}&`;
-                        //     if (maChucVu) url += `maChucVu=${maChucVu}&`;
-                        //     if (monthYear) url += `monthYear=${monthYear}`;
+                             let url = '/api/AttendanceReportApi/ExportMonthlyReport?';
+                             if (maPhongBan) url += `maPhongBan=${maPhongBan}&`;
+                            if (maChucVu) url += `maChucVu=${maChucVu}&`;
+                             if (monthYear) url += `monthYear=${monthYear}`;
 
-                        //     window.location.href = url;
-                        // });
+                             window.location.href = url;
+                        });
 
                         // Filter button click
                         document.getElementById('filterBtn').addEventListener('click', function () {

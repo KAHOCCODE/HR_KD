@@ -106,23 +106,22 @@ namespace HR_KD.ApiControllers
                         return BadRequest(new { success = false, message = $"Loại ngày nghỉ {maLoai} không tồn tại." });
                     }
 
-                    // Đếm số ngày nghỉ đã đăng ký cho loại này
-                    var soNgayDaDangKy = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && n.MaLoaiNgayNghi == maLoai && n.MaTrangThai == "NN1")
-                        .CountAsync();
-
                     // Số ngày nghỉ trong yêu cầu hiện tại cho loại này
                     var soNgayYeuCau = leaveRequests.Count(r => r.MaLoaiNgayNghi == maLoai);
 
+                    // Kiểm tra số ngày nghỉ tối đa cho mỗi lần đăng ký
                     if (loaiNgayNghi.SoNgayNghiToiDa.HasValue &&
-                        (soNgayDaDangKy + soNgayYeuCau) > loaiNgayNghi.SoNgayNghiToiDa.Value)
+                        soNgayYeuCau > loaiNgayNghi.SoNgayNghiToiDa.Value)
                     {
-                        return BadRequest(new { success = false, message = $"Vượt quá số ngày nghỉ tối đa cho loại {loaiNgayNghi.TenLoai}." });
+                        return BadRequest(new { success = false, message = $"Vượt quá số ngày nghỉ tối đa cho mỗi lần đăng ký của loại {loaiNgayNghi.TenLoai}." });
                     }
 
-                    // Đếm số lần đăng ký (dựa trên MaDon)
+                    // Đếm số lần đăng ký trong năm (dựa trên MaDon)
                     var soLanDangKy = await _context.NgayNghis
-                        .Where(n => n.MaNv == currentMaNv.Value && n.MaLoaiNgayNghi == maLoai && n.MaTrangThai == "NN1")
+                        .Where(n => n.MaNv == currentMaNv.Value && 
+                               n.MaLoaiNgayNghi == maLoai && 
+                               (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2" || n.MaTrangThai == "NN5") &&
+                               n.NgayNghi1.Year == DateTime.Now.Year)
                         .Select(n => n.MaDon)
                         .Distinct()
                         .CountAsync();
@@ -130,7 +129,7 @@ namespace HR_KD.ApiControllers
                     if (loaiNgayNghi.SoLanDangKyToiDa.HasValue &&
                         (soLanDangKy + 1) > loaiNgayNghi.SoLanDangKyToiDa.Value)
                     {
-                        return BadRequest(new { success = false, message = $"Vượt quá số lần đăng ký tối đa cho loại {loaiNgayNghi.TenLoai}." });
+                        return BadRequest(new { success = false, message = $"Vượt quá số lần đăng ký tối đa cho loại {loaiNgayNghi.TenLoai} trong năm." });
                     }
                 }
 
@@ -333,7 +332,8 @@ namespace HR_KD.ApiControllers
                 // Lấy các ngày đã đăng ký nghỉ phép (chỉ lấy những ngày đang chờ duyệt hoặc đã duyệt)
                 var registeredDates = await _context.NgayNghis
                     .Where(n => n.MaNv == currentMaNv.Value &&
-                          (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2"))
+                          (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2") &&
+                          n.MaTrangThai != "NN4") // Loại bỏ các đơn đã hủy
                     .Select(n => new {
                         date = n.NgayNghi1.ToString("yyyy-MM-dd"),
                         status = n.MaTrangThai == "NN1" ? "pending" : "approved"
@@ -412,15 +412,27 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { success = false, message = "Chỉ có thể hủy đơn đang chờ duyệt." });
                 }
 
-                // Cập nhật trạng thái thành "Đã hủy" (NN4)
-                leaveRequest.MaTrangThai = "NN4";
-                leaveRequest.NgayDuyet = DateTime.Now;
-                leaveRequest.LyDoHuy = request.LyDoHuy;
-                leaveRequest.GhiChu = "Đơn được hủy bởi người đăng ký";
+                // Lấy tất cả các ngày nghỉ trong cùng đơn
+                var allLeaveDays = await _context.NgayNghis
+                    .Where(n => n.MaDon == leaveRequest.MaDon && n.MaNv == currentMaNv.Value)
+                    .ToListAsync();
+
+                // Cập nhật trạng thái thành "Đã hủy" (NN4) cho tất cả các ngày nghỉ trong đơn
+                foreach (var leaveDay in allLeaveDays)
+                {
+                    leaveDay.MaTrangThai = "NN4";
+                    leaveDay.NgayDuyet = DateTime.Now;
+                    leaveDay.LyDoHuy = request.LyDoHuy;
+                    leaveDay.GhiChu = "Đơn được hủy bởi người đăng ký";
+                }
 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { success = true, message = "Hủy đơn nghỉ phép thành công." });
+                return Ok(new { 
+                    success = true, 
+                    message = "Hủy đơn nghỉ phép thành công.",
+                    shouldReload = true // Thêm flag để client biết cần reload trang
+                });
             }
             catch (Exception ex)
             {
@@ -449,21 +461,22 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { success = false, message = "Loại ngày nghỉ không tồn tại." });
                 }
 
-                // Kiểm tra số ngày nghỉ tối đa
-                var soNgayDaDangKy = await _context.NgayNghis
-                    .Where(n => n.MaNv == currentMaNv.Value && 
-                           n.MaLoaiNgayNghi == maLoaiNgayNghi && 
-                           n.MaTrangThai == "NN1")
-                    .CountAsync();
+                // Kiểm tra số ngày nghỉ tối đa cho mỗi lần đăng ký
+                var vuotQuaSoNgay = loaiNgayNghi.SoNgayNghiToiDa.HasValue && 
+                                   soNgayYeuCau > loaiNgayNghi.SoNgayNghiToiDa.Value;
 
-                // Kiểm tra số lần đăng ký
+                // Kiểm tra số lần đăng ký trong năm
                 var soLanDangKy = await _context.NgayNghis
                     .Where(n => n.MaNv == currentMaNv.Value && 
                            n.MaLoaiNgayNghi == maLoaiNgayNghi && 
-                           n.MaTrangThai == "NN1")
+                           (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2" || n.MaTrangThai == "NN5") &&
+                           n.NgayNghi1.Year == DateTime.Now.Year)
                     .Select(n => n.MaDon)
                     .Distinct()
                     .CountAsync();
+
+                var vuotQuaSoLan = loaiNgayNghi.SoLanDangKyToiDa.HasValue && 
+                                  (soLanDangKy + 1) > loaiNgayNghi.SoLanDangKyToiDa.Value;
 
                 var result = new
                 {
@@ -476,7 +489,6 @@ namespace HR_KD.ApiControllers
                     },
                     hienTai = new
                     {
-                        soNgayDaDangKy = soNgayDaDangKy,
                         soLanDangKy = soLanDangKy
                     },
                     yeuCau = new
@@ -485,10 +497,9 @@ namespace HR_KD.ApiControllers
                     },
                     kiemTra = new
                     {
-                        vuotQuaSoNgay = loaiNgayNghi.SoNgayNghiToiDa.HasValue && 
-                                       (soNgayDaDangKy + soNgayYeuCau) > loaiNgayNghi.SoNgayNghiToiDa.Value,
-                        vuotQuaSoLan = loaiNgayNghi.SoLanDangKyToiDa.HasValue && 
-                                      (soLanDangKy + 1) > loaiNgayNghi.SoLanDangKyToiDa.Value
+                        vuotQuaSoNgay,
+                        vuotQuaSoLan,
+                        biVoHieuHoa = vuotQuaSoLan
                     }
                 };
 
@@ -551,7 +562,8 @@ namespace HR_KD.ApiControllers
                     var soLanDangKy = await _context.NgayNghis
                         .Where(n => n.MaNv == currentMaNv.Value && 
                                n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
-                               n.MaTrangThai == "NN1")
+                               n.MaTrangThai == "NN1" &&
+                               n.NgayNghi1.Year == DateTime.Now.Year)
                         .Select(n => n.MaDon)
                         .Distinct()
                         .CountAsync();
@@ -560,7 +572,8 @@ namespace HR_KD.ApiControllers
                     var soLanDaDuyet = await _context.NgayNghis
                         .Where(n => n.MaNv == currentMaNv.Value && 
                                n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
-                               n.MaTrangThai == "NN2")
+                               n.MaTrangThai == "NN2" &&
+                               n.NgayNghi1.Year == DateTime.Now.Year)
                         .Select(n => n.MaDon)
                         .Distinct()
                         .CountAsync();
@@ -569,17 +582,21 @@ namespace HR_KD.ApiControllers
                     var soLanKhongLuong = await _context.NgayNghis
                         .Where(n => n.MaNv == currentMaNv.Value && 
                                n.MaLoaiNgayNghi == leaveType.maLoaiNgayNghi && 
-                               n.MaTrangThai == "NN5")
+                               n.MaTrangThai == "NN5" &&
+                               n.NgayNghi1.Year == DateTime.Now.Year)
                         .Select(n => n.MaDon)
                         .Distinct()
                         .CountAsync();
 
                     // Kiểm tra xem có vượt quá giới hạn không
                     var vuotQuaSoNgay = leaveType.soNgayNghiToiDa.HasValue && 
-                                       (soNgayDaDangKy + soNgayDaDuyet + soNgayKhongLuong) >= leaveType.soNgayNghiToiDa.Value;
+                                       (soNgayDaDangKy + soNgayDaDuyet + soNgayKhongLuong) > leaveType.soNgayNghiToiDa.Value;
                     
                     var vuotQuaSoLan = leaveType.soLanDangKyToiDa.HasValue && 
                                       (soLanDangKy + soLanDaDuyet + soLanKhongLuong) >= leaveType.soLanDangKyToiDa.Value;
+
+                    // Vô hiệu hóa loại nghỉ nếu đã đạt đủ số lần đăng ký
+                    var biVoHieuHoa = vuotQuaSoLan;
 
                     result.Add(new
                     {
@@ -600,7 +617,7 @@ namespace HR_KD.ApiControllers
                         {
                             vuotQuaSoNgay,
                             vuotQuaSoLan,
-                            biVoHieuHoa = vuotQuaSoNgay || vuotQuaSoLan
+                            biVoHieuHoa = biVoHieuHoa
                         }
                     });
                 }

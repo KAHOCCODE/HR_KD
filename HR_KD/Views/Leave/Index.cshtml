@@ -1794,11 +1794,11 @@
                     const limit = leaveTypeLimits[leaveType.maLoaiNgayNghi];
                     if (limit && limit.kiemTra.biVoHieuHoa) {
                         let tooltipText = "Không thể đăng ký: ";
-                        if (limit.kiemTra.vuotQuaSoNgay) {
-                            tooltipText += `Đã đạt giới hạn ${limit.soNgayNghiToiDa} ngày`;
-                        }
+                        // if (limit.kiemTra.vuotQuaSoNgay) {
+                        //     tooltipText += `Đã đạt giới hạn ${limit.soNgayNghiToiDa} ngày`;
+                        // }
                         if (limit.kiemTra.vuotQuaSoLan) {
-                            if (limit.kiemTra.vuotQuaSoNgay) tooltipText += " và ";
+                            if (limit.kiemTra.vuotQuaSoNgay) /* tooltipText += " và " */;
                             tooltipText += `Đã đạt giới hạn ${limit.soLanDangKyToiDa} lần đăng ký`;
                         }
                         option.title = tooltipText;
@@ -1819,7 +1819,18 @@
                     const description = selectedOption.dataset.description;
 
                     if (this.value) {
-                        document.getElementById("leaveTypeDescription").textContent = description;
+                        const selectedOption = this.options[this.selectedIndex];
+                        const description = selectedOption.dataset.description;
+                        const limit = leaveTypeLimits[this.value];
+                        
+                        let descriptionHtml = description;
+                        if (limit) {
+                            descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
+                            descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
+                            descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
+                        }
+
+                        document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
                         document.getElementById("leaveTypeDescription").classList.add('show');
 
                         // Kiểm tra giới hạn nếu đã chọn ngày
@@ -1833,7 +1844,7 @@
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                          Bạn đã đăng ký ${limitCheck.hienTai.soNgayDaDangKy} ngày và đang yêu cầu thêm ${selectedDates.length} ngày.`
+                                          Bạn đang yêu cầu thêm ${selectedDates.length} ngày.`
                                     });
                                     datePicker.clear();
                                     document.getElementById("selectedDates").textContent = "";
@@ -1878,13 +1889,12 @@
         const currentValue = leaveTypeSelect.value;
 
         if (availableLeaveBalance === 0) {
+            // Kiểm tra xem có loại nghỉ nào khác ngoài nghỉ không lương còn có thể chọn không
+            let hasEnabledLeaveTypes = false;
+            
             // Disable các option khác, chỉ enable loại nghỉ không lương
             Array.from(leaveTypeSelect.options).forEach(option => {
                 if (option.value && option.value !== unpaidLeaveTypeId.toString()) {
-                    option.disabled = true;
-                    option.style.opacity = "0.5";
-                } else {
-                    // Kiểm tra giới hạn cho loại nghỉ không lương
                     const limit = leaveTypeLimits[option.value];
                     if (limit && limit.kiemTra.biVoHieuHoa) {
                         option.disabled = true;
@@ -1892,17 +1902,39 @@
                     } else {
                         option.disabled = false;
                         option.style.opacity = "1";
+                        hasEnabledLeaveTypes = true;
                     }
                 }
             });
-            // Buộc chọn loại nghỉ không lương nếu số dư phép bằng 0 và chưa đạt giới hạn
-            if (!leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
+
+            // Kiểm tra giới hạn cho loại nghỉ không lương
+            const unpaidLeaveOption = leaveTypeSelect.querySelector(`option[value="${unpaidLeaveTypeId}"]`);
+            if (unpaidLeaveOption) {
+                const limit = leaveTypeLimits[unpaidLeaveTypeId];
+                if (limit && limit.kiemTra.biVoHieuHoa) {
+                    unpaidLeaveOption.disabled = true;
+                    unpaidLeaveOption.style.opacity = "0.5";
+                } else {
+                    unpaidLeaveOption.disabled = false;
+                    unpaidLeaveOption.style.opacity = "1";
+                }
+            }
+
+            // Chỉ tự động chọn loại nghỉ không lương nếu không có loại nghỉ nào khác có thể chọn
+            if (!hasEnabledLeaveTypes && !leaveTypeLimits[unpaidLeaveTypeId]?.kiemTra.biVoHieuHoa) {
                 leaveTypeSelect.value = unpaidLeaveTypeId;
                 // Hiển thị mô tả cho loại nghỉ không lương
                 const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
                 const description = selectedOption?.dataset?.description;
                 if (description) {
-                    document.getElementById("leaveTypeDescription").textContent = description;
+                    const limit = leaveTypeLimits[unpaidLeaveTypeId];
+                    let descriptionHtml = description;
+                    if (limit) {
+                        descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
+                        descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
+                        descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
+                    }
+                    document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
                     document.getElementById("leaveTypeDescription").classList.add('show');
                 }
             }
@@ -1927,7 +1959,14 @@
                 const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
                 const description = selectedOption?.dataset?.description;
                 if (description) {
-                    document.getElementById("leaveTypeDescription").textContent = description;
+                    const limit = leaveTypeLimits[currentValue];
+                    let descriptionHtml = description;
+                    if (limit) {
+                        descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
+                        descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
+                        descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
+                    }
+                    document.getElementById("leaveTypeDescription").innerHTML = descriptionHtml;
                     document.getElementById("leaveTypeDescription").classList.add('show');
                 }
             } else {
@@ -2050,7 +2089,7 @@
                                 icon: 'warning',
                                 title: 'Vượt quá giới hạn',
                                 html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                      Bạn đã đăng ký ${limitCheck.hienTai.soNgayDaDangKy} ngày và đang yêu cầu thêm ${validDates.length} ngày.`
+                                      Bạn đang yêu cầu ${validDates.length} ngày.`
                             });
                             this.clear();
                             document.getElementById("selectedDates").textContent = "";
@@ -2062,7 +2101,7 @@
                                 icon: 'warning',
                                 title: 'Vượt quá giới hạn',
                                 html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
-                                      Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                          Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
                             });
                             this.clear();
                             document.getElementById("selectedDates").textContent = "";
@@ -2092,7 +2131,7 @@
 
             // Kiểm tra số dư phép và loại nghỉ
             if (availableLeaveBalance === 0 && formData.leaveType !== unpaidLeaveTypeId.toString()) {
-                Swal.fire('Lỗi', 'Số dư phép năm đã hết! Chỉ có thể chọn Nghỉ không lương.', 'error');
+                Swal.fire('Lỗi', 'Số dư phép năm đã hết! Chỉ có thể chọn Nghỉ không lương hoặc loại nghỉ khác.', 'error');
                 return;
             }
 
@@ -2123,7 +2162,9 @@
                 await Swal.fire({
                     icon: 'success',
                     title: 'Thành công!',
-                    text: 'Đăng ký nghỉ phép thành công!'
+                    text: 'Đăng ký nghỉ phép thành công!',
+                    showConfirmButton: false,
+                    timer: 1500
                 });
 
                 // Reset form và các trường dữ liệu
@@ -2146,6 +2187,9 @@
                 registeredDates.push(...newRegisteredDates);
                 expandedHolidays.length = 0;
                 expandedHolidays.push(...newExpandedHolidays);
+
+                // Reload lại dropdown loại nghỉ
+                await fetchLeaveTypes();
 
                 // Reinitialize date picker với dữ liệu mới
                 datePicker = flatpickr("#datePicker", {
@@ -2222,7 +2266,7 @@
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                      Bạn đã đăng ký ${limitCheck.hienTai.soNgayDaDangKy} ngày và đang yêu cầu thêm ${validDates.length} ngày.`
+                                      Bạn đã chọn ${validDates.length} ngày, vượt quá số ngày cho phép.`
                                     });
                                     this.clear();
                                     document.getElementById("selectedDates").textContent = "";
@@ -2234,7 +2278,7 @@
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
-                                      Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                          Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
                                     });
                                     this.clear();
                                     document.getElementById("selectedDates").textContent = "";
@@ -2995,8 +3039,8 @@
                             timer: 1500
                         });
 
-                        // Refresh lại dữ liệu
-                        await fetchLeaveHistory();
+                        // Reload trang sau khi hủy thành công
+                        window.location.reload();
                     } else {
                         throw new Error(data.message || 'Không thể hủy đơn nghỉ phép.');
                     }
@@ -3059,7 +3103,7 @@
             alertMessage.className = "alert alert-danger mt-3";
             alertMessage.innerHTML = `
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương.
+                        <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương hoặc loại nghỉ khác nếu chúng còn hiệu lực.
                     `;
             leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
         } else if (availableLeaveBalance < 5) {

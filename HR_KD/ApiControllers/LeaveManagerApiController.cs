@@ -353,17 +353,21 @@ namespace HR_KD.ApiControllers
 
                 // Send email notification
                 var leaveDates = allNgayNghis.Select(nn => nn.NgayNghi1).Distinct().ToList();
+                var loaiNgayNghi = await _context.LoaiNgayNghis
+                    .FirstOrDefaultAsync(lnn => lnn.MaLoaiNgayNghi == ngayNghi.MaLoaiNgayNghi);
+                var tenLoai = loaiNgayNghi != null ? loaiNgayNghi.TenLoai : "Không xác định";
+                var soNgayConLai = await _phepNamService.GetSoNgayConLaiAsync(ngayNghi.MaNv, ngayNghi.NgayNghi1.Year);
                 if (newMaTrangThai == "NN2" || newMaTrangThai == "NN5")
                 {
-                    SendApprovalEmail(nhanVien.Email, nhanVien.HoTen, leaveDates, newMaTrangThai);
+                    SendApprovalEmail(nhanVien.Email, nhanVien.HoTen, leaveDates, newMaTrangThai, tenLoai, ngayNghi.LyDo, allNgayNghis.Count, nguoiDuyet.HoTen, soNgayConLai);
                 }
                 else if (newMaTrangThai == "NN3")
                 {
-                    SendRejectionEmail(nhanVien.Email, nhanVien.HoTen, leaveDates, "NN3", request.LyDo);
+                    SendRejectionEmail(nhanVien.Email, nhanVien.HoTen, leaveDates, "NN3", request.LyDo, tenLoai, ngayNghi.LyDo, allNgayNghis.Count, nguoiDuyet.HoTen);
                 }
                 else if (newMaTrangThai == "NN6")
                 {
-                    SendSupplementRequestEmail(nhanVien.Email, nhanVien.HoTen, leaveDates, request.LyDo);
+                    SendSupplementRequestEmail(nhanVien.Email, nhanVien.HoTen, leaveDates, request.LyDo, tenLoai, ngayNghi.LyDo, allNgayNghis.Count, nguoiDuyet.HoTen);
                 }
 
                 await _context.SaveChangesAsync();
@@ -410,13 +414,12 @@ namespace HR_KD.ApiControllers
                 .CountAsync();
 
             var approvedTodayCount = await _context.NgayNghis
-     .Where(nn =>
-         (nn.MaTrangThai == "NN2" || nn.MaTrangThai == "NN5") &&
-         nn.NgayLamDon.Date == today)
-     .Select(nn => nn.MaDon)
-     .Distinct()
-     .CountAsync();
-
+                .Where(nn =>
+                    (nn.MaTrangThai == "NN2" || nn.MaTrangThai == "NN5") &&
+                    nn.NgayLamDon.Date == today)
+                .Select(nn => nn.MaDon)
+                .Distinct()
+                .CountAsync();
 
             var currentMonthCount = await _context.NgayNghis
                 .Where(nn => nn.NgayNghi1.Month == currentMonth && nn.NgayNghi1.Year == currentYear)
@@ -505,7 +508,7 @@ namespace HR_KD.ApiControllers
                     .Where(nn => maDons.Contains(nn.MaDon))
                     .ToListAsync();
 
-                var emailNotifications = new Dictionary<int, (string Email, string HoTen, List<DateOnly> LeaveDates)>();
+                var emailNotifications = new Dictionary<int, (string Email, string HoTen, List<DateOnly> LeaveDates, string TenLoai, string LyDo, int TongSoNgay, decimal SoNgayConLai)>();
 
                 foreach (var ngayNghi in allNgayNghis)
                 {
@@ -640,9 +643,21 @@ namespace HR_KD.ApiControllers
                     if (!emailNotifications.ContainsKey(ngayNghi.MaNv))
                     {
                         var nhanVien = await _context.NhanViens.FirstOrDefaultAsync(nv => nv.MaNv == ngayNghi.MaNv);
+                        var loaiNgayNghi = await _context.LoaiNgayNghis
+                            .FirstOrDefaultAsync(lnn => lnn.MaLoaiNgayNghi == ngayNghi.MaLoaiNgayNghi);
+                        var tenLoai = loaiNgayNghi != null ? loaiNgayNghi.TenLoai : "Không xác định";
+                        var soNgayConLai = await _phepNamService.GetSoNgayConLaiAsync(ngayNghi.MaNv, ngayNghi.NgayNghi1.Year);
                         if (nhanVien != null)
                         {
-                            emailNotifications[ngayNghi.MaNv] = (nhanVien.Email, nhanVien.HoTen, new List<DateOnly> { ngayNghi.NgayNghi1 });
+                            emailNotifications[ngayNghi.MaNv] = (
+                                nhanVien.Email,
+                                nhanVien.HoTen,
+                                new List<DateOnly> { ngayNghi.NgayNghi1 },
+                                tenLoai,
+                                ngayNghi.LyDo,
+                                maDons.Count,
+                                soNgayConLai
+                            );
                         }
                     }
                     else
@@ -657,19 +672,19 @@ namespace HR_KD.ApiControllers
                 }
 
                 // Send email notifications
-                foreach (var (maNv, (email, hoTen, leaveDates)) in emailNotifications)
+                foreach (var (maNv, (email, hoTen, leaveDates, tenLoai, lyDo, tongSoNgay, soNgayConLai)) in emailNotifications)
                 {
                     if (newMaTrangThai == "NN2" || newMaTrangThai == "NN5")
                     {
-                        SendApprovalEmail(email, hoTen, leaveDates, newMaTrangThai);
+                        SendApprovalEmail(email, hoTen, leaveDates, newMaTrangThai, tenLoai, lyDo, tongSoNgay, nguoiDuyet.HoTen, soNgayConLai);
                     }
                     else if (newMaTrangThai == "NN3")
                     {
-                        SendRejectionEmail(email, hoTen, leaveDates, "NN3", request.LyDo);
+                        SendRejectionEmail(email, hoTen, leaveDates, "NN3", request.LyDo, tenLoai, lyDo, tongSoNgay, nguoiDuyet.HoTen);
                     }
                     else if (newMaTrangThai == "NN6")
                     {
-                        SendSupplementRequestEmail(email, hoTen, leaveDates, request.LyDo);
+                        SendSupplementRequestEmail(email, hoTen, leaveDates, request.LyDo, tenLoai, lyDo, tongSoNgay, nguoiDuyet.HoTen);
                     }
                 }
 
@@ -695,13 +710,16 @@ namespace HR_KD.ApiControllers
             }
         }
 
-        private void SendApprovalEmail(string recipientEmail, string employeeName, List<DateOnly> leaveDates, string trangThai)
+        private void SendApprovalEmail(string recipientEmail, string employeeName, List<DateOnly> leaveDates, string trangThai, string leaveType, string leaveReason, int totalLeaveDays, string approverName, decimal remainingLeaveBalance)
         {
             var emailSettings = _configuration.GetSection("EmailSettings");
             var senderEmail = emailSettings["SenderEmail"];
             var senderPassword = emailSettings["SenderPassword"];
             var smtpServer = emailSettings["SmtpServer"];
             var port = int.Parse(emailSettings["Port"]);
+            var systemUrl = emailSettings["SystemUrl"] ?? "https://hr-system.example.com";
+            var companyName = emailSettings["CompanyName"] ?? "Công ty TNHH XYZ";
+            var companyLogoUrl = emailSettings["CompanyLogoUrl"] ?? "https://via.placeholder.com/150x50?text=Logo";
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("HR Department", senderEmail));
@@ -713,21 +731,45 @@ namespace HR_KD.ApiControllers
             var dateList = string.Join(", ", leaveDates.Select(d => d.ToString("dd/MM/yyyy")));
             var bodyBuilder = new BodyBuilder();
             bodyBuilder.HtmlBody = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>
-                    <div style='text-align: center; margin-bottom: 20px;'>
-                        <h2 style='color: #2c3e50; margin: 0;'>{subject}</h2>
+                <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                 
+                    <div style='padding: 20px; background-color: #ffffff;'>
+                        <h2 style='color: #1a3c34; margin: 0 0 20px; text-align: center; font-size: 24px;'>{subject}</h2>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Kính gửi <strong>{employeeName}</strong>,</p>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Phòng Nhân sự {companyName} trân trọng thông báo yêu cầu nghỉ phép của bạn đã được <span style='color: #28a745; font-weight: bold;'>DUYỆT</span> bởi <strong>{approverName}</strong>.</p>
+                        <div style='background-color: #f1f8f1; padding: 15px; border-radius: 6px; border-left: 4px solid #28a745; margin-bottom: 20px;'>
+                            <h3 style='color: #1a3c34; margin: 0 0 10px; font-size: 18px;'>Chi tiết đơn nghỉ phép</h3>
+                            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333; width: 30%;'>Loại nghỉ phép:</td>
+                                    <td style='padding: 8px; color: #333;'>{leaveType}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Lý do nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{leaveReason ?? "Không có ghi chú"}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Ngày nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{dateList}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Tổng số ngày nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{totalLeaveDays} ngày</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Số ngày phép còn lại:</td>
+                                    <td style='padding: 8px; color: #333;'>{remainingLeaveBalance} ngày</td>
+                                </tr>
+                                {(trangThai == "NN5" ? "<tr><td colspan='2' style='padding: 8px; color: #e74c3c; font-style: italic;'>Lưu ý: Đây là nghỉ phép không hưởng lương.</td></tr>" : "")}
+                            </table>
+                        </div>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Vui lòng kiểm tra chi tiết trên hệ thống nhân sự tại: <a href='{systemUrl}' style='color: #007bff; text-decoration: none; font-weight: bold;'>Hệ thống Nhân sự</a>.</p>
+                        <p style='color: #333; font-size: 16px; margin: 0;'>Trân trọng,</p>
+                        <p style='color: #333; font-size: 16px; margin: 5px 0 0;'><strong>Phòng Nhân sự - {companyName}</strong></p>
                     </div>
-                    <p>Kính gửi <strong>{employeeName}</strong>,</p>
-                    <p>Phòng Nhân sự trân trọng thông báo:</p>
-                    <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;'>
-                        <p>Yêu cầu nghỉ phép của bạn vào ngày <strong>{dateList}</strong> đã được <span style='color: #28a745; font-weight: bold;'>DUYỆT</span> bởi Phòng Nhân sự.</p>
-                        {(trangThai == "NN5" ? "<p><strong>Lưu ý:</strong> Đây là nghỉ phép không hưởng lương.</p>" : "")}
+                    <div style='text-align: center; padding: 10px; background-color: #e9ecef; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;'>
+                        <p style='margin: 0;'>Liên hệ: <a href='mailto:{senderEmail}' style='color: #007bff; text-decoration: none;'>{senderEmail}</a> | Đây là email tự động, vui lòng không trả lời.</p>
                     </div>
-                    <p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>
-                    <p>Trân trọng,</p>
-                    <p><strong>Phòng Nhân sự</strong></p>
-                    <hr style='border: 1px solid #e0e0e0; margin: 20px 0;'>
-                    <p style='color: #666; font-size: 12px;'>Đây là email tự động, vui lòng không trả lời email này.</p>
                 </div>";
 
             message.Body = bodyBuilder.ToMessageBody();
@@ -743,19 +785,21 @@ namespace HR_KD.ApiControllers
                 }
                 catch (Exception ex)
                 {
-                    // Log error (e.g., using a logging framework)
                     Console.WriteLine($"Failed to send approval email: {ex.Message}");
                 }
             }
         }
 
-        private void SendRejectionEmail(string recipientEmail, string employeeName, List<DateOnly> leaveDates, string trangThai, string lyDo)
+        private void SendRejectionEmail(string recipientEmail, string employeeName, List<DateOnly> leaveDates, string trangThai, string lyDo, string leaveType, string leaveReason, int totalLeaveDays, string approverName)
         {
             var emailSettings = _configuration.GetSection("EmailSettings");
             var senderEmail = emailSettings["SenderEmail"];
             var senderPassword = emailSettings["SenderPassword"];
             var smtpServer = emailSettings["SmtpServer"];
             var port = int.Parse(emailSettings["Port"]);
+            var systemUrl = emailSettings["SystemUrl"] ?? "https://hr-system.example.com";
+            var companyName = emailSettings["CompanyName"] ?? "Công ty TNHH XYZ";
+            var companyLogoUrl = emailSettings["CompanyLogoUrl"] ?? "https://via.placeholder.com/150x50?text=Logo";
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("HR Department", senderEmail));
@@ -767,24 +811,44 @@ namespace HR_KD.ApiControllers
             var dateList = string.Join(", ", leaveDates.Select(d => d.ToString("dd/MM/yyyy")));
             var bodyBuilder = new BodyBuilder();
             bodyBuilder.HtmlBody = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>
-                    <div style='text-align: center; margin-bottom: 20px;'>
-                        <h2 style='color: #2c3e50; margin: 0;'>{subject}</h2>
-                    </div>
-                    <p>Kính gửi <strong>{employeeName}</strong>,</p>
-                    <p>Phòng Nhân sự trân trọng thông báo:</p>
-                    <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #dc3545;'>
-                        <p>Yêu cầu nghỉ phép của bạn vào ngày <strong>{dateList}</strong> đã bị <span style='color: #dc3545; font-weight: bold;'>TỪ CHỐI</span> bởi Phòng Nhân sự.</p>
-                        <div style='margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;'>
-                            <p style='margin: 0;'><strong>Lý do từ chối:</strong></p>
-                            <p style='color: #666; margin: 5px 0 0 0;'>{lyDo ?? "Không có ghi chú"}</p>
+                <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                 
+                    <div style='padding: 20px; background-color: #ffffff;'>
+                        <h2 style='color: #1a3c34; margin: 0 0 20px; text-align: center; font-size: 24px;'>{subject}</h2>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Kính gửi <strong>{employeeName}</strong>,</p>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Phòng Nhân sự {companyName} trân trọng thông báo yêu cầu nghỉ phép của bạn đã bị <span style='color: #dc3545; font-weight: bold;'>TỪ CHỐI</span> bởi <strong>{approverName}</strong>.</p>
+                        <div style='background-color: #f8f1f1; padding: 15px; border-radius: 6px; border-left: 4px solid #dc3545; margin-bottom: 20px;'>
+                            <h3 style='color: #1a3c34; margin: 0 0 10px; font-size: 18px;'>Chi tiết đơn nghỉ phép</h3>
+                            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333; width: 30%;'>Loại nghỉ phép:</td>
+                                    <td style='padding: 8px; color: #333;'>{leaveType}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Lý do nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{leaveReason ?? "Không có ghi chú"}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Ngày nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{dateList}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Tổng số ngày nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{totalLeaveDays} ngày</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Lý do từ chối:</td>
+                                    <td style='padding: 8px; color: #333;'>{lyDo ?? "Không có ghi chú"}</td>
+                                </tr>
+                            </table>
                         </div>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Vui lòng kiểm tra chi tiết trên hệ thống nhân sự tại: <a href='{systemUrl}' style='color: #007bff; text-decoration: none; font-weight: bold;'>Hệ thống Nhân sự</a>.</p>
+                        <p style='color: #333; font-size: 16px; margin: 0;'>Trân trọng,</p>
+                        <p style='color: #333; font-size: 16px; margin: 5px 0 0;'><strong>Phòng Nhân sự - {companyName}</strong></p>
                     </div>
-                    <p>Vui lòng kiểm tra lại thông tin trên hệ thống.</p>
-                    <p>Trân trọng,</p>
-                    <p><strong>Phòng Nhân sự</strong></p>
-                    <hr style='border: 1px solid #e0e0e0; margin: 20px 0;'>
-                    <p style='color: #666; font-size: 12px;'>Đây là email tự động, vui lòng không trả lời email này.</p>
+                    <div style='text-align: center; padding: 10px; background-color: #e9ecef; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;'>
+                        <p style='margin: 0;'>Liên hệ: <a href='mailto:{senderEmail}' style='color: #007bff; text-decoration: none;'>{senderEmail}</a> | Đây là email tự động, vui lòng không trả lời.</p>
+                    </div>
                 </div>";
 
             message.Body = bodyBuilder.ToMessageBody();
@@ -800,19 +864,21 @@ namespace HR_KD.ApiControllers
                 }
                 catch (Exception ex)
                 {
-                    // Log error
                     Console.WriteLine($"Failed to send rejection email: {ex.Message}");
                 }
             }
         }
 
-        private void SendSupplementRequestEmail(string recipientEmail, string employeeName, List<DateOnly> leaveDates, string lyDo)
+        private void SendSupplementRequestEmail(string recipientEmail, string employeeName, List<DateOnly> leaveDates, string lyDo, string leaveType, string leaveReason, int totalLeaveDays, string approverName)
         {
             var emailSettings = _configuration.GetSection("EmailSettings");
             var senderEmail = emailSettings["SenderEmail"];
             var senderPassword = emailSettings["SenderPassword"];
             var smtpServer = emailSettings["SmtpServer"];
             var port = int.Parse(emailSettings["Port"]);
+            var systemUrl = emailSettings["SystemUrl"] ?? "https://hr-system.example.com";
+            var companyName = emailSettings["CompanyName"] ?? "Công ty TNHH XYZ";
+            var companyLogoUrl = emailSettings["CompanyLogoUrl"] ?? "https://via.placeholder.com/150x50?text=Logo";
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("HR Department", senderEmail));
@@ -824,24 +890,44 @@ namespace HR_KD.ApiControllers
             var dateList = string.Join(", ", leaveDates.Select(d => d.ToString("dd/MM/yyyy")));
             var bodyBuilder = new BodyBuilder();
             bodyBuilder.HtmlBody = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>
-                    <div style='text-align: center; margin-bottom: 20px;'>
-                        <h2 style='color: #2c3e50; margin: 0;'>{subject}</h2>
-                    </div>
-                    <p>Kính gửi <strong>{employeeName}</strong>,</p>
-                    <p>Phòng Nhân sự trân trọng thông báo:</p>
-                    <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;'>
-                        <p>Yêu cầu nghỉ phép của bạn vào ngày <strong>{dateList}</strong> cần <span style='color: #ffc107; font-weight: bold;'>BỔ SUNG THÔNG TIN</span>.</p>
-                        <div style='margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;'>
-                            <p style='margin: 0;'><strong>Lý do yêu cầu bổ sung:</strong></p>
-                            <p style='color: #666; margin: 5px 0 0 0;'>{lyDo ?? "Không có ghi chú"}</p>
+                <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+
+                    <div style='padding: 20px; background-color: #ffffff;'>
+                        <h2 style='color: #1a3c34; margin: 0 0 20px; text-align: center; font-size: 24px;'>{subject}</h2>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Kính gửi <strong>{employeeName}</strong>,</p>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Phòng Nhân sự {companyName} trân trọng thông báo yêu cầu nghỉ phép của bạn cần <span style='color: #ffc107; font-weight: bold;'>BỔ SUNG THÔNG TIN</span> theo yêu cầu của <strong>{approverName}</strong>.</p>
+                        <div style='background-color: #fff8e1; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107; margin-bottom: 20px;'>
+                            <h3 style='color: #1a3c34; margin: 0 0 10px; font-size: 18px;'>Chi tiết đơn nghỉ phép</h3>
+                            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333; width: 30%;'>Loại nghỉ phép:</td>
+                                    <td style='padding: 8px; color: #333;'>{leaveType}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Lý do nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{leaveReason ?? "Không có ghi chú"}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Ngày nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{dateList}</td>
+                                </tr>
+                                <tr style='border-bottom: 1px solid #e0e0e0;'>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Tổng số ngày nghỉ:</td>
+                                    <td style='padding: 8px; color: #333;'>{totalLeaveDays} ngày</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 8px; font-weight: bold; color: #333;'>Lý do yêu cầu bổ sung:</td>
+                                    <td style='padding: 8px; color: #333;'>{lyDo ?? "Không có ghi chú"}</td>
+                                </tr>
+                            </table>
                         </div>
+                        <p style='color: #333; font-size: 16px; margin: 0 0 15px;'>Vui lòng cung cấp thông tin bổ sung trên hệ thống nhân sự tại: <a href='{systemUrl}' style='color: #007bff; text-decoration: none; font-weight: bold;'>Hệ thống Nhân sự</a>.</p>
+                        <p style='color: #333; font-size: 16px; margin: 0;'>Trân trọng,</p>
+                        <p style='color: #333; font-size: 16px; margin: 5px 0 0;'><strong>Phòng Nhân sự - {companyName}</strong></p>
                     </div>
-                    <p>Vui lòng cung cấp thêm thông tin cần thiết trên hệ thống.</p>
-                    <p>Trân trọng,</p>
-                    <p><strong>Phòng Nhân sự</strong></p>
-                    <hr style='border: 1px solid #e0e0e0; margin: 20px 0;'>
-                    <p style='color: #666; font-size: 12px;'>Đây là email tự động, vui lòng không trả lời email này.</p>
+                    <div style='text-align: center; padding: 10px; background-color: #e9ecef; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;'>
+                        <p style='margin: 0;'>Liên hệ: <a href='mailto:{senderEmail}' style='color: #007bff; text-decoration: none;'>{senderEmail}</a> | Đây là email tự động, vui lòng không trả lời.</p>
+                    </div>
                 </div>";
 
             message.Body = bodyBuilder.ToMessageBody();
@@ -857,7 +943,6 @@ namespace HR_KD.ApiControllers
                 }
                 catch (Exception ex)
                 {
-                    // Log error
                     Console.WriteLine($"Failed to send supplement request email: {ex.Message}");
                 }
             }

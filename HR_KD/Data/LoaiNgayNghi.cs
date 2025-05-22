@@ -36,9 +36,16 @@ public class LoaiNgayNghiMetadata
 
 public partial class LoaiNgayNghi
 {
+    [DisplayName("Mã loại")]
     public int MaLoaiNgayNghi { get; set; }
 
+    [Required(ErrorMessage = "Tên loại ngày nghỉ không được để trống")]
+    [StringLength(100, ErrorMessage = "Tên loại ngày nghỉ không được vượt quá 100 ký tự")]
+    [DisplayName("Tên loại")]
     public string TenLoai { get; set; } = null!;
+
+    [DisplayName("Mô tả")]
+    [StringLength(500, ErrorMessage = "Mô tả không được vượt quá 500 ký tự")]
 
     public string? MoTa { get; set; }
     [DisplayName("Số ngày nghỉ tối đa (bỏ trống nếu không giới hạn)")]

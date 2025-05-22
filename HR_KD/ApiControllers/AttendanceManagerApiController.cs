@@ -512,7 +512,7 @@ public class AttendanceManagerController : ControllerBase
                 UpdateTongGioThieu(chamCong.MaNv, chamCong.NgayLamViec, shortfall);
             }
 
-            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+           // SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
         }
         else if (request.TrangThai == "Từ chối")
         {
@@ -625,7 +625,7 @@ public class AttendanceManagerController : ControllerBase
                                 }
                             }
 
-                            SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                           // SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
                         }
                     }
                 }
@@ -719,7 +719,7 @@ public class AttendanceManagerController : ControllerBase
                 {
                     return BadRequest(new { success = false, message = "Không thể duyệt tăng ca vì nhân viên còn giờ thiếu chưa được bù." });
                 }
-                SendApprovalEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, "TC3");
+               // SendApprovalEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, "TC3");
             }
         }
 
@@ -794,7 +794,7 @@ public class AttendanceManagerController : ControllerBase
                         var employee = _context.NhanViens.Find(tangCa.MaNv);
                         if (employee != null)
                         {
-                            SendApprovalEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, "TC3");
+                         //   SendApprovalEmail(employee.Email, employee.HoTen, tangCa.NgayTangCa, "TC3");
                         }
                     }
                 }
@@ -1268,7 +1268,7 @@ public class AttendanceManagerController : ControllerBase
                 }
             }
 
-            SendApprovalEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB3");
+           // SendApprovalEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB3");
         }
         else if (request.TrangThai == "Từ chối")
         {
@@ -1374,7 +1374,7 @@ public class AttendanceManagerController : ControllerBase
                             }
                         }
 
-                        SendApprovalEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB3");
+                        //SendApprovalEmail(employee.Email, employee.HoTen, lamBu.NgayLamViec, "LB3");
                     }
                 }
 

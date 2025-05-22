@@ -70,7 +70,7 @@ namespace HR_KD.ApiControllers
 
             try
             {
-                // Existing attendance processing logic remains unchanged
+                // Attendance processing logic
                 if (data.attendance != null && data.attendance.Any())
                 {
                     foreach (var entry in data.attendance)
@@ -80,18 +80,31 @@ namespace HR_KD.ApiControllers
                             return BadRequest(new { success = false, message = $"Ngày làm việc không hợp lệ: {entry.NgayLamViec}" });
                         }
 
+                        // Check if employee already submitted attendance for this date
                         bool daChamCong = await _context.LichSuChamCongs.AnyAsync(c => c.MaNv == maNv.Value && c.Ngay == ngayLamViec);
                         if (daChamCong)
                         {
                             return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã chấm công ngày {entry.NgayLamViec}." });
                         }
 
-                        bool daNghi = await _context.NgayNghis.AnyAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
-                        if (daNghi)
+                        // Check if employee has a leave record for this date
+                        var leaveRecord = await _context.NgayNghis
+                            .FirstOrDefaultAsync(c => c.MaNv == maNv.Value && c.NgayNghi1 == ngayLamViec);
+                        if (leaveRecord != null)
                         {
-                            return BadRequest(new { success = false, message = $"Nhân viên {maNv} đã nghỉ ngày {entry.NgayLamViec}.", error = "Employee on leave" });
+                            // Prevent attendance if leave status is not NN4
+                            if (leaveRecord.MaTrangThai != "NN4")
+                            {
+                                return BadRequest(new
+                                {
+                                    success = false,
+                                    message = $"Nhân viên {maNv} có ngày nghỉ với trạng thái {leaveRecord.MaTrangThai} vào ngày {entry.NgayLamViec}, không thể chấm công.",
+                                    error = "Employee on leave with non-NN4 status"
+                                });
+                            }
                         }
 
+                        // Check weekly working hours limit
                         var (start, end) = GetWeekRange(ngayLamViec);
                         var weeklyHours = await _context.LichSuChamCongs
                             .Where(c => c.MaNv == maNv.Value && c.Ngay >= start && c.Ngay <= end)
@@ -116,7 +129,7 @@ namespace HR_KD.ApiControllers
                     await _context.SaveChangesAsync();
                 }
 
-                // Modified overtime processing with overlap check
+                // Overtime processing logic (unchanged)
                 if (data.overtime != null && data.overtime.Any())
                 {
                     foreach (var entry in data.overtime)
@@ -126,13 +139,11 @@ namespace HR_KD.ApiControllers
                             return BadRequest(new { success = false, message = $"Ngày tăng ca không hợp lệ: {entry.NgayTangCa}" });
                         }
 
-                        // Parse overtime times
                         if (!TimeOnly.TryParse(entry.GioVaoTangCa, out var gioVaoTangCa) || !TimeOnly.TryParse(entry.GioRaTangCa, out var gioRaTangCa))
                         {
                             return BadRequest(new { success = false, message = $"Giờ vào hoặc giờ ra tăng ca không hợp lệ cho ngày {entry.NgayTangCa}." });
                         }
 
-                        // Check weekly overtime limit
                         var (start, end) = GetWeekRange(ngayTangCa);
                         var weeklyOvertimeHours = await _context.TangCas
                             .Where(c => c.MaNv == maNv.Value && c.NgayTangCa >= start && c.NgayTangCa <= end)
@@ -142,7 +153,6 @@ namespace HR_KD.ApiControllers
                             return BadRequest(new { success = false, message = $"Đã đủ 12 giờ tăng ca trong tuần bắt đầu từ {start}, không thể tăng ca thêm." });
                         }
 
-                        // Check for overlapping with LamBu records
                         var lamBuRecords = await _context.LamBus
                             .Where(lb => lb.MaNV == maNv.Value && lb.NgayLamViec == ngayTangCa && lb.GioVao.HasValue && lb.GioRa.HasValue)
                             .ToListAsync();
@@ -152,7 +162,6 @@ namespace HR_KD.ApiControllers
                             var gioVaoLamBu = lamBu.GioVao.Value;
                             var gioRaLamBu = lamBu.GioRa.Value;
 
-                            // Check for overlap: Overtime interval overlaps if it starts before LamBu ends and ends after LamBu starts
                             if (gioVaoTangCa < gioRaLamBu && gioRaTangCa > gioVaoLamBu)
                             {
                                 return BadRequest(new

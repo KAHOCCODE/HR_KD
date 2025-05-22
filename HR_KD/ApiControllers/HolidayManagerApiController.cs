@@ -122,7 +122,7 @@ namespace HR_KD.Controllers
                                     MaNv = employee.MaNv,
                                     NgayLamViec = holiday.NgayLe1,
                                     GioVao = new TimeOnly(8, 0, 0),
-                                    GioRa = new TimeOnly(17, 0, 0),
+                                    GioRa = new TimeOnly(18, 0, 0),
                                     TongGio = 8.0m,
                                     TrangThai = "CC3",
                                     GhiChu = $"Ngày lễ: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
@@ -151,7 +151,7 @@ namespace HR_KD.Controllers
                                 MaNv = employee.MaNv,
                                 NgayLamViec = holiday.NgayLe1,
                                 GioVao = new TimeOnly(8, 0, 0),
-                                GioRa = new TimeOnly(17, 0, 0),
+                                GioRa = new TimeOnly(18, 0, 0),
                                 TongGio = 8.0m,
                                 TrangThai = "CC3",
                                 GhiChu = $"Ngày nghỉ bù: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"
@@ -288,7 +288,7 @@ namespace HR_KD.Controllers
                                     MaNv = employee.MaNv,
                                     NgayLamViec = holiday.NgayLe1,
                                     GioVao = new TimeOnly(8, 0, 0),
-                                    GioRa = new TimeOnly(17, 0, 0),
+                                    GioRa = new TimeOnly(18, 0, 0),
                                     TongGio = 8.0m,
                                     TrangThai = "CC3",
                                     GhiChu = $"Ngày lễ: {holiday.TenNgayLe} - Được duyệt bởi: {approverName}"

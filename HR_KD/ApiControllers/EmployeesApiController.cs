@@ -8,11 +8,13 @@ using System.Collections.Generic;
 using HR_KD.Helpers;
 using Humanizer;
 using HR_KD.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HR_KD.ApiControllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EmployeesApiController : ControllerBase
     {
         private readonly HrDbContext _context;
@@ -27,15 +29,102 @@ namespace HR_KD.ApiControllers
             _logger = logger;
             _usernameGen = new UsernameGeneratorService();
         }
+        #region Kiểm tra vai trò người dùng
+        [HttpGet("CheckRole")]
+        public IActionResult CheckRole()
+        {
+            try
+            {
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Unauthorized(new { message = "Người dùng chưa đăng nhập." });
+                }
+
+                var currentEmployee = _context.TaiKhoans
+                    .Include(t => t.MaNvNavigation)
+                    .FirstOrDefault(t => t.Username == username);
+
+                if (currentEmployee == null || currentEmployee.MaNvNavigation == null)
+                {
+                    return BadRequest(new { message = "Không tìm thấy thông tin nhân viên của người dùng." });
+                }
+
+                bool isDirector = _context.TaiKhoanQuyenHans
+                    .Any(tq => tq.Username == username && tq.MaQuyenHan == "DIRECTOR");
+
+                return Ok(new
+                {
+                    isDirector,
+                    maPhongBan = currentEmployee.MaNvNavigation.MaPhongBan
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi kiểm tra vai trò người dùng.");
+                return StatusCode(500, new { message = "Lỗi server. Xem log để biết chi tiết.", error = ex.Message });
+            }
+        }
+        #endregion
 
         #region Lấy danh sách nhân viên
         [HttpGet]
-        public IActionResult GetEmployees()
+        public IActionResult GetEmployees([FromQuery] int? phongBan = null, [FromQuery] int? chucVu = null, [FromQuery] string search = null)
         {
-            var employees = _context.NhanViens
-                .Include(e => e.MaPhongBanNavigation)
-                .Include(e => e.MaChucVuNavigation)
-                .Select(e => new
+            try
+            {
+                var username = User.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Unauthorized(new { message = "Người dùng chưa đăng nhập." });
+                }
+
+                var currentEmployee = _context.TaiKhoans
+                    .Include(t => t.MaNvNavigation)
+                    .FirstOrDefault(t => t.Username == username);
+
+                if (currentEmployee == null || currentEmployee.MaNvNavigation == null)
+                {
+                    return BadRequest(new { message = "Không tìm thấy thông tin nhân viên của người dùng." });
+                }
+
+                bool isDirector = _context.TaiKhoanQuyenHans
+                    .Any(tq => tq.Username == username && tq.MaQuyenHan == "DIRECTOR");
+
+                var query = _context.NhanViens
+                    .Include(e => e.MaPhongBanNavigation)
+                    .Include(e => e.MaChucVuNavigation)
+                    .AsQueryable();
+
+                // Nếu không phải Director, chỉ hiển thị nhân viên trong cùng phòng ban
+                if (!isDirector)
+                {
+                    var maPhongBan = currentEmployee.MaNvNavigation.MaPhongBan;
+                    query = query.Where(e => e.MaPhongBan == maPhongBan);
+                }
+                else if (phongBan.HasValue)
+                {
+                    // Director có thể lọc theo phòng ban được chọn
+                    query = query.Where(e => e.MaPhongBan == phongBan.Value);
+                }
+
+                // Áp dụng bộ lọc chức vụ nếu có
+                if (chucVu.HasValue)
+                {
+                    query = query.Where(e => e.MaChucVu == chucVu.Value);
+                }
+
+                // Áp dụng tìm kiếm nếu có
+                if (!string.IsNullOrEmpty(search))
+                {
+                    search = search.ToLower();
+                    query = query.Where(e =>
+                        e.HoTen.ToLower().Contains(search) ||
+                        e.Email.ToLower().Contains(search) ||
+                        e.Sdt.Contains(search));
+                }
+
+                var employees = query.Select(e => new
                 {
                     e.MaNv,
                     e.HoTen,
@@ -49,10 +138,19 @@ namespace HR_KD.ApiControllers
                     ChucVu = e.MaChucVuNavigation.TenChucVu,
                     PhongBan = e.MaPhongBanNavigation.TenPhongBan,
                     e.AvatarUrl,
-                    e.SoNguoiPhuThuoc
+                    e.SoNguoiPhuThuoc,
+                    e.MaPhongBan,
+                    e.MaChucVu
                 })
                 .ToList();
-            return Ok(employees);
+
+                return Ok(employees);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách nhân viên.");
+                return StatusCode(500, new { message = "Lỗi server. Xem log để biết chi tiết.", error = ex.Message });
+            }
         }
         #endregion
 
@@ -119,13 +217,11 @@ namespace HR_KD.ApiControllers
         {
             try
             {
-                // Kiểm tra nhân viên tồn tại
                 if (!_context.NhanViens.Any(nv => nv.MaNv == maNv))
                 {
                     return BadRequest(new { message = "Nhân viên không tồn tại." });
                 }
 
-                // Kiểm tra xem nhân viên đã có thông tin lương hay chưa
                 bool hasSalary = _context.BangLuongs.Any(l => l.MaNv == maNv);
 
                 return Ok(new { hasSalary });
@@ -158,19 +254,16 @@ namespace HR_KD.ApiControllers
             using var transaction = _context.Database.BeginTransaction();
             try
             {
-                // Kiểm tra MaNv hợp lệ
                 if (contractDto.MaNv <= 0)
                 {
                     return BadRequest(new { message = "Mã nhân viên không hợp lệ." });
                 }
 
-                // Kiểm tra nhân viên tồn tại
                 if (!_context.NhanViens.Any(nv => nv.MaNv == contractDto.MaNv))
                 {
                     return BadRequest(new { message = "Nhân viên không tồn tại." });
                 }
 
-                // Kiểm tra loại hợp đồng hợp lệ
                 var loaiHopDong = _context.LoaiHopDongs
                     .FirstOrDefault(l => l.MaLoaiHopDong == contractDto.MaLoaiHopDong);
                 if (loaiHopDong == null)
@@ -178,14 +271,11 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Loại hợp đồng không tồn tại." });
                 }
 
-                // Kiểm tra NgayBatDau bắt buộc
                 if (contractDto.NgayBatDau == default)
                 {
                     return BadRequest(new { message = "Ngày bắt đầu là bắt buộc." });
                 }
 
-                // Kiểm tra ThoiHan so với ThoiHanMacDinh
-                // Bỏ qua kiểm tra nếu là hợp đồng không xác định thời hạn (MaLoaiHopDong = 2)
                 if (contractDto.MaLoaiHopDong != 2)
                 {
                     if (loaiHopDong.ThoiHanMacDinh.HasValue && contractDto.ThoiHan.HasValue)
@@ -202,14 +292,12 @@ namespace HR_KD.ApiControllers
                 }
                 else
                 {
-                    // Hợp đồng không xác định thời hạn: đảm bảo ThoiHan và NgayKetThuc là null
                     contractDto.ThoiHan = null;
                     contractDto.NgayKetThuc = null;
                 }
 
-                // Tính NgayKetThuc nếu không được gửi từ frontend
                 DateOnly? ngayKetThuc = null;
-                if (contractDto.MaLoaiHopDong != 2) // Chỉ tính nếu không phải hợp đồng không xác định thời hạn
+                if (contractDto.MaLoaiHopDong != 2)
                 {
                     if (!string.IsNullOrEmpty(contractDto.NgayKetThuc?.ToString()))
                     {
@@ -223,7 +311,6 @@ namespace HR_KD.ApiControllers
 
                 if (contractDto.MaHopDong > 0)
                 {
-                    // Cập nhật hợp đồng
                     var existingContract = _context.HopDongLaoDongs
                         .FirstOrDefault(hd => hd.MaHopDong == contractDto.MaHopDong && hd.MaNv == contractDto.MaNv);
 
@@ -243,7 +330,6 @@ namespace HR_KD.ApiControllers
                 }
                 else
                 {
-                    // Thêm hợp đồng mới
                     var newContract = new HopDongLaoDong
                     {
                         MaNv = contractDto.MaNv,
@@ -280,7 +366,6 @@ namespace HR_KD.ApiControllers
             using var transaction = _context.Database.BeginTransaction();
             try
             {
-                // Kiểm tra hợp đồng tồn tại
                 var contract = _context.HopDongLaoDongs
                     .Include(hd => hd.LoaiHopDong)
                     .FirstOrDefault(hd => hd.MaHopDong == int.Parse(extendDto.MaHopDong) && hd.MaNv == int.Parse(extendDto.MaNv));
@@ -290,13 +375,11 @@ namespace HR_KD.ApiControllers
                     return NotFound(new { message = "Hợp đồng không tồn tại." });
                 }
 
-                // Kiểm tra hợp đồng còn hiệu lực
                 if (!contract.IsActive)
                 {
                     return BadRequest(new { message = "Hợp đồng không còn hiệu lực." });
                 }
 
-                // Kiểm tra ngày kết thúc
                 if (!contract.NgayKetThuc.HasValue)
                 {
                     return BadRequest(new { message = "Hợp đồng không có ngày kết thúc để gia hạn." });
@@ -308,13 +391,11 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Hợp đồng đã hết hạn, không thể gia hạn." });
                 }
 
-                // Kiểm tra số lần gia hạn
                 var soLanGiaHan = contract.SoLanGiaHan ?? 0;
                 var giaHanToiDa = contract.LoaiHopDong.GiaHanToiDa;
 
                 if (extendDto.ConvertToUnlimited)
                 {
-                    // (MaLoaiHopDong = 2)
                     var loaiHopDongKhongThoiHan = _context.LoaiHopDongs
                         .FirstOrDefault(l => l.MaLoaiHopDong == 2);
                     if (loaiHopDongKhongThoiHan == null)
@@ -330,13 +411,11 @@ namespace HR_KD.ApiControllers
                 }
                 else
                 {
-                    // Gia hạn hợp đồng xác định thời hạn
                     if (giaHanToiDa.HasValue && soLanGiaHan >= giaHanToiDa.Value)
                     {
                         return BadRequest(new { message = "Hợp đồng đã đạt số lần gia hạn tối đa." });
                     }
 
-                    // Gia hạn thêm 12 tháng
                     contract.ThoiHan = 12;
                     contract.NgayKetThuc = contract.NgayKetThuc.Value.AddMonths(12);
                     contract.SoLanGiaHan = soLanGiaHan + 1;
@@ -362,7 +441,6 @@ namespace HR_KD.ApiControllers
         [HttpPost("CreateEmployee")]
         public IActionResult CreateEmployee([FromForm] CreateEmployeeDTO employeeDto)
         {
-            // Validate model state
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors)
@@ -374,13 +452,11 @@ namespace HR_KD.ApiControllers
             using var transaction = _context.Database.BeginTransaction();
             try
             {
-                // Check if phone number is already used
                 if (_context.TaiKhoans.Any(t => t.Username == employeeDto.Sdt))
                 {
                     return Conflict(new { message = "Số điện thoại đã được sử dụng." });
                 }
 
-                // Validate department and position
                 if (!_context.PhongBans.Any(p => p.MaPhongBan == employeeDto.MaPhongBan))
                 {
                     return BadRequest(new { message = "Phòng ban không tồn tại." });
@@ -391,7 +467,6 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Chức vụ không tồn tại." });
                 }
 
-                // Create new employee
                 var employee = new NhanVien
                 {
                     HoTen = employeeDto.HoTen,
@@ -412,7 +487,6 @@ namespace HR_KD.ApiControllers
                 _context.SaveChanges();
                 int maNvMoi = employee.MaNv;
 
-                // Assign default roles
                 var defaultRoles = new List<string> { "EMPLOYEE" };
                 var validRoles = _context.QuyenHans
                     .Where(q => defaultRoles.Contains(q.MaQuyenHan))
@@ -425,7 +499,6 @@ namespace HR_KD.ApiControllers
                     return BadRequest(new { message = "Không có quyền hạn hợp lệ để gán cho nhân viên mới." });
                 }
 
-                // Create account
                 string username = _usernameGen.GenerateUsername(string.IsNullOrEmpty(employeeDto.HoTen) ? "user" : employeeDto.HoTen, maNvMoi);
                 string defaultPassword = "123456";
                 string randomkey = PasswordHelper.GenerateRandomKey();
@@ -441,7 +514,6 @@ namespace HR_KD.ApiControllers
                 _context.TaiKhoans.Add(taiKhoan);
                 _context.SaveChanges();
 
-                // Assign roles to account
                 foreach (var role in validRoles)
                 {
                     _context.TaiKhoanQuyenHans.Add(new TaiKhoanQuyenHan
@@ -452,7 +524,6 @@ namespace HR_KD.ApiControllers
                 }
                 _context.SaveChanges();
 
-                // Fetch holidays for the year of NgayVaoLam with TrangThai = "NL4"
                 var startDate = employee.NgayVaoLam;
                 if (!startDate.HasValue)
                 {
@@ -464,10 +535,9 @@ namespace HR_KD.ApiControllers
                     .Where(nl => nl.TrangThai == "NL4" && nl.NgayLe1.Year == year)
                     .ToList();
 
-                // Create attendance records for holiday dates on or after NgayVaoLam
                 foreach (var holiday in holidays)
                 {
-                    int days = holiday.SoNgayNghi.GetValueOrDefault(1); // Default to 1 day if null
+                    int days = holiday.SoNgayNghi.GetValueOrDefault(1);
                     for (int i = 0; i < days; i++)
                     {
                         var holidayDate = holiday.NgayLe1.AddDays(i);
@@ -477,12 +547,12 @@ namespace HR_KD.ApiControllers
                             {
                                 MaNv = maNvMoi,
                                 NgayLamViec = holidayDate,
-                                GioVao = new TimeOnly(8, 0), // 8:00 AM
-                                GioRa = new TimeOnly(18, 0), // 6:00 PM
-                                TongGio = 8, // 8 hours
-                                TrangThai = "CC3", // Standard workday
+                                GioVao = new TimeOnly(8, 0),
+                                GioRa = new TimeOnly(18, 0),
+                                TongGio = 8,
+                                TrangThai = "CC3",
                                 GhiChu = holiday.MoTa ?? "",
-                                MaNvDuyet = 1 // TODO: Replace with logic to determine approver (e.g., manager's MaNv)
+                                MaNvDuyet = 1
                             };
 
                             _context.ChamCongs.Add(attendance);
@@ -492,7 +562,6 @@ namespace HR_KD.ApiControllers
                 }
                 _context.SaveChanges();
 
-                // Handle avatar upload
                 if (employeeDto.AvatarUrl != null)
                 {
                     try
@@ -520,7 +589,6 @@ namespace HR_KD.ApiControllers
                     }
                 }
 
-                // Send email notification
                 try
                 {
                     string subject = "Thông tin tài khoản nhân viên";
@@ -586,7 +654,6 @@ namespace HR_KD.ApiControllers
 
                 transaction.Commit();
 
-                // Create response DTO
                 var responseDto = new
                 {
                     MaNv = employee.MaNv,

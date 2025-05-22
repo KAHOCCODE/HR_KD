@@ -10,7 +10,7 @@ using HR_KD.Models;
 
 namespace HR_KD.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "DIRECTOR")]
     public class ChinhSachPhepNamController : Controller
     {
         private readonly HrDbContext _context;

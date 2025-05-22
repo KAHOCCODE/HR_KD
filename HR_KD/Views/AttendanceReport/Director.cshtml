@@ -3,7 +3,11 @@
     var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
     var role = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
 }
-
+<style>
+    .hidden {
+    display: none;
+}
+</style>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -65,7 +69,7 @@
                             </div>
                             <div class="flex items-end space-x-4">
                                 <button id="filterBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Lọc</button>
-                                @* <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Xuất Excel</button> *@
+                                <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Xuất Excel</button> 
                             </div>
                         </div>
                     </div>
@@ -189,11 +193,11 @@
                         </div>
                     </div>
 
-                    <!-- Calendar -->
-                    <div class="bg-white shadow-sm rounded-lg p-4 md:p-6">
-                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Lịch Chấm Công</h2>
-                        <div id="calendar" class="bg-gray-50 p-4 rounded-md"></div>
-                    </div>
+                     <!-- Calendar -->
+                        <div class="bg-white shadow-sm rounded-lg p-4 md:p-6 hidden" id="work-schedule">
+                            <h2 class="text-lg font-semibold text-gray-700 mb-4">Lịch Chấm Công</h2>
+                            <div id="calendar" class="bg-gray-50 p-4 rounded-md"></div>
+                        </div>
                 </div>
             </div>
 
@@ -403,19 +407,19 @@
                                 });
                         }
 
-                        // // Export to Excel
-                        // document.getElementById('exportBtn').addEventListener('click', function () {
-                        //     const maPhongBan = document.getElementById('departmentFilter').value;
-                        //     const maChucVu = document.getElementById('positionFilter').value;
-                        //     const monthYear = document.getElementById('monthPicker').value;
+                         // Export to Excel
+                         document.getElementById('exportBtn').addEventListener('click', function () {
+                            const maPhongBan = document.getElementById('departmentFilter').value;
+                            const maChucVu = document.getElementById('positionFilter').value;
+                             const monthYear = document.getElementById('monthPicker').value;
 
-                        //     let url = '/api/AttendanceReportApi/ExportMonthlyReport?';
-                        //     if (maPhongBan) url += `maPhongBan=${maPhongBan}&`;
-                        //     if (maChucVu) url += `maChucVu=${maChucVu}&`;
-                        //     if (monthYear) url += `monthYear=${monthYear}`;
+                             let url = '/api/AttendanceReportApi/ExportMonthlyReport?';
+                             if (maPhongBan) url += `maPhongBan=${maPhongBan}&`;
+                            if (maChucVu) url += `maChucVu=${maChucVu}&`;
+                             if (monthYear) url += `monthYear=${monthYear}`;
 
-                        //     window.location.href = url;
-                        // });
+                             window.location.href = url;
+                        });
 
                         // Filter button click
                         document.getElementById('filterBtn').addEventListener('click', function () {

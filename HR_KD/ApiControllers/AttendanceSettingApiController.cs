@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace HR_KD.ApiControllers
 {
-    [Authorize(Roles = "DIRECTOR")]
     [Route("api/AttendanceSettingApi")]
     public class AttendanceSettingApiController : Controller
     {

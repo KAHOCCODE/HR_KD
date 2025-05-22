@@ -3,17 +3,17 @@
     var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
     if (string.IsNullOrEmpty(maNv))
     {
-                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-                <script>
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi!',
-                        text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        window.location.href = '/Login';
-                    });
-                </script>
+                        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                        <script>
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi!',
+                                text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                window.location.href = '/Login';
+                            });
+                        </script>
         return;
     }
 }
@@ -44,7 +44,6 @@
         animation: spin 1s linear infinite;
         margin-right: 8px;
     }
-
 </style>
 
 <!-- Main Container -->
@@ -164,6 +163,7 @@ let selectedWorkDays = [];
 let workScheduleData = {};
 let workTimeConfig = null; // Store ChamCongGioRaVao active record
 let holidayData = {}; // Store holiday data
+let flatpickrInstance = null; // Store Flatpickr instance
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (!maNv) {
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Initialize Flatpickr
-    flatpickr("#workDateRange", {
+    flatpickrInstance = flatpickr("#workDateRange", {
         mode: "range",
         dateFormat: "d/m/Y",
         weekNumbers: true,
@@ -245,7 +245,7 @@ async function fetchRemainingHours() {
                 Swal.fire({
                     icon: 'info',
                     title: 'Thông báo',
-                    text: 'Bạn không có giờ cần bù, các chức năng đã bị khóa.',
+                    text: 'Bạn không có giờ cần bù, không thể đăng ký làm bù.',
                     confirmButtonText: 'OK'
                 });
             }
@@ -257,7 +257,7 @@ async function fetchRemainingHours() {
             Swal.fire({
                 icon: 'info',
                 title: 'Thông báo',
-                text: 'Không có dữ liệu giờ cần bù, các chức năng đã bị khóa.',
+                text: 'Không có dữ liệu giờ cần bù, không thể đăng ký làm bù.',
                 confirmButtonText: 'OK'
             });
         }
@@ -283,7 +283,10 @@ function disableControls() {
         checkbox.disabled = true;
     });
     document.getElementById('compensatoryControls').classList.add('disabled-section');
-    flatpickr("#workDateRange").disable();
+    if (flatpickrInstance) {
+        flatpickrInstance.set('disable', [() => true]); // Disable all dates
+        document.getElementById('workDateRange').disabled = true; // Disable the input element
+    }
 }
 
 function handleDateRangeClose(selectedDates) {

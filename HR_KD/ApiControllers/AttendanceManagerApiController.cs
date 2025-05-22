@@ -144,46 +144,82 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy lịch sử chấm công." });
         }
 
-        if (request.TrangThai == "LS4")
+        using (var transaction = _context.Database.BeginTransaction())
         {
-            lichSu.TrangThai = "LS4";
-            lichSu.GhiChu = request.GhiChu ?? "Không có ghi chú";
-            lichSu.MaNvDuyet = maNv;
-
-            var employee = _context.NhanViens.Find(lichSu.MaNv);
-            if (employee != null)
+            try
             {
-                SendRejectionEmail(employee.Email, employee.HoTen, lichSu.Ngay, "LS4", "chấm công", lichSu.GhiChu);
+                if (request.TrangThai == "LS4")
+                {
+                    lichSu.TrangThai = "LS4";
+                    lichSu.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                    lichSu.MaNvDuyet = maNv;
+
+                    var employee = _context.NhanViens.Find(lichSu.MaNv);
+                    if (employee != null)
+                    {
+                        SendRejectionEmail(employee.Email, employee.HoTen, lichSu.Ngay, "LS4", "chấm công", lichSu.GhiChu);
+                    }
+
+                    _context.SaveChanges();
+                    transaction.Commit();
+                    return Ok(new { success = true, message = "Đã từ chối chấm công." });
+                }
+
+                // Check for existing ChamCong with status CC6
+                var chamCongCC6 = _context.ChamCongs
+                    .FirstOrDefault(cc => cc.MaNv == lichSu.MaNv && cc.NgayLamViec == lichSu.Ngay && cc.TrangThai == "CC6");
+
+                if (chamCongCC6 != null)
+                {
+                    // Update CC6 record to CC2
+                    chamCongCC6.TrangThai = "CC2";
+                    chamCongCC6.MaNvDuyet = maNv;
+                    chamCongCC6.GioVao = lichSu.GioVao;
+                    chamCongCC6.GioRa = lichSu.GioRa;
+                    chamCongCC6.TongGio = lichSu.TongGio;
+                    chamCongCC6.GhiChu = lichSu.GhiChu;
+
+                    lichSu.TrangThai = "LS2";
+                    lichSu.MaNvDuyet = maNv;
+                }
+                else
+                {
+                    // Check for duplicate ChamCong records
+                    var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == lichSu.MaNv && cc.NgayLamViec == lichSu.Ngay && cc.TrangThai != "CC6");
+                    if (daTonTai)
+                    {
+                        transaction.Rollback();
+                        return BadRequest(new { success = false, message = "Chấm công đã tồn tại trong bảng chính." });
+                    }
+
+                    // Create new ChamCong record
+                    var chamCong = new ChamCong
+                    {
+                        MaNv = lichSu.MaNv,
+                        NgayLamViec = lichSu.Ngay,
+                        GioVao = lichSu.GioVao,
+                        GioRa = lichSu.GioRa,
+                        TongGio = lichSu.TongGio,
+                        TrangThai = "CC2",
+                        GhiChu = lichSu.GhiChu,
+                        MaNvDuyet = maNv
+                    };
+
+                    _context.ChamCongs.Add(chamCong);
+                    lichSu.TrangThai = "LS2";
+                    lichSu.MaNvDuyet = maNv;
+                }
+
+                _context.SaveChanges();
+                transaction.Commit();
+                return Ok(new { success = true, message = "Duyệt chấm công thành công." });
             }
-
-            _context.SaveChanges();
-            return Ok(new { success = true, message = "Đã từ chối chấm công." });
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
-
-        var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == lichSu.MaNv && cc.NgayLamViec == lichSu.Ngay);
-        if (daTonTai)
-        {
-            return BadRequest(new { success = false, message = "Chấm công đã tồn tại trong bảng chính." });
-        }
-
-        var chamCong = new ChamCong
-        {
-            MaNv = lichSu.MaNv,
-            NgayLamViec = lichSu.Ngay,
-            GioVao = lichSu.GioVao,
-            GioRa = lichSu.GioRa,
-            TongGio = lichSu.TongGio,
-            TrangThai = "CC2",
-            GhiChu = lichSu.GhiChu,
-            MaNvDuyet = maNv
-        };
-
-        _context.ChamCongs.Add(chamCong);
-        lichSu.TrangThai = "LS2";
-        lichSu.MaNvDuyet = maNv;
-        _context.SaveChanges();
-
-        return Ok(new { success = true, message = "Duyệt chấm công thành công." });
     }
 
     // 🔹 Duyệt hoặc từ chối nhiều bản ghi chấm công (Manager)
@@ -230,28 +266,50 @@ public class AttendanceManagerController : ControllerBase
                     }
                     else if (request.TrangThai == "LS2")
                     {
-                        var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == lichSu.MaNv && cc.NgayLamViec == lichSu.Ngay);
-                        if (daTonTai)
+                        // Check for existing ChamCong with status CC6
+                        var chamCongCC6 = _context.ChamCongs
+                            .FirstOrDefault(cc => cc.MaNv == lichSu.MaNv && cc.NgayLamViec == lichSu.Ngay && cc.TrangThai == "CC6");
+
+                        if (chamCongCC6 != null)
                         {
-                            failedRecords.Add(maChamCong);
-                            continue;
+                            // Update CC6 record to CC2
+                            chamCongCC6.TrangThai = "CC2";
+                            chamCongCC6.MaNvDuyet = maNv;
+                            chamCongCC6.GioVao = lichSu.GioVao;
+                            chamCongCC6.GioRa = lichSu.GioRa;
+                            chamCongCC6.TongGio = lichSu.TongGio;
+                            chamCongCC6.GhiChu = lichSu.GhiChu;
+
+                            lichSu.TrangThai = "LS2";
+                            lichSu.MaNvDuyet = maNv;
                         }
-
-                        var chamCong = new ChamCong
+                        else
                         {
-                            MaNv = lichSu.MaNv,
-                            NgayLamViec = lichSu.Ngay,
-                            GioVao = lichSu.GioVao,
-                            GioRa = lichSu.GioRa,
-                            TongGio = lichSu.TongGio,
-                            TrangThai = "CC2",
-                            GhiChu = lichSu.GhiChu,
-                            MaNvDuyet = maNv
-                        };
+                            // Check for duplicate ChamCong records
+                            var daTonTai = _context.ChamCongs.Any(cc => cc.MaNv == lichSu.MaNv && cc.NgayLamViec == lichSu.Ngay && cc.TrangThai != "CC6");
+                            if (daTonTai)
+                            {
+                                failedRecords.Add(maChamCong);
+                                continue;
+                            }
 
-                        _context.ChamCongs.Add(chamCong);
-                        lichSu.TrangThai = "LS2";
-                        lichSu.MaNvDuyet = maNv;
+                            // Create new ChamCong record
+                            var chamCong = new ChamCong
+                            {
+                                MaNv = lichSu.MaNv,
+                                NgayLamViec = lichSu.Ngay,
+                                GioVao = lichSu.GioVao,
+                                GioRa = lichSu.GioRa,
+                                TongGio = lichSu.TongGio,
+                                TrangThai = "CC2",
+                                GhiChu = lichSu.GhiChu,
+                                MaNvDuyet = maNv
+                            };
+
+                            _context.ChamCongs.Add(chamCong);
+                            lichSu.TrangThai = "LS2";
+                            lichSu.MaNvDuyet = maNv;
+                        }
                     }
                 }
 
@@ -490,41 +548,124 @@ public class AttendanceManagerController : ControllerBase
             return BadRequest(new { success = false, message = "Không tìm thấy nhân viên." });
         }
 
-        if (request.TrangThai == "Đã duyệt")
+        using (var transaction = _context.Database.BeginTransaction())
         {
-            chamCong.TrangThai = "CC3";
-            chamCong.MaNvDuyet = maNv;
-
-            const decimal standardHours = 8.0m;
-            if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
+            try
             {
-                decimal shortfall = standardHours - chamCong.TongGio.Value;
-
-                var gioThieu = new GioThieu
+                if (request.TrangThai == "Đã duyệt")
                 {
-                    NgayThieu = chamCong.NgayLamViec,
-                    TongGioThieu = shortfall,
-                    MaNv = chamCong.MaNv,
-                    MaNvNavigation = employee
-                };
-                _context.GioThieus.Add(gioThieu);
+                    chamCong.TrangThai = "CC3";
+                    chamCong.MaNvDuyet = maNv;
 
-                UpdateTongGioThieu(chamCong.MaNv, chamCong.NgayLamViec, shortfall);
+                    const decimal standardHours = 8.0m;
+                    if (chamCong.TongGio.HasValue && chamCong.TongGio < standardHours)
+                    {
+                        decimal shortfall = standardHours - chamCong.TongGio.Value;
+
+                        var gioThieu = new GioThieu
+                        {
+                            NgayThieu = chamCong.NgayLamViec,
+                            TongGioThieu = shortfall,
+                            MaNv = chamCong.MaNv,
+                            MaNvNavigation = employee
+                        };
+                        _context.GioThieus.Add(gioThieu);
+
+                        UpdateTongGioThieu(chamCong.MaNv, chamCong.NgayLamViec, shortfall);
+                    }
+
+                    // Check for matching ChamCong with status CC6
+                    var chamCongCC6 = _context.ChamCongs
+                        .FirstOrDefault(cc => cc.MaNv == chamCong.MaNv && cc.NgayLamViec == chamCong.NgayLamViec && cc.TrangThai == "CC6");
+
+                    if (chamCongCC6 != null && chamCongCC6.TongGio.HasValue)
+                    {
+                        // Update CC6 record to CC3
+                        chamCongCC6.TrangThai = "CC3";
+                        chamCongCC6.MaNvDuyet = maNv;
+
+                        // Update TongGioThieu
+                        var firstDayOfMonth = new DateOnly(chamCong.NgayLamViec.Year, chamCong.NgayLamViec.Month, 1);
+                        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                        var tongGioThieu = _context.TongGioThieus
+                            .FirstOrDefault(t => t.MaNv == chamCong.MaNv &&
+                                               t.NgayBatDauThieu == firstDayOfMonth &&
+                                               t.NgayKetThucThieu == lastDayOfMonth);
+
+                        if (tongGioThieu != null)
+                        {
+                            tongGioThieu.TongGioConThieu = Math.Max(0, tongGioThieu.TongGioConThieu - chamCongCC6.TongGio.Value);
+                        }
+                        else
+                        {
+                            tongGioThieu = new TongGioThieu
+                            {
+                                MaNv = chamCong.MaNv,
+                                NgayBatDauThieu = firstDayOfMonth,
+                                NgayKetThucThieu = lastDayOfMonth,
+                                TongGioConThieu = 0m,
+                                TongGioLamBu = 0m,
+                                MaNvNavigation = employee
+                            };
+                            _context.TongGioThieus.Add(tongGioThieu);
+                        }
+                    }
+
+                    // Check for matching NgayNghi with status NN3 (from previous requirement)
+                    var ngayNghi = _context.NgayNghis
+                        .FirstOrDefault(nn => nn.MaNv == chamCong.MaNv && nn.NgayNghi1 == chamCong.NgayLamViec && nn.MaTrangThai == "NN3");
+
+                    if (ngayNghi != null && chamCong.TongGio.HasValue)
+                    {
+                        var firstDayOfMonth = new DateOnly(chamCong.NgayLamViec.Year, chamCong.NgayLamViec.Month, 1);
+                        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                        var tongGioThieu = _context.TongGioThieus
+                            .FirstOrDefault(t => t.MaNv == chamCong.MaNv &&
+                                               t.NgayBatDauThieu == firstDayOfMonth &&
+                                               t.NgayKetThucThieu == lastDayOfMonth);
+
+                        if (tongGioThieu != null)
+                        {
+                            tongGioThieu.TongGioConThieu = Math.Max(0, tongGioThieu.TongGioConThieu - chamCong.TongGio.Value);
+                        }
+                        else
+                        {
+                            tongGioThieu = new TongGioThieu
+                            {
+                                MaNv = chamCong.MaNv,
+                                NgayBatDauThieu = firstDayOfMonth,
+                                NgayKetThucThieu = lastDayOfMonth,
+                                TongGioConThieu = 0m,
+                                TongGioLamBu = 0m,
+                                MaNvNavigation = employee
+                            };
+                            _context.TongGioThieus.Add(tongGioThieu);
+                        }
+                    }
+
+                    // SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                }
+                else if (request.TrangThai == "Từ chối")
+                {
+                    chamCong.TrangThai = "CC4";
+                    chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
+                    chamCong.MaNvDuyet = maNv;
+                    SendRejectionEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC4", "chấm công", chamCong.GhiChu);
+                }
+
+                _context.SaveChanges();
+                transaction.Commit();
+                var message = request.TrangThai == "Đã duyệt" ? "Duyệt chấm công thành công." : "Đã từ chối chấm công.";
+                return Ok(new { success = true, message });
             }
-
-           // SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
-        else if (request.TrangThai == "Từ chối")
-        {
-            chamCong.TrangThai = "CC4";
-            chamCong.GhiChu = request.GhiChu ?? "Không có ghi chú";
-            chamCong.MaNvDuyet = maNv;
-            SendRejectionEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC4", "chấm công", chamCong.GhiChu);
-        }
-
-        _context.SaveChanges();
-        var message = request.TrangThai == "Đã duyệt" ? "Duyệt chấm công thành công." : "Đã từ chối chấm công.";
-        return Ok(new { success = true, message });
     }
 
     // 🔹 Duyệt hoặc từ chối nhiều bản ghi chấm công (Director)
@@ -618,14 +759,33 @@ public class AttendanceManagerController : ControllerBase
                                 };
                                 _context.GioThieus.Add(gioThieu);
 
-                                // Cập nhật TongGioThieu
                                 if (tongGioThieu != null)
                                 {
                                     tongGioThieu.TongGioConThieu += shortfall;
                                 }
                             }
 
-                           // SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
+                            // Check for matching ChamCong with status CC6
+                            var chamCongCC6 = _context.ChamCongs
+                                .FirstOrDefault(cc => cc.MaNv == chamCong.MaNv && cc.NgayLamViec == chamCong.NgayLamViec && cc.TrangThai == "CC6");
+
+                            if (chamCongCC6 != null && chamCongCC6.TongGio.HasValue && tongGioThieu != null)
+                            {
+                                chamCongCC6.TrangThai = "CC3";
+                                chamCongCC6.MaNvDuyet = maNv;
+                                tongGioThieu.TongGioConThieu = Math.Max(0, tongGioThieu.TongGioConThieu - chamCongCC6.TongGio.Value);
+                            }
+
+                            // Check for matching NgayNghi with status NN3 (from previous requirement)
+                            var ngayNghi = _context.NgayNghis
+                                .FirstOrDefault(nn => nn.MaNv == chamCong.MaNv && nn.NgayNghi1 == chamCong.NgayLamViec && nn.MaTrangThai == "NN3");
+
+                            if (ngayNghi != null && chamCong.TongGio.HasValue && tongGioThieu != null)
+                            {
+                                tongGioThieu.TongGioConThieu = Math.Max(0, tongGioThieu.TongGioConThieu - chamCong.TongGio.Value);
+                            }
+
+                            // SendApprovalEmail(employee.Email, employee.HoTen, chamCong.NgayLamViec, "CC3");
                         }
                     }
                 }

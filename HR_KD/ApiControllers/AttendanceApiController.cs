@@ -93,13 +93,13 @@ namespace HR_KD.ApiControllers
                         if (leaveRecord != null)
                         {
                             // Prevent attendance if leave status is not NN4
-                            if (leaveRecord.MaTrangThai != "NN4")
+                            if (leaveRecord.MaTrangThai != "NN3")
                             {
                                 return BadRequest(new
                                 {
                                     success = false,
                                     message = $"Nhân viên {maNv} có ngày nghỉ với trạng thái {leaveRecord.MaTrangThai} vào ngày {entry.NgayLamViec}, không thể chấm công.",
-                                    error = "Employee on leave with non-NN4 status"
+                                    error = "Employee on leave with non-NN3 status"
                                 });
                             }
                         }

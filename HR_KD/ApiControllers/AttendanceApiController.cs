@@ -70,6 +70,7 @@ namespace HR_KD.ApiControllers
 
             try
             {
+                // Existing attendance processing logic remains unchanged
                 if (data.attendance != null && data.attendance.Any())
                 {
                     foreach (var entry in data.attendance)
@@ -115,6 +116,7 @@ namespace HR_KD.ApiControllers
                     await _context.SaveChangesAsync();
                 }
 
+                // Modified overtime processing with overlap check
                 if (data.overtime != null && data.overtime.Any())
                 {
                     foreach (var entry in data.overtime)
@@ -124,6 +126,13 @@ namespace HR_KD.ApiControllers
                             return BadRequest(new { success = false, message = $"Ngày tăng ca không hợp lệ: {entry.NgayTangCa}" });
                         }
 
+                        // Parse overtime times
+                        if (!TimeOnly.TryParse(entry.GioVaoTangCa, out var gioVaoTangCa) || !TimeOnly.TryParse(entry.GioRaTangCa, out var gioRaTangCa))
+                        {
+                            return BadRequest(new { success = false, message = $"Giờ vào hoặc giờ ra tăng ca không hợp lệ cho ngày {entry.NgayTangCa}." });
+                        }
+
+                        // Check weekly overtime limit
                         var (start, end) = GetWeekRange(ngayTangCa);
                         var weeklyOvertimeHours = await _context.TangCas
                             .Where(c => c.MaNv == maNv.Value && c.NgayTangCa >= start && c.NgayTangCa <= end)
@@ -131,6 +140,27 @@ namespace HR_KD.ApiControllers
                         if (weeklyOvertimeHours >= 12)
                         {
                             return BadRequest(new { success = false, message = $"Đã đủ 12 giờ tăng ca trong tuần bắt đầu từ {start}, không thể tăng ca thêm." });
+                        }
+
+                        // Check for overlapping with LamBu records
+                        var lamBuRecords = await _context.LamBus
+                            .Where(lb => lb.MaNV == maNv.Value && lb.NgayLamViec == ngayTangCa && lb.GioVao.HasValue && lb.GioRa.HasValue)
+                            .ToListAsync();
+
+                        foreach (var lamBu in lamBuRecords)
+                        {
+                            var gioVaoLamBu = lamBu.GioVao.Value;
+                            var gioRaLamBu = lamBu.GioRa.Value;
+
+                            // Check for overlap: Overtime interval overlaps if it starts before LamBu ends and ends after LamBu starts
+                            if (gioVaoTangCa < gioRaLamBu && gioRaTangCa > gioVaoLamBu)
+                            {
+                                return BadRequest(new
+                                {
+                                    success = false,
+                                    message = $"Giờ tăng ca từ {gioVaoTangCa:HH:mm} đến {gioRaTangCa:HH:mm} trùng với giờ làm bù từ {gioVaoLamBu:HH:mm} đến {gioRaLamBu:HH:mm} vào ngày {ngayTangCa}."
+                                });
+                            }
                         }
 
                         var tangCa = new TangCa
@@ -141,8 +171,8 @@ namespace HR_KD.ApiControllers
                             TyLeTangCa = (decimal)(entry.TiLeTangCa / 100.0),
                             GhiChu = entry.GhiChu,
                             TrangThai = "TC1",
-                            GioVao = TimeOnly.TryParse(entry.GioVaoTangCa, out var parsedGioVao) ? parsedGioVao : null,
-                            GioRa = TimeOnly.TryParse(entry.GioRaTangCa, out var parsedGioRa) ? parsedGioRa : null,
+                            GioVao = gioVaoTangCa,
+                            GioRa = gioRaTangCa,
                             MaNvDuyet = 0
                         };
                         _context.TangCas.Add(tangCa);

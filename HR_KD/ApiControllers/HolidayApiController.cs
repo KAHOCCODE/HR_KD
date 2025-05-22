@@ -19,6 +19,12 @@ namespace HR_KD.Controllers
         {
             _context = context;
         }
+        [HttpGet("GetFixedHolidays")]
+        public async Task<ActionResult<IEnumerable<NgayLeCoDinh>>> GetFixedHolidays()
+        {
+            var fixedHolidays = await _context.NgayLeCoDinhs.ToListAsync();
+            return Ok(fixedHolidays);
+        }
 
         [HttpGet("GetAll")]
         public async Task<ActionResult> GetAll()

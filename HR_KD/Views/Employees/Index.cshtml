@@ -489,7 +489,7 @@
                     tableContent += `
             <tr>
                 <td class="avatar-col text-center">
-                    <img src="${employee.avatarUrl || '/default-avatar.png'}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">
+                    <img src="${employee.avatarUrl || '/images/employees/Avatar.jpg'}" class="rounded-circle border" width="40" height="40" style="object-fit: cover;">
                 </td>
                 <td><span class="badge bg-light text-dark">${employee.maNv}</span></td>
                 <td>
@@ -623,7 +623,7 @@
             }
 
             // Hiển thị thông tin trong modal
-            document.getElementById("modalAvatar").src = employee.avatarUrl || '/default-avatar.png';
+            document.getElementById("modalAvatar").src = employee.avatarUrl || '/images/employees/Avatar.jpg';
             document.getElementById("modalMaNv").textContent = employee.maNv;
             document.getElementById("modalHoTen").textContent = employee.hoTen;
             document.getElementById("modalNgaySinh").textContent = new Date(employee.ngaySinh).toLocaleDateString('vi-VN');

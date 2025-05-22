@@ -121,7 +121,6 @@
             const deleteButtons = document.querySelectorAll('.delete-btn');
 
             if (isInPeriod) {
-                // Trong khoảng 1/12-30/12, mở tất cả chức năng
                 holidayForm.style.opacity = '1';
                 holidayForm.style.pointerEvents = 'auto';
                 saveButton.disabled = false;
@@ -133,10 +132,8 @@
                 });
                 alertElement.style.display = 'none';
             } else {
-                // Ngoài khoảng 1/12-30/12, kiểm tra yêu cầu mở duyệt cho năm hiện tại
                 checkPendingRequest(currentYear).then(hasPendingRequest => {
                     if (hasPendingRequest) {
-                        // Có yêu cầu đang chờ, khóa chức năng
                         holidayForm.style.opacity = '0.5';
                         holidayForm.style.pointerEvents = 'none';
                         saveButton.disabled = true;
@@ -149,7 +146,6 @@
                         alertMessage.textContent = `Có yêu cầu mở duyệt ngày lễ đang chờ xử lý cho năm ${currentYear}. Vui lòng chờ phản hồi từ quản lý.`;
                         alertElement.style.display = 'block';
                     } else {
-                        // Không có yêu cầu đang chờ, kiểm tra yêu cầu đã duyệt cho năm hiện tại
                         fetch(`/api/Holidays/CheckApprovedRequest?year=${currentYear}`, {
                             method: 'GET',
                             headers: { 'Content-Type': 'application/json' }
@@ -157,7 +153,6 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.exists) {
-                                // Có yêu cầu đã duyệt cho năm hiện tại, mở chức năng
                                 holidayForm.style.opacity = '1';
                                 holidayForm.style.pointerEvents = 'auto';
                                 saveButton.disabled = false;
@@ -169,7 +164,6 @@
                                 });
                                 alertElement.style.display = 'none';
                             } else {
-                                // Không có yêu cầu đã duyệt, khóa chức năng
                                 holidayForm.style.opacity = '0.5';
                                 holidayForm.style.pointerEvents = 'none';
                                 saveButton.disabled = true;
@@ -241,7 +235,7 @@
                     .then(result => {
                         if (result.success) {
                             alert("Yêu cầu mở duyệt đã được gửi thành công!");
-                            checkHolidayPeriod(); // Refresh UI state
+                            checkHolidayPeriod();
                         } else {
                             alert("Lỗi khi gửi yêu cầu: " + (result.message || "Không xác định"));
                         }
@@ -261,22 +255,22 @@
 
         // Khởi tạo DatePicker
         function initializeDatePicker() {
-    flatpickr("#holidayDate", {
-        dateFormat: "Y-m-d",
-        disable: [
-            function(date) {
-                let today = new Date();
-                today.setHours(0, 0, 0, 0);
-                if (date < today) {
-                    return true; // Disable past dates
-                }
-                const dateString = date.toISOString().split("T")[0];
-                return existingHolidays.includes(dateString); // Disable existing holiday dates
-            }
-        ],
-        locale: { firstDayOfWeek: 1 }
-    });
-}
+            flatpickr("#holidayDate", {
+                dateFormat: "Y-m-d",
+                disable: [
+                    function(date) {
+                        let today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (date < today) {
+                            return true; // Disable past dates
+                        }
+                        const dateString = date.toISOString().split("T")[0];
+                        return existingHolidays.includes(dateString); // Disable existing holiday dates
+                    }
+                ],
+                locale: { firstDayOfWeek: 1 }
+            });
+        }
 
         // Lấy danh sách ngày lễ đã tồn tại
         function fetchExistingHolidays() {
@@ -288,16 +282,29 @@
                 });
         }
 
-        // Danh sách ngày lễ cố định
-        const fixedHolidays = [
-            { ten: "Tết Dương Lịch", ngay: "01-01", soNgayNghi: 1 },
-            { ten: "Ngày Quốc Tế Lao Động", ngay: "05-01", soNgayNghi: 1 },
-            { ten: "Ngày Giải Phóng miền Nam", ngay: "04-30", soNgayNghi: 1 },
-            { ten: "Quốc Khánh", ngay: "09-02", soNgayNghi: 1 }
-        ];
+        // Fetch fixed holidays from the server
+        async function fetchFixedHolidays() {
+            try {
+                const response = await fetch('/api/Holidays/GetFixedHolidays', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                return data.map(h => ({
+                    ten: h.tenNgayLe,
+                    ngay: h.ngayLe1.toString().slice(5, 10), // Extract MM-DD from YYYY-MM-DD
+                    soNgayNghi: h.soNgayNghi || 1,
+                    moTa: h.moTa || ''
+                }));
+            } catch (error) {
+                console.error('Error fetching fixed holidays:', error);
+                return []; // Fallback to empty array on error
+            }
+        }
 
         // Lưu ngày lễ cố định
-        function saveFixedHolidaysForYear(year) {
+        async function saveFixedHolidaysForYear(year) {
+            const fixedHolidays = await fetchFixedHolidays();
             const requests = [];
             const holidaysToReschedule = [];
 
@@ -315,7 +322,7 @@
                                 TenNgayLe: holiday.ten,
                                 NgayLe1: formattedDate,
                                 SoNgayNghi: holiday.soNgayNghi,
-                                MoTa: `Ngày lễ ${holiday.ten} của năm ${year}`
+                                MoTa: holiday.moTa || `Ngày lễ ${holiday.ten} của năm ${year}`
                             })
                         }).then(response => response.json())
                     );
@@ -394,77 +401,74 @@
             });
         }
 
-       // Xử lý nút lưu ngày lễ
-document.getElementById("saveHoliday").addEventListener("click", function () {
-    const tenNgayLe = document.getElementById("tenNgayLe").value;
-    const holidayDate = document.getElementById("holidayDate").value;
-    const soNgayNghi = document.getElementById("soNgayNghi").value;
-    const moTa = document.getElementById("moTa").value;
+        // Xử lý nút lưu ngày lễ
+        document.getElementById("saveHoliday").addEventListener("click", function () {
+            const tenNgayLe = document.getElementById("tenNgayLe").value;
+            const holidayDate = document.getElementById("holidayDate").value;
+            const soNgayNghi = document.getElementById("soNgayNghi").value;
+            const moTa = document.getElementById("moTa").value;
 
-    if (!tenNgayLe || !holidayDate) {
-        alert("Vui lòng nhập đầy đủ Tên Ngày Lễ và Ngày Lễ.");
-        return;
-    }
+            if (!tenNgayLe || !holidayDate) {
+                alert("Vui lòng nhập đầy đủ Tên Ngày Lễ và Ngày Lễ.");
+                return;
+            }
 
-    const selectedDate = new Date(holidayDate);
-    const dayOfWeek = selectedDate.getDay();
-    const requests = [];
+            const selectedDate = new Date(holidayDate);
+            const dayOfWeek = selectedDate.getDay();
+            const requests = [];
 
-    // Add the primary holiday
-    requests.push(
-        fetch('/api/Holidays/Add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                TenNgayLe: tenNgayLe,
-                NgayLe1: holidayDate,
-                SoNgayNghi: parseInt(soNgayNghi),
-                MoTa: moTa
-            })
-        }).then(response => response.json())
-    );
-
-    // If the holiday falls on Saturday (6) or Sunday (0), add a compensatory holiday on Monday
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-        let compensatoryDate = new Date(selectedDate);
-        compensatoryDate.setDate(compensatoryDate.getDate() + (dayOfWeek === 0 ? 1 : 2)); // Monday after Sunday or Saturday
-        const compensatoryDateString = compensatoryDate.toISOString().split("T")[0];
-
-        // Check if the compensatory date is already a holiday
-        if (!existingHolidays.includes(compensatoryDateString)) {
             requests.push(
                 fetch('/api/Holidays/Add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        TenNgayLe: `Nghỉ bù ${tenNgayLe}`,
-                        NgayLe1: compensatoryDateString,
+                        TenNgayLe: tenNgayLe,
+                        NgayLe1: holidayDate,
                         SoNgayNghi: parseInt(soNgayNghi),
-                        MoTa: `Nghỉ bù cho ngày lễ ${tenNgayLe} (${holidayDate}) rơi vào ${dayOfWeek === 0 ? 'Chủ Nhật' : 'Thứ Bảy'}`
+                        MoTa: moTa
                     })
                 }).then(response => response.json())
             );
-        }
-    }
 
-    Promise.all(requests).then(results => {
-        if (results.every(res => res.success)) {
-            alert(`Ngày lễ ${tenNgayLe} đã được thêm thành công!` + 
-                  (results.length > 1 ? ` Ngày nghỉ bù cũng đã được thêm.` : ""));
-            document.getElementById("holidayForm").reset();
-            fetchExistingHolidays().then(() => {
-                initializeDatePicker();
-                fetchHolidays(document.getElementById('yearFilter').value);
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                let compensatoryDate = new Date(selectedDate);
+                compensatoryDate.setDate(compensatoryDate.getDate() + (dayOfWeek === 0 ? 1 : 2));
+                const compensatoryDateString = compensatoryDate.toISOString().split("T")[0];
+
+                if (!existingHolidays.includes(compensatoryDateString)) {
+                    requests.push(
+                        fetch('/api/Holidays/Add', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                TenNgayLe: `Nghỉ bù ${tenNgayLe}`,
+                                NgayLe1: compensatoryDateString,
+                                SoNgayNghi: parseInt(soNgayNghi),
+                                MoTa: `Nghỉ bù cho ngày lễ ${tenNgayLe} (${holidayDate}) rơi vào ${dayOfWeek === 0 ? 'Chủ Nhật' : 'Thứ Bảy'}`
+                            })
+                        }).then(response => response.json())
+                    );
+                }
+            }
+
+            Promise.all(requests).then(results => {
+                if (results.every(res => res.success)) {
+                    alert(`Ngày lễ ${tenNgayLe} đã được thêm thành công!` + 
+                          (results.length > 1 ? ` Ngày nghỉ bù cũng đã được thêm.` : ""));
+                    document.getElementById("holidayForm").reset();
+                    fetchExistingHolidays().then(() => {
+                        initializeDatePicker();
+                        fetchHolidays(document.getElementById('yearFilter').value);
+                    });
+                } else {
+                    const errorMessages = results.filter(res => !res.success).map(res => res.message).join("; ");
+                    alert("Lỗi khi thêm ngày lễ: " + (errorMessages || "Không xác định"));
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert("Đã xảy ra lỗi khi thêm ngày lễ!");
             });
-        } else {
-            const errorMessages = results.filter(res => !res.success).map(res => res.message).join("; ");
-            alert("Lỗi khi thêm ngày lễ: " + (errorMessages || "Không xác định"));
-        }
-    }).catch(error => {
-        console.error('Error:', error);
-        alert("Đã xảy ra lỗi khi thêm ngày lễ!");
-    });
-});
+        });
 
         // Xử lý nút lưu lễ có sẵn
         document.getElementById("saveFixedHolidays").addEventListener("click", function () {

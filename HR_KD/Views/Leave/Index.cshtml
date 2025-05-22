@@ -1458,6 +1458,13 @@
             font-size: 16px;
         }
 
+    .status-supplement {
+        background-color: #ffc107; /* Màu vàng nhạt để phân biệt */
+        color: #000;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
 </style>
 
 <div class="leave-dashboard-enhanced bg-white mt-4">
@@ -2050,7 +2057,6 @@
                 const date = dayElem.dateObj;
                 const dateTime = date.setHours(0, 0, 0, 0);
 
-                // Xóa thuộc tính title để ngăn tooltip mặc định
                 dayElem.removeAttribute('title');
 
                 if (date.getDay() === 0 || date.getDay() === 6) {
@@ -2076,7 +2082,8 @@
                     dayElem.classList.add("holiday");
                 }
             },
-            onClose: async function(selectedDates) {
+            onClose: async function (selectedDates) {
+                // Lọc các ngày hợp lệ
                 const validDates = selectedDates.filter(date => {
                     const dateTime = date.setHours(0, 0, 0, 0);
                     const isHoliday = expandedHolidays.some(h => h.date === dateTime);
@@ -2093,6 +2100,37 @@
                     return;
                 }
 
+                // Kiểm tra tính liền kề nếu chọn từ 2 ngày trở lên
+                if (validDates.length >= 2) {
+                    // Sắp xếp các ngày theo thứ tự tăng dần
+                    const sortedDates = validDates.sort((a, b) => a - b);
+                    let isConsecutive = true;
+
+                    // Kiểm tra từng cặp ngày liên tiếp
+                    for (let i = 0; i < sortedDates.length - 1; i++) {
+                        const currentDate = new Date(sortedDates[i]);
+                        const nextDate = new Date(sortedDates[i + 1]);
+                        const diffDays = (nextDate - currentDate) / (1000 * 60 * 60 * 24);
+
+                        // Kiểm tra xem ngày tiếp theo có liền kề với ngày hiện tại không
+                        if (diffDays !== 1) {
+                            isConsecutive = false;
+                            break;
+                        }
+                    }
+
+                    if (!isConsecutive) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi chọn ngày',
+                            text: 'Các ngày được chọn phải liền kề nhau!'
+                        });
+                        this.clear();
+                        document.getElementById("selectedDates").textContent = "";
+                        return;
+                    }
+                }
+
                 document.getElementById("selectedDates").textContent =
                     validDates.map(date => date.toLocaleDateString('vi-VN')).join(', ');
 
@@ -2101,13 +2139,13 @@
                 if (leaveTypeSelect.value) {
                     try {
                         const limitCheck = await checkLeaveLimits(parseInt(leaveTypeSelect.value), validDates.length);
-                        
+
                         if (limitCheck.kiemTra.vuotQuaSoNgay) {
                             Swal.fire({
                                 icon: 'warning',
                                 title: 'Vượt quá giới hạn',
                                 html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                      Bạn đang yêu cầu ${validDates.length} ngày.`
+                                  Bạn đang yêu cầu ${validDates.length} ngày.`
                             });
                             this.clear();
                             document.getElementById("selectedDates").textContent = "";
@@ -2119,7 +2157,7 @@
                                 icon: 'warning',
                                 title: 'Vượt quá giới hạn',
                                 html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
-                                          Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                  Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
                             });
                             this.clear();
                             document.getElementById("selectedDates").textContent = "";
@@ -2610,7 +2648,6 @@
     async function fetchLeaveHistory() {
         try {
             console.log("Đang gọi API lấy lịch sử nghỉ phép...");
-
             const token = localStorage.getItem('jwtToken');
             console.log("Token hiện tại:", token ? "Có token" : "Không có token");
 
@@ -2619,8 +2656,6 @@
                     "Authorization": `Bearer ${token}`
                 }
             });
-
-            console.log("Kết quả API:", response.status, response.statusText);
 
             if (!response.ok) {
                 if (response.status === 401) {
@@ -2635,18 +2670,28 @@
             console.log("Dữ liệu API trả về:", JSON.stringify(result, null, 2));
 
             if (result?.success && Array.isArray(result.leaveHistory)) {
-                console.log(`Nhận được ${result.leaveHistory.length} bản ghi từ API.`);
+                // In tất cả trạng thái để kiểm tra
+                console.log("Các trạng thái trong leaveHistory:",
+                    result.leaveHistory.map(item => item.trangThai));
 
-                result.leaveHistory.forEach((item, index) => {
-                    console.log(`Bản ghi ${index + 1}:`, JSON.stringify(item, null, 2));
-                });
+                console.log(`Nhận được ${result.leaveHistory.length} bản ghi từ API.`);
+                const pendingSupplementRecords = result.leaveHistory.filter(item =>
+                    item.trangThai === "Chờ bổ sung" || item.trangThai === "NN6"
+                );
+                console.log(`Số bản ghi Chờ bổ sung hoặc NN6: ${pendingSupplementRecords.length}`,
+                    pendingSupplementRecords);
 
                 leaveHistory = result.leaveHistory;
 
-                // Cập nhật lọc dữ liệu cho tab "Chờ duyệt" để bao gồm cả NN6
+                // Cập nhật lọc dữ liệu cho tab "Chờ duyệt"
                 tabData.pending.filteredData = leaveHistory.filter(item =>
-                    item.trangThai === "Chờ duyệt" || item.trangThai === "Chờ bổ sung"
+                    item.trangThai.toLowerCase() === "chờ duyệt" ||
+                    item.trangThai.toLowerCase() === "chờ bổ sung" ||
+                    item.trangThai === "NN6" ||
+                    item.trangThai.toLowerCase() === "nn6" // Thêm trường hợp chữ thường
                 );
+                console.log(`Số bản ghi trong tab Chờ duyệt (bao gồm Chờ bổ sung/NN6): ${tabData.pending.filteredData.length}`);
+
                 tabData.approved.filteredData = leaveHistory.filter(item => item.trangThai === "Đã duyệt");
                 tabData.rejected.filteredData = leaveHistory.filter(item => item.trangThai === "Từ chối");
                 tabData.canceled.filteredData = leaveHistory.filter(item => item.trangThai === "Đã hủy");
@@ -2667,11 +2712,13 @@
                 setupPaginationControls();
             } else {
                 console.error("Lỗi định dạng dữ liệu:", result);
-                displayError("Không có dữ liệu nghỉ phép hoặc định dạng không đúng", ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody', 'canceledLeaveBody']);
+                displayError("Không có dữ liệu nghỉ phép hoặc định dạng không đúng",
+                    ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody', 'canceledLeaveBody']);
             }
         } catch (error) {
             console.error("Lỗi khi gọi API:", error);
-            displayError("Lỗi kết nối server: " + error.message, ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody', 'canceledLeaveBody']);
+            displayError("Lỗi kết nối server: " + error.message,
+                ['pendingLeaveBody', 'approvedLeaveBody', 'rejectedLeaveBody', 'canceledLeaveBody']);
         }
     }
 
@@ -2713,7 +2760,6 @@
 
     function renderTable(tabId) {
         console.log(`Đang render bảng cho tab: ${tabId}`);
-
         const tableBodyId = `${tabId}LeaveBody`;
         const tableBody = document.getElementById(tableBodyId);
 
@@ -2723,163 +2769,145 @@
         }
 
         tableBody.innerHTML = "";
-        console.log(`Đã xóa nội dung bảng ${tableBodyId}`);
-
         const { currentPage, itemsPerPage, filteredData } = tabData[tabId];
-        console.log(`Dữ liệu ${tabId}: ${filteredData.length} mục, trang ${currentPage}, mỗi trang ${itemsPerPage} mục`);
-
         const paginatedData = paginateData(filteredData, currentPage, itemsPerPage);
-        console.log(`Sau phân trang: ${paginatedData.length} mục để hiển thị`);
 
         if (paginatedData.length === 0) {
-            let colspan = 6;
-            if (tabId === 'approved' || tabId === 'rejected' || tabId === 'canceled') colspan = 7;
+            let colspan = tabId === 'pending' ? 6 : tabId === 'rejected' ? 8 : 7;
             tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">Không có đơn nào trong danh sách này</td></tr>`;
-            console.log(`Không có dữ liệu để hiển thị cho tab ${tabId}`);
-        } else {
-            console.log(`Hiển thị ${paginatedData.length} bản ghi cho tab ${tabId}`);
-            paginatedData.forEach((item, index) => {
-                try {
-                    const maDon = item.maDon || item.MaDon || "";
-                    const tenLoai = item.tenLoai || item.TenLoai || item.loaiNghi || item.LoaiNghi || "Không xác định";
-                    const lyDo = item.lyDo || item.LyDo || item.moTa || item.MoTa || "Không có lý do";
-                    const trangThai = item.trangThai || item.TrangThai || "Không xác định";
-                    const fileDinhKem = item.fileDinhKem || item.FileDinhKem || item.files || item.Files || "";
-                    const ngayDuyet = item.ngayDuyet || item.NgayDuyet || "";
-                    const ngayHuy = item.ngayDuyet || item.NgayDuyet || "";
-                    const ghiChu = item.ghiChu || item.GhiChu || item.noiDungPhanHoi || item.NoiDungPhanHoi || "Không có ghi chú";
-                    const nguoiDuyetHoTen = item.nguoiDuyetHoTen || item.NguoiDuyetHoTen || item.nguoiDuyet || item.NguoiDuyet || "Chưa có";
-                    const ngayNghis = item.ngayNghis || item.NgayNghis || [];
+            return;
+        }
 
-                    console.log(`Dữ liệu dòng ${index + 1} của tab ${tabId}:`, {
-                        maDon, tenLoai, lyDo, trangThai, fileDinhKem, ngayDuyet, ngayHuy, ghiChu, nguoiDuyetHoTen, ngayNghis
-                    });
+        paginatedData.forEach((item, index) => {
+            try {
+                // Chuẩn hóa dữ liệu với giá trị mặc định
+                const maDon = item.maDon || item.MaDon || "";
+                const tenLoai = item.tenLoai || item.TenLoai || item.loaiNghi || item.LoaiNghi || "Không xác định";
+                const lyDo = item.lyDo || item.LyDo || item.moTa || item.MoTa || "Không có lý do";
+                const trangThai = item.trangThai || item.TrangThai || "Không xác định";
+                const fileDinhKem = item.fileDinhKem || item.FileDinhKem || item.files || item.Files || "";
+                const ngayDuyet = item.ngayDuyet || item.NgayDuyet || "";
+                const ngayHuy = item.ngayHuy || item.NgayHuy || "";
+                const ghiChu = item.ghiChu || item.GhiChu || item.noiDungPhanHoi || item.NoiDungPhanHoi || "Không có ghi chú";
+                const nguoiDuyetHoTen = item.nguoiDuyetHoTen || item.NguoiDuyetHoTen || item.nguoiDuyet || item.NguoiDuyet || "Chưa có";
+                const ngayNghis = Array.isArray(item.ngayNghis) ? item.ngayNghis : [];
 
-                    const fileDisplayHtml = generateFileDisplayHtml(fileDinhKem);
-                    const ngayDuyetFormatted = ngayDuyet ? formatDate(ngayDuyet) : "Chưa duyệt";
-                    const ngayHuyFormatted = ngayHuy ? formatDate(ngayHuy) : "Chưa hủy";
+                const fileDisplayHtml = generateFileDisplayHtml(fileDinhKem);
+                const ngayDuyetFormatted = ngayDuyet ? formatDate(ngayDuyet) : "Chưa duyệt";
+                const ngayHuyFormatted = ngayHuy ? formatDate(ngayHuy) : "Chưa hủy";
 
-                    // Tạo dropdown cho danh sách ngày nghỉ
-                    const uniqueId = `dates-${maDon}-${index}`;
-                    const datesDropdownHtml = `
-                        <div class="dropdown">
-                            <button class="btn btn-link dropdown-toggle" type="button" id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
-                                ${ngayNghis.length} ngày
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="${uniqueId}">
-                                ${ngayNghis.map(ngay => `
-                                    <li><a class="dropdown-item" href="#">${formatDate(ngay.ngayNghi)}</a></li>
-                                `).join('')}
-                            </ul>
-                        </div>
+                const uniqueId = `dates-${maDon}-${index}`;
+                const datesDropdownHtml = `
+                    <div class="dropdown">
+                        <button class="btn btn-link dropdown-toggle" type="button" id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                            ${ngayNghis.length > 0 ? ngayNghis.length + ' ngày' : 'Không có ngày'}
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="${uniqueId}">
+                            ${ngayNghis.length > 0 ? ngayNghis.map(ngay => `
+                                <li><a class="dropdown-item" href="#">${formatDate(ngay.ngayNghi)}</a></li>
+                            `).join('') : '<li><a class="dropdown-item" href="#">Không có ngày</a></li>'}
+                        </ul>
+                    </div>
+                `;
+
+                const lyDoTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDo}">${truncateText(lyDo, 23)}</div>`;
+                const ghiChuTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${ghiChu}">${truncateText(ghiChu, 23)}</div>`;
+
+                const row = document.createElement("tr");
+                if (tabId === 'pending') {
+                    const cancelButton = ngayNghis.length > 0 ? `
+                        <button class="btn-cancel" data-id="${ngayNghis[0]?.id || ''}">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Hủy đơn</span>
+                        </button>
+                    ` : '';
+                    const supplementButton = (trangThai === "Chờ bổ sung" || trangThai === "NN6") && ngayNghis.length > 0 ? `
+                        <button class="btn-supplement" data-id="${ngayNghis[0]?.id || ''}">
+                            <i class="fas fa-upload"></i>
+                            <span>Bổ sung</span>
+                        </button>
+                    ` : '';
+                    row.innerHTML = `
+                        <td>${tenLoai}</td>
+                        <td>${datesDropdownHtml}</td>
+                        <td>${lyDoTooltip}</td>
+                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${cancelButton} ${supplementButton}</td>
                     `;
-
-                    // Tạo tooltip cho lý do và ghi chú
-                    const lyDoTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDo}">${truncateText(lyDo, 23)}</div>`;
-                    const ghiChuTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${ghiChu}">${truncateText(ghiChu, 23)}</div>`;
-
-                    const row = document.createElement("tr");
-                    if (tabId === 'pending') {
-                        const cancelButton = `<button class="btn-cancel" data-id="${ngayNghis[0]?.id}">
-                                <i class="fas fa-times-circle"></i>
-                                <span>Hủy đơn</span>
-                             </button>`;
-                        const supplementButton = item.trangThai === "Chờ bổ sung"
-                            ? `<button class="btn-supplement" data-id="${ngayNghis[0]?.id}">
-                   <i class="fas fa-upload"></i>
-                   <span>Bổ sung</span>
-               </button>`
-                            : '';
-                        row.innerHTML = `
-            <td>${tenLoai}</td>
-            <td>${datesDropdownHtml}</td>
-            <td>${lyDoTooltip}</td>
-            <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-            <td>${fileDisplayHtml}</td>
-            <td>${cancelButton} ${supplementButton}</td>
-        `;
-                    }
-                    else if (tabId === 'canceled') {
-                        const lyDoHuy = item.lyDoHuy || item.LyDoHuy || "Không có lý do hủy";
-                        const lyDoHuyTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDoHuy}">${truncateText(lyDoHuy, 23)}</div>`;
-                        row.innerHTML = `
-                                    <td>${tenLoai}</td>
-                                    <td>${datesDropdownHtml}</td>
-                                    <td>${lyDoTooltip}</td>
-                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                                    <td>${fileDisplayHtml}</td>
-                                    <td>${ngayHuyFormatted}</td>
-                                    <td>${lyDoHuyTooltip}</td>
-                                `;
-                    } else if (tabId === 'approved') {
-                        row.innerHTML = `
-                                    <td>${tenLoai}</td>
-                                    <td>${datesDropdownHtml}</td>
-                                    <td>${lyDoTooltip}</td>
-                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                                    <td>${fileDisplayHtml}</td>
-                                    <td>${ngayDuyetFormatted}</td>
-                                    <td>${nguoiDuyetHoTen}</td>
-                                `;
-                    } else {
-                        const lyDoTuChoi = item.lyDoTuChoi || item.LyDoTuChoi || "Không có lý do từ chối";
-                        const lyDoTuChoiTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDoTuChoi}">${truncateText(lyDoTuChoi, 23)}</div>`;
-                        row.innerHTML = `
-                                    <td>${tenLoai}</td>
-                                    <td>${datesDropdownHtml}</td>
-                                    <td>${lyDoTooltip}</td>
-                                    <td><span class="status ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                                    <td>${fileDisplayHtml}</td>
-                                    <td>${ngayDuyetFormatted}</td>
-                                    <td>${lyDoTuChoiTooltip}</td>
-                                    <td>${nguoiDuyetHoTen}</td>
-                                `;
-                    }
-                    tableBody.appendChild(row);
-                } catch (error) {
-                    console.error(`Lỗi khi tạo dòng ${index} cho tab ${tabId}:`, error, item);
+                } else if (tabId === 'approved') {
+                    row.innerHTML = `
+                        <td>${tenLoai}</td>
+                        <td>${datesDropdownHtml}</td>
+                        <td>${lyDoTooltip}</td>
+                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${ngayDuyetFormatted}</td>
+                        <td>${nguoiDuyetHoTen}</td>
+                    `;
+                } else if (tabId === 'rejected') {
+                    row.innerHTML = `
+                        <td>${tenLoai}</td>
+                        <td>${datesDropdownHtml}</td>
+                        <td>${lyDoTooltip}</td>
+                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${ngayDuyetFormatted}</td>
+                        <td>${ghiChuTooltip}</td>
+                        <td>${nguoiDuyetHoTen}</td>
+                    `;
+                } else if (tabId === 'canceled') {
+                    row.innerHTML = `
+                        <td>${tenLoai}</td>
+                        <td>${datesDropdownHtml}</td>
+                        <td>${lyDoTooltip}</td>
+                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                        <td>${fileDisplayHtml}</td>
+                        <td>${ngayHuyFormatted}</td>
+                        <td>${ghiChuTooltip}</td>
+                    `;
                 }
-            });
-        }
+                tableBody.appendChild(row);
+            } catch (error) {
+                console.error(`Lỗi khi tạo dòng ${index} cho tab ${tabId}:`, error, item);
+                const colspan = tabId === 'pending' ? 6 : tabId === 'rejected' ? 8 : 7;
+                tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">Lỗi khi hiển thị dữ liệu</td></tr>`;
+            }
+        });
 
-        try {
-            document.querySelectorAll(`#${tableBodyId} .btn-cancel`).forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const leaveId = this.getAttribute('data-id');
-                    cancelLeaveRequest(leaveId);
-                });
+        // Kích hoạt lại các sự kiện
+        document.querySelectorAll(`#${tableBodyId} .btn-cancel`).forEach(btn => {
+            btn.addEventListener('click', function () {
+                const leaveId = this.getAttribute('data-id');
+                cancelLeaveRequest(leaveId);
             });
+        });
 
-            document.querySelectorAll(`#${tableBodyId} .btn-supplement`).forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const leaveId = this.getAttribute('data-id');
-                    handleSupplementAction(leaveId);
-                });
+        document.querySelectorAll(`#${tableBodyId} .btn-supplement`).forEach(btn => {
+            btn.addEventListener('click', function () {
+                const leaveId = this.getAttribute('data-id');
+                handleSupplementAction(leaveId);
             });
+        });
 
-            document.querySelectorAll(`#${tableBodyId} .file-link`).forEach(link => {
-                link.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const filePath = this.getAttribute('data-path');
-                    viewFile(filePath);
-                });
+        document.querySelectorAll(`#${tableBodyId} .file-link`).forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const filePath = this.getAttribute('data-path');
+                viewFile(filePath);
             });
+        });
 
-            // Khởi tạo tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl, {
-                    trigger: 'hover',
-                    html: true
-                });
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltipTriggerList.forEach(tooltipTriggerEl => {
+            new bootstrap.Tooltip(tooltipTriggerEl, {
+                trigger: 'hover',
+                html: true
             });
+        });
 
-            initializeDropdowns();
-            updatePaginationControls(tabId);
-            console.log(`Hoàn thành render tab ${tabId}`);
-        } catch (error) {
-            console.error(`Lỗi khi thiết lập sự kiện cho tab ${tabId}:`, error);
-        }
+        initializeDropdowns();
+        updatePaginationControls(tabId);
     }
 
     // Thêm hàm truncateText để cắt ngắn text

@@ -1,4 +1,5 @@
-﻿@using HR_KD.Data
+﻿
+@using HR_KD.Data
 @using Microsoft.AspNetCore.Http
 @using Microsoft.EntityFrameworkCore
 @inject IHttpContextAccessor HttpContextAccessor
@@ -17,8 +18,8 @@
 
     // Get attendance records for current month
     var attendanceRecords = DbContext.ChamCongs
-        .Where(a => a.MaNv.ToString() == maNv && 
-                    a.NgayLamViec.Year == currentYear && 
+        .Where(a => a.MaNv.ToString() == maNv &&
+                    a.NgayLamViec.Year == currentYear &&
                     a.NgayLamViec.Month == currentMonth)
         .OrderByDescending(a => a.NgayLamViec)
         .Take(5)
@@ -28,9 +29,21 @@
     var todayAttendance = attendanceRecords.FirstOrDefault(a => a.NgayLamViec == currentDateOnly);
 
     // Get leave requests
+    // Get leave requests grouped by MaDon
     var leaveRequests = DbContext.NgayNghis
         .Where(l => l.MaNv.ToString() == maNv)
         .Include(l => l.MaLoaiNgayNghiNavigation)
+        .GroupBy(l => l.MaDon)
+        .Select(g => new
+        {
+            MaDon = g.Key,
+            NgayLamDon = g.Max(l => l.NgayLamDon), // Get the latest NgayLamDon for sorting
+            StartDate = g.Min(l => l.NgayNghi1), // Earliest leave date
+            EndDate = g.Max(l => l.NgayNghi1), // Latest leave date
+            LoaiNgayNghi = g.First().MaLoaiNgayNghiNavigation.TenLoai, // Leave type
+            LyDo = g.First().LyDo, // Reason (assuming same for all records in MaDon)
+            MaTrangThai = g.First().MaTrangThai // Status (assuming same for all records in MaDon)
+        })
         .OrderByDescending(l => l.NgayLamDon)
         .Take(5)
         .ToList();
@@ -41,12 +54,13 @@
 
     // Get monthly attendance data for chart (only approved records)
     var monthlyAttendance = DbContext.ChamCongs
-        .Where(a => a.MaNv.ToString() == maNv && 
-                    a.NgayLamViec.Year == currentYear && 
+        .Where(a => a.MaNv.ToString() == maNv &&
+                    a.NgayLamViec.Year == currentYear &&
                     a.TrangThai == "CC3") // Only approved attendance
         .GroupBy(a => a.NgayLamViec.Month)
-        .Select(g => new { 
-            Month = g.Key, 
+        .Select(g => new
+        {
+            Month = g.Key,
             TotalHours = g.Sum(a => a.TongGio ?? 0),
             DaysWorked = g.Count()
         })
@@ -54,7 +68,8 @@
         .ToList();
 
     // Calculate average hours per day for each month
-    var monthlyAttendanceWithAverage = monthlyAttendance.Select(x => new {
+    var monthlyAttendanceWithAverage = monthlyAttendance.Select(x => new
+    {
         Month = x.Month,
         TotalHours = x.TotalHours,
         AverageHours = x.DaysWorked > 0 ? Math.Round(x.TotalHours / x.DaysWorked, 1) : 0
@@ -62,8 +77,8 @@
 
     // Get monthly leave data for chart (only approved records)
     var monthlyLeave = DbContext.NgayNghis
-        .Where(l => l.MaNv.ToString() == maNv && 
-                    l.NgayNghi1.Year == currentYear && 
+        .Where(l => l.MaNv.ToString() == maNv &&
+                    l.NgayNghi1.Year == currentYear &&
                     (l.MaTrangThai == "NN2" || l.MaTrangThai == "NN5")) // Include both NN2 and NN5 as approved
         .GroupBy(l => l.NgayNghi1.Month)
         .Select(g => new { Month = g.Key, TotalDays = g.Count() })
@@ -92,16 +107,16 @@
         { "NN2", "Đã duyệt" },
         { "NN3", "Từ chối" },
         { "NN4", "Đã hủy" },
-        { "NN5", "Đã duyệt" }
+        { "NN5", "Đã duyệt" },
+        { "NN6", "Chờ bổ sung" }
     };
-    
+
     // Calculate leave percentage
     var leaveUsed = leaveBalance?.SoNgayDaSuDung ?? 0;
     var totalLeave = leaveBalance?.SoNgayPhepDuocCap ?? 0;
     var leavePercentage = totalLeave > 0 ? (leaveUsed / totalLeave) * 100 : 0;
-    
-    // Get current date and time
 
+    // Get current date and time
     var vietnameseDayOfWeek = "";
     switch (currentDateTime.DayOfWeek)
     {
@@ -126,10 +141,10 @@
             <p class="current-date">@vietnameseDayOfWeek, @currentDateTime.ToString("dd/MM/yyyy")</p>
         </div>
         @* <div class="col-md-4 text-end">
-            <div class="profile-dropdown">
-                <img src="@(string.IsNullOrEmpty(nhanVien?.AvatarUrl) ? "/api/placeholder/40/40" : nhanVien.AvatarUrl)" class="rounded-circle" alt="Avatar" />
-                <span class="ms-2">@(nhanVien?.HoTen ?? "Nhân viên")</span>
-            </div>
+        <div class="profile-dropdown">
+        <img src="@(string.IsNullOrEmpty(nhanVien?.AvatarUrl) ? "/api/placeholder/40/40" : nhanVien.AvatarUrl)" class="rounded-circle" alt="Avatar" />
+        <span class="ms-2">@(nhanVien?.HoTen ?? "Nhân viên")</span>
+        </div>
         </div> *@
     </div>
 </div>
@@ -142,8 +157,8 @@
                 <i class="fas fa-calendar-check"></i>
             </div>
             <div class="stats-content">
-                <h4>Ngày làm tháng @currentMonth</h4>
-                <h2>@monthlyAttendance.Sum(x => x.TotalHours).ToString("0.0") giờ</h2>
+                <h4>Tổng giờ làm tháng @currentMonth</h4>
+                <h2>@(monthlyAttendance.FirstOrDefault(x => x.Month == currentMonth)?.TotalHours.ToString("0.0") ?? "0.0") giờ</h2>
             </div>
         </div>
     </div>
@@ -235,7 +250,7 @@
                         <div class="leave-progress">
                             <div class="progress">
                                 <div class="progress-bar bg-primary" role="progressbar" style="width: @leavePercentage%"
-                                    aria-valuenow="@leavePercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                     aria-valuenow="@leavePercentage" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                             <div class="progress-info">
                                 <span>@leaveUsed/@totalLeave ngày đã sử dụng</span>
@@ -325,10 +340,10 @@
                                         <td>@(record.GioRa?.ToString("HH:mm") ?? "-")</td>
                                         <td>@(record.TongGio?.ToString("0.0") ?? "-")</td>
                                         <td>
-                                            <span class="status-badge @(record.TrangThai == "CC3" ? "status-success" : 
-                                                        record.TrangThai == "CC4" ? "status-danger" : 
-                                                        record.TrangThai == "CC5" ? "status-warning" : 
-                                                        record.TrangThai == "CC6" ? "status-info" : 
+                                            <span class="status-badge @(record.TrangThai == "CC3" ? "status-success" :
+                                                        record.TrangThai == "CC4" ? "status-danger" :
+                                                        record.TrangThai == "CC5" ? "status-warning" :
+                                                        record.TrangThai == "CC6" ? "status-info" :
                                                         "status-secondary")">
                                                 @(attendanceStatuses.ContainsKey(record.TrangThai) ? attendanceStatuses[record.TrangThai] : record.TrangThai)
                                             </span>
@@ -361,7 +376,7 @@
                     <table class="table custom-table">
                         <thead>
                             <tr>
-                                <th>Ngày nghỉ</th>
+                                <th>Khoảng thời gian</th>
                                 <th>Loại nghỉ</th>
                                 <th>Lý do</th>
                                 <th>Trạng thái</th>
@@ -373,18 +388,30 @@
                                 foreach (var request in leaveRequests)
                                 {
                                     <tr>
-                                        <td><strong>@request.NgayNghi1.ToString("dd/MM/yyyy")</strong></td>
-                                        <td>@request.MaLoaiNgayNghiNavigation?.TenLoai</td>
+                                        <td>
+                                            <strong>
+                                                @if (request.StartDate == request.EndDate)
+                                                {
+                                                    @request.StartDate.ToString("dd/MM/yyyy")
+                                                }
+                                                else
+                                                {
+                                                    @(request.StartDate.ToString("dd/MM/yyyy") + " - " + request.EndDate.ToString("dd/MM/yyyy"))
+                                                }
+                                            </strong>
+                                        </td>
+                                        <td>@request.LoaiNgayNghi</td>
                                         <td>
                                             <span class="text-truncate d-inline-block" style="max-width: 150px;" title="@request.LyDo">
                                                 @request.LyDo
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="status-badge @(request.MaTrangThai == "NN2" || request.MaTrangThai == "NN5" ? "status-success" : 
-                                                        request.MaTrangThai == "NN3" ? "status-danger" : 
-                                                        request.MaTrangThai == "NN4" ? "status-warning" : 
-                                                        "status-secondary")">
+                                            <span class="status-badge @(request.MaTrangThai == "NN2" || request.MaTrangThai == "NN5" ? "status-success" :
+                                                    request.MaTrangThai == "NN3" ? "status-danger" :
+                                                    request.MaTrangThai == "NN4" ? "status-warning" :
+                                                    request.MaTrangThai == "NN6" ? "status-info" :
+                                                    "status-secondary")">
                                                 @(leaveStatuses.ContainsKey(request.MaTrangThai) ? leaveStatuses[request.MaTrangThai] : request.MaTrangThai)
                                             </span>
                                         </td>
@@ -443,12 +470,12 @@
             light: '#f8f9fc',
             dark: '#5a5c69'
         };
-        
+
         // Attendance Chart
         const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
-        const months = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
-                       'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-        
+        const months = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+            'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+
         // Get attendance data and fill in missing months
         const attendanceData = Array(12).fill(0);
         const averageHoursData = Array(12).fill(0);
@@ -457,137 +484,137 @@
             @:attendanceData[@(item.Month - 1)] = @item.TotalHours;
             @:averageHoursData[@(item.Month - 1)] = @item.AverageHours;
         }
-        
-        new Chart(attendanceCtx, {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Tổng giờ làm',
-                    data: attendanceData,
-                    backgroundColor: colors.primary + '80',
-                    borderColor: colors.primary,
-                    borderWidth: 1,
-                    yAxisID: 'y'
+
+            new Chart(attendanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Tổng giờ làm',
+                        data: attendanceData,
+                        backgroundColor: colors.primary + '80',
+                        borderColor: colors.primary,
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Trung bình giờ/ngày',
+                        data: averageHoursData,
+                        type: 'line',
+                        borderColor: colors.success,
+                        backgroundColor: colors.success + '20',
+                        borderWidth: 2,
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    }]
                 },
-                {
-                    label: 'Trung bình giờ/ngày',
-                    data: averageHoursData,
-                    type: 'line',
-                    borderColor: colors.success,
-                    backgroundColor: colors.success + '20',
-                    borderWidth: 2,
-                    yAxisID: 'y1',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Tổng giờ'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Tổng giờ'
+                            },
+                            grid: {
+                                borderDash: [2, 2],
+                                color: '#e9ecef'
+                            }
                         },
-                        grid: {
-                            borderDash: [2, 2],
-                            color: '#e9ecef'
-                        }
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Giờ/ngày'
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Giờ/ngày'
+                            },
+                            grid: {
+                                display: false
+                            }
                         },
-                        grid: {
-                            display: false
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.datasetIndex === 0) {
+                                        label += context.parsed.y.toFixed(1) + ' giờ';
+                                    } else {
+                                        label += context.parsed.y.toFixed(1) + ' giờ/ngày';
+                                    }
+                                    return label;
                                 }
-                                if (context.datasetIndex === 0) {
-                                    label += context.parsed.y.toFixed(1) + ' giờ';
-                                } else {
-                                    label += context.parsed.y.toFixed(1) + ' giờ/ngày';
-                                }
-                                return label;
                             }
                         }
                     }
                 }
-            }
-        });
+            });
 
         // Leave Chart
         const leaveCtx = document.getElementById('leaveChart').getContext('2d');
-        
+
         // Get leave data and fill in missing months
         const leaveData = Array(12).fill(0);
         @foreach (var item in monthlyLeave)
         {
             @:leaveData[@(item.Month - 1)] = @item.TotalDays;
         }
-        
-        new Chart(leaveCtx, {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Số ngày nghỉ',
-                    data: leaveData,
-                    backgroundColor: colors.warning + '80',
-                    borderColor: colors.warning,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Ngày'
+
+            new Chart(leaveCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Số ngày nghỉ',
+                        data: leaveData,
+                        backgroundColor: colors.warning + '80',
+                        borderColor: colors.warning,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ngày'
+                            },
+                            grid: {
+                                borderDash: [2, 2],
+                                color: '#e9ecef'
+                            }
                         },
-                        grid: {
-                            borderDash: [2, 2],
-                            color: '#e9ecef'
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     },
-                    x: {
-                        grid: {
+                    plugins: {
+                        legend: {
                             display: false
                         }
                     }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
                 }
-            }
-        });
+            });
     </script>
 }
 
@@ -625,36 +652,36 @@
         font-size: 14px;
         color: var(--gray-800);
     }
-    
+
     /* Dashboard Header */
     .dashboard-header {
         margin-bottom: 1.5rem;
         padding: 1rem 0;
         border-bottom: 1px solid var(--gray-200);
     }
-    
+
     .welcome-text {
         font-size: 1.75rem;
         font-weight: 700;
         margin-bottom: 0.25rem;
     }
-    
+
     .current-date {
         color: var(--gray-600);
         font-size: 1rem;
         margin-bottom: 0;
     }
-    
+
     .profile-dropdown {
         font-weight: 600;
         cursor: pointer;
     }
-    
+
     /* Stats Cards */
     .stats-row {
         margin-bottom: 1.5rem;
     }
-    
+
     .stats-card {
         display: flex;
         align-items: center;
@@ -665,11 +692,11 @@
         margin-bottom: 1.5rem;
         transition: transform var(--transition-speed);
     }
-    
-    .stats-card:hover {
-        transform: translateY(-3px);
-    }
-    
+
+        .stats-card:hover {
+            transform: translateY(-3px);
+        }
+
     .stats-icon {
         width: 4rem;
         height: 4rem;
@@ -679,44 +706,44 @@
         justify-content: center;
         margin-right: 1rem;
     }
-    
-    .stats-icon i {
-        font-size: 1.5rem;
-        color: var(--primary);
-    }
-    
+
+        .stats-icon i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
     .bg-primary-light {
         background-color: var(--primary-light);
     }
-    
+
     .bg-success-light {
         background-color: var(--success-light);
     }
-    
+
     .bg-warning-light {
         background-color: var(--warning-light);
     }
-    
+
     .bg-info-light {
         background-color: var(--info-light);
     }
-    
+
     .bg-danger-light {
         background-color: var(--danger-light);
     }
-    
+
     .stats-content h4 {
         font-size: 0.875rem;
         color: var(--gray-600);
         margin-bottom: 0.25rem;
     }
-    
+
     .stats-content h2 {
         font-size: 1.5rem;
         font-weight: 700;
         margin-bottom: 0;
     }
-    
+
     /* Custom Cards */
     .custom-card {
         border-radius: var(--card-border-radius);
@@ -726,11 +753,11 @@
         overflow: hidden;
         transition: box-shadow var(--transition-speed);
     }
-    
-    .custom-card:hover {
-        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.15);
-    }
-    
+
+        .custom-card:hover {
+            box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.15);
+        }
+
     .card-header {
         display: flex;
         justify-content: space-between;
@@ -739,103 +766,104 @@
         background-color: white;
         border-bottom: 1px solid var(--gray-200);
     }
-    
-    .card-header h4 {
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--gray-700);
-        margin-bottom: 0;
-    }
-    
+
+        .card-header h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 0;
+        }
+
     .card-body {
         padding: 1.25rem;
     }
-    
+
     .view-all {
         font-size: 0.875rem;
         color: var(--primary);
         text-decoration: none;
         font-weight: 600;
     }
-    
-    .view-all:hover {
-        text-decoration: underline;
-    }
-    
+
+        .view-all:hover {
+            text-decoration: underline;
+        }
+
     /* Profile Info */
     .profile-info {
         display: flex;
         flex-direction: column;
     }
-    
+
     .profile-avatar {
         text-align: center;
         margin-bottom: 1.5rem;
     }
-    
+
     .info-item {
         display: flex;
         margin-bottom: 0.75rem;
         padding-bottom: 0.75rem;
         border-bottom: 1px solid var(--gray-200);
     }
-    
-    .info-item:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-        padding-bottom: 0;
-    }
-    
+
+        .info-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
     .info-label {
         width: 40%;
         color: var(--gray-600);
         font-weight: 600;
     }
-    
-    .info-label i {
-        width: 1.25rem;
-        margin-right: 0.5rem;
-        color: var(--primary);
-    }
-    
+
+        .info-label i {
+            width: 1.25rem;
+            margin-right: 0.5rem;
+            color: var(--primary);
+        }
+
     .info-value {
         width: 60%;
         font-weight: 500;
     }
-    
+
     /* Leave Balance */
     .leave-balance {
         display: flex;
         flex-direction: column;
     }
-    
+
     .leave-progress {
         margin-bottom: 1.5rem;
     }
-    
+
     .progress {
         height: 0.75rem;
         border-radius: 1rem;
         background-color: var(--gray-200);
         margin-bottom: 0.5rem;
     }
-    
+
     .progress-bar {
         border-radius: 1rem;
     }
-    
+
     .progress-info {
         text-align: right;
         font-size: 0.875rem;
         color: var(--gray-600);
     }
-    
+
     .leave-stats-vertical {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
         margin-top: 1rem;
     }
+
     .leave-stat-row {
         display: flex;
         justify-content: space-between;
@@ -843,27 +871,30 @@
         padding: 0.5rem 0;
         border-bottom: 1px solid var(--gray-200);
     }
-    .leave-stat-row:last-child {
-        border-bottom: none;
-    }
-    .leave-stat-row .stat-label {
-        font-size: 1rem;
-        color: var(--gray-600);
-        font-weight: 500;
-    }
-    .leave-stat-row .stat-value {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--gray-800);
-    }
-    
+
+        .leave-stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .leave-stat-row .stat-label {
+            font-size: 1rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .leave-stat-row .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
     /* Quick Actions */
     .quick-actions {
         display: flex;
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .action-btn {
         display: flex;
         align-items: center;
@@ -874,56 +905,56 @@
         font-weight: 600;
         transition: transform var(--transition-speed);
     }
-    
-    .action-btn:hover {
-        transform: translateX(5px);
-        color: white;
-    }
-    
-    .action-btn i {
-        font-size: 1.25rem;
-        margin-right: 1rem;
-    }
-    
+
+        .action-btn:hover {
+            transform: translateX(5px);
+            color: white;
+        }
+
+        .action-btn i {
+            font-size: 1.25rem;
+            margin-right: 1rem;
+        }
+
     .attendance-btn {
         background-color: var(--primary);
     }
-    
+
     .leave-btn {
         background-color: var(--warning);
     }
-    
+
     .overtime-btn {
         background-color: var(--info);
     }
-    
+
     /* Tables */
     .custom-table {
         margin-bottom: 0;
     }
-    
-    .custom-table thead th {
-        background-color: var(--gray-100);
-        color: var(--gray-700);
-        font-weight: 600;
-        border-bottom: 2px solid var(--gray-200);
-        padding: 0.75rem 1rem;
-    }
-    
-    .custom-table tbody td {
-        padding: 0.75rem 1rem;
-        vertical-align: middle;
-        border-bottom: 1px solid var(--gray-200);
-    }
-    
-    .custom-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-    
-    .custom-table tbody tr:hover {
-        background-color: var(--gray-100);
-    }
-    
+
+        .custom-table thead th {
+            background-color: var(--gray-100);
+            color: var(--gray-700);
+            font-weight: 600;
+            border-bottom: 2px solid var(--gray-200);
+            padding: 0.75rem 1rem;
+        }
+
+        .custom-table tbody td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .custom-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .custom-table tbody tr:hover {
+            background-color: var(--gray-100);
+        }
+
     /* Status Badges */
     .status-badge {
         display: inline-block;
@@ -932,32 +963,32 @@
         font-size: 0.75rem;
         font-weight: 600;
     }
-    
+
     .status-success {
         background-color: var(--success-light);
         color: var(--success);
     }
-    
+
     .status-danger {
         background-color: var(--danger-light);
         color: var(--danger);
     }
-    
+
     .status-warning {
         background-color: var(--warning-light);
         color: #d69e00;
     }
-    
+
     .status-info {
         background-color: var(--info-light);
         color: var(--info);
     }
-    
+
     .status-secondary {
         background-color: var(--gray-200);
         color: var(--gray-600);
     }
-    
+
     /* Empty State */
     .empty-state {
         display: flex;
@@ -967,19 +998,19 @@
         padding: 2rem;
         text-align: center;
     }
-    
-    .empty-state i {
-        font-size: 3rem;
-        color: var(--gray-400);
-        margin-bottom: 1rem;
-    }
-    
-    .empty-state p {
-        color: var(--gray-600);
-        font-weight: 500;
-        margin-bottom: 0;
-    }
-    
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--gray-400);
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: var(--gray-600);
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+
     .profile-avatar img {
         width: 80px;
         height: 80px;

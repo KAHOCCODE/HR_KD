@@ -227,17 +227,17 @@
         text-decoration: none !important;
     }
 
-    .registered-day.pending {
-        background-color: #fff3cd !important;
-        color: #856404 !important;
-        border: 2px solid #ffeeba !important;
-    }
+        .registered-day.pending {
+            background-color: #fff3cd !important;
+            color: #856404 !important;
+            border: 2px solid #ffeeba !important;
+        }
 
-    .registered-day.approved {
-        background-color: #d4edda !important;
-        color: #155724 !important;
-        border: 2px solid #c3e6cb !important;
-    }
+        .registered-day.approved {
+            background-color: #d4edda !important;
+            color: #155724 !important;
+            border: 2px solid #c3e6cb !important;
+        }
 
     .holiday {
         background-color: #f8d7da !important;
@@ -1854,7 +1854,7 @@
                 });
 
                 // Thêm sự kiện change cho select
-                leaveTypeSelect.addEventListener('change', async function() {
+                leaveTypeSelect.addEventListener('change', async function () {
                     const selectedOption = this.options[this.selectedIndex];
                     const description = selectedOption.dataset.description;
 
@@ -1862,7 +1862,7 @@
                         const selectedOption = this.options[this.selectedIndex];
                         const description = selectedOption.dataset.description;
                         const limit = leaveTypeLimits[this.value];
-                        
+
                         let descriptionHtml = description;
                         if (limit) {
                             descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
@@ -1878,13 +1878,13 @@
                         if (selectedDates.length > 0) {
                             try {
                                 const limitCheck = await checkLeaveLimits(parseInt(this.value), selectedDates.length);
-                                
+
                                 if (limitCheck.kiemTra.vuotQuaSoNgay) {
                                     Swal.fire({
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                          Bạn đang yêu cầu thêm ${selectedDates.length} ngày.`
+                                              Bạn đang yêu cầu thêm ${selectedDates.length} ngày.`
                                     });
                                     datePicker.clear();
                                     document.getElementById("selectedDates").textContent = "";
@@ -1896,7 +1896,7 @@
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
-                                          Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                              Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
                                     });
                                     datePicker.clear();
                                     document.getElementById("selectedDates").textContent = "";
@@ -2145,7 +2145,7 @@
                                 icon: 'warning',
                                 title: 'Vượt quá giới hạn',
                                 html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                  Bạn đang yêu cầu ${validDates.length} ngày.`
+                                      Bạn đang yêu cầu ${validDates.length} ngày.`
                             });
                             this.clear();
                             document.getElementById("selectedDates").textContent = "";
@@ -2157,7 +2157,7 @@
                                 icon: 'warning',
                                 title: 'Vượt quá giới hạn',
                                 html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
-                                  Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                      Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
                             });
                             this.clear();
                             document.getElementById("selectedDates").textContent = "";
@@ -2331,7 +2331,7 @@
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép tối đa ${limitCheck.loaiNgayNghi.soNgayNghiToiDa} ngày.<br>
-                                          Bạn đã chọn ${validDates.length} ngày, vượt quá số ngày cho phép.`
+                                              Bạn đã chọn ${validDates.length} ngày, vượt quá số ngày cho phép.`
                                     });
                                     this.clear();
                                     document.getElementById("selectedDates").textContent = "";
@@ -2343,7 +2343,7 @@
                                         icon: 'warning',
                                         title: 'Vượt quá giới hạn',
                                         html: `Loại nghỉ <strong>${limitCheck.loaiNgayNghi.tenLoai}</strong> chỉ cho phép đăng ký tối đa ${limitCheck.loaiNgayNghi.soLanDangKyToiDa} lần.<br>
-                                          Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
+                                              Bạn đã đăng ký ${limitCheck.hienTai.soLanDangKy} lần.`
                                     });
                                     this.clear();
                                     document.getElementById("selectedDates").textContent = "";
@@ -2798,17 +2798,17 @@
 
                 const uniqueId = `dates-${maDon}-${index}`;
                 const datesDropdownHtml = `
-                    <div class="dropdown">
-                        <button class="btn btn-link dropdown-toggle" type="button" id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
-                            ${ngayNghis.length > 0 ? ngayNghis.length + ' ngày' : 'Không có ngày'}
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="${uniqueId}">
-                            ${ngayNghis.length > 0 ? ngayNghis.map(ngay => `
-                                <li><a class="dropdown-item" href="#">${formatDate(ngay.ngayNghi)}</a></li>
-                            `).join('') : '<li><a class="dropdown-item" href="#">Không có ngày</a></li>'}
-                        </ul>
-                    </div>
-                `;
+                        <div class="dropdown">
+                            <button class="btn btn-link dropdown-toggle" type="button" id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                ${ngayNghis.length > 0 ? ngayNghis.length + ' ngày' : 'Không có ngày'}
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="${uniqueId}">
+                                ${ngayNghis.length > 0 ? ngayNghis.map(ngay => `
+                                    <li><a class="dropdown-item" href="#">${formatDate(ngay.ngayNghi)}</a></li>
+                                `).join('') : '<li><a class="dropdown-item" href="#">Không có ngày</a></li>'}
+                            </ul>
+                        </div>
+                    `;
 
                 const lyDoTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${lyDo}">${truncateText(lyDo, 23)}</div>`;
                 const ghiChuTooltip = `<div class="tooltip-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="${ghiChu}">${truncateText(ghiChu, 23)}</div>`;
@@ -2816,56 +2816,56 @@
                 const row = document.createElement("tr");
                 if (tabId === 'pending') {
                     const cancelButton = ngayNghis.length > 0 ? `
-                        <button class="btn-cancel" data-id="${ngayNghis[0]?.id || ''}">
-                            <i class="fas fa-times-circle"></i>
-                            <span>Hủy đơn</span>
-                        </button>
-                    ` : '';
+                            <button class="btn-cancel" data-id="${ngayNghis[0]?.id || ''}">
+                                <i class="fas fa-times-circle"></i>
+                                <span>Hủy đơn</span>
+                            </button>
+                        ` : '';
                     const supplementButton = (trangThai === "Chờ bổ sung" || trangThai === "NN6") && ngayNghis.length > 0 ? `
-                        <button class="btn-supplement" data-id="${ngayNghis[0]?.id || ''}">
-                            <i class="fas fa-upload"></i>
-                            <span>Bổ sung</span>
-                        </button>
-                    ` : '';
+                            <button class="btn-supplement" data-id="${ngayNghis[0]?.id || ''}">
+                                <i class="fas fa-upload"></i>
+                                <span>Bổ sung</span>
+                            </button>
+                        ` : '';
                     row.innerHTML = `
-                        <td>${tenLoai}</td>
-                        <td>${datesDropdownHtml}</td>
-                        <td>${lyDoTooltip}</td>
-                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                        <td>${fileDisplayHtml}</td>
-                        <td>${cancelButton} ${supplementButton}</td>
-                    `;
+                            <td>${tenLoai}</td>
+                            <td>${datesDropdownHtml}</td>
+                            <td>${lyDoTooltip}</td>
+                            <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                            <td>${fileDisplayHtml}</td>
+                            <td>${cancelButton} ${supplementButton}</td>
+                        `;
                 } else if (tabId === 'approved') {
                     row.innerHTML = `
-                        <td>${tenLoai}</td>
-                        <td>${datesDropdownHtml}</td>
-                        <td>${lyDoTooltip}</td>
-                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                        <td>${fileDisplayHtml}</td>
-                        <td>${ngayDuyetFormatted}</td>
-                        <td>${nguoiDuyetHoTen}</td>
-                    `;
+                            <td>${tenLoai}</td>
+                            <td>${datesDropdownHtml}</td>
+                            <td>${lyDoTooltip}</td>
+                            <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                            <td>${fileDisplayHtml}</td>
+                            <td>${ngayDuyetFormatted}</td>
+                            <td>${nguoiDuyetHoTen}</td>
+                        `;
                 } else if (tabId === 'rejected') {
                     row.innerHTML = `
-                        <td>${tenLoai}</td>
-                        <td>${datesDropdownHtml}</td>
-                        <td>${lyDoTooltip}</td>
-                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                        <td>${fileDisplayHtml}</td>
-                        <td>${ngayDuyetFormatted}</td>
-                        <td>${ghiChuTooltip}</td>
-                        <td>${nguoiDuyetHoTen}</td>
-                    `;
+                            <td>${tenLoai}</td>
+                            <td>${datesDropdownHtml}</td>
+                            <td>${lyDoTooltip}</td>
+                            <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                            <td>${fileDisplayHtml}</td>
+                            <td>${ngayDuyetFormatted}</td>
+                            <td>${ghiChuTooltip}</td>
+                            <td>${nguoiDuyetHoTen}</td>
+                        `;
                 } else if (tabId === 'canceled') {
                     row.innerHTML = `
-                        <td>${tenLoai}</td>
-                        <td>${datesDropdownHtml}</td>
-                        <td>${lyDoTooltip}</td>
-                        <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
-                        <td>${fileDisplayHtml}</td>
-                        <td>${ngayHuyFormatted}</td>
-                        <td>${ghiChuTooltip}</td>
-                    `;
+                            <td>${tenLoai}</td>
+                            <td>${datesDropdownHtml}</td>
+                            <td>${lyDoTooltip}</td>
+                            <td><span class="status-badge ${getStatusClass(trangThai)}">${trangThai}</span></td>
+                            <td>${fileDisplayHtml}</td>
+                            <td>${ngayHuyFormatted}</td>
+                            <td>${ghiChuTooltip}</td>
+                        `;
                 }
                 tableBody.appendChild(row);
             } catch (error) {
@@ -2928,22 +2928,22 @@
 
         if (files.length === 1) {
             return `<a href="#" class="file-link" data-path="/Uploads/${files[0]}">
-                        <i class="fas fa-file"></i>${truncateFileName(files[0])}
-                    </a>`;
+                            <i class="fas fa-file"></i>${truncateFileName(files[0])}
+                        </a>`;
         } else {
             const uniqueId = `dropdown-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             let fileListHtml = `<div class="dropdown">
-                                <button class="file-link dropdown-toggle" type="button"
-                                        id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-paperclip"></i>${files.length} files
-                                </button>
-                                <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
+                                    <button class="file-link dropdown-toggle" type="button"
+                                            id="${uniqueId}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-paperclip"></i>${files.length} files
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="${uniqueId}">`;
             files.forEach(file => {
                 fileListHtml += `<li>
-                                    <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
-                                        <i class="fas fa-file"></i>${truncateFileName(file)}
-                                    </a>
-                                 </li>`;
+                                        <a class="dropdown-item file-link" href="#" data-path="/Uploads/${file}">
+                                            <i class="fas fa-file"></i>${truncateFileName(file)}
+                                        </a>
+                                     </li>`;
             });
             fileListHtml += `</ul></div>`;
             return fileListHtml;
@@ -3162,10 +3162,10 @@
             const { value: files } = await Swal.fire({
                 title: 'Bổ sung tài liệu',
                 html: `
-                    <input type="file" id="supplementFiles" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                    <div id="selectedFilesPreview" style="margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background-color: #f9f9f9;"></div>
-                    <p style="color: gray; font-size: 12px; margin-top: 5px;">Định dạng được phép: PDF, DOC, DOCX, JPG, JPEG, PNG (Tối đa 10MB/file)</p>
-                `,
+                        <input type="file" id="supplementFiles" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <div id="selectedFilesPreview" style="margin-top: 10px; max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background-color: #f9f9f9;"></div>
+                        <p style="color: gray; font-size: 12px; margin-top: 5px;">Định dạng được phép: PDF, DOC, DOCX, JPG, JPEG, PNG (Tối đa 10MB/file)</p>
+                    `,
                 showCancelButton: true,
                 confirmButtonText: 'Gửi',
                 cancelButtonText: 'Hủy',
@@ -3337,18 +3337,18 @@
             alertMessage.id = "leaveBalanceAlert";
             alertMessage.className = "alert alert-danger mt-3";
             alertMessage.innerHTML = `
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương hoặc loại nghỉ khác nếu chúng còn hiệu lực.
-                    `;
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Thông báo:</strong> Số dư phép năm của bạn đã hết. Chỉ có thể đăng ký Nghỉ không lương hoặc loại nghỉ khác nếu chúng còn hiệu lực.
+                        `;
             leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
         } else if (availableLeaveBalance < 5) {
             const alertMessage = document.createElement("div");
             alertMessage.id = "leaveBalanceAlert";
             alertMessage.className = "alert alert-warning mt-3";
             alertMessage.innerHTML = `
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Cảnh báo:</strong> Số dư phép năm của bạn chỉ còn ${availableLeaveBalance} ngày.
-                    `;
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Cảnh báo:</strong> Số dư phép năm của bạn chỉ còn ${availableLeaveBalance} ngày.
+                        `;
             leaveSection.insertBefore(alertMessage, leaveForm.nextSibling);
         }
     }

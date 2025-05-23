@@ -64,9 +64,9 @@ builder.Services.AddScoped<PhepNamService>(); // Đăng ký dịch vụ với v�
 builder.Services.AddScoped<YearlyTaskService>(); // Đổi thành Scoped
 builder.Services.AddHostedService<YearlyTaskService>(); // Đảm bảo đăng ký như Hosted Service
 
-// Đăng ký HttpClient và HolidayNotificationService
-builder.Services.AddHttpClient();
-builder.Services.AddHostedService<HolidayNotificationService>();
+//// Đăng ký HttpClient và HolidayNotificationService
+//builder.Services.AddHttpClient();
+//builder.Services.AddHostedService<HolidayNotificationService>();
 
 // Thêm Controllers và Views
 builder.Services.AddControllersWithViews();

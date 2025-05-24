@@ -5,13 +5,22 @@
 }
 
 @section scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
     <script>
         $(document).ready(function () {
+            // Chart instances
+            let departmentChart = null;
+            let monthChart = null;
+            let positionChart = null;
+
+            // User role flags
+            const isDirector = @User.IsInRole("DIRECTOR").ToString().ToLower();
+            const isPayrollAuditor = @User.IsInRole("PAYROLL_AUDITOR").ToString().ToLower();
+            const isLineManager = @User.IsInRole("LINE_MANAGER").ToString().ToLower();
+
             // Hiển thị toast
             function showToast(message, type = 'danger') {
                 const toast = $(`
@@ -35,8 +44,19 @@
             async function fetchWithRetry(url, options, retries = 3) {
                 for (let i = 0; i < retries; i++) {
                     try {
-                        return await $.ajax(url, options);
+                        console.log(`Attempt ${i + 1}: Fetching ${url}`);
+                        const response = await $.ajax({
+                            url: url,
+                            ...options,
+                            headers: {
+                                'Accept': 'application/json',
+                                ...options.headers
+                            }
+                        });
+                        console.log('Response:', response);
+                        return response;
                     } catch (error) {
+                        console.error(`Attempt ${i + 1} failed:`, error);
                         if (i === retries - 1) throw error;
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
@@ -44,24 +64,30 @@
             }
 
             // Lấy danh sách phòng ban
-            fetchWithRetry('/api/PhongBan/GetPhongBans', { method: 'GET' })
+            fetchWithRetry('/api/PhongBanApi', { method: 'GET' })
                 .then(data => {
                     $('#phongBan').append('<option value="">Tất cả</option>');
                     data.forEach(pb => {
                         $('#phongBan').append(`<option value="${pb.maPhongBan}">${pb.tenPhongBan}</option>`);
                     });
                 })
-                .catch(() => showToast('Không thể tải danh sách phòng ban.'));
+                .catch(error => {
+                    console.error('Error loading departments:', error);
+                    showToast('Không thể tải danh sách phòng ban.');
+                });
 
             // Lấy danh sách chức vụ
-            fetchWithRetry('/api/ChucVu', { method: 'GET' })
+            fetchWithRetry('/api/ChucVuApi', { method: 'GET' })
                 .then(data => {
                     $('#chucVu').append('<option value="">Tất cả</option>');
                     data.forEach(cv => {
                         $('#chucVu').append(`<option value="${cv.maChucVu}">${cv.tenChucVu}</option>`);
                     });
                 })
-                .catch(() => showToast('Không thể tải danh sách chức vụ.'));
+                .catch(error => {
+                    console.error('Error loading positions:', error);
+                    showToast('Không thể tải danh sách chức vụ.');
+                });
 
             // Tạo danh sách năm
             const currentYear = new Date().getFullYear();
@@ -69,11 +95,35 @@
                 $('#year').append(`<option value="${year}">${year}</option>`);
             }
 
-            // Khởi tạo DataTable
+            // Khởi tạo DataTable với cấu hình tiếng Việt
             const table = $('#employeeTable').DataTable({
                 pageLength: 10,
+                columns: [
+                    { data: 'maLuong' },
+                    { data: 'maNv' },
+                    { data: 'hoTen' },
+                    { data: 'tenPhongBan' },
+                    { data: 'chucVu' },
+                    { data: 'thucNhan' },
+                    { data: 'trangThai' },
+                    { data: 'actions' }
+                ],
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/vi.json'
+                    "sProcessing": "Đang xử lý...",
+                    "sLengthMenu": "Xem _MENU_ mục",
+                    "sZeroRecords": "Không tìm thấy dòng nào phù hợp",
+                    "sInfo": "Đang xem _START_ đến _END_ trong tổng số _TOTAL_ mục",
+                    "sInfoEmpty": "Đang xem 0 đến 0 trong tổng số 0 mục",
+                    "sInfoFiltered": "(được lọc từ _MAX_ mục)",
+                    "sInfoPostFix": "",
+                    "sSearch": "Tìm:",
+                    "sUrl": "",
+                    "oPaginate": {
+                        "sFirst": "Đầu",
+                        "sPrevious": "Trước",
+                        "sNext": "Tiếp",
+                        "sLast": "Cuối"
+                    }
                 }
             });
 
@@ -92,33 +142,75 @@
             // Hàm tải phân tích
             async function loadAnalytics() {
                 showLoading();
-                const year = $('#year').val();
-                const month = $('#month').val();
-                const phongBan = $('#phongBan').val();
-                const chucVu = $('#chucVu').val();
-                const compareMonths = $('#compareMonths').val() || [];
-
-                let apiUrl = '/api/Payroll/GetPayrollStatus';
-                @if (User.IsInRole("DIRECTOR")) {
-                    @: apiUrl = `/api/PayrollDirector/GetPayrolls?year=${year}&month=${month}`;
-                } else if (User.IsInRole("PAYROLL_AUDITOR")) {
-                    @: apiUrl = `/api/PayrollAccountant/GetPayrolls?year=${year}&month=${month}`;
-                } else if (User.IsInRole("LINE_MANAGER")) {
-                    @: apiUrl = `/api/PayrollManager/GetDepartmentPayrolls?year=${year}&month=${month}`;
-                }
-
                 try {
-                    const response = await fetchWithRetry(apiUrl, { method: 'GET' });
+                    const year = $('#year').val();
+                    const month = $('#month').val();
+                    const phongBan = $('#phongBan').val();
+                    const chucVu = $('#chucVu').val();
+                    const compareMonths = $('#compareMonths').val() || [];
+
+                    if (!year || !month) {
+                        showToast('Vui lòng chọn năm và tháng', 'warning');
+                        return;
+                    }
+
+                    let apiUrl = '/api/PayrollApi/GetPayrollStatus';
+                    if (isDirector) {
+                        apiUrl = `/api/PayrollDirectorApi/GetPayrolls?year=${year}&month=${month}`;
+                    } else if (isPayrollAuditor) {
+                        apiUrl = `/api/PayrollAccountantApi/GetPayrolls?year=${year}&month=${month}`;
+                    } else if (isLineManager) {
+                        apiUrl = `/api/PayrollManagerApi/GetDepartmentPayrolls?year=${year}&month=${month}`;
+                    }
+
+                    console.log('Fetching data from:', apiUrl);
+                    const response = await fetchWithRetry(apiUrl, { 
+                        method: 'GET',
+                        data: { year, month }
+                    });
+
+                    if (!response || response.length === 0) {
+                        showToast('Không có dữ liệu báo cáo', 'warning');
+                        return;
+                    }
+
+                    console.log('Received data:', response);
+
+                    // Xóa các biểu đồ cũ
+                    if (departmentChart) {
+                        departmentChart.destroy();
+                        departmentChart = null;
+                    }
+                    if (monthChart) {
+                        monthChart.destroy();
+                        monthChart = null;
+                    }
+                    if (positionChart) {
+                        positionChart.destroy();
+                        positionChart = null;
+                    }
+
+                    // Render các biểu đồ mới
                     renderDepartmentChart(response);
                     renderMonthComparisonChart(response);
                     renderPositionChart(response);
                     renderEmployeeTable(response, phongBan, chucVu);
 
-                    const monthResponse = await fetchWithRetry(`/api/Payroll/GetPayrollStatus?year=${year}&months=${compareMonths.join(',')}`, { method: 'GET' });
-                    renderMonthComparisonChart(monthResponse);
+                    if (compareMonths.length > 0) {
+                        const monthResponse = await fetchWithRetry(`/api/PayrollApi/GetPayrollStatus?year=${year}&months=${compareMonths.join(',')}`, { 
+                            method: 'GET' 
+                        });
+                        if (monthResponse && monthResponse.length) {
+                            if (monthChart) {
+                                monthChart.destroy();
+                                monthChart = null;
+                            }
+                            renderMonthComparisonChart(monthResponse);
+                        }
+                    }
                 } catch (error) {
-                    showToast('Không thể tải dữ liệu báo cáo. Vui lòng thử lại.');
-                    console.error(error);
+                    console.error('Error loading analytics:', error);
+                    showToast('Không thể tải dữ liệu báo cáo. Vui lòng thử lại.', 'danger');
                 } finally {
                     hideLoading();
                 }
@@ -126,206 +218,273 @@
 
             // Biểu đồ tổng lương theo phòng ban (Pie)
             function renderDepartmentChart(data) {
-                const ctx = $('#departmentChart')[0].getContext('2d');
-                const departments = {};
-                if (@User.IsInRole("LINE_MANAGER")) {
-                    data.forEach(item => {
-                        departments[item.tenPhongBan] = (departments[item.tenPhongBan] || 0) + item.thucNhan;
-                    });
-                } else {
-                    data.forEach(group => {
-                        group.nhanViens.forEach(nv => {
-                            if (nv.coBangLuong) {
-                                departments[group.tenPhongBan] = (departments[group.tenPhongBan] || 0) + (nv.thucNhan || 0);
-                            }
-                        });
-                    });
-                }
+                try {
+                    const departments = {};
+                    
+                    if (isLineManager) {
+                        if (Array.isArray(data)) {
+                            data.forEach(item => {
+                                if (item && item.tenPhongBan && typeof item.thucNhan === 'number') {
+                                    departments[item.tenPhongBan] = (departments[item.tenPhongBan] || 0) + item.thucNhan;
+                                }
+                            });
+                        }
+                    } else {
+                        if (Array.isArray(data)) {
+                            data.forEach(group => {
+                                if (group && group.nhanViens && Array.isArray(group.nhanViens)) {
+                                    group.nhanViens.forEach(nv => {
+                                        if (nv && nv.coBangLuong && typeof nv.thucNhan === 'number') {
+                                            departments[group.tenPhongBan] = (departments[group.tenPhongBan] || 0) + nv.thucNhan;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
 
-                new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(departments),
-                        datasets: [{
-                            label: 'Tổng lương',
-                            data: Object.values(departments),
-                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        animation: {
-                            animateScale: true,
-                            animateRotate: true
+                    if (Object.keys(departments).length === 0) {
+                        showToast('Không có dữ liệu để hiển thị biểu đồ phòng ban', 'warning');
+                        return;
+                    }
+
+                    const options = {
+                        series: Object.values(departments),
+                        chart: {
+                            type: 'pie',
+                            height: 350
                         },
-                        plugins: {
-                            legend: { position: 'top' },
-                            title: { display: true, text: 'Tổng lương theo phòng ban' },
-                            datalabels: {
-                                formatter: (value, ctx) => {
-                                    let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                    let percentage = (value * 100 / sum).toFixed(2) + "%";
-                                    return percentage;
+                        labels: Object.keys(departments),
+                        colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                        responsive: [{
+                            breakpoint: 480,
+                            options: {
+                                chart: {
+                                    width: 200
                                 },
-                                color: '#fff'
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        return `Tổng lương: ${context.parsed.toLocaleString('vi-VN')} VNĐ`;
-                                    }
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }],
+                        tooltip: {
+                            y: {
+                                formatter: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' VNĐ';
                                 }
                             }
                         }
-                    }
-                });
+                    };
+
+                    departmentChart = new ApexCharts(document.querySelector("#departmentChart"), options);
+                    departmentChart.render();
+                } catch (error) {
+                    console.error('Error rendering department chart:', error);
+                    showToast('Lỗi khi hiển thị biểu đồ phòng ban', 'danger');
+                }
             }
 
             // Biểu đồ so sánh lương theo tháng (Line)
             function renderMonthComparisonChart(data) {
-                const ctx = $('#monthChart')[0].getContext('2d');
-                const months = {};
-                if (@User.IsInRole("LINE_MANAGER")) {
-                    data.forEach(item => {
-                        const monthKey = `${item.thangNam.month}/${item.thangNam.year}`;
-                        months[monthKey] = (months[monthKey] || 0) + item.thucNhan;
-                    });
-                } else {
-                    data.forEach(group => {
-                        group.nhanViens.forEach(nv => {
-                            if (nv.coBangLuong && nv.thangNam) {
-                                const monthKey = `${nv.thangNam.month}/${nv.thangNam.year}`;
-                                months[monthKey] = (months[monthKey] || 0) + (nv.thucNhan || 0);
-                            }
-                        });
-                    });
-                }
+                try {
+                    const months = {};
+                    
+                    if (isLineManager) {
+                        if (Array.isArray(data)) {
+                            data.forEach(item => {
+                                if (item && item.thangNam && typeof item.thucNhan === 'number') {
+                                    const monthKey = `${item.thangNam.month}/${item.thangNam.year}`;
+                                    months[monthKey] = (months[monthKey] || 0) + item.thucNhan;
+                                }
+                            });
+                        }
+                    } else {
+                        if (Array.isArray(data)) {
+                            data.forEach(group => {
+                                if (group && group.nhanViens && Array.isArray(group.nhanViens)) {
+                                    group.nhanViens.forEach(nv => {
+                                        if (nv && nv.coBangLuong && nv.thangNam && typeof nv.thucNhan === 'number') {
+                                            const monthKey = `${nv.thangNam.month}/${nv.thangNam.year}`;
+                                            months[monthKey] = (months[monthKey] || 0) + nv.thucNhan;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
 
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: Object.keys(months),
-                        datasets: [{
-                            label: 'Tổng lương',
-                            data: Object.values(months),
-                            borderColor: '#36A2EB',
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        animation: {
-                            duration: 2000,
-                            easing: 'easeInOutQuart'
+                    if (Object.keys(months).length === 0) {
+                        showToast('Không có dữ liệu để hiển thị biểu đồ tháng', 'warning');
+                        return;
+                    }
+
+                    const options = {
+                        series: [{
+                            name: 'Tổng lương',
+                            data: Object.values(months)
+                        }],
+                        chart: {
+                            type: 'line',
+                            height: 350,
+                            animations: {
+                                enabled: true,
+                                easing: 'easeinout',
+                                speed: 800
+                            }
                         },
-                        plugins: {
-                            legend: { position: 'top' },
-                            title: { display: true, text: 'So sánh lương theo tháng' },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        return `Tổng lương: ${context.parsed.y.toLocaleString('vi-VN')} VNĐ`;
-                                    }
+                        xaxis: {
+                            categories: Object.keys(months)
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' VNĐ';
+                                }
+                            }
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' VNĐ';
                                 }
                             }
                         }
-                    }
-                });
+                    };
+
+                    monthChart = new ApexCharts(document.querySelector("#monthChart"), options);
+                    monthChart.render();
+                } catch (error) {
+                    console.error('Error rendering month comparison chart:', error);
+                    showToast('Lỗi khi hiển thị biểu đồ tháng', 'danger');
+                }
             }
 
             // Biểu đồ tổng lương theo chức vụ (Bar)
             function renderPositionChart(data) {
-                const ctx = $('#positionChart')[0].getContext('2d');
-                const positions = {};
-                if (@User.IsInRole("LINE_MANAGER")) {
-                    data.forEach(item => {
-                        const chucVu = item.chucVu || 'Không xác định';
-                        positions[chucVu] = (positions[chucVu] || 0) + item.thucNhan;
-                    });
-                } else {
-                    data.forEach(group => {
-                        group.nhanViens.forEach(nv => {
-                            if (nv.coBangLuong) {
-                                const chucVu = nv.chucVu || 'Không xác định';
-                                positions[chucVu] = (positions[chucVu] || 0) + (nv.thucNhan || 0);
-                            }
-                        });
-                    });
-                }
+                try {
+                    const positions = {};
+                    
+                    if (isLineManager) {
+                        if (Array.isArray(data)) {
+                            data.forEach(item => {
+                                if (item && item.chucVu && typeof item.thucNhan === 'number') {
+                                    const chucVu = item.chucVu || 'Không xác định';
+                                    positions[chucVu] = (positions[chucVu] || 0) + item.thucNhan;
+                                }
+                            });
+                        }
+                    } else {
+                        if (Array.isArray(data)) {
+                            data.forEach(group => {
+                                if (group && group.nhanViens && Array.isArray(group.nhanViens)) {
+                                    group.nhanViens.forEach(nv => {
+                                        if (nv && nv.coBangLuong && typeof nv.thucNhan === 'number') {
+                                            const chucVu = nv.chucVu || 'Không xác định';
+                                            positions[chucVu] = (positions[chucVu] || 0) + nv.thucNhan;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
 
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(positions),
-                        datasets: [{
-                            label: 'Tổng lương',
-                            data: Object.values(positions),
-                            backgroundColor: '#4BC0C0'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        animation: {
-                            duration: 1500,
-                            easing: 'easeOutBounce'
+                    if (Object.keys(positions).length === 0) {
+                        showToast('Không có dữ liệu để hiển thị biểu đồ chức vụ', 'warning');
+                        return;
+                    }
+
+                    const options = {
+                        series: [{
+                            name: 'Tổng lương',
+                            data: Object.values(positions)
+                        }],
+                        chart: {
+                            type: 'bar',
+                            height: 350,
+                            animations: {
+                                enabled: true,
+                                easing: 'easeinout',
+                                speed: 800
+                            }
                         },
-                        plugins: {
-                            legend: { position: 'top' },
-                            title: { display: true, text: 'Tổng lương theo chức vụ' },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        return `Tổng lương: ${context.parsed.y.toLocaleString('vi-VN')} VNĐ`;
-                                    }
+                        xaxis: {
+                            categories: Object.keys(positions)
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' VNĐ';
+                                }
+                            }
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' VNĐ';
                                 }
                             }
                         }
-                    }
-                });
+                    };
+
+                    positionChart = new ApexCharts(document.querySelector("#positionChart"), options);
+                    positionChart.render();
+                } catch (error) {
+                    console.error('Error rendering position chart:', error);
+                    showToast('Lỗi khi hiển thị biểu đồ chức vụ', 'danger');
+                }
             }
 
             // Bảng phân tích theo nhân viên
             function renderEmployeeTable(data, phongBanFilter, chucVuFilter) {
-                table.clear();
-                if (@User.IsInRole("LINE_MANAGER")) {
-                    data.forEach(item => {
-                        if ((!phongBanFilter || item.tenPhongBan === $('#phongBan option:selected').text()) &&
-                            (!chucVuFilter || item.chucVu === $('#chucVu option:selected').text())) {
-                            table.row.add([
-                                item.maLuong,
-                                item.maNv,
-                                item.hoTen,
-                                item.tenPhongBan,
-                                item.chucVu || 'N/A',
-                                `${item.thucNhan.toLocaleString('vi-VN')} VNĐ`,
-                                `<span class="badge badge-${item.trangThai === 'BL5' ? 'success' : item.trangThai === 'BL1R' ? 'danger' : 'warning'}">${item.tenTrangThai}</span>`,
-                                `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${item.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
-                            ]);
-                        }
-                    });
-                } else {
-                    data.forEach(group => {
-                        group.nhanViens.forEach(nv => {
-                            if (nv.coBangLuong &&
-                                (!phongBanFilter || group.tenPhongBan === $('#phongBan option:selected').text()) &&
-                                (!chucVuFilter || nv.chucVu === $('#chucVu option:selected').text())) {
-                                table.row.add([
-                                    nv.maLuong,
-                                    nv.maNv,
-                                    nv.hoTen,
-                                    group.tenPhongBan,
-                                    nv.chucVu || 'N/A',
-                                    `${nv.thucNhan.toLocaleString('vi-VN')} VNĐ`,
-                                    `<span class="badge badge-${nv.trangThai === 'BL5' ? 'success' : nv.trangThai === 'BL1R' ? 'danger' : 'warning'}">${nv.tenTrangThai}</span>`,
-                                    `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${nv.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
-                                ]);
+                try {
+                    const tableData = [];
+                    
+                    if (isLineManager) {
+                        data.forEach(item => {
+                            if (item && 
+                                (!phongBanFilter || item.tenPhongBan === $('#phongBan option:selected').text()) &&
+                                (!chucVuFilter || item.chucVu === $('#chucVu option:selected').text())) {
+                                tableData.push({
+                                    maLuong: item.maLuong,
+                                    maNv: item.maNv,
+                                    hoTen: item.hoTen,
+                                    tenPhongBan: item.tenPhongBan,
+                                    chucVu: item.chucVu || 'N/A',
+                                    thucNhan: `${item.thucNhan.toLocaleString('vi-VN')} VNĐ`,
+                                    trangThai: `<span class="badge badge-${item.trangThai === 'BL5' ? 'success' : item.trangThai === 'BL1R' ? 'danger' : 'warning'}">${item.tenTrangThai}</span>`,
+                                    actions: `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${item.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
+                                });
                             }
                         });
-                    });
+                    } else {
+                        data.forEach(group => {
+                            if (group && group.nhanViens) {
+                                group.nhanViens.forEach(nv => {
+                                    if (nv && nv.coBangLuong &&
+                                        (!phongBanFilter || group.tenPhongBan === $('#phongBan option:selected').text()) &&
+                                        (!chucVuFilter || nv.chucVu === $('#chucVu option:selected').text())) {
+                                        tableData.push({
+                                            maLuong: nv.maLuong,
+                                            maNv: nv.maNv,
+                                            hoTen: nv.hoTen,
+                                            tenPhongBan: group.tenPhongBan,
+                                            chucVu: nv.chucVu || 'N/A',
+                                            thucNhan: `${nv.thucNhan.toLocaleString('vi-VN')} VNĐ`,
+                                            trangThai: `<span class="badge badge-${nv.trangThai === 'BL5' ? 'success' : nv.trangThai === 'BL1R' ? 'danger' : 'warning'}">${nv.tenTrangThai}</span>`,
+                                            actions: `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${nv.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+
+                    table.clear().rows.add(tableData).draw();
+                    $('#rowCount').html(`<i class="fa fa-list"></i> Tổng số bảng lương: ${tableData.length}`);
+                } catch (error) {
+                    console.error('Error rendering employee table:', error);
+                    showToast('Lỗi khi hiển thị bảng nhân viên', 'danger');
                 }
-                table.draw();
-                $('#rowCount').html(`<i class="fa fa-list"></i> Tổng số bảng lương: ${table.rows().count()}`);
             }
 
             // Xử lý xem chi tiết bảng lương
@@ -333,7 +492,12 @@
                 const maLuong = $(this).data('ma-luong');
                 showLoading();
                 try {
-                    const data = await fetchWithRetry(`/api/Payroll/GetPayrollDetail/${maLuong}`, { method: 'GET' });
+                    const data = await fetchWithRetry(`/api/PayrollApi/GetPayrollDetail/${maLuong}`, { method: 'GET' });
+                    if (!data) {
+                        showToast('Không tìm thấy thông tin chi tiết bảng lương', 'warning');
+                        return;
+                    }
+
                     $('#detailModal .modal-body').html(`
                         <div class="card">
                             <div class="card-header bg-primary text-white">
@@ -413,8 +577,8 @@
                     `);
                     $('#detailModal').modal('show');
                 } catch (error) {
-                    showToast('Không thể tải chi tiết bảng lương.');
-                    console.error(error);
+                    console.error('Error loading payroll detail:', error);
+                    showToast('Không thể tải chi tiết bảng lương.', 'danger');
                 } finally {
                     hideLoading();
                 }
@@ -448,14 +612,9 @@
         transform: translate(-50%, -50%);
         z-index: 1000;
     }
-    Media
-    (max-width: 768px) {
-    .card {
-            margin-bottom: 20px;
-        }
-        .chart-container {
-            height: 300px !important;
-        }
+    .chart-container {
+        height: 400px;
+        width: 100%;
     }
 </style>
 

@@ -28,7 +28,7 @@ namespace HR_KD.ApiControllers
 
         #region API cho Giám đốc
 
-        // Lấy danh sách bảng lương từ BL3 trở lên
+        // Lấy danh sách bảng lương từ BL1 trở lên
         [HttpGet("GetPayrolls")]
         public async Task<IActionResult> GetPayrolls(int year, int month)
         {
@@ -36,7 +36,8 @@ namespace HR_KD.ApiControllers
                 .Include(b => b.MaNvNavigation)
                 .ThenInclude(nv => nv.MaPhongBanNavigation)
                 .Where(b => b.ThangNam.Year == year && b.ThangNam.Month == month &&
-                            (b.TrangThai == "BL3" || b.TrangThai == "BL4" || b.TrangThai == "BL5"))
+                            (b.TrangThai == "BL1" || b.TrangThai == "BL1A" || b.TrangThai == "BL2" || 
+                             b.TrangThai == "BL3" || b.TrangThai == "BL4" || b.TrangThai == "BL5"))
                 .ToListAsync();
 
             var result = bangLuongs.Select(b => new

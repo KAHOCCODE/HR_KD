@@ -216,7 +216,7 @@
         }
 
         function loadDepartments() {
-            $.get("/api/PhongBanApi/GetPhongBans", function (data) {
+            $.get("/api/PhongBanApi", function (data) {
                 const departmentSelect = $('#departmentSelect');
                 departmentSelect.empty();
                 departmentSelect.append($('<option>', { value: '', text: 'Tất cả' }));

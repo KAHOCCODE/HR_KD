@@ -102,11 +102,28 @@
                     { data: 'maLuong' },
                     { data: 'maNv' },
                     { data: 'hoTen' },
-                    { data: 'tenPhongBan' },
-                    { data: 'chucVu' },
-                    { data: 'thucNhan' },
-                    { data: 'trangThai' },
-                    { data: 'actions' }
+                    { data: 'tenPhongBan', defaultContent: 'N/A' },
+                    { data: 'chucVu', defaultContent: 'N/A' },
+                    { 
+                        data: 'thucNhan',
+                        render: function(data) {
+                            return data ? data.toLocaleString('vi-VN') + ' VNĐ' : 'N/A';
+                        }
+                    },
+                    { 
+                        data: 'trangThai',
+                        render: function(data, type, row) {
+                            const statusClass = data === 'BL5' ? 'success' : 
+                                             data === 'BL1R' ? 'danger' : 'warning';
+                            return `<span class="badge badge-${statusClass}">${row.tenTrangThai || data}</span>`;
+                        }
+                    },
+                    {
+                        data: 'maLuong',
+                        render: function(data) {
+                            return `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${data}"><i class="fa fa-eye"></i> Xem</button>`;
+                        }
+                    }
                 ],
                 language: {
                     "sProcessing": "Đang xử lý...",
@@ -139,6 +156,86 @@
                 XLSX.writeFile(wb, `Payroll_Analytics_${new Date().toISOString().slice(0, 10)}.xlsx`);
             });
 
+            // Hàm lấy và hợp nhất dữ liệu
+            async function fetchAndMergeData(year, month) {
+                try {
+                    let apiUrl = '/api/PayrollApi/GetPayrollStatus';
+                    if (isDirector) {
+                        apiUrl = `/api/PayrollDirectorApi/GetPayrolls?year=${year}&month=${month}`;
+                    } else if (isPayrollAuditor) {
+                        apiUrl = `/api/PayrollAccountantApi/GetPayrolls?year=${year}&month=${month}`;
+                    } else if (isLineManager) {
+                        apiUrl = `/api/PayrollManagerApi/GetDepartmentPayrolls?year=${year}&month=${month}`;
+                    }
+
+                    console.log('Fetching data from:', apiUrl);
+                    const response = await fetchWithRetry(apiUrl, { method: 'GET' });
+
+                    if (!response || response.length === 0) {
+                        console.warn('No data received from API');
+                        showToast('Không có dữ liệu báo cáo', 'warning');
+                        return [];
+                    }
+
+                    console.log('Raw API response:', response);
+
+                    // Lấy thông tin phòng ban và chức vụ
+                    const [deptResponse, posResponse] = await Promise.all([
+                        fetchWithRetry('/api/PhongBanApi', { method: 'GET' }),
+                        fetchWithRetry('/api/ChucVuApi', { method: 'GET' })
+                    ]);
+
+                    // Tạo map cho phòng ban và chức vụ
+                    const deptMap = {};
+                    const posMap = {};
+                    deptResponse.forEach(dept => {
+                        deptMap[dept.maPhongBan] = dept.tenPhongBan;
+                    });
+                    posResponse.forEach(pos => {
+                        posMap[pos.maChucVu] = pos.tenChucVu;
+                    });
+
+                    // Nếu là API GetPayrollStatus, cần làm phẳng dữ liệu
+                    if (apiUrl.includes('GetPayrollStatus')) {
+                        const flattenedData = response.flatMap(group => {
+                            console.log('Processing group:', group);
+                            if (!group.nhanViens || !Array.isArray(group.nhanViens)) {
+                                console.warn('Invalid group data:', group);
+                                return [];
+                            }
+                            return group.nhanViens.map(nv => {
+                                console.log('Processing employee:', nv);
+                                return {
+                                    ...nv,
+                                    tenPhongBan: group.tenPhongBan || deptMap[nv.maPhongBan] || 'Không xác định',
+                                    tenChucVu: posMap[nv.maChucVu] || 'Không xác định',
+                                    month: month,
+                                    year: year
+                                };
+                            });
+                        });
+                        console.log('Flattened data:', flattenedData);
+                        return flattenedData;
+                    }
+
+                    // Nếu là các API khác, thêm thông tin phòng ban và chức vụ
+                    const enrichedData = response.map(item => ({
+                        ...item,
+                        tenPhongBan: deptMap[item.maPhongBan] || 'Không xác định',
+                        tenChucVu: posMap[item.maChucVu] || 'Không xác định',
+                        month: month,
+                        year: year
+                    }));
+
+                    console.log('Enriched data:', enrichedData);
+                    return enrichedData;
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    showToast('Không thể tải dữ liệu báo cáo', 'danger');
+                    return [];
+                }
+            }
+
             // Hàm tải phân tích
             async function loadAnalytics() {
                 showLoading();
@@ -154,27 +251,13 @@
                         return;
                     }
 
-                    let apiUrl = '/api/PayrollApi/GetPayrollStatus';
-                    if (isDirector) {
-                        apiUrl = `/api/PayrollDirectorApi/GetPayrolls?year=${year}&month=${month}`;
-                    } else if (isPayrollAuditor) {
-                        apiUrl = `/api/PayrollAccountantApi/GetPayrolls?year=${year}&month=${month}`;
-                    } else if (isLineManager) {
-                        apiUrl = `/api/PayrollManagerApi/GetDepartmentPayrolls?year=${year}&month=${month}`;
-                    }
+                    const data = await fetchAndMergeData(year, month);
+                    console.log('Received data:', data);
 
-                    console.log('Fetching data from:', apiUrl);
-                    const response = await fetchWithRetry(apiUrl, { 
-                        method: 'GET',
-                        data: { year, month }
-                    });
-
-                    if (!response || response.length === 0) {
+                    if (data.length === 0) {
                         showToast('Không có dữ liệu báo cáo', 'warning');
                         return;
                     }
-
-                    console.log('Received data:', response);
 
                     // Xóa các biểu đồ cũ
                     if (departmentChart) {
@@ -191,10 +274,13 @@
                     }
 
                     // Render các biểu đồ mới
-                    renderDepartmentChart(response);
-                    renderMonthComparisonChart(response);
-                    renderPositionChart(response);
-                    renderEmployeeTable(response, phongBan, chucVu);
+                    renderDepartmentChart(data);
+                    renderMonthComparisonChart(data);
+                    renderPositionChart(data);
+
+                    // Cập nhật bảng
+                    table.clear().rows.add(data).draw();
+                    $('#rowCount').html(`<i class="fa fa-list"></i> Tổng số bảng lương: ${data.length}`);
 
                     if (compareMonths.length > 0) {
                         const monthResponse = await fetchWithRetry(`/api/PayrollApi/GetPayrollStatus?year=${year}&months=${compareMonths.join(',')}`, { 
@@ -210,7 +296,7 @@
                     }
                 } catch (error) {
                     console.error('Error loading analytics:', error);
-                    showToast('Không thể tải dữ liệu báo cáo. Vui lòng thử lại.', 'danger');
+                    showToast('Không thể tải dữ liệu báo cáo', 'danger');
                 } finally {
                     hideLoading();
                 }
@@ -219,31 +305,22 @@
             // Biểu đồ tổng lương theo phòng ban (Pie)
             function renderDepartmentChart(data) {
                 try {
+                    console.log('Rendering department chart with data:', data);
                     const departments = {};
                     
-                    if (isLineManager) {
-                        if (Array.isArray(data)) {
-                            data.forEach(item => {
-                                if (item && item.tenPhongBan && typeof item.thucNhan === 'number') {
-                                    departments[item.tenPhongBan] = (departments[item.tenPhongBan] || 0) + item.thucNhan;
-                                }
-                            });
+                    data.forEach(item => {
+                        console.log('Processing item for department chart:', item);
+                        if (item && item.tenPhongBan && typeof item.thucNhan === 'number') {
+                            departments[item.tenPhongBan] = (departments[item.tenPhongBan] || 0) + item.thucNhan;
+                        } else {
+                            console.warn('Invalid item data:', item);
                         }
-                    } else {
-                        if (Array.isArray(data)) {
-                            data.forEach(group => {
-                                if (group && group.nhanViens && Array.isArray(group.nhanViens)) {
-                                    group.nhanViens.forEach(nv => {
-                                        if (nv && nv.coBangLuong && typeof nv.thucNhan === 'number') {
-                                            departments[group.tenPhongBan] = (departments[group.tenPhongBan] || 0) + nv.thucNhan;
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    }
+                    });
+
+                    console.log('Processed departments data:', departments);
 
                     if (Object.keys(departments).length === 0) {
+                        console.warn('No valid department data found');
                         showToast('Không có dữ liệu để hiển thị biểu đồ phòng ban', 'warning');
                         return;
                     }
@@ -287,33 +364,23 @@
             // Biểu đồ so sánh lương theo tháng (Line)
             function renderMonthComparisonChart(data) {
                 try {
+                    console.log('Rendering month comparison chart with data:', data);
                     const months = {};
                     
-                    if (isLineManager) {
-                        if (Array.isArray(data)) {
-                            data.forEach(item => {
-                                if (item && item.thangNam && typeof item.thucNhan === 'number') {
-                                    const monthKey = `${item.thangNam.month}/${item.thangNam.year}`;
-                                    months[monthKey] = (months[monthKey] || 0) + item.thucNhan;
-                                }
-                            });
+                    data.forEach(item => {
+                        console.log('Processing item for month chart:', item);
+                        if (item && typeof item.thucNhan === 'number') {
+                            const monthKey = `${item.month}/${item.year}`;
+                            months[monthKey] = (months[monthKey] || 0) + item.thucNhan;
+                        } else {
+                            console.warn('Invalid month data:', item);
                         }
-                    } else {
-                        if (Array.isArray(data)) {
-                            data.forEach(group => {
-                                if (group && group.nhanViens && Array.isArray(group.nhanViens)) {
-                                    group.nhanViens.forEach(nv => {
-                                        if (nv && nv.coBangLuong && nv.thangNam && typeof nv.thucNhan === 'number') {
-                                            const monthKey = `${nv.thangNam.month}/${nv.thangNam.year}`;
-                                            months[monthKey] = (months[monthKey] || 0) + nv.thucNhan;
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    }
+                    });
+
+                    console.log('Processed months data:', months);
 
                     if (Object.keys(months).length === 0) {
+                        console.warn('No valid month data found');
                         showToast('Không có dữ liệu để hiển thị biểu đồ tháng', 'warning');
                         return;
                     }
@@ -362,33 +429,22 @@
             // Biểu đồ tổng lương theo chức vụ (Bar)
             function renderPositionChart(data) {
                 try {
+                    console.log('Rendering position chart with data:', data);
                     const positions = {};
                     
-                    if (isLineManager) {
-                        if (Array.isArray(data)) {
-                            data.forEach(item => {
-                                if (item && item.chucVu && typeof item.thucNhan === 'number') {
-                                    const chucVu = item.chucVu || 'Không xác định';
-                                    positions[chucVu] = (positions[chucVu] || 0) + item.thucNhan;
-                                }
-                            });
+                    data.forEach(item => {
+                        console.log('Processing item for position chart:', item);
+                        if (item && item.tenChucVu && typeof item.thucNhan === 'number') {
+                            positions[item.tenChucVu] = (positions[item.tenChucVu] || 0) + item.thucNhan;
+                        } else {
+                            console.warn('Invalid position data:', item);
                         }
-                    } else {
-                        if (Array.isArray(data)) {
-                            data.forEach(group => {
-                                if (group && group.nhanViens && Array.isArray(group.nhanViens)) {
-                                    group.nhanViens.forEach(nv => {
-                                        if (nv && nv.coBangLuong && typeof nv.thucNhan === 'number') {
-                                            const chucVu = nv.chucVu || 'Không xác định';
-                                            positions[chucVu] = (positions[chucVu] || 0) + nv.thucNhan;
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    }
+                    });
+
+                    console.log('Processed positions data:', positions);
 
                     if (Object.keys(positions).length === 0) {
+                        console.warn('No valid position data found');
                         showToast('Không có dữ liệu để hiển thị biểu đồ chức vụ', 'warning');
                         return;
                     }
@@ -431,59 +487,6 @@
                 } catch (error) {
                     console.error('Error rendering position chart:', error);
                     showToast('Lỗi khi hiển thị biểu đồ chức vụ', 'danger');
-                }
-            }
-
-            // Bảng phân tích theo nhân viên
-            function renderEmployeeTable(data, phongBanFilter, chucVuFilter) {
-                try {
-                    const tableData = [];
-                    
-                    if (isLineManager) {
-                        data.forEach(item => {
-                            if (item && 
-                                (!phongBanFilter || item.tenPhongBan === $('#phongBan option:selected').text()) &&
-                                (!chucVuFilter || item.chucVu === $('#chucVu option:selected').text())) {
-                                tableData.push({
-                                    maLuong: item.maLuong,
-                                    maNv: item.maNv,
-                                    hoTen: item.hoTen,
-                                    tenPhongBan: item.tenPhongBan,
-                                    chucVu: item.chucVu || 'N/A',
-                                    thucNhan: `${item.thucNhan.toLocaleString('vi-VN')} VNĐ`,
-                                    trangThai: `<span class="badge badge-${item.trangThai === 'BL5' ? 'success' : item.trangThai === 'BL1R' ? 'danger' : 'warning'}">${item.tenTrangThai}</span>`,
-                                    actions: `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${item.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
-                                });
-                            }
-                        });
-                    } else {
-                        data.forEach(group => {
-                            if (group && group.nhanViens) {
-                                group.nhanViens.forEach(nv => {
-                                    if (nv && nv.coBangLuong &&
-                                        (!phongBanFilter || group.tenPhongBan === $('#phongBan option:selected').text()) &&
-                                        (!chucVuFilter || nv.chucVu === $('#chucVu option:selected').text())) {
-                                        tableData.push({
-                                            maLuong: nv.maLuong,
-                                            maNv: nv.maNv,
-                                            hoTen: nv.hoTen,
-                                            tenPhongBan: group.tenPhongBan,
-                                            chucVu: nv.chucVu || 'N/A',
-                                            thucNhan: `${nv.thucNhan.toLocaleString('vi-VN')} VNĐ`,
-                                            trangThai: `<span class="badge badge-${nv.trangThai === 'BL5' ? 'success' : nv.trangThai === 'BL1R' ? 'danger' : 'warning'}">${nv.tenTrangThai}</span>`,
-                                            actions: `<button class="btn btn-primary btn-sm view-detail" data-ma-luong="${nv.maLuong}"><i class="fa fa-eye"></i> Xem</button>`
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-
-                    table.clear().rows.add(tableData).draw();
-                    $('#rowCount').html(`<i class="fa fa-list"></i> Tổng số bảng lương: ${tableData.length}`);
-                } catch (error) {
-                    console.error('Error rendering employee table:', error);
-                    showToast('Lỗi khi hiển thị bảng nhân viên', 'danger');
                 }
             }
 

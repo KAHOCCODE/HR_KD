@@ -124,22 +124,24 @@
     <script>
         $(document).ready(function () {
             let allTrainings = [];
-            
-            // Gọi API để lấy danh sách khóa đào tạo của nhân viên
+
+            // Gọi API để lấy danh sách khóa đào tạo
             $.ajax({
                 url: '/api/DaoTaoApi/viewtraining',
                 method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')
+                },
                 success: function (data) {
                     var trainingList = $('#trainingList');
                     trainingList.empty();
-                    allTrainings = data;
+                    allTrainings = data || [];
 
-                    if (data && data.length > 0) {
-                        // Cập nhật thống kê
+                    if (Array.isArray(data) && data.length > 0) {
                         const totalTrainings = data.length;
                         const completedTrainings = data.filter(item => item.lichSu.ketQua === 'Hoàn Thành').length;
                         const pendingTrainings = totalTrainings - completedTrainings;
-                        const completionPercentage = Math.round((completedTrainings / totalTrainings) * 100);
+                        const completionPercentage = totalTrainings > 0 ? Math.round((completedTrainings / totalTrainings) * 100) : 0;
 
                         $('#totalTrainings').text(totalTrainings);
                         $('#completedTrainings').text(completedTrainings);
@@ -166,11 +168,10 @@
 
                         renderTrainingList(data);
 
-                        // Xử lý tìm kiếm
                         $('#searchInput').on('keyup', function() {
                             const searchTerm = $(this).val().toLowerCase();
-                            const filteredData = allTrainings.filter(item => 
-                                item.daoTao.tenDaoTao.toLowerCase().includes(searchTerm) || 
+                            const filteredData = allTrainings.filter(item =>
+                                item.daoTao.tenDaoTao.toLowerCase().includes(searchTerm) ||
                                 item.daoTao.tenPhongBan.toLowerCase().includes(searchTerm)
                             );
                             renderTrainingList(filteredData);
@@ -189,160 +190,99 @@
                     $('#trainingList').html(`
                         <div class="alert alert-danger m-3" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            Lỗi khi tải danh sách khóa đào tạo: ${error}
+                            Lỗi khi tải danh sách khóa đào tạo: ${xhr.status} - ${error}
                         </div>
                     `);
+                    console.error('API Error:', xhr.responseText);
                 }
             });
 
-            // Hàm hiển thị danh sách khóa đào tạo
             function renderTrainingList(data) {
                 const tableBody = $('#trainingTableBody');
                 tableBody.empty();
 
-                data.forEach(function (item) {
-                    var ngayBatDau = item.daoTao.ngayBatDau ? new Date(item.daoTao.ngayBatDau).toLocaleDateString('vi-VN') : 'Chưa xác định';
-                    var ngayKetThuc = item.daoTao.ngayKetThuc ? new Date(item.daoTao.ngayKetThuc).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                if (Array.isArray(data)) {
+                    data.forEach(function (item) {
+                        var ngayBatDau = item.daoTao.ngayBatDau ? new Date(item.daoTao.ngayBatDau).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                        var ngayKetThuc = item.daoTao.ngayKetThuc ? new Date(item.daoTao.ngayKetThuc).toLocaleDateString('vi-VN') : 'Chưa xác định';
+                        var statusClass = item.lichSu.ketQua === 'Hoàn Thành' ? 'success' : 'warning';
+                        var statusIcon = item.lichSu.ketQua === 'Hoàn Thành' ? 'check-circle' : 'clock';
 
-                    var statusClass = item.lichSu.ketQua === 'Hoàn Thành' ? 'success' : 'warning';
-                    var statusIcon = item.lichSu.ketQua === 'Hoàn Thành' ? 'check-circle' : 'clock';
+                        var row = `
+                            <tr>
+                                <td><div class="d-flex align-items-center"><div class="icon-small bg-light-${statusClass} me-2"><i class="fas fa-book text-${statusClass}"></i></div><div><h6 class="mb-0">${item.daoTao.tenDaoTao}</h6></div></div></td>
+                                <td>${item.daoTao.tenPhongBan}</td>
+                                <td>${ngayBatDau}</td>
+                                <td>${ngayKetThuc}</td>
+                                <td><span class="badge rounded-pill bg-${statusClass}-subtle text-${statusClass} px-3 py-2"><i class="fas fa-${statusIcon} me-1"></i>${item.lichSu.ketQua}</span></td>
+                                <td class="text-center">
+                        `;
 
-                    var row = `
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="icon-small bg-light-${statusClass} me-2">
-                                        <i class="fas fa-book text-${statusClass}"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0">${item.daoTao.tenDaoTao}</h6>
-                                    </div>
+                        if (item.lichSu.ketQua === 'Chưa Hoàn Thành') {
+                            row += `
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary view-details-btn" data-index="${data.indexOf(item)}"><i class="fas fa-eye me-1"></i>Chi tiết</button>
+                                    <button class="btn btn-sm btn-success complete-btn" data-ma-lich-su="${item.lichSu.maLichSu}"><i class="fas fa-check me-1"></i>Tham gia</button>
                                 </div>
-                            </td>
-                            <td>${item.daoTao.tenPhongBan}</td>
-                            <td>${ngayBatDau}</td>
-                            <td>${ngayKetThuc}</td>
-                            <td>
-                                <span class="badge rounded-pill bg-${statusClass}-subtle text-${statusClass} px-3 py-2">
-                                    <i class="fas fa-${statusIcon} me-1"></i>${item.lichSu.ketQua}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                    `;
+                            `;
+                        } else {
+                            row += `
+                                <button class="btn btn-sm btn-outline-primary view-details-btn" data-index="${data.indexOf(item)}"><i class="fas fa-eye me-1"></i>Xem chi tiết</button>
+                            `;
+                        }
 
-                    if (item.lichSu.ketQua === 'Chưa Hoàn Thành') {
-                        row += `
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-primary view-details-btn" data-index="${data.indexOf(item)}">
-                                    <i class="fas fa-eye me-1"></i>Chi tiết
-                                </button>
-                                <button class="btn btn-sm btn-success complete-btn" data-ma-lich-su="${item.lichSu.maLichSu}">
-                                    <i class="fas fa-check me-1"></i>Tham gia
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        row += `
-                            <button class="btn btn-sm btn-outline-primary view-details-btn" data-index="${data.indexOf(item)}">
-                                <i class="fas fa-eye me-1"></i>Xem chi tiết
-                            </button>
-                        `;
-                    }
+                        row += `</td></tr>`;
+                        tableBody.append(row);
+                    });
+                }
 
-                    row += `</td></tr>`;
-                    tableBody.append(row);
-                });
-
-                // Xử lý sự kiện hoàn thành khóa đào tạo
                 $('.complete-btn').click(function() {
                     var maLichSu = $(this).data('ma-lich-su');
                     completeTraining(maLichSu);
                 });
 
-                // Xử lý sự kiện xem chi tiết
                 $('.view-details-btn').click(function() {
                     const index = $(this).data('index');
                     showTrainingDetails(data[index]);
                 });
             }
 
-            // Hàm hiển thị chi tiết khóa đào tạo
             function showTrainingDetails(training) {
                 const modalContent = $('#trainingDetailContent');
                 const completeBtn = $('#completeTrainingBtn');
-                
+
                 const ngayBatDau = training.daoTao.ngayBatDau ? new Date(training.daoTao.ngayBatDau).toLocaleDateString('vi-VN') : 'Chưa xác định';
                 const ngayKetThuc = training.daoTao.ngayKetThuc ? new Date(training.daoTao.ngayKetThuc).toLocaleDateString('vi-VN') : 'Chưa xác định';
                 const moTa = training.daoTao.moTa || 'Không có mô tả';
-                
+
                 modalContent.html(`
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h4 class="text-primary">${training.daoTao.tenDaoTao}</h4>
-                            <div class="mb-3 text-muted">
-                                <i class="fas fa-building me-2"></i>${training.daoTao.tenPhongBan}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <h6><i class="fas fa-calendar-alt me-2"></i>Thời gian:</h6>
-                                <p class="ms-4 mb-1">Bắt đầu: ${ngayBatDau}</p>
-                                <p class="ms-4 mb-0">Kết thúc: ${ngayKetThuc}</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <h6><i class="fas fa-info-circle me-2"></i>Trạng thái:</h6>
-                                <p class="ms-4">
-                                    <span class="badge rounded-pill px-3 py-2 ${training.lichSu.ketQua === 'Hoàn Thành' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
-                                        <i class="fas fa-${training.lichSu.ketQua === 'Hoàn Thành' ? 'check-circle' : 'clock'} me-1"></i>
-                                        ${training.lichSu.ketQua}
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card border bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-title"><i class="fas fa-file-alt me-2"></i>Mô tả khóa đào tạo:</h6>
-                                    <p class="card-text">${moTa}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="row mb-4"><div class="col-12"><h4 class="text-primary">${training.daoTao.tenDaoTao}</h4><div class="mb-3 text-muted"><i class="fas fa-building me-2"></i>${training.daoTao.tenPhongBan}</div></div></div>
+                    <div class="row mb-3"><div class="col-md-6"><div class="mb-3"><h6><i class="fas fa-calendar-alt me-2"></i>Thời gian:</h6><p class="ms-4 mb-1">Bắt đầu: ${ngayBatDau}</p><p class="ms-4 mb-0">Kết thúc: ${ngayKetThuc}</p></div></div><div class="col-md-6"><div class="mb-3"><h6><i class="fas fa-info-circle me-2"></i>Trạng thái:</h6><p class="ms-4"><span class="badge rounded-pill px-3 py-2 ${training.lichSu.ketQua === 'Hoàn Thành' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}"><i class="fas fa-${training.lichSu.ketQua === 'Hoàn Thành' ? 'check-circle' : 'clock'} me-1"></i>${training.lichSu.ketQua}</span></p></div></div></div>
+                    <div class="row"><div class="col-12"><div class="card border bg-light"><div class="card-body"><h6 class="card-title"><i class="fas fa-file-alt me-2"></i>Mô tả khóa đào tạo:</h6><p class="card-text">${moTa}</p></div></div></div></div>
                 `);
-                
-                // Cập nhật trạng thái nút hoàn thành
+
                 if (training.lichSu.ketQua === 'Hoàn Thành') {
                     completeBtn.hide();
                 } else {
                     completeBtn.show().data('ma-lich-su', training.lichSu.maLichSu);
                 }
-                
-                // Hiển thị modal
+
                 const trainingModal = new bootstrap.Modal(document.getElementById('trainingDetailModal'));
                 trainingModal.show();
             }
 
-            // Xử lý sự kiện hoàn thành từ modal
             $('#completeTrainingBtn').click(function() {
                 const maLichSu = $(this).data('ma-lich-su');
                 completeTraining(maLichSu);
             });
 
-            // Hàm xử lý hoàn thành khóa đào tạo
             function completeTraining(maLichSu) {
                 $.ajax({
                     url: '/api/DaoTaoApi/completetraining',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({ maLichSu: maLichSu }),
-                    success: function() {
-                        // Hiển thị thông báo thành công
+                    success: function(response) {
                         const toast = `
                             <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
                                 <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
@@ -351,22 +291,25 @@
                                         <strong class="me-auto">Thành công</strong>
                                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
                                     </div>
-                                    <div class="toast-body">
-                                        Bạn đã hoàn thành khóa đào tạo thành công!
-                                    </div>
+                                    <div class="toast-body">${response}</div>
                                 </div>
                             </div>
                         `;
                         $('body').append(toast);
-                        
-                        // Tự động đóng toast sau 3 giây
                         setTimeout(function() {
                             $('.toast').toast('hide');
-                            location.reload(); // Tải lại trang để cập nhật trạng thái
+                            location.reload();
                         }, 3000);
                     },
                     error: function(xhr, status, error) {
-                        alert('Lỗi khi hoàn thành khóa đào tạo: ' + error);
+                        let errorMessage = xhr.responseText || 'Lỗi không xác định khi hoàn thành khóa học.';
+                        if (xhr.status === 400) errorMessage = 'Dữ liệu không hợp lệ.';
+                        else if (xhr.status === 403) errorMessage = 'Bạn không có quyền thực hiện hành động này.';
+                        else if (xhr.status === 404) errorMessage = 'Không tìm thấy khóa học.';
+                        else if (xhr.status === 500) errorMessage = 'Lỗi máy chủ: ' + error;
+
+                        alert(errorMessage);
+                        console.error('API Error:', xhr.responseText);
                     }
                 });
             }

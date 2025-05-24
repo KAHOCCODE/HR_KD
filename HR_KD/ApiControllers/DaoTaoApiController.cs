@@ -207,15 +207,20 @@ namespace HR_KD.Controllers
         [Authorize(Roles = "EMPLOYEE")]
         public async Task<ActionResult> ViewTraining()
         {
-            var userName = User.Identity.Name;
-            if (string.IsNullOrEmpty(userName)) return Forbid();
+            // Lấy MaNv từ claim (giả sử MaNv được lưu trong claim "MaNV")
+            var maNvClaim = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+            if (string.IsNullOrEmpty(maNvClaim) || !int.TryParse(maNvClaim, out int maNv))
+            {
+                return Forbid("Không tìm thấy mã nhân viên trong thông tin đăng nhập.");
+            }
 
             var nhanVien = await _context.NhanViens
-                .FirstOrDefaultAsync(nv => nv.HoTen == userName);
+                .FirstOrDefaultAsync(nv => nv.MaNv == maNv);
 
-            if (nhanVien == null) return NotFound("Không tìm thấy nhân viên.");
-
-            int maNv = nhanVien.MaNv;
+            if (nhanVien == null)
+            {
+                return NotFound("Không tìm thấy nhân viên.");
+            }
 
             var lichSuDaoTaos = await _context.LichSuDaoTaos
                 .Include(ls => ls.MaDaoTaoNavigation)
@@ -243,6 +248,11 @@ namespace HR_KD.Controllers
                     }
                 })
                 .ToListAsync();
+
+            if (lichSuDaoTaos == null || !lichSuDaoTaos.Any())
+            {
+                return Ok(new List<object>()); // Trả về danh sách rỗng thay vì NotFound
+            }
 
             return Ok(lichSuDaoTaos);
         }
@@ -274,27 +284,57 @@ namespace HR_KD.Controllers
             return Ok();
         }
 
-        
+
 
         [HttpPost("completetraining")]
         [Authorize(Roles = "EMPLOYEE")]
         public async Task<IActionResult> CompleteTraining([FromBody] CompleteTrainingDTO model)
         {
-            var lichSu = await _context.LichSuDaoTaos.FindAsync(model.MaLichSu);
-            if (lichSu == null) return NotFound();
+            if (model == null || model.MaLichSu <= 0)
+            {
+                return BadRequest("Mã lịch sử đào tạo không hợp lệ.");
+            }
 
-            var userName = User.Identity.Name;
-            if (string.IsNullOrEmpty(userName)) return Forbid();
+            var lichSu = await _context.LichSuDaoTaos.FindAsync(model.MaLichSu);
+            if (lichSu == null)
+            {
+                return NotFound("Không tìm thấy lịch sử đào tạo.");
+            }
+
+            // Lấy MaNv từ claim (giả sử MaNV được lưu trong claim "MaNV")
+            var maNvClaim = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
+            if (string.IsNullOrEmpty(maNvClaim) || !int.TryParse(maNvClaim, out int maNv))
+            {
+                return Forbid("Không tìm thấy mã nhân viên trong thông tin đăng nhập.");
+            }
 
             var nhanVien = await _context.NhanViens
-                .FirstOrDefaultAsync(nv => nv.HoTen == userName);
+                .FirstOrDefaultAsync(nv => nv.MaNv == maNv);
 
-            if (nhanVien == null) return NotFound("Không tìm thấy nhân viên.");
-            if (lichSu.MaNv != nhanVien.MaNv) return Forbid();
+            if (nhanVien == null)
+            {
+                return NotFound("Không tìm thấy nhân viên.");
+            }
+
+            if (lichSu.MaNv != maNv)
+            {
+                return Forbid("Bạn không có quyền hoàn thành khóa học này.");
+            }
 
             lichSu.KetQua = "Hoàn Thành";
-            await _context.SaveChangesAsync();
-            return Ok();
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok("Hoàn thành khóa học thành công.");
+            }
+            catch (DbUpdateException ex)
+            {
+                return StatusCode(500, $"Lỗi khi cập nhật cơ sở dữ liệu: {ex.InnerException?.Message ?? ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi không xác định: {ex.Message}");
+            }
         }
 
     }

@@ -1465,6 +1465,12 @@
         border-radius: 4px;
     }
 
+    .status-pending {
+        background-color: #fff3cd !important; /* Màu vàng nhạt */
+        color: #000 !important; /* Màu chữ đen cho dễ đọc */
+        border: none !important; /* Loại bỏ viền */
+    }
+
 </style>
 
 <div class="leave-dashboard-enhanced bg-white mt-4">
@@ -1866,7 +1872,7 @@
                         let descriptionHtml = description;
                         if (limit) {
                             descriptionHtml += `<br><br><strong>Giới hạn:</strong><br>`;
-                            descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
+                            descriptionHtml += `- Số lần đăng ký: ${limit.hienTai.soLanDangKy}/${limit.soLanDangKyToiDa === null || limit.soLanDangKyToiDa === 0 ? '∞' : limit.soLanDangKyToiDa} lần<br>`;
                             descriptionHtml += `- Số ngày đăng ký tối đa: ${limit.soNgayNghiToiDa === null ? 'Không giới hạn' : limit.soNgayNghiToiDa + ' ngày'}`;
                         }
 
@@ -2072,8 +2078,20 @@
                 const registeredDate = registeredDates.find(d => d.date === dateTime);
                 if (registeredDate) {
                     dayElem.classList.add("registered-day");
-                    dayElem.classList.add(registeredDate.status);
-                    dayElem.setAttribute("data-tooltip", `Đã đăng ký nghỉ phép (${registeredDate.status === 'pending' ? 'Chờ duyệt' : 'Đã duyệt'})`);
+                    // Sử dụng cùng lớp 'status-pending' cho cả 'pending' và 'supplement' (hoặc 'NN6')
+                    if (registeredDate.status === 'pending' || registeredDate.status === 'supplement' || registeredDate.status === 'NN6') {
+                        dayElem.classList.add("status-pending");
+                        let tooltipText = "Đã đăng ký nghỉ phép (";
+                        tooltipText += registeredDate.status === 'pending' ? "Chờ duyệt" : "Chờ bổ sung";
+                        tooltipText += ")";
+                        dayElem.setAttribute("data-tooltip", tooltipText);
+                    } else {
+                        dayElem.classList.add(registeredDate.status);
+                        let tooltipText = "Đã đăng ký nghỉ phép (";
+                        tooltipText += registeredDate.status === 'approved' ? "Đã duyệt" : registeredDate.status;
+                        tooltipText += ")";
+                        dayElem.setAttribute("data-tooltip", tooltipText);
+                    }
                 }
 
                 const holiday = expandedHolidays.find(h => h.date === dateTime);

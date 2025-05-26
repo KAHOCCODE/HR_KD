@@ -339,7 +339,7 @@ namespace HR_KD.ApiControllers
                         date = n.NgayNghi1.ToString("yyyy-MM-dd"),
                         status = n.MaTrangThai == "NN1" ? "pending" :
                                  n.MaTrangThai == "NN2" ? "approved" :
-                                 n.MaTrangThai == "NN5" ? "status5" : "status6" // Gán tên trạng thái cho NN5 và NN6
+                                 n.MaTrangThai == "NN5" ? "approved" : "supplement" // Gán tên trạng thái cho NN5 và NN6
                     })
                     .ToListAsync();
 
@@ -458,28 +458,30 @@ namespace HR_KD.ApiControllers
             {
                 var loaiNgayNghi = await _context.LoaiNgayNghis
                     .FirstOrDefaultAsync(l => l.MaLoaiNgayNghi == maLoaiNgayNghi);
-                
+
                 if (loaiNgayNghi == null)
                 {
                     return BadRequest(new { success = false, message = "Loại ngày nghỉ không tồn tại." });
                 }
 
                 // Kiểm tra số ngày nghỉ tối đa cho mỗi lần đăng ký
-                var vuotQuaSoNgay = loaiNgayNghi.SoNgayNghiToiDa.HasValue && 
+                var vuotQuaSoNgay = loaiNgayNghi.SoNgayNghiToiDa.HasValue &&
                                    soNgayYeuCau > loaiNgayNghi.SoNgayNghiToiDa.Value;
 
                 // Kiểm tra số lần đăng ký trong năm
                 var soLanDangKy = await _context.NgayNghis
-                    .Where(n => n.MaNv == currentMaNv.Value && 
-                           n.MaLoaiNgayNghi == maLoaiNgayNghi && 
+                    .Where(n => n.MaNv == currentMaNv.Value &&
+                           n.MaLoaiNgayNghi == maLoaiNgayNghi &&
                            (n.MaTrangThai == "NN1" || n.MaTrangThai == "NN2" || n.MaTrangThai == "NN5") &&
                            n.NgayNghi1.Year == DateTime.Now.Year)
                     .Select(n => n.MaDon)
                     .Distinct()
                     .CountAsync();
 
-                var vuotQuaSoLan = loaiNgayNghi.SoLanDangKyToiDa.HasValue && 
-                                  (soLanDangKy + 1) > loaiNgayNghi.SoLanDangKyToiDa.Value;
+                // Xử lý SoLanDangKyToiDa = 0 hoặc NULL là không giới hạn
+                var vuotQuaSoLan = loaiNgayNghi.SoLanDangKyToiDa.HasValue &&
+                                   loaiNgayNghi.SoLanDangKyToiDa.Value != 0 &&
+                                   (soLanDangKy + 1) > loaiNgayNghi.SoLanDangKyToiDa.Value;
 
                 var result = new
                 {
@@ -502,7 +504,7 @@ namespace HR_KD.ApiControllers
                     {
                         vuotQuaSoNgay,
                         vuotQuaSoLan,
-                        biVoHieuHoa = vuotQuaSoLan
+                        biVoHieuHoa = vuotQuaSoLan // Chỉ vô hiệu hóa nếu vượt quá số lần đăng ký
                     }
                 };
 

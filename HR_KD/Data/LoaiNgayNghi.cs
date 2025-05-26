@@ -53,7 +53,7 @@ public partial class LoaiNgayNghi
     public int? SoNgayNghiToiDa { get; set; }
 
     [DisplayName("Số lần đăng ký tối đa (bỏ trống nếu không giới hạn)")]
-    [Range(0, 100, ErrorMessage = "Phải từ 0 đến 100 lần")]
+    [Range(1, 100, ErrorMessage = "Phải từ 1 đến 100 lần")]
     public int? SoLanDangKyToiDa { get; set; }
 
 

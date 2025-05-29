@@ -1,18 +1,18 @@
-﻿
+﻿```cshtml
 @{
     Layout = "~/Views/Shared/_ThemeLayout.cshtml";
     var maNv = User.Claims.FirstOrDefault(c => c.Type == "MaNV")?.Value;
     if (string.IsNullOrEmpty(maNv))
     {
-                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-                <script>
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi!',
-                        text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
-                        confirmButtonText: 'OK'
-                    });
-                </script>
+                        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                        <script>
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi!',
+                                text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
+                                confirmButtonText: 'OK'
+                            });
+                        </script>
         return;
     }
 }
@@ -499,10 +499,45 @@
         if (!startTime || !endTime) return 0;
         const start = new Date(`2000-01-01T${startTime}`);
         const end = new Date(`2000-01-01T${endTime}`);
+        const lunchStart = new Date(`2000-01-01T12:00`);
+        const lunchEnd = new Date(`2000-01-01T13:00`);
+
         let hours = (end - start) / (1000 * 60 * 60);
         if (hours < 0) hours += 24;
-        if (hours >= 8) hours -= 2; // Account for 2-hour lunch break
+
+        // Subtract 1 hour for lunch break if the work period overlaps with 12:00-13:00
+        if (start < lunchEnd && end > lunchStart) {
+            hours -= 1;
+        }
+
         return Math.max(0, parseFloat(hours.toFixed(2)));
+    }
+
+    function calculateOvertimeHours(startTime, endTime) {
+        if (!startTime || !endTime) return 0;
+        const start = new Date(`2000-01-01T${startTime}`);
+        const end = new Date(`2000-01-01T${endTime}`);
+        const lunchStart = new Date(`2000-01-01T12:00`);
+        const lunchEnd = new Date(`2000-01-01T13:00`);
+
+        let hours = (end - start) / (1000 * 60 * 60);
+        if (hours < 0) hours += 24;
+
+        // Subtract 1 hour for lunch break if the overtime period overlaps with 12:00-13:00
+        if (start < lunchEnd && end > lunchStart) {
+            hours -= 1;
+        }
+
+        return Math.max(0, parseFloat(hours.toFixed(2)));
+    }
+
+    function calculateRawHours(startTime, endTime) {
+        if (!startTime || !endTime) return 0;
+        const start = new Date(`2000-01-01T${startTime}`);
+        const end = new Date(`2000-01-01T${endTime}`);
+        let hours = (end - start) / (1000 * 60 * 60);
+        if (hours < 0) hours += 24;
+        return parseFloat(hours.toFixed(2));
     }
 
     function updateTotalHours() {
@@ -678,24 +713,6 @@
             updateOvertime();
         });
     });
-
-    function calculateOvertimeHours(startTime, endTime) {
-        if (!startTime || !endTime) return 0;
-        const start = new Date(`2000-01-01T${startTime}`);
-        const end = new Date(`2000-01-01T${endTime}`);
-        let hours = (end - start) / (1000 * 60 * 60);
-        if (hours < 0) hours += 24;
-        if (hours >= 8) hours -= 2;
-        return Math.max(0, parseFloat(hours.toFixed(2)));
-    }
-
-    function calculateRawHours(startTime, endTime) {
-        if (!startTime || !endTime) return 0;
-        const start = new Date(`2000-01-01T${startTime}`);
-        const end = new Date(`2000-01-01T${endTime}`);
-        const hours = (end - start) / (1000 * 60 * 60);
-        return parseFloat(hours.toFixed(2));
-    }
 
     function updateOvertime() {
         const otStartTime = document.getElementById('otStartTime').value;
@@ -967,7 +984,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Tổng giờ chấm công không được vượt quá 8 giờ.',
+                    text: 'Tổng giờ chấm công không được vượt quá 8 giờ (sau khi trừ nghỉ trưa từ 12:00 đến 13:00 nếu có).',
                     confirmButtonText: 'OK'
                 });
                 document.getElementById('checkInTime').value = '';
@@ -1145,7 +1162,7 @@
     }
 
     function calculateWeeklyOvertime(date, overtimeHours) {
-        const weekNumber = getWeekNumber(new Date(date));
+        const weekNumber = getWeekNumber(date);
         const weekStart = new Date(date);
         weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
         const weekEnd = new Date(weekStart);
@@ -1154,7 +1171,7 @@
         let totalWeeklyOvertime = overtimeHours;
         Object.entries(workScheduleData).forEach(([dateStr, data]) => {
             const currentDate = new Date(dateStr);
-            if (currentDate >= weekStart && currentDate <= weekEnd && dateStr !== date) {
+            if (currentDate >= weekStart && currentDate <= weekEnd && dateStr !== date.toISOString().split('T')[0]) {
                 totalWeeklyOvertime += data.overtimeHours || 0;
             }
         });
@@ -1163,3 +1180,4 @@
 
     window.addEventListener('load', loadOvertimeRates);
 </script>
+```

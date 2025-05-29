@@ -11,6 +11,10 @@
                                 title: 'Lỗi!',
                                 text: 'Không tìm thấy mã nhân viên. Vui lòng đăng nhập lại.',
                                 confirmButtonText: 'OK'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = '/Account/Login'; 
+                                }
                             });
                         </script>
         return;

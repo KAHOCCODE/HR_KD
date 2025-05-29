@@ -1,4 +1,4 @@
-```cshtml
+
 @using HR_KD.Data
 @using Microsoft.AspNetCore.Http
 @inject IHttpContextAccessor HttpContextAccessor
@@ -293,10 +293,10 @@
                                     <li><a href="~/PayrollDirector/DirectorReview"><i class="fa fa-paper-plane"></i> Giám đốc duyệt bảng lương</a></li>
                                 }
 
-                                @if (isDirector || isEmployeeManager || isLineManager || isPayrollAuditor)
+                                @* @if (isDirector || isEmployeeManager || isLineManager || isPayrollAuditor)
                                 {
                                     <li><a href="~/Payroll/PayrollReport"><i class="fa fa-chart-bar"></i> Thống kê lương</a></li>
-                                }
+                                } *@
                             </ul>
                         </li>
                        @*  <li class="submenu">
@@ -414,4 +414,4 @@
 </body>
 
 </html>
-```
+ 
